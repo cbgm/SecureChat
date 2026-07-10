@@ -1,5 +1,7 @@
 package com.cbgm.securechat
 
+import com.cbgm.securechat.platform.getPlatform
+
 class Greeting {
     private val platform = getPlatform()
 

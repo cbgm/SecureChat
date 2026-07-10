@@ -1,4 +1,4 @@
-package com.cbgm.securechat
+package com.cbgm.securechat.platform
 
 import platform.UIKit.UIDevice
 

@@ -1,4 +1,4 @@
-package com.cbgm.securechat
+package com.cbgm.securechat.platform
 
 import android.os.Build
 

@@ -1,0 +1,36 @@
+package com.cbgm.securechat.di
+
+import com.cbgm.securechat.core.identity.PrivateKeyStorage
+import com.cbgm.securechat.core.identity.PublicIdentityStorage
+import com.cbgm.securechat.data.crypto.AndroidPrivateKeyStorage
+import com.cbgm.securechat.data.identity.AndroidPublicIdentityStorage
+import org.koin.android.ext.koin.androidContext
+import org.koin.dsl.module
+
+/**
+ * Android-specific dependency definitions.
+ *
+ * These classes require Android Context and cannot live in commonMain.
+ */
+val appModule = module {
+
+    /**
+     * Register the Android private-key storage implementation
+     * under the shared PrivateKeyStorage interface.
+     */
+    single<PrivateKeyStorage> {
+        AndroidPrivateKeyStorage(
+            context = androidContext()
+        )
+    }
+
+    /**
+     * Register the Android public-identity storage implementation
+     * under the shared PublicIdentityStorage interface.
+     */
+    single<PublicIdentityStorage> {
+        AndroidPublicIdentityStorage(
+            context = androidContext()
+        )
+    }
+}
