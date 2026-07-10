@@ -356,28 +356,3 @@ private fun ErrorContent(
         }
     }
 }
-
-/**
- * Converts binary public-key data into readable hexadecimal text.
- *
- * Example:
- *
- * byteArrayOf(0x01, 0x2A)
- *
- * becomes:
- *
- * 012a
- */
-private fun ByteArray.toHexString(): String {
-    return joinToString(
-        separator = ""
-    ) { byte ->
-        byte
-            .toUByte()
-            .toString(radix = 16)
-            .padStart(
-                length = 2,
-                padChar = '0'
-            )
-    }
-}

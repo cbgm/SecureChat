@@ -1,7 +1,9 @@
 package com.cbgm.securechat.di
 
 import com.cbgm.securechat.core.identity.IdentityCrypto
+import com.cbgm.securechat.core.sharing.IdentityShareCodec
 import com.cbgm.securechat.data.repository.DefaultIdentityRepository
+import com.cbgm.securechat.data.sharing.DefaultIdentityShareCodec
 import com.cbgm.securechat.domain.repository.IdentityRepository
 import com.cbgm.securechat.domain.usecase.CreateIdentity
 import com.cbgm.securechat.domain.usecase.GetIdentityStatus
@@ -63,6 +65,10 @@ val sharedModule = module {
         GetPublicIdentity(
             repository = get()
         )
+    }
+
+    single<IdentityShareCodec> {
+        DefaultIdentityShareCodec()
     }
 
     viewModel {
