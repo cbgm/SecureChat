@@ -1,9 +1,9 @@
 package com.cbgm.securechat.di
 
-import com.cbgm.securechat.core.identity.PrivateKeyStorage
-import com.cbgm.securechat.core.identity.PublicIdentityStorage
-import com.cbgm.securechat.data.crypto.AndroidPrivateKeyStorage
-import com.cbgm.securechat.data.identity.AndroidPublicIdentityStorage
+import com.cbgm.securechat.feature.identity.core.PrivateKeyStorage
+import com.cbgm.securechat.feature.identity.core.PublicIdentityStorage
+import com.cbgm.securechat.feature.identity.data.storage.AndroidPrivateKeyStorage
+import com.cbgm.securechat.feature.identity.data.storage.AndroidPublicIdentityStorage
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 

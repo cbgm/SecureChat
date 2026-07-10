@@ -1,6 +1,6 @@
 [versions]
 agp = "9.0.1"
-android-compileSdk = "36"
+android-compileSdk = "37"
 android-minSdk = "29"
 android-targetSdk = "36"
 androidx-activity = "1.13.0"
@@ -18,6 +18,7 @@ coroutines = "1.11.0"
 androidx-test-core = "1.6.1"
 androidx-test-runner = "1.6.2"
 koin = "4.1.1"
+kotlinStdlib = "2.4.0"
 
 
 [libraries]
@@ -48,6 +49,7 @@ koin-core-viewmodel = { module = "io.insert-koin:koin-core-viewmodel", version.r
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
+kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlinStdlib" }
 
 
 [plugins]
@@ -56,3 +58,4 @@ androidMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library",
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+androidLint = { id = "com.android.lint", version.ref = "agp" }

@@ -3,7 +3,7 @@ package com.cbgm.securechat
 import android.app.Application
 import com.cbgm.securechat.core.crypto.SodiumRuntime
 import com.cbgm.securechat.di.appModule
-import com.cbgm.securechat.di.sharedModule
+import com.cbgm.securechat.feature.identity.di.identityModule
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -45,7 +45,7 @@ class SecureChatApplication : Application() {
              * Load both shared and Android-specific definitions.
              */
             modules(
-                sharedModule,
+                identityModule,
                 appModule
             )
         }
