@@ -7,6 +7,8 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun ImportIdentityRoute(
+    scannedIdentity: String?,
+    onScanQrCode: () -> Unit,
     onBack: () -> Unit,
     viewModel: ImportIdentityViewModel =
         koinViewModel()
@@ -21,6 +23,8 @@ fun ImportIdentityRoute(
             viewModel::onEncodedIdentityChanged,
         onImportClick =
             viewModel::importIdentity,
+        onScanQrCode =
+            onScanQrCode,
         onBack = onBack
     )
 }

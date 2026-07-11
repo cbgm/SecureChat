@@ -26,12 +26,21 @@ fun ImportIdentityScreen(
     onEncodedIdentityChanged: (String) -> Unit,
     onImportClick: () -> Unit,
     onBack: () -> Unit,
+    onScanQrCode: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     OutlinedButton(
         onClick = onBack
     ) {
         Text("Back")
+    }
+
+    Button(
+        onClick = onScanQrCode,
+        enabled = !uiState.isImporting,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("Scan QR code")
     }
 
     Column(

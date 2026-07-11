@@ -8,6 +8,7 @@ import androidx.navigation.toRoute
 import com.cbgm.securechat.feature.identity.presentation.IdentityRoute
 import com.cbgm.securechat.feature.identity.presentation.ShareIdentityRoute
 import com.cbgm.securechat.feature.contactimport.presentation.ImportIdentityRoute
+import com.cbgm.securechat.feature.contactimport.presentation.ScanIdentityRoute
 import com.cbgm.securechat.feature.contacts.presentation.contactdetails.ContactDetailsRoute
 import com.cbgm.securechat.feature.contacts.presentation.contacts.ContactsRoute
 
@@ -50,7 +51,24 @@ fun AppNavigation() {
         }
 
         composable<AppDestination.ImportContact> {
+            val scannedIdentity =
+                navController
+                    .currentBackStackEntry
+                    ?.savedStateHandle
+                    ?.get<String>(
+                        "scannedIdentity"
+                    )
+
             ImportIdentityRoute(
+                scannedIdentity =
+                    scannedIdentity,
+
+                onScanQrCode = {
+                    navController.navigate(
+                        AppDestination.ScanIdentity
+                    )
+                },
+
                 onBack = {
                     navController.popBackStack()
                 }
@@ -86,6 +104,30 @@ fun AppNavigation() {
 
             ContactDetailsRoute(
                 contactId = destination.contactId,
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable<AppDestination.ScanIdentity> {
+            ScanIdentityRoute(
+                onQrCodeScanned = { encodedIdentity ->
+                    /*
+                     * Return to the import screen and provide the scanned
+                     * payload through the saved-state handle.
+                     */
+                    navController
+                        .previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set(
+                            "scannedIdentity",
+                            encodedIdentity
+                        )
+
+                    navController.popBackStack()
+                },
+
                 onBack = {
                     navController.popBackStack()
                 }

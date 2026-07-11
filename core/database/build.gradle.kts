@@ -27,7 +27,7 @@ kotlin {
         }
     }
 
-    androidLibrary {
+    android {
         namespace = "com.cbgm.securechat.core.database"
 
         compileSdk = libs.versions.android.compileSdk.get().toInt()

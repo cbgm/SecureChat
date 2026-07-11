@@ -4,8 +4,10 @@ import androidx.compose.foundation.layout.Row
 import com.cbgm.securechat.feature.identity.presentation.model.ShareIdentityUiState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
@@ -15,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +32,7 @@ fun ShareIdentityScreen(
     onPhoneNumberChanged: (String) -> Unit,
     onGenerateClick: () -> Unit,
     onBack: () -> Unit,
+    onCopyIdentity: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -115,7 +119,27 @@ fun ShareIdentityScreen(
                 content = it,
                 modifier = Modifier.size(260.dp)
             )
+
+            Spacer(
+                modifier = Modifier.height(16.dp)
+            )
+
+            Button(
+                onClick = onCopyIdentity
+            ) {
+                Text("Copy identity")
+            }
+
+            Spacer(
+                modifier = Modifier.height(16.dp)
+            )
+
+            Text(
+                text = uiState.encodedIdentity,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
+
 
         uiState.errorMessage?.let { message ->
             Text(
