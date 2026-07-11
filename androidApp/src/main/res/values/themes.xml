@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style
+        name="Theme.SecureChat"
+        parent="android:style/Theme.Material.Light.NoActionBar">
+
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style
+        name="Theme.SecureChat.Starting"
+        parent="Theme.SplashScreen">
+
+        <item name="windowSplashScreenBackground">
+            @color/securechat_splash_background
+        </item>
+
+        <item name="windowSplashScreenAnimatedIcon">
+            @drawable/ic_securechat_splash
+        </item>
+
+        <item name="postSplashScreenTheme">
+            @style/Theme.SecureChat
+        </item>
+    </style>
+
+</resources>

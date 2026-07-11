@@ -25,6 +25,7 @@ ksp = "2.3.9"
 navigation-compose = "2.9.2"
 zxing = "3.5.4"
 cameraX = "1.5.1"
+androidx-splashscreen="1.2.0"
 
 
 [libraries]
@@ -66,6 +67,8 @@ androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "
 androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "cameraX" }
 androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "cameraX" }
 androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "cameraX" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidx-splashscreen" }
+
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
