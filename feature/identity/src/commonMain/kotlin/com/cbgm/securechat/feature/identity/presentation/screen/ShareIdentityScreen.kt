@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -17,8 +18,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.feature.identity.qr.QrCode
 
 @Composable
 fun ShareIdentityScreen(
@@ -109,17 +110,10 @@ fun ShareIdentityScreen(
             }
         }
 
-        uiState.encodedIdentity?.let { encodedIdentity ->
-            Text(
-                text = "Shared identity",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Text(
-                text = encodedIdentity,
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.bodySmall,
-                fontFamily = FontFamily.Monospace
+        uiState.encodedIdentity?.let {
+            QrCode(
+                content = it,
+                modifier = Modifier.size(260.dp)
             )
         }
 
