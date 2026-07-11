@@ -1,0 +1,642 @@
+package com.cbgm.securechat.feature.contacts.data.repository
+
+import com.cbgm.securechat.core.id.IdGenerator
+import com.cbgm.securechat.core.time.SystemClock
+import com.cbgm.securechat.data.database.dao.ContactDao
+import com.cbgm.securechat.data.database.entity.ContactEntity
+import com.cbgm.securechat.data.database.entity.ContactPhoneNumberEntity
+import com.cbgm.securechat.data.database.entity.ContactPublicIdentityEntity
+import com.cbgm.securechat.data.database.model.ContactWithPublicIdentity
+import com.cbgm.securechat.feature.contacts.data.mapper.toDomain
+import com.cbgm.securechat.feature.contacts.data.merge.ContactMergeService
+import com.cbgm.securechat.feature.contacts.domain.model.Contact
+import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
+import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
+import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
+import com.cbgm.securechat.feature.contacts.domain.model.ImportContactRequest
+import com.cbgm.securechat.feature.contacts.domain.model.ImportDeviceContactRequest
+import com.cbgm.securechat.feature.contacts.domain.model.ImportDevicePhoneNumber
+import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
+class DefaultContactRepository(
+    private val contactDao: ContactDao,
+    private val mergeService: ContactMergeService
+) : ContactRepository {
+
+    override suspend fun importContact(
+        request: ImportContactRequest
+    ): Result<Contact> {
+        return runCatching {
+            require(request.encryptionPublicKey.isNotEmpty()) {
+                "Encryption public key must not be empty"
+            }
+
+            require(request.signingPublicKey.isNotEmpty()) {
+                "Signing public key must not be empty"
+            }
+
+            val normalizedDisplayName =
+                request.displayName
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+
+            val normalizedPhoneNumber =
+                request.phoneNumber
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+
+            val now =
+                SystemClock.nowEpochMilliseconds()
+
+            val mergeResult =
+                mergeService.findOrCreateForSecureChatIdentity(
+                    signingPublicKey =
+                        request.signingPublicKey,
+                    phoneNumber =
+                        normalizedPhoneNumber
+                )
+
+            val contactId =
+                mergeResult.contactId
+
+            val existing =
+                if (mergeResult.isNewContact) {
+                    null
+                } else {
+                    contactDao.findById(
+                        contactId = contactId
+                    )
+                }
+
+            if (mergeResult.isNewContact) {
+                contactDao.upsertContact(
+                    contact =
+                        ContactEntity(
+                            id = contactId,
+                            displayName =
+                                normalizedDisplayName,
+                            deviceContactId = null,
+                            deviceContactLinkStatus =
+                                DeviceContactLinkStatus
+                                    .NOT_LINKED
+                                    .name,
+                            preferredPhoneNumberId = null,
+                            createdAtEpochMilliseconds =
+                                now,
+                            updatedAtEpochMilliseconds =
+                                now
+                        )
+                )
+            } else {
+                val current =
+                    existing
+                        ?: error(
+                            "Matched contact could not be loaded"
+                        )
+
+                contactDao.upsertContact(
+                    contact =
+                        current.contact.copy(
+                            displayName =
+                                normalizedDisplayName
+                                    ?: current.contact.displayName,
+                            updatedAtEpochMilliseconds =
+                                now
+                        )
+                )
+            }
+
+            val phoneNumberId =
+                if (normalizedPhoneNumber == null) {
+                    existing
+                        ?.contact
+                        ?.preferredPhoneNumberId
+                } else {
+                    ensurePhoneNumberExists(
+                        contactId = contactId,
+                        existingPhoneNumbers =
+                            existing
+                                ?.phoneNumbers
+                                .orEmpty(),
+                        value =
+                            normalizedPhoneNumber,
+                        type =
+                            ContactPhoneNumberType.MOBILE,
+                        label = null,
+                        now = now
+                    )
+                }
+
+            val contactAfterPhoneNumber =
+                contactDao.findById(
+                    contactId = contactId
+                )
+                    ?: error(
+                        "Contact could not be loaded after saving phone number"
+                    )
+
+            contactDao.upsertContact(
+                contact =
+                    contactAfterPhoneNumber
+                        .contact
+                        .copy(
+                            preferredPhoneNumberId =
+                                phoneNumberId,
+                            updatedAtEpochMilliseconds =
+                                now
+                        )
+            )
+
+            val existingIdentity =
+                contactAfterPhoneNumber
+                    .publicIdentity
+
+            if (
+                existingIdentity != null &&
+                !existingIdentity
+                    .signingPublicKey
+                    .contentEquals(
+                        request.signingPublicKey
+                    )
+            ) {
+                error(
+                    "This contact already has a different SecureChat identity"
+                )
+            }
+
+            contactDao.upsertPublicIdentity(
+                identity =
+                    ContactPublicIdentityEntity(
+                        contactId = contactId,
+                        encryptionPublicKey =
+                            request
+                                .encryptionPublicKey
+                                .copyOf(),
+                        signingPublicKey =
+                            request
+                                .signingPublicKey
+                                .copyOf(),
+                        verificationStatus =
+                            existingIdentity
+                                ?.verificationStatus
+                                ?: ContactVerificationStatus
+                                    .UNVERIFIED
+                                    .name,
+                        updatedAtEpochMilliseconds =
+                            now
+                    )
+            )
+
+            loadContactOrThrow(
+                contactId = contactId,
+                message =
+                    "Imported contact could not be loaded"
+            )
+        }
+    }
+
+    override suspend fun importDeviceContact(
+        request: ImportDeviceContactRequest
+    ): Result<Contact> {
+        return runCatching {
+            require(request.deviceContactId.isNotBlank()) {
+                "Device contact ID must not be blank"
+            }
+
+            val normalizedDisplayName =
+                request.displayName
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+
+            val normalizedPhoneNumbers =
+                normalizeDevicePhoneNumbers(
+                    request.phoneNumbers
+                )
+
+            require(normalizedPhoneNumbers.isNotEmpty()) {
+                "Device contact must contain at least one phone number"
+            }
+
+            val now =
+                SystemClock.nowEpochMilliseconds()
+
+            val mergeResult =
+                mergeService.findOrCreateForDeviceContact(
+                    deviceContactId =
+                        request.deviceContactId,
+                    phoneNumbers =
+                        normalizedPhoneNumbers
+                )
+
+            val contactId =
+                mergeResult.contactId
+
+            val existing =
+                if (mergeResult.isNewContact) {
+                    null
+                } else {
+                    contactDao.findById(
+                        contactId = contactId
+                    )
+                }
+
+            if (mergeResult.isNewContact) {
+                contactDao.upsertContact(
+                    contact =
+                        ContactEntity(
+                            id = contactId,
+                            displayName =
+                                normalizedDisplayName,
+                            deviceContactId =
+                                request.deviceContactId,
+                            deviceContactLinkStatus =
+                                DeviceContactLinkStatus
+                                    .LINKED
+                                    .name,
+                            preferredPhoneNumberId = null,
+                            createdAtEpochMilliseconds =
+                                now,
+                            updatedAtEpochMilliseconds =
+                                now
+                        )
+                )
+            }
+
+            val preferredPhoneNumberId =
+                replaceDevicePhoneNumbers(
+                    contactId = contactId,
+                    phoneNumbers =
+                        normalizedPhoneNumbers,
+                    now = now
+                )
+
+            val current =
+                contactDao.findById(
+                    contactId = contactId
+                )
+                    ?: error(
+                        "Device contact could not be loaded"
+                    )
+
+            contactDao.upsertContact(
+                contact =
+                    current.contact.copy(
+                        displayName =
+                            normalizedDisplayName
+                                ?: current.contact.displayName,
+                        deviceContactId =
+                            request.deviceContactId,
+                        deviceContactLinkStatus =
+                            DeviceContactLinkStatus
+                                .LINKED
+                                .name,
+                        preferredPhoneNumberId =
+                            preferredPhoneNumberId,
+                        updatedAtEpochMilliseconds =
+                            now
+                    )
+            )
+
+            loadContactOrThrow(
+                contactId = contactId,
+                message =
+                    "Imported device contact could not be loaded"
+            )
+        }
+    }
+
+    override suspend fun getContact(
+        contactId: String
+    ): Result<Contact?> {
+        return runCatching {
+            contactDao
+                .findById(
+                    contactId = contactId
+                )
+                ?.toDomain()
+        }
+    }
+
+    override suspend fun findBySigningPublicKey(
+        signingPublicKey: ByteArray
+    ): Result<Contact?> {
+        return runCatching {
+            contactDao
+                .findBySigningPublicKey(
+                    signingPublicKey =
+                        signingPublicKey
+                )
+                ?.toDomain()
+        }
+    }
+
+    override fun observeContacts():
+            Flow<List<Contact>> {
+
+        return contactDao
+            .observeAll()
+            .map { contacts ->
+                contacts.map { contact ->
+                    contact.toDomain()
+                }
+            }
+    }
+
+    override suspend fun updateContactDetails(
+        contactId: String,
+        displayName: String?,
+        phoneNumber: String?
+    ): Result<Contact> {
+        return runCatching {
+            val existing =
+                contactDao.findById(
+                    contactId = contactId
+                )
+                    ?: error(
+                        "Contact not found: $contactId"
+                    )
+
+            val normalizedDisplayName =
+                displayName
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+
+            val normalizedPhoneNumber =
+                phoneNumber
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+
+            val now =
+                SystemClock.nowEpochMilliseconds()
+
+            val preferredPhoneNumberId =
+                if (normalizedPhoneNumber == null) {
+                    null
+                } else {
+                    ensurePhoneNumberExists(
+                        contactId =
+                            contactId,
+                        existingPhoneNumbers =
+                            existing.phoneNumbers,
+                        value =
+                            normalizedPhoneNumber,
+                        type =
+                            ContactPhoneNumberType.MOBILE,
+                        label = null,
+                        now = now
+                    )
+                }
+
+            contactDao.upsertContact(
+                contact =
+                    existing.contact.copy(
+                        displayName =
+                            normalizedDisplayName,
+                        preferredPhoneNumberId =
+                            preferredPhoneNumberId,
+                        updatedAtEpochMilliseconds =
+                            now
+                    )
+            )
+
+            loadContactOrThrow(
+                contactId = contactId,
+                message =
+                    "Updated contact could not be loaded"
+            )
+        }
+    }
+
+    override suspend fun markVerified(
+        contactId: String
+    ): Result<Contact> {
+        return runCatching {
+            val existing =
+                contactDao.findById(
+                    contactId = contactId
+                )
+                    ?: error(
+                        "Contact not found: $contactId"
+                    )
+
+            val identity =
+                existing.publicIdentity
+                    ?: error(
+                        "Contact has no SecureChat identity"
+                    )
+
+            val now =
+                SystemClock.nowEpochMilliseconds()
+
+            contactDao.upsertPublicIdentity(
+                identity =
+                    identity.copy(
+                        verificationStatus =
+                            ContactVerificationStatus
+                                .VERIFIED
+                                .name,
+                        updatedAtEpochMilliseconds =
+                            now
+                    )
+            )
+
+            loadContactOrThrow(
+                contactId = contactId,
+                message =
+                    "Verified contact could not be loaded"
+            )
+        }
+    }
+
+    override suspend fun updateDeviceContactLinkStatus(
+        deviceContactId: String,
+        status: DeviceContactLinkStatus
+    ): Result<Contact?> {
+        return runCatching {
+            val existing =
+                contactDao.findByDeviceContactId(
+                    deviceContactId =
+                        deviceContactId
+                )
+                    ?: return@runCatching null
+
+            val now =
+                SystemClock.nowEpochMilliseconds()
+
+            contactDao.upsertContact(
+                contact =
+                    existing.contact.copy(
+                        deviceContactLinkStatus =
+                            status.name,
+                        updatedAtEpochMilliseconds =
+                            now
+                    )
+            )
+
+            contactDao
+                .findById(
+                    contactId =
+                        existing.contact.id
+                )
+                ?.toDomain()
+        }
+    }
+
+    private suspend fun replaceDevicePhoneNumbers(
+        contactId: String,
+        phoneNumbers: List<ImportDevicePhoneNumber>,
+        now: Long
+    ): String? {
+        contactDao.deletePhoneNumbersForContact(
+            contactId = contactId
+        )
+
+        if (phoneNumbers.isEmpty()) {
+            return null
+        }
+
+        val entities =
+            phoneNumbers.map { phoneNumber ->
+                ContactPhoneNumberEntity(
+                    id =
+                        IdGenerator.generate(),
+                    contactId =
+                        contactId,
+                    value =
+                        phoneNumber.value,
+                    type =
+                        phoneNumber.type.name,
+                    label =
+                        phoneNumber.label,
+                    updatedAtEpochMilliseconds =
+                        now
+                )
+            }
+
+        contactDao.upsertPhoneNumbers(
+            phoneNumbers = entities
+        )
+
+        return entities
+            .minByOrNull { entity ->
+                phoneNumberPriority(
+                    entity.type
+                )
+            }
+            ?.id
+    }
+
+    private suspend fun ensurePhoneNumberExists(
+        contactId: String,
+        existingPhoneNumbers:
+        List<ContactPhoneNumberEntity>,
+        value: String,
+        type: ContactPhoneNumberType,
+        label: String?,
+        now: Long
+    ): String {
+        val existing =
+            existingPhoneNumbers
+                .firstOrNull { phoneNumber ->
+                    phoneNumber.value == value
+                }
+
+        if (existing != null) {
+            return existing.id
+        }
+
+        val entity =
+            ContactPhoneNumberEntity(
+                id =
+                    IdGenerator.generate(),
+                contactId =
+                    contactId,
+                value =
+                    value,
+                type =
+                    type.name,
+                label =
+                    label,
+                updatedAtEpochMilliseconds =
+                    now
+            )
+
+        contactDao.upsertPhoneNumbers(
+            phoneNumbers =
+                listOf(entity)
+        )
+
+        return entity.id
+    }
+
+    private fun normalizeDevicePhoneNumbers(
+        phoneNumbers:
+        List<ImportDevicePhoneNumber>
+    ): List<ImportDevicePhoneNumber> {
+        return phoneNumbers
+            .mapNotNull { phoneNumber ->
+                val normalizedValue =
+                    phoneNumber.value
+                        .trim()
+                        .takeIf { it.isNotEmpty() }
+                        ?: return@mapNotNull null
+
+                phoneNumber.copy(
+                    value =
+                        normalizedValue,
+                    label =
+                        phoneNumber.label
+                            ?.trim()
+                            ?.takeIf { it.isNotEmpty() }
+                )
+            }
+            .distinctBy { phoneNumber ->
+                phoneNumber.value to
+                        phoneNumber.type
+            }
+    }
+
+    private fun phoneNumberPriority(
+        type: String
+    ): Int {
+        return when (type) {
+            ContactPhoneNumberType.MOBILE.name ->
+                0
+
+            ContactPhoneNumberType.WORK_MOBILE.name ->
+                1
+
+            ContactPhoneNumberType.MAIN.name ->
+                2
+
+            ContactPhoneNumberType.HOME.name ->
+                3
+
+            ContactPhoneNumberType.WORK.name ->
+                4
+
+            ContactPhoneNumberType.CUSTOM.name ->
+                5
+
+            ContactPhoneNumberType.OTHER.name ->
+                6
+
+            else ->
+                Int.MAX_VALUE
+        }
+    }
+
+    private suspend fun loadContactOrThrow(
+        contactId: String,
+        message: String
+    ): Contact {
+        return contactDao
+            .findById(
+                contactId = contactId
+            )
+            ?.toDomain()
+            ?: error(message)
+    }
+}

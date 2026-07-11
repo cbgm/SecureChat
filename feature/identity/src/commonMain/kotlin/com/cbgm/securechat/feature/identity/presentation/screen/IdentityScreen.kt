@@ -35,6 +35,9 @@ fun IdentityScreen(
     uiState: IdentityUiState,
     onCreateIdentity: () -> Unit,
     onRetry: () -> Unit,
+    onShareIdentity: () -> Unit,
+    onImportContact: () -> Unit,
+    onContacts: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -61,7 +64,10 @@ fun IdentityScreen(
 
                 is IdentityUiState.Ready -> {
                     ReadyIdentityContent(
-                        publicIdentity = uiState.publicIdentity
+                        publicIdentity = uiState.publicIdentity,
+                        onShareIdentity = onShareIdentity,
+                        onImportContact = onImportContact,
+                        onContacts = onContacts
                     )
                 }
 
@@ -147,12 +153,17 @@ private fun NoIdentityContent(
 
 @Composable
 private fun ReadyIdentityContent(
-    publicIdentity: PublicIdentity
+    publicIdentity: PublicIdentity,
+    onShareIdentity: () -> Unit,
+    onImportContact: () -> Unit,
+    onContacts: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(
+                rememberScrollState()
+            ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -189,6 +200,39 @@ private fun ReadyIdentityContent(
             description = "Used to verify identity information.",
             key = publicIdentity.signingPublicKey
         )
+
+        Spacer(
+            modifier = Modifier.height(32.dp)
+        )
+
+        Button(
+            onClick = onContacts,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Contacts")
+        }
+
+        Spacer(
+            modifier = Modifier.height(12.dp)
+        )
+
+        Button(
+            onClick = onShareIdentity,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Share my identity")
+        }
+
+        Spacer(
+            modifier = Modifier.height(12.dp)
+        )
+
+        OutlinedButton(
+            onClick = onImportContact,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Import contact")
+        }
     }
 }
 
@@ -320,7 +364,10 @@ private fun NoIdentityPreview() {
     IdentityScreen(
         uiState = IdentityUiState.NoIdentity,
         onCreateIdentity = {},
-        onRetry = {}
+        onRetry = {},
+        onShareIdentity = {},
+        onImportContact = {},
+        onContacts = {}
     )
 }
 
@@ -332,6 +379,9 @@ private fun IncompleteIdentityPreview() {
     IdentityScreen(
         uiState = IdentityUiState.IncompleteIdentity,
         onCreateIdentity = {},
-        onRetry = {}
+        onRetry = {},
+        onShareIdentity = {},
+        onImportContact = {},
+        onContacts = {}
     )
 }

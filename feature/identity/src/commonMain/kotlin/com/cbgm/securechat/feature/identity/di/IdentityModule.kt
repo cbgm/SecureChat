@@ -6,9 +6,11 @@ import com.cbgm.securechat.feature.identity.data.repository.DefaultIdentityRepos
 import com.cbgm.securechat.feature.identity.data.sharing.DefaultIdentityShareCodec
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
 import com.cbgm.securechat.feature.identity.domain.usecase.CreateIdentity
+import com.cbgm.securechat.feature.identity.domain.usecase.CreateSharedIdentity
 import com.cbgm.securechat.feature.identity.domain.usecase.GetIdentityStatus
 import com.cbgm.securechat.feature.identity.domain.usecase.GetPublicIdentity
 import com.cbgm.securechat.feature.identity.presentation.screen.IdentityViewModel
+import com.cbgm.securechat.feature.identity.presentation.screen.ShareIdentityViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
@@ -48,11 +50,24 @@ val identityModule = module {
         DefaultIdentityShareCodec()
     }
 
+    factory {
+        CreateSharedIdentity(
+            getPublicIdentity = get(),
+            identityShareCodec = get()
+        )
+    }
+
     viewModel {
         IdentityViewModel(
             getIdentityStatus = get(),
             getPublicIdentity = get(),
             createIdentity = get()
+        )
+    }
+
+    viewModel {
+        ShareIdentityViewModel(
+            createSharedIdentity = get()
         )
     }
 }

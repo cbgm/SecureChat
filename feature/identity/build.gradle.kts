@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidMultiplatformLibrary)
@@ -7,14 +8,25 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
+val isMacOs = System
+    .getProperty("os.name")
+    .startsWith(
+        prefix = "Mac",
+        ignoreCase = true
+    )
+
 kotlin {
-    listOf(
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
-            baseName = "SecureChatIdentity"
-            isStatic = true
+
+    if (isMacOs) {
+        listOf(
+            iosArm64(),
+            iosSimulatorArm64()
+        ).forEach { iosTarget ->
+
+            iosTarget.binaries.framework {
+                baseName = "SecureChatDatabase"
+                isStatic = true
+            }
         }
     }
 
@@ -24,7 +36,7 @@ kotlin {
         minSdk = libs.versions.android.minSdk.get().toInt()
 
         compilerOptions {
-            jvmTarget = JvmTarget.JVM_11
+            jvmTarget = JvmTarget.JVM_17
         }
 
         androidResources {

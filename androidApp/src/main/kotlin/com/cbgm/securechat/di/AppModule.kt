@@ -1,5 +1,8 @@
 package com.cbgm.securechat.di
 
+import android.content.ContentResolver
+import com.cbgm.securechat.feature.contacts.devicecontacts.AndroidDeviceContactsDataSource
+import com.cbgm.securechat.feature.contacts.devicecontacts.DeviceContactsDataSource
 import com.cbgm.securechat.feature.identity.core.PrivateKeyStorage
 import com.cbgm.securechat.feature.identity.core.PublicIdentityStorage
 import com.cbgm.securechat.feature.identity.data.storage.AndroidPrivateKeyStorage
@@ -31,6 +34,16 @@ val appModule = module {
     single<PublicIdentityStorage> {
         AndroidPublicIdentityStorage(
             context = androidContext()
+        )
+    }
+
+    single<ContentResolver> {
+        androidContext().contentResolver
+    }
+
+    single<DeviceContactsDataSource> {
+        AndroidDeviceContactsDataSource(
+            contentResolver = get()
         )
     }
 }
