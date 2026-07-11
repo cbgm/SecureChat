@@ -1,4 +1,4 @@
-package com.cbgm.securechat.feature.contactimport.presentation
+package com.cbgm.securechat.feature.contactimport.presentation.importing
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

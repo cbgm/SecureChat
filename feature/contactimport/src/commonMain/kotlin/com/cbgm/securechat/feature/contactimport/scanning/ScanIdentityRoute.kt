@@ -1,4 +1,4 @@
-package com.cbgm.securechat.feature.contactimport.presentation
+package com.cbgm.securechat.feature.contactimport.scanning
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,7 +16,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.cbgm.securechat.feature.contactimport.scanning.rememberQrScannerPermissionRequest
 
 @Composable
 fun ScanIdentityRoute(

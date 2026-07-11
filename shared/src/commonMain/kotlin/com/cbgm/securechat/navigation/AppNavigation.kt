@@ -5,10 +5,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.cbgm.securechat.feature.contactimport.presentation.ImportIdentityRoute
 import com.cbgm.securechat.feature.identity.presentation.IdentityRoute
 import com.cbgm.securechat.feature.identity.presentation.ShareIdentityRoute
-import com.cbgm.securechat.feature.contactimport.presentation.ImportIdentityRoute
-import com.cbgm.securechat.feature.contactimport.presentation.ScanIdentityRoute
+import com.cbgm.securechat.feature.contactimport.scanning.ScanIdentityRoute
 import com.cbgm.securechat.feature.contacts.presentation.contactdetails.ContactDetailsRoute
 import com.cbgm.securechat.feature.contacts.presentation.contacts.ContactsRoute
 

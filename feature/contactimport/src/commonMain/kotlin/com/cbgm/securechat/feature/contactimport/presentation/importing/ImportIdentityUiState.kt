@@ -1,4 +1,4 @@
-package com.cbgm.securechat.feature.contactimport.presentation
+package com.cbgm.securechat.feature.contactimport.presentation.importing
 
 data class ImportIdentityUiState(
     val encodedIdentity: String = "",
