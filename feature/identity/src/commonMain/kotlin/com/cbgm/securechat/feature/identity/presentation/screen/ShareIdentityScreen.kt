@@ -33,6 +33,7 @@ fun ShareIdentityScreen(
     onGenerateClick: () -> Unit,
     onBack: () -> Unit,
     onCopyIdentity: () -> Unit,
+    onShareIdentity: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -130,14 +131,30 @@ fun ShareIdentityScreen(
                 Text("Copy identity")
             }
 
-            Spacer(
+            /*Spacer(
                 modifier = Modifier.height(16.dp)
             )
 
             Text(
                 text = uiState.encodedIdentity,
                 style = MaterialTheme.typography.bodySmall
+            )*/
+
+            Spacer(
+                modifier = Modifier.height(12.dp)
             )
+
+            OutlinedButton(
+                onClick = onShareIdentity,
+                enabled =
+                    uiState.encodedIdentity.isNotBlank(),
+                modifier =
+                    Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Share identity…"
+                )
+            }
         }
 
 

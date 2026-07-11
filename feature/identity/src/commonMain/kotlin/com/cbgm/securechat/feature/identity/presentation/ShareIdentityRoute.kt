@@ -14,6 +14,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cbgm.securechat.feature.identity.presentation.screen.ShareIdentityScreen
 import com.cbgm.securechat.feature.identity.presentation.screen.ShareIdentityViewModel
+import com.cbgm.securechat.feature.identity.sharing.rememberIdentityShareLauncher
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -25,6 +26,12 @@ fun ShareIdentityRoute(
     val uiState by viewModel
         .uiState
         .collectAsStateWithLifecycle()
+
+    val shareIdentity =
+        rememberIdentityShareLauncher(
+            encodedIdentity =
+                uiState.encodedIdentity.orEmpty()
+        )
 
     val clipboardManager = LocalClipboardManager.current
 
@@ -73,6 +80,8 @@ fun ShareIdentityRoute(
                     }
                 }
             },
+
+            onShareIdentity = shareIdentity,
 
             modifier = Modifier.padding(innerPadding)
         )
