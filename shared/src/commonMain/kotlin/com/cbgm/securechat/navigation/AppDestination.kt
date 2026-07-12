@@ -19,6 +19,12 @@ sealed interface AppDestination {
     data object ShareIdentity : AppDestination
 
     @Serializable
+    data class Chat(
+        val contactId: String,
+        val contactName: String
+    ) : AppDestination
+
+    @Serializable
     data object Main : AppDestination
     @Serializable
     data object ScanIdentity : AppDestination

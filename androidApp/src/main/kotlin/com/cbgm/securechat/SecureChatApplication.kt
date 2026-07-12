@@ -6,6 +6,7 @@ import com.cbgm.securechat.di.appModule
 import com.cbgm.securechat.feature.identity.di.identityModule
 import com.cbgm.securechat.data.database.di.androidDatabaseModule
 import com.cbgm.securechat.di.sharedModule
+import com.cbgm.securechat.feature.chats.di.chatsModule
 import com.cbgm.securechat.feature.contactimport.di.contactImportModule
 import com.cbgm.securechat.feature.contacts.di.contactsModule
 import com.cbgm.securechat.startup.startupModule
@@ -56,7 +57,8 @@ class SecureChatApplication : Application() {
                 appModule,
                 sharedModule,
                 contactImportModule,
-                startupModule
+                startupModule,
+                chatsModule
             )
         }
     }

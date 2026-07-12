@@ -10,6 +10,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.cbgm.securechat.feature.chats.presentation.ChatRoute
+import com.cbgm.securechat.feature.chats.presentation.ChatScreen
 import com.cbgm.securechat.feature.contactimport.presentation.ImportIdentityRoute
 import com.cbgm.securechat.feature.identity.presentation.IdentityRoute
 import com.cbgm.securechat.feature.identity.presentation.ShareIdentityRoute
@@ -100,10 +102,11 @@ fun AppNavigation() {
                     )
                 },
 
-                onContactClick = { contactId ->
+                onContactClick = { contactId, contactName ->
                     navController.navigate(
-                        AppDestination.ContactDetails(
-                            contactId = contactId
+                        AppDestination.Chat(
+                            contactId = contactId,
+                            contactName = contactName
                         )
                     )
                 }
@@ -112,6 +115,22 @@ fun AppNavigation() {
 
         composable<AppDestination.Main> {
             MainScreen(
+                onAddChat = {
+                    navController.navigate(
+                        AppDestination.Contacts
+                    )
+                },
+                onOpenChat = {
+                        contactId,
+                        contactName ->
+
+                    navController.navigate(
+                        AppDestination.Chat(
+                            contactId = contactId,
+                            contactName = contactName
+                        )
+                    )
+                },
                 onImportContact = {
                     navController.navigate(
                         AppDestination.ImportContact
@@ -121,6 +140,19 @@ fun AppNavigation() {
                     navController.navigate(
                         AppDestination.Contacts
                     )
+                }
+            )
+        }
+
+        composable<AppDestination.Chat> { backStackEntry ->
+            val destination =
+                backStackEntry.toRoute<AppDestination.Chat>()
+
+            ChatRoute(
+                contactId = destination.contactId,
+                contactName = destination.contactName,
+                onBack = {
+                    navController.popBackStack()
                 }
             )
         }

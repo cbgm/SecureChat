@@ -14,6 +14,7 @@ kotlin {
 dependencies {
     implementation(projects.shared)
     implementation(projects.core)
+    implementation(projects.feature.chats)
     implementation(projects.data.database)
     implementation(projects.feature.contacts)
     implementation(projects.feature.identity)

@@ -10,9 +10,11 @@ import org.koin.compose.viewmodel.koinViewModel
 fun ContactsRoute(
     onBack: () -> Unit,
     onImportContact: () -> Unit,
-    onContactClick: (String) -> Unit,
-    viewModel: ContactsViewModel =
-        koinViewModel()
+    onContactClick: (
+        contactId: String,
+        contactName: String
+    ) -> Unit,
+    viewModel: ContactsViewModel = koinViewModel()
 ) {
     val uiState by viewModel
         .uiState
@@ -32,8 +34,7 @@ fun ContactsRoute(
         uiState = uiState,
         onBack = onBack,
         onImportContact = onImportContact,
-        onImportDeviceContacts =
-            requestDeviceContactsPermission,
+        onImportDeviceContacts = requestDeviceContactsPermission,
         onContactClick = onContactClick
     )
 }

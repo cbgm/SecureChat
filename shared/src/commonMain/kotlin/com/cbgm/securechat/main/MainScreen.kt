@@ -20,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.feature.chats.presentation.ChatsRoute
+import com.cbgm.securechat.feature.chats.presentation.ChatsScreen
 import com.cbgm.securechat.feature.identity.presentation.IdentityRoute
 import com.cbgm.securechat.feature.identity.presentation.ShareIdentityRoute
 
@@ -30,6 +32,11 @@ private enum class MeScreen {
 
 @Composable
 fun MainScreen(
+    onAddChat: () -> Unit,
+    onOpenChat: (
+        contactId: String,
+        contactName: String
+    ) -> Unit,
     onImportContact: () -> Unit,
     onContacts: () -> Unit,
     modifier: Modifier = Modifier
@@ -52,10 +59,6 @@ fun MainScreen(
                         onClick = {
                             selectedTab = tab
 
-                            /*
-                             * Whenever the user returns to the Me tab,
-                             * show the main identity screen first.
-                             */
                             if (tab == MainTab.Me) {
                                 selectedMeScreen =
                                     MeScreen.Identity
@@ -65,8 +68,7 @@ fun MainScreen(
                             Text(
                                 text = tab.symbol,
                                 style =
-                                    MaterialTheme.typography
-                                        .titleMedium
+                                    MaterialTheme.typography.titleMedium
                             )
                         },
                         label = {
@@ -79,11 +81,13 @@ fun MainScreen(
     ) { innerPadding ->
         when (selectedTab) {
             MainTab.Chats -> {
-                PlaceholderScreen(
-                    title = "Chats",
-                    message =
-                        "Your conversations will appear here.",
-                    modifier = Modifier.padding(innerPadding)
+                ChatsRoute(
+                    onAddChatClick = onAddChat,
+                    onChatClick = onOpenChat,
+                    modifier = Modifier.padding(
+                        bottom =
+                            innerPadding.calculateBottomPadding()
+                    )
                 )
             }
 
@@ -111,7 +115,11 @@ fun MainScreen(
                             showBackButton = true,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(innerPadding)
+                                .padding(
+                                    bottom =
+                                        innerPadding
+                                            .calculateBottomPadding()
+                                )
                         )
                     }
                 }
@@ -120,9 +128,11 @@ fun MainScreen(
             MainTab.Settings -> {
                 PlaceholderScreen(
                     title = "Settings",
-                    message =
-                        "Settings are coming soon.",
-                    modifier = Modifier.padding(innerPadding)
+                    message = "Settings are coming soon.",
+                    modifier = Modifier.padding(
+                        bottom =
+                            innerPadding.calculateBottomPadding()
+                    )
                 )
             }
         }
@@ -159,22 +169,17 @@ private fun PlaceholderScreen(
             Text(
                 text = title,
                 style =
-                    MaterialTheme.typography
-                        .headlineMedium
+                    MaterialTheme.typography.headlineMedium
             )
 
             Text(
                 text = message,
-                modifier = Modifier.padding(
-                    top = 12.dp
-                ),
+                modifier = Modifier.padding(top = 12.dp),
                 style =
-                    MaterialTheme.typography
-                        .bodyLarge,
+                    MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 color =
-                    MaterialTheme.colorScheme
-                        .onSurfaceVariant
+                    MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

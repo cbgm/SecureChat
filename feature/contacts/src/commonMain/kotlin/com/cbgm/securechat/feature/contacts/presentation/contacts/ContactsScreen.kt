@@ -50,7 +50,10 @@ fun ContactsScreen(
     uiState: ContactsUiState,
     onBack: () -> Unit,
     onImportContact: () -> Unit,
-    onContactClick: (String) -> Unit,
+    onContactClick: (
+        contactId: String,
+        contactName: String
+    ) -> Unit,
     onImportDeviceContacts: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -181,7 +184,7 @@ private fun LoadingContent(
 @Composable
 private fun ContactsContent(
     contacts: List<Contact>,
-    onContactClick: (String) -> Unit,
+    onContactClick: (String, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -196,7 +199,7 @@ private fun ContactsContent(
             ContactListItem(
                 contact = contact,
                 onClick = {
-                    onContactClick(contact.id)
+                    onContactClick(contact.id, contact.displayName?:"")
                 }
             )
 
