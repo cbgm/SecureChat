@@ -2,6 +2,7 @@ package com.cbgm.securechat.feature.contacts.presentation.contacts
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,20 +12,39 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Contacts
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContactsScreen(
     uiState: ContactsUiState,
@@ -34,147 +54,138 @@ fun ContactsScreen(
     onImportDeviceContacts: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment =
-                Alignment.CenterVertically
-        ) {
-            OutlinedButton(
-                onClick = onBack
-            ) {
-                Text("Back")
-            }
+    var showImportSheet by remember {
+        mutableStateOf(false)
+    }
 
-            Spacer(
-                modifier = Modifier.weight(1f)
+    val sheetState =
+        rememberModalBottomSheetState(
+            skipPartiallyExpanded = true
+        )
+
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text("Contacts")
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = onBack
+                    ) {
+                        Icon(
+                            imageVector =
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                }
             )
-
-            Button(
-                onClick = onImportDeviceContacts
+        },
+        floatingActionButton = {
+            if (
+                uiState is ContactsUiState.Empty ||
+                uiState is ContactsUiState.Content
             ) {
-                Text("Import from Device")
-            }
-
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
-
-            Button(
-                onClick = onImportContact
-            ) {
-                Text("Import SecureChat Contact")
+                FloatingActionButton(
+                    onClick = {
+                        showImportSheet = true
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add contact"
+                    )
+                }
             }
         }
-
-        Spacer(
-            modifier = Modifier.height(24.dp)
-        )
-
-        Text(
-            text = "Contacts",
-            style =
-                MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(
-            modifier = Modifier.height(16.dp)
-        )
-
+    ) { innerPadding ->
         when (uiState) {
             ContactsUiState.Loading -> {
-                LoadingContent()
+                LoadingContent(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                )
             }
 
             ContactsUiState.Empty -> {
-                EmptyContent(
-                    onImportContact =
-                        onImportContact
+                EmptyContactsContent(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(24.dp)
                 )
             }
 
             is ContactsUiState.Content -> {
-                ContactList(
+                ContactsContent(
                     contacts = uiState.contacts,
-                    onContactClick =
-                        onContactClick
+                    onContactClick = onContactClick,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
                 )
             }
 
             is ContactsUiState.Error -> {
                 ErrorContent(
-                    message = uiState.message
+                    message = uiState.message,
+                    onImportContact = onImportContact,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(24.dp)
                 )
             }
+        }
+    }
+
+    if (showImportSheet) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                showImportSheet = false
+            },
+            sheetState = sheetState
+        ) {
+            ImportContactSheet(
+                onClose = {
+                    showImportSheet = false
+                },
+                onImportContact = {
+                    showImportSheet = false
+                    onImportContact()
+                },
+                onImportDeviceContacts = {
+                    showImportSheet = false
+                    onImportDeviceContacts()
+                }
+            )
         }
     }
 }
 
 @Composable
-private fun LoadingContent() {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment =
-            Alignment.CenterHorizontally,
-        verticalArrangement =
-            Arrangement.Center
+private fun LoadingContent(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator()
     }
 }
 
 @Composable
-private fun EmptyContent(
-    onImportContact: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment =
-            Alignment.CenterHorizontally,
-        verticalArrangement =
-            Arrangement.Center
-    ) {
-        Text(
-            text = "No contacts yet",
-            style =
-                MaterialTheme.typography.titleLarge
-        )
-
-        Spacer(
-            modifier = Modifier.height(8.dp)
-        )
-
-        Text(
-            text =
-                "Import a SecureChat identity or add phone contacts later.",
-            style =
-                MaterialTheme.typography.bodyMedium
-        )
-
-        Spacer(
-            modifier = Modifier.height(24.dp)
-        )
-
-        Button(
-            onClick = onImportContact
-        ) {
-            Text("Import contact")
-        }
-    }
-}
-
-@Composable
-private fun ContactList(
+private fun ContactsContent(
     contacts: List<Contact>,
-    onContactClick: (String) -> Unit
+    onContactClick: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize()
+        modifier = modifier
     ) {
         items(
             items = contacts,
@@ -182,107 +193,115 @@ private fun ContactList(
                 contact.id
             }
         ) { contact ->
-            ContactRow(
+            ContactListItem(
                 contact = contact,
                 onClick = {
-                    onContactClick(
-                        contact.id
-                    )
+                    onContactClick(contact.id)
                 }
             )
 
             HorizontalDivider()
         }
+
+        item {
+            Spacer(
+                modifier = Modifier.height(88.dp)
+            )
+        }
     }
 }
 
 @Composable
-private fun ContactRow(
+private fun ContactListItem(
     contact: Contact,
     onClick: () -> Unit
 ) {
-    Column(
+    ListItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(
                 onClick = onClick
+            ),
+        headlineContent = {
+            Text(
+                text =
+                    contact.displayName
+                        ?: "Unnamed contact"
             )
-            .padding(
-                vertical = 16.dp
+        },
+        supportingContent = {
+            Text(
+                text =
+                    contact.preferredPhoneNumber
+                        ?.value
+                        ?: if (
+                            contact.secureChatIdentity != null
+                        ) {
+                            "SecureChat contact"
+                        } else {
+                            "No phone number"
+                        }
             )
+        },
+        trailingContent = {
+            when {
+                contact.deviceContactLinkStatus ==
+                        DeviceContactLinkStatus.MISSING -> {
+
+                    Text(
+                        text = "Missing",
+                        style =
+                            MaterialTheme.typography.labelMedium,
+                        color =
+                            MaterialTheme.colorScheme.error
+                    )
+                }
+
+                contact.secureChatIdentity != null -> {
+                    Text(
+                        text = "Secure",
+                        style =
+                            MaterialTheme.typography.labelMedium,
+                        color =
+                            MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    )
+}
+
+@Composable
+private fun EmptyContactsContent(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text =
-                contact.displayName
-                    ?: "Unnamed contact",
-            style =
-                MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-
-        contact.preferredPhoneNumber?.let { phoneNumber ->
-            Spacer(
-                modifier = Modifier.height(4.dp)
-            )
-
-            Text(
-                text = phoneNumber.value,
-                style =
-                    MaterialTheme.typography.bodyMedium
-            )
-        }
-
-        Spacer(
-            modifier = Modifier.height(6.dp)
-        )
-
-        if (contact.secureChatIdentity != null) {
-            Text(
-                text = "SecureChat identity available",
-                style =
-                    MaterialTheme.typography.labelMedium,
-                color =
-                    MaterialTheme.colorScheme.primary
-            )
-        } else {
-            Text(
-                text = "No SecureChat keys yet",
-                style =
-                    MaterialTheme.typography.labelMedium,
-                color =
-                    MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        if (
-            contact.deviceContactLinkStatus ==
-            DeviceContactLinkStatus.MISSING
+        Column(
+            horizontalAlignment =
+                Alignment.CenterHorizontally,
+            verticalArrangement =
+                Arrangement.spacedBy(10.dp)
         ) {
-
-            Spacer(
-                modifier = Modifier.height(4.dp)
+            Icon(
+                imageVector = Icons.Default.Contacts,
+                contentDescription = null
             )
 
             Text(
-                text = "Phone contact missing",
+                text = "No contacts yet",
                 style =
-                    MaterialTheme.typography.labelSmall,
-                color =
-                    MaterialTheme.colorScheme.error
-            )
-        }
-
-        if (contact.deviceContactId != null) {
-            Spacer(
-                modifier = Modifier.height(4.dp)
+                    MaterialTheme.typography.titleMedium
             )
 
             Text(
-                text = "Linked to phone contacts",
+                text =
+                    "Tap + to import a SecureChat contact or add people from your device.",
                 style =
-                    MaterialTheme.typography.labelSmall,
-                color =
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                    MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
             )
         }
     }
@@ -290,31 +309,121 @@ private fun ContactRow(
 
 @Composable
 private fun ErrorContent(
-    message: String
+    message: String,
+    onImportContact: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment =
+                Alignment.CenterHorizontally,
+            verticalArrangement =
+                Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "Could not load contacts",
+                style =
+                    MaterialTheme.typography.titleMedium
+            )
+
+            Text(
+                text = message,
+                style =
+                    MaterialTheme.typography.bodyMedium,
+                color =
+                    MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center
+            )
+
+            Button(
+                onClick = onImportContact
+            ) {
+                Text("Import contact")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ImportContactSheet(
+    onClose: () -> Unit,
+    onImportContact: () -> Unit,
+    onImportDeviceContacts: () -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment =
-            Alignment.CenterHorizontally,
-        verticalArrangement =
-            Arrangement.Center
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 24.dp)
     ) {
-        Text(
-            text = "Could not load contacts",
-            style =
-                MaterialTheme.typography.titleLarge,
-            color =
-                MaterialTheme.colorScheme.error
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Add contact",
+                style =
+                    MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f)
+            )
+
+            IconButton(
+                onClick = onClose
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Close"
+                )
+            }
+        }
+
+        ListItem(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    onClick = onImportContact
+                ),
+            leadingContent = {
+                Icon(
+                    imageVector = Icons.Default.PersonAdd,
+                    contentDescription = null
+                )
+            },
+            headlineContent = {
+                Text("Import SecureChat contact")
+            },
+            supportingContent = {
+                Text(
+                    "Scan a QR code or paste a SecureChat identity"
+                )
+            }
         )
 
-        Spacer(
-            modifier = Modifier.height(8.dp)
-        )
-
-        Text(
-            text = message,
-            style =
-                MaterialTheme.typography.bodyMedium
+        ListItem(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    onClick = onImportDeviceContacts
+                ),
+            leadingContent = {
+                Icon(
+                    imageVector = Icons.Default.Contacts,
+                    contentDescription = null
+                )
+            },
+            headlineContent = {
+                Text("Import from device")
+            },
+            supportingContent = {
+                Text(
+                    "Add people from your address book"
+                )
+            }
         )
     }
 }
