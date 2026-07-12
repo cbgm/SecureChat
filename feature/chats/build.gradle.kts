@@ -57,6 +57,9 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            implementation(projects.data.database)
+            implementation(projects.core)
+            implementation(projects.feature.contacts)
             implementation(libs.kotlinx.coroutines.core)
 
             implementation(libs.compose.runtime)

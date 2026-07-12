@@ -13,34 +13,40 @@ class ChatsViewModel(
 ) : ViewModel() {
 
     val uiState: StateFlow<ChatsUiState> =
-        chatsRepository.conversations
+        chatsRepository
+            .observeConversations()
             .map { conversations ->
-                val items = conversations
-                    .sortedByDescending {
-                        it.lastMessage?.timestamp ?: 0L
-                    }
-                    .map { conversation ->
-                        ChatListItem(
-                            contactId =
-                                conversation.contactId,
-                            contactName =
-                                conversation.contactName,
-                            lastMessage =
-                                conversation.lastMessage
-                                    ?.text
-                                    ?: "No messages yet",
-                            timestamp = ""
-                        )
-                    }
-
                 ChatsUiState(
-                    conversations = items
+                    conversations =
+                        conversations.map {
+                                conversation ->
+
+                            ChatListItem(
+                                contactId =
+                                    conversation.contactId,
+                                contactName =
+                                    conversation.contactName,
+                                lastMessage =
+                                    conversation
+                                        .lastMessage
+                                        ?.text
+                                        ?: "No messages yet",
+                                timestamp =
+                                    conversation
+                                        .lastMessage
+                                        ?.timestamp
+                                        ?.toString()
+                                        .orEmpty()
+                            )
+                        }
                 )
             }
             .stateIn(
                 scope = viewModelScope,
                 started =
-                    SharingStarted.WhileSubscribed(5_000),
+                    SharingStarted.WhileSubscribed(
+                        stopTimeoutMillis = 5_000
+                    ),
                 initialValue = ChatsUiState()
             )
 }

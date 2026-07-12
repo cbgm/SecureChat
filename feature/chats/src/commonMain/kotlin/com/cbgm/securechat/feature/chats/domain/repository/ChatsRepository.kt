@@ -1,25 +1,23 @@
 package com.cbgm.securechat.feature.chats.domain.repository
 
-import com.cbgm.securechat.feature.chats.domain.model.ChatMessage
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 
 interface ChatsRepository {
 
-    val conversations: StateFlow<List<Conversation>>
+    fun observeConversations():
+            Flow<List<Conversation>>
 
     fun observeConversation(
         contactId: String
-    ): StateFlow<Conversation?>
+    ): Flow<Conversation?>
 
-    fun createConversation(
-        contactId: String,
-        contactName: String
+    suspend fun createConversation(
+        contactId: String
     )
 
-    fun sendMessage(
+    suspend fun sendMessage(
         contactId: String,
-        contactName: String,
         text: String
     )
 }

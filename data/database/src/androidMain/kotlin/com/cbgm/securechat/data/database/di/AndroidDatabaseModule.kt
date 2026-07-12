@@ -23,4 +23,9 @@ val androidDatabaseModule = module {
         get<SecureChatDatabase>()
             .contactDao()
     }
+
+    single {
+        get<SecureChatDatabase>()
+            .chatDao()
+    }
 }

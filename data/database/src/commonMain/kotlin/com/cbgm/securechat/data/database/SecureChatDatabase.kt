@@ -3,21 +3,23 @@ package com.cbgm.securechat.data.database
 import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import com.cbgm.securechat.data.database.dao.ChatDao
 import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.data.database.entity.ContactEntity
 import com.cbgm.securechat.data.database.entity.ContactPhoneNumberEntity
 import com.cbgm.securechat.data.database.entity.ContactPublicIdentityEntity
+import com.cbgm.securechat.data.database.entity.ConversationEntity
+import com.cbgm.securechat.data.database.entity.MessageEntity
 
-/**
- * Main SecureChat Room database.
- */
 @Database(
     entities = [
         ContactEntity::class,
         ContactPublicIdentityEntity::class,
-        ContactPhoneNumberEntity::class
+        ContactPhoneNumberEntity::class,
+        ConversationEntity::class,
+        MessageEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 @ConstructedBy(
@@ -27,4 +29,6 @@ abstract class SecureChatDatabase :
     RoomDatabase() {
 
     abstract fun contactDao(): ContactDao
+
+    abstract fun chatDao(): ChatDao
 }
