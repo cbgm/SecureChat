@@ -58,6 +58,7 @@ fun ShareIdentityScreen(
     onPhoneNumberChanged: (String) -> Unit,
     onGenerateClick: () -> Unit,
     onBack: () -> Unit,
+    showBackButton: Boolean = true,
     onCopyIdentity: () -> Unit,
     onShareIdentity: () -> Unit,
     snackbarHostState: SnackbarHostState,
@@ -89,17 +90,18 @@ fun ShareIdentityScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(
-                        onClick = onBack
-                    ) {
-                        Icon(
-                            imageVector =
-                                Icons.AutoMirrored
-                                    .Filled
-                                    .ArrowBack,
-                            contentDescription =
-                                "Back"
-                        )
+                    if (showBackButton) {
+                        IconButton(
+                            onClick = onBack
+                        ) {
+                            Icon(
+                                imageVector =
+                                    Icons.AutoMirrored
+                                        .Filled
+                                        .ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
                     }
                 },
                 actions = {

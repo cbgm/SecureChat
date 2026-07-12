@@ -20,6 +20,7 @@ import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
 import com.cbgm.securechat.feature.identity.domain.model.SharedContactDetails
 import com.cbgm.securechat.feature.identity.domain.model.SharedIdentityPayload
 import com.cbgm.securechat.feature.identity.sharing.rememberIdentityShareLauncher
+import com.cbgm.securechat.main.MainScreen
 import com.cbgm.securechat.startup.StartupRoute
 import org.koin.compose.koinInject
 
@@ -104,6 +105,21 @@ fun AppNavigation() {
                         AppDestination.ContactDetails(
                             contactId = contactId
                         )
+                    )
+                }
+            )
+        }
+
+        composable<AppDestination.Main> {
+            MainScreen(
+                onImportContact = {
+                    navController.navigate(
+                        AppDestination.ImportContact
+                    )
+                },
+                onContacts = {
+                    navController.navigate(
+                        AppDestination.Contacts
                     )
                 }
             )
@@ -224,7 +240,7 @@ fun AppNavigation() {
             StartupRoute(
                 onStartupComplete = {
                     navController.navigate(
-                        AppDestination.Identity
+                        AppDestination.Main
                     ) {
                         popUpTo(
                             AppDestination.Startup

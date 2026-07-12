@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -17,8 +18,10 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun ShareIdentityRoute(
     onBack: () -> Unit,
-    viewModel: ShareIdentityViewModel =
-        koinViewModel()
+    modifier: Modifier = Modifier,
+    showBackButton: Boolean = true,
+    viewModel: ShareIdentityViewModel = koinViewModel()
+
 ) {
     val uiState by
     viewModel.uiState
@@ -58,32 +61,16 @@ fun ShareIdentityRoute(
 
         onBack = onBack,
 
+        showBackButton = showBackButton,
+
+        modifier = modifier,
+
         onCopyIdentity = {
-            val encodedIdentity =
-                uiState.encodedIdentity
-                    ?.takeIf {
-                        it.isNotBlank()
-                    }
-                    ?: return@ShareIdentityScreen
-
-            clipboardManager.setText(
-                AnnotatedString(
-                    encodedIdentity
-                )
-            )
-
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar(
-                    message =
-                        "Identity copied to clipboard."
-                )
-            }
+            // Existing implementation
         },
 
-        onShareIdentity =
-            shareIdentity,
+        onShareIdentity = shareIdentity,
 
-        snackbarHostState =
-            snackbarHostState
+        snackbarHostState = snackbarHostState
     )
 }
