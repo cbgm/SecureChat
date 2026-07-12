@@ -61,6 +61,7 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":core"))
             implementation(project(":data:database"))
+            implementation(project(":feature:identity"))
 
             implementation(libs.kotlinx.coroutines.core)
 
