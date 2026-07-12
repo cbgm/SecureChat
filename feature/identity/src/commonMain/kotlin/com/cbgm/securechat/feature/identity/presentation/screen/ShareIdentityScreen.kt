@@ -1,29 +1,55 @@
 package com.cbgm.securechat.feature.identity.presentation.screen
 
-import androidx.compose.foundation.layout.Row
-import com.cbgm.securechat.feature.identity.presentation.model.ShareIdentityUiState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.feature.identity.presentation.model.ShareIdentityUiState
 import com.cbgm.securechat.feature.identity.qr.QrCode
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShareIdentityScreen(
     uiState: ShareIdentityUiState,
@@ -34,136 +60,530 @@ fun ShareIdentityScreen(
     onBack: () -> Unit,
     onCopyIdentity: () -> Unit,
     onShareIdentity: () -> Unit,
+    snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
+    var showOverflowMenu by
+    remember {
+        mutableStateOf(false)
+    }
+
+    var showRawIdentity by
+    remember {
+        mutableStateOf(false)
+    }
+
+    Scaffold(
+        modifier = modifier,
+        snackbarHost = {
+            SnackbarHost(
+                hostState =
+                    snackbarHostState
+            )
+        },
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Share identity"
+                    )
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = onBack
+                    ) {
+                        Icon(
+                            imageVector =
+                                Icons.AutoMirrored
+                                    .Filled
+                                    .ArrowBack,
+                            contentDescription =
+                                "Back"
+                        )
+                    }
+                },
+                actions = {
+                    if (
+                        !uiState
+                            .encodedIdentity
+                            .isNullOrBlank()
+                    ) {
+                        Box {
+                            IconButton(
+                                onClick = {
+                                    showOverflowMenu =
+                                        true
+                                }
+                            ) {
+                                Icon(
+                                    imageVector =
+                                        Icons.Default.MoreVert,
+                                    contentDescription =
+                                        "More options"
+                                )
+                            }
+
+                            DropdownMenu(
+                                expanded =
+                                    showOverflowMenu,
+                                onDismissRequest = {
+                                    showOverflowMenu =
+                                        false
+                                }
+                            ) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text =
+                                                "Copy identity"
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector =
+                                                Icons.Default
+                                                    .ContentCopy,
+                                            contentDescription =
+                                                null
+                                        )
+                                    },
+                                    onClick = {
+                                        showOverflowMenu =
+                                            false
+
+                                        onCopyIdentity()
+                                    }
+                                )
+
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text =
+                                                if (
+                                                    showRawIdentity
+                                                ) {
+                                                    "Hide raw identity"
+                                                } else {
+                                                    "Show raw identity"
+                                                }
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector =
+                                                Icons.Default
+                                                    .Visibility,
+                                            contentDescription =
+                                                null
+                                        )
+                                    },
+                                    onClick = {
+                                        showOverflowMenu =
+                                            false
+
+                                        showRawIdentity =
+                                            !showRawIdentity
+                                    }
+                                )
+
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text =
+                                                "Regenerate"
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector =
+                                                Icons.Default.Refresh,
+                                            contentDescription =
+                                                null
+                                        )
+                                    },
+                                    onClick = {
+                                        showOverflowMenu =
+                                            false
+
+                                        onGenerateClick()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(
+                    rememberScrollState()
+                )
+                .padding(
+                    horizontal = 24.dp,
+                    vertical = 20.dp
+                ),
+            horizontalAlignment =
+                Alignment.CenterHorizontally
+        ) {
+            if (
+                uiState.encodedIdentity
+                    .isNullOrBlank()
+            ) {
+                IdentityOptionsContent(
+                    uiState = uiState,
+
+                    onIncludeContactDetailsChanged =
+                        onIncludeContactDetailsChanged,
+
+                    onDisplayNameChanged =
+                        onDisplayNameChanged,
+
+                    onPhoneNumberChanged =
+                        onPhoneNumberChanged,
+
+                    onGenerateClick =
+                        onGenerateClick
+                )
+            } else {
+                GeneratedIdentityContent(
+                    encodedIdentity =
+                        uiState.encodedIdentity,
+
+                    isGenerating =
+                        uiState.isGenerating,
+
+                    showRawIdentity =
+                        showRawIdentity,
+
+                    onShareIdentity =
+                        onShareIdentity,
+
+                    onRegenerate =
+                        onGenerateClick
+                )
+            }
+
+            uiState.errorMessage
+                ?.let { message ->
+                    Spacer(
+                        modifier =
+                            Modifier.height(20.dp)
+                    )
+
+                    Text(
+                        text = message,
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .error,
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodyMedium,
+                        textAlign =
+                            TextAlign.Center
+                    )
+                }
+        }
+    }
+}
+
+@Composable
+private fun IdentityOptionsContent(
+    uiState: ShareIdentityUiState,
+    onIncludeContactDetailsChanged: (Boolean) -> Unit,
+    onDisplayNameChanged: (String) -> Unit,
+    onPhoneNumberChanged: (String) -> Unit,
+    onGenerateClick: () -> Unit
+) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier =
+            Modifier.fillMaxWidth(),
         verticalArrangement =
             Arrangement.spacedBy(16.dp)
     ) {
-        OutlinedButton(
-            onClick = onBack
-        ) {
-            Text("Back")
-        }
-
         Text(
-            text = "Share identity",
-            style = MaterialTheme.typography.headlineMedium
+            text =
+                "Create a QR code containing your SecureChat public identity.",
+            style =
+                MaterialTheme.typography
+                    .titleMedium
         )
 
         Text(
             text =
-                "Both public keys are always included. " +
-                        "Adding your name and phone number is optional.",
-            style = MaterialTheme.typography.bodyMedium
+                "Your public encryption and signing keys are always included. Your private keys never leave this device.",
+            style =
+                MaterialTheme.typography
+                    .bodyMedium,
+            color =
+                MaterialTheme.colorScheme
+                    .onSurfaceVariant
         )
 
+        HorizontalDivider()
+
         Row(
+            modifier =
+                Modifier.fillMaxWidth(),
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
             Checkbox(
                 checked =
-                    uiState.includeContactDetails,
+                    uiState
+                        .includeContactDetails,
 
                 onCheckedChange =
                     onIncludeContactDetailsChanged
             )
 
-            Text(
-                text = "Include contact details"
-            )
-        }
-
-        if (uiState.includeContactDetails) {
-            OutlinedTextField(
-                value = uiState.displayName,
-                onValueChange =
-                    onDisplayNameChanged,
+            Column(
                 modifier =
-                    Modifier.fillMaxWidth(),
-                label = {
-                    Text("Display name")
-                },
-                singleLine = true
-            )
-
-            OutlinedTextField(
-                value = uiState.phoneNumber,
-                onValueChange =
-                    onPhoneNumberChanged,
-                modifier =
-                    Modifier.fillMaxWidth(),
-                label = {
-                    Text("Phone number")
-                },
-                singleLine = true
-            )
-        }
-
-        Button(
-            onClick = onGenerateClick,
-            enabled = !uiState.isGenerating
-        ) {
-            if (uiState.isGenerating) {
-                CircularProgressIndicator()
-            } else {
-                Text("Generate share text")
-            }
-        }
-
-        uiState.encodedIdentity?.let {
-            QrCode(
-                content = it,
-                modifier = Modifier.size(260.dp)
-            )
-
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
-
-            Button(
-                onClick = onCopyIdentity
-            ) {
-                Text("Copy identity")
-            }
-
-            /*Spacer(
-                modifier = Modifier.height(16.dp)
-            )
-
-            Text(
-                text = uiState.encodedIdentity,
-                style = MaterialTheme.typography.bodySmall
-            )*/
-
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
-
-            OutlinedButton(
-                onClick = onShareIdentity,
-                enabled =
-                    uiState.encodedIdentity.isNotBlank(),
-                modifier =
-                    Modifier.fillMaxWidth()
+                    Modifier.weight(1f)
             ) {
                 Text(
-                    text = "Share identity…"
+                    text =
+                        "Include contact details",
+                    style =
+                        MaterialTheme.typography
+                            .bodyLarge
+                )
+
+                Text(
+                    text =
+                        "Add your display name and phone number.",
+                    style =
+                        MaterialTheme.typography
+                            .bodySmall,
+                    color =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant
                 )
             }
         }
 
+        if (
+            uiState.includeContactDetails
+        ) {
+            OutlinedTextField(
+                value =
+                    uiState.displayName,
 
-        uiState.errorMessage?.let { message ->
-            Text(
-                text = message,
-                color =
-                    MaterialTheme.colorScheme.error
+                onValueChange =
+                    onDisplayNameChanged,
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                label = {
+                    Text(
+                        text =
+                            "Display name"
+                    )
+                },
+
+                singleLine = true
+            )
+
+            OutlinedTextField(
+                value =
+                    uiState.phoneNumber,
+
+                onValueChange =
+                    onPhoneNumberChanged,
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                label = {
+                    Text(
+                        text =
+                            "Phone number"
+                    )
+                },
+
+                singleLine = true
             )
         }
+
+        Spacer(
+            modifier =
+                Modifier.height(8.dp)
+        )
+
+        Button(
+            onClick =
+                onGenerateClick,
+
+            enabled =
+                !uiState.isGenerating,
+
+            modifier =
+                Modifier.fillMaxWidth()
+        ) {
+            if (uiState.isGenerating) {
+                CircularProgressIndicator(
+                    modifier =
+                        Modifier.size(20.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text(
+                    text =
+                        "Create QR code"
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GeneratedIdentityContent(
+    encodedIdentity: String,
+    isGenerating: Boolean,
+    showRawIdentity: Boolean,
+    onShareIdentity: () -> Unit,
+    onRegenerate: () -> Unit
+) {
+    Text(
+        text =
+            "Your SecureChat identity",
+        style =
+            MaterialTheme.typography
+                .headlineSmall,
+        textAlign =
+            TextAlign.Center
+    )
+
+    Spacer(
+        modifier =
+            Modifier.height(8.dp)
+    )
+
+    Text(
+        text =
+            "Another SecureChat user can scan this QR code to add you.",
+        style =
+            MaterialTheme.typography
+                .bodyMedium,
+        color =
+            MaterialTheme.colorScheme
+                .onSurfaceVariant,
+        textAlign =
+            TextAlign.Center
+    )
+
+    Spacer(
+        modifier =
+            Modifier.height(24.dp)
+    )
+
+    QrCode(
+        content =
+            encodedIdentity,
+        modifier =
+            Modifier.size(280.dp)
+    )
+
+    Spacer(
+        modifier =
+            Modifier.height(24.dp)
+    )
+
+    Button(
+        onClick =
+            onShareIdentity,
+
+        modifier =
+            Modifier.fillMaxWidth()
+    ) {
+        Icon(
+            imageVector =
+                Icons.Default.Share,
+            contentDescription = null
+        )
+
+        Spacer(
+            modifier =
+                Modifier.size(8.dp)
+        )
+
+        Text(
+            text =
+                "Share identity"
+        )
+    }
+
+    Spacer(
+        modifier =
+            Modifier.height(8.dp)
+    )
+
+    TextButton(
+        onClick =
+            onRegenerate,
+
+        enabled =
+            !isGenerating
+    ) {
+        if (isGenerating) {
+            CircularProgressIndicator(
+                modifier =
+                    Modifier.size(18.dp),
+                strokeWidth = 2.dp
+            )
+        } else {
+            Text(
+                text =
+                    "Change included details"
+            )
+        }
+    }
+
+    if (showRawIdentity) {
+        Spacer(
+            modifier =
+                Modifier.height(20.dp)
+        )
+
+        HorizontalDivider()
+
+        Spacer(
+            modifier =
+                Modifier.height(16.dp)
+        )
+
+        Text(
+            text =
+                "Raw identity",
+            style =
+                MaterialTheme.typography
+                    .titleSmall,
+            modifier =
+                Modifier.fillMaxWidth()
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(8.dp)
+        )
+
+        Text(
+            text =
+                encodedIdentity,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            style =
+                MaterialTheme.typography
+                    .bodySmall,
+            fontFamily =
+                FontFamily.Monospace
+        )
     }
 }

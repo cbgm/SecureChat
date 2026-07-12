@@ -1,14 +1,10 @@
 package com.cbgm.securechat.feature.identity.presentation
 
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -21,10 +17,11 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun ShareIdentityRoute(
     onBack: () -> Unit,
-    viewModel: ShareIdentityViewModel = koinViewModel()
+    viewModel: ShareIdentityViewModel =
+        koinViewModel()
 ) {
-    val uiState by viewModel
-        .uiState
+    val uiState by
+    viewModel.uiState
         .collectAsStateWithLifecycle()
 
     val shareIdentity =
@@ -33,57 +30,60 @@ fun ShareIdentityRoute(
                 uiState.encodedIdentity.orEmpty()
         )
 
-    val clipboardManager = LocalClipboardManager.current
+    val clipboardManager =
+        LocalClipboardManager.current
 
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    val coroutineScope = rememberCoroutineScope()
-
-    Scaffold(
-        snackbarHost = {
-            SnackbarHost(
-                hostState = snackbarHostState
-            )
+    val snackbarHostState =
+        remember {
+            SnackbarHostState()
         }
-    ) { innerPadding ->
 
-        ShareIdentityScreen(
-            uiState = uiState,
+    val coroutineScope =
+        rememberCoroutineScope()
 
-            onIncludeContactDetailsChanged =
-                viewModel::onIncludeContactDetailsChanged,
+    ShareIdentityScreen(
+        uiState = uiState,
 
-            onDisplayNameChanged =
-                viewModel::onDisplayNameChanged,
+        onIncludeContactDetailsChanged =
+            viewModel::onIncludeContactDetailsChanged,
 
-            onPhoneNumberChanged =
-                viewModel::onPhoneNumberChanged,
+        onDisplayNameChanged =
+            viewModel::onDisplayNameChanged,
 
-            onGenerateClick =
-                viewModel::generateSharedIdentity,
+        onPhoneNumberChanged =
+            viewModel::onPhoneNumberChanged,
 
-            onBack = onBack,
+        onGenerateClick =
+            viewModel::generateSharedIdentity,
 
-            onCopyIdentity = {
+        onBack = onBack,
 
-                uiState.encodedIdentity?.let {
-                    clipboardManager.setText(
-                        AnnotatedString(
-                            it
-                        )
-                    )
-
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar(
-                            message = "Identity copied to clipboard."
-                        )
+        onCopyIdentity = {
+            val encodedIdentity =
+                uiState.encodedIdentity
+                    ?.takeIf {
+                        it.isNotBlank()
                     }
-                }
-            },
+                    ?: return@ShareIdentityScreen
 
-            onShareIdentity = shareIdentity,
+            clipboardManager.setText(
+                AnnotatedString(
+                    encodedIdentity
+                )
+            )
 
-            modifier = Modifier.padding(innerPadding)
-        )
-    }
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(
+                    message =
+                        "Identity copied to clipboard."
+                )
+            }
+        },
+
+        onShareIdentity =
+            shareIdentity,
+
+        snackbarHostState =
+            snackbarHostState
+    )
 }
