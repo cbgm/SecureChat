@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="320dp"
+    android:viewportWidth="320"
+    android:viewportHeight="320">
+
+    <!-- Outer soft glow -->
+    <path
+        android:fillColor="#1635E6FF"
+        android:pathData="
+            M160,30
+            C85,30 35,80 35,160
+            C35,240 85,290 160,290
+            C235,290 285,240 285,160
+            C285,80 235,30 160,30
+            Z" />
+
+    <!-- Shield fill -->
+    <path
+        android:fillColor="#2410BBD4"
+        android:pathData="
+            M160,38
+            C127,62 94,76 62,85
+            V158
+            C62,217 99,260 160,286
+            C221,260 258,217 258,158
+            V85
+            C226,76 193,62 160,38
+            Z" />
+
+    <!-- Shield outline -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#35E6FF"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="
+            M160,38
+            C127,62 94,76 62,85
+            V158
+            C62,217 99,260 160,286
+            C221,260 258,217 258,158
+            V85
+            C226,76 193,62 160,38
+            Z" />
+
+    <!-- Inner shield line -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#8035E6FF"
+        android:strokeWidth="3"
+        android:strokeLineJoin="round"
+        android:pathData="
+            M160,56
+            C132,75 104,88 80,95
+            V157
+            C80,205 109,239 160,262
+            C211,239 240,205 240,157
+            V95
+            C216,88 188,75 160,56
+            Z" />
+
+    <!-- Chat bubble fill -->
+    <path
+        android:fillColor="#2618BFD5"
+        android:pathData="
+            M105,111
+            C105,82 129,66 162,66
+            C196,66 220,86 220,116
+            C220,146 195,168 162,168
+            H139
+            L112,190
+            L119,160
+            C110,147 105,132 105,111
+            Z" />
+
+    <!-- Chat bubble outline -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#35E6FF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="
+            M105,111
+            C105,82 129,66 162,66
+            C196,66 220,86 220,116
+            C220,146 195,168 162,168
+            H139
+            L112,190
+            L119,160
+            C110,147 105,132 105,111
+            Z" />
+
+    <!-- Message dots -->
+    <path
+        android:fillColor="#35E6FF"
+        android:pathData="
+            M135,116
+            a7,7 0,1 0,14,0
+            a7,7 0,1 0,-14,0" />
+
+    <path
+        android:fillColor="#35E6FF"
+        android:pathData="
+            M157,116
+            a7,7 0,1 0,14,0
+            a7,7 0,1 0,-14,0" />
+
+    <path
+        android:fillColor="#35E6FF"
+        android:pathData="
+            M179,116
+            a7,7 0,1 0,14,0
+            a7,7 0,1 0,-14,0" />
+
+    <!-- Network lines -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#5535E6FF"
+        android:strokeWidth="2"
+        android:pathData="
+            M85,101 L112,128
+            M235,103 L214,133
+            M92,194 L127,164
+            M229,194 L196,164
+            M160,259 L160,170" />
+
+    <!-- Network nodes -->
+    <path
+        android:fillColor="#35E6FF"
+        android:pathData="
+            M82,98
+            a5,5 0,1 0,10,0
+            a5,5 0,1 0,-10,0" />
+
+    <path
+        android:fillColor="#35E6FF"
+        android:pathData="
+            M230,99
+            a5,5 0,1 0,10,0
+            a5,5 0,1 0,-10,0" />
+
+    <path
+        android:fillColor="#35E6FF"
+        android:pathData="
+            M88,194
+            a5,5 0,1 0,10,0
+            a5,5 0,1 0,-10,0" />
+
+    <path
+        android:fillColor="#35E6FF"
+        android:pathData="
+            M224,194
+            a5,5 0,1 0,10,0
+            a5,5 0,1 0,-10,0" />
+
+    <path
+        android:fillColor="#35E6FF"
+        android:pathData="
+            M155,255
+            a5,5 0,1 0,10,0
+            a5,5 0,1 0,-10,0" />
+
+</vector>

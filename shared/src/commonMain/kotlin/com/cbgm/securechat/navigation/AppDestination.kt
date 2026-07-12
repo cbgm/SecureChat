@@ -22,5 +22,8 @@ sealed interface AppDestination {
     data object ScanIdentity : AppDestination
 
     @Serializable
+    data object Startup : AppDestination
+
+    @Serializable
     data object ImportContact : AppDestination
 }

@@ -2,6 +2,7 @@ package com.cbgm.securechat.feature.identity.di
 
 import com.cbgm.securechat.feature.identity.core.IdentityCrypto
 import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
+import com.cbgm.securechat.feature.identity.core.PublicIdentityStorage
 import com.cbgm.securechat.feature.identity.data.repository.DefaultIdentityRepository
 import com.cbgm.securechat.feature.identity.data.sharing.DefaultIdentityShareCodec
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
@@ -11,6 +12,8 @@ import com.cbgm.securechat.feature.identity.domain.usecase.GetIdentityStatus
 import com.cbgm.securechat.feature.identity.domain.usecase.GetPublicIdentity
 import com.cbgm.securechat.feature.identity.presentation.screen.IdentityViewModel
 import com.cbgm.securechat.feature.identity.presentation.screen.ShareIdentityViewModel
+import com.cbgm.securechat.feature.identity.startup.DefaultIdentityStartupManager
+import com.cbgm.securechat.feature.identity.startup.IdentityStartupManager
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
@@ -48,6 +51,30 @@ val identityModule = module {
 
     single<IdentityShareCodec> {
         DefaultIdentityShareCodec()
+    }
+
+    single<IdentityStartupManager> {
+        DefaultIdentityStartupManager(
+            identityExists = {
+                /*
+                 * Replace with your existing identity existence API.
+                 *
+                 * Example:
+                 * get<PublicIdentityStorage>().exists()
+                 */
+                get<PublicIdentityStorage>()
+                    .exists()
+            },
+
+            createIdentity = {
+                /*
+                 * Replace CreateIdentity with the existing use-case
+                 * class that generates and persists both key pairs.
+                 */
+                get<CreateIdentity>()()
+                    .map { Unit }
+            }
+        )
     }
 
     factory {

@@ -11,6 +11,7 @@ import com.cbgm.securechat.feature.identity.presentation.ShareIdentityRoute
 import com.cbgm.securechat.feature.contactimport.scanning.ScanIdentityRoute
 import com.cbgm.securechat.feature.contacts.presentation.contactdetails.ContactDetailsRoute
 import com.cbgm.securechat.feature.contacts.presentation.contacts.ContactsRoute
+import com.cbgm.securechat.startup.StartupRoute
 
 @Composable
 fun AppNavigation() {
@@ -18,7 +19,8 @@ fun AppNavigation() {
 
     NavHost(
         navController = navController,
-        startDestination = AppDestination.Identity
+        startDestination =
+            AppDestination.Startup
     ) {
         composable<AppDestination.Identity> {
             IdentityRoute(
@@ -130,6 +132,22 @@ fun AppNavigation() {
 
                 onBack = {
                     navController.popBackStack()
+                }
+            )
+        }
+
+        composable<AppDestination.Startup> {
+            StartupRoute(
+                onStartupComplete = {
+                    navController.navigate(
+                        AppDestination.Identity
+                    ) {
+                        popUpTo(
+                            AppDestination.Startup
+                        ) {
+                            inclusive = true
+                        }
+                    }
                 }
             )
         }

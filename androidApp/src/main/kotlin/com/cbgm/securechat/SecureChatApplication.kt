@@ -8,6 +8,7 @@ import com.cbgm.securechat.data.database.di.androidDatabaseModule
 import com.cbgm.securechat.di.sharedModule
 import com.cbgm.securechat.feature.contactimport.di.contactImportModule
 import com.cbgm.securechat.feature.contacts.di.contactsModule
+import com.cbgm.securechat.startup.startupModule
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -54,7 +55,8 @@ class SecureChatApplication : Application() {
                 contactsModule,
                 appModule,
                 sharedModule,
-                contactImportModule
+                contactImportModule,
+                startupModule
             )
         }
     }
