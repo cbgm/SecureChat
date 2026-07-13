@@ -3,22 +3,22 @@ package com.cbgm.securechat.feature.chats.domain.model
 enum class MessageContentStatus {
 
     /**
-     * Message content is available to display.
+     * Content is available and can be displayed.
      */
     READABLE,
 
     /**
-     * The local encrypted-at-rest copy could not be decrypted.
+     * The transport packet itself could not be decoded.
      */
-    LOCAL_DECRYPTION_FAILED,
+    INVALID_PACKET,
 
     /**
-     * A received plaintext packet was malformed.
+     * A plaintext packet did not contain valid UTF-8.
      */
     INVALID_PLAINTEXT_PACKET,
 
     /**
-     * A received encrypted transport packet could not be decrypted.
+     * A sealed-box packet could not be decrypted.
      */
     TRANSPORT_DECRYPTION_FAILED
 }

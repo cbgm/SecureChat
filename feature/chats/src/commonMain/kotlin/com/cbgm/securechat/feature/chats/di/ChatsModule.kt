@@ -1,6 +1,5 @@
 package com.cbgm.securechat.feature.chats.di
 
-import com.cbgm.securechat.data.database.SecureChatDatabase
 import com.cbgm.securechat.feature.chats.data.repository.DefaultChatsRepository
 import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
 import com.cbgm.securechat.feature.chats.presentation.ChatViewModel
@@ -13,10 +12,20 @@ val chatsModule =
 
         single<ChatsRepository> {
             DefaultChatsRepository(
-                chatDao = get(),
-                getContact = get(),
-                transportMessageCipher = get(),
-                transportPayloadCodec = get()
+                chatDao =
+                    get(),
+
+                getContact =
+                    get(),
+
+                transportMessageCipher =
+                    get(),
+
+                transportPayloadCodec =
+                    get(),
+
+                incomingTransportMessageDecoder =
+                    get()
             )
         }
 

@@ -1,6 +1,8 @@
 package com.cbgm.securechat.feature.chats.data.repository
 
+import com.cbgm.securechat.core.crypto.transport.DecodedTransportMessage
 import com.cbgm.securechat.core.crypto.transport.EncryptedTransportPayload
+import com.cbgm.securechat.core.crypto.transport.IncomingTransportMessageDecoder
 import com.cbgm.securechat.core.crypto.transport.TransportEncryptionMode
 import com.cbgm.securechat.core.crypto.transport.TransportMessageCipher
 import com.cbgm.securechat.core.crypto.transport.TransportPayloadCodec
@@ -25,8 +27,12 @@ import kotlin.random.Random
 class DefaultChatsRepository(
     private val chatDao: ChatDao,
     private val getContact: GetContact,
-    private val transportMessageCipher: TransportMessageCipher,
-    private val transportPayloadCodec: TransportPayloadCodec
+    private val transportMessageCipher:
+    TransportMessageCipher,
+    private val transportPayloadCodec:
+    TransportPayloadCodec,
+    private val incomingTransportMessageDecoder:
+    IncomingTransportMessageDecoder
 ) : ChatsRepository {
 
     override fun observeConversations():
@@ -71,12 +77,19 @@ class DefaultChatsRepository(
 
         chatDao.upsertConversation(
             ConversationEntity(
-                id = createId(
-                    prefix = "conversation"
-                ),
-                contactId = contactId,
-                createdAtEpochMilliseconds = now,
-                updatedAtEpochMilliseconds = now
+                id =
+                    createId(
+                        prefix = "conversation"
+                    ),
+
+                contactId =
+                    contactId,
+
+                createdAtEpochMilliseconds =
+                    now,
+
+                updatedAtEpochMilliseconds =
+                    now
             )
         )
     }
@@ -101,36 +114,19 @@ class DefaultChatsRepository(
                     "Contact was not found"
                 )
 
-        createConversation(
-            contactId = contactId
-        )
-
         val conversation =
-            chatDao.findConversationByContactId(
+            getOrCreateConversation(
                 contactId = contactId
             )
-                ?: error(
-                    "Conversation was not created"
-                )
 
-        /*
-         * Exact security behavior:
-         *
-         * 1. Phone contact without public keys:
-         *    PLAINTEXT
-         *
-         * 2. We have their keys, but they do not have ours:
-         *    PLAINTEXT
-         *
-         * 3. Both sides have each other's keys:
-         *    SEALED_BOX
-         */
         val transportPayload =
-            createTransportPayload(
+            createOutgoingTransportPayload(
                 plaintext =
                     normalizedText
                         .encodeToByteArray(),
-                contact = contact
+
+                contact =
+                    contact
             )
 
         val encodedTransportPayload =
@@ -143,31 +139,32 @@ class DefaultChatsRepository(
 
         chatDao.upsertMessage(
             MessageEntity(
-                id = createId(
-                    prefix = "message"
-                ),
+                id =
+                    createId(
+                        prefix = "message"
+                    ),
+
                 conversationId =
                     conversation.id,
 
-                /*
-                 * Locally readable copy.
-                 *
-                 * This is temporarily stored as plaintext.
-                 * Local database encryption can be added later.
-                 */
-                text = normalizedText,
+                text =
+                    normalizedText,
 
-                /*
-                 * Exact packet that will later be sent
-                 * through the transport layer.
-                 */
                 transportPayload =
                     encodedTransportPayload,
 
                 transportMode =
-                    transportPayload.mode.name,
+                    transportPayload
+                        .mode
+                        .name,
 
-                isMine = true,
+                contentStatus =
+                    MessageContentStatus
+                        .READABLE
+                        .name,
+
+                isMine =
+                    true,
 
                 createdAtEpochMilliseconds =
                     now
@@ -177,27 +174,104 @@ class DefaultChatsRepository(
         chatDao.updateConversationTimestamp(
             conversationId =
                 conversation.id,
-            timestamp = now
+
+            timestamp =
+                now
         )
     }
 
-    private suspend fun createTransportPayload(
+    override suspend fun receiveMessage(
+        contactId: String,
+        encodedTransportPayload: String,
+        localEncryptionPublicKey: ByteArray,
+        localEncryptionPrivateKey: ByteArray
+    ) {
+        require(
+            encodedTransportPayload.isNotBlank()
+        ) {
+            "Incoming transport payload must not be blank"
+        }
+
+        val conversation =
+            getOrCreateConversation(
+                contactId = contactId
+            )
+
+        val decoded =
+            incomingTransportMessageDecoder.decode(
+                encodedPayload =
+                    encodedTransportPayload,
+
+                localPublicKey =
+                    localEncryptionPublicKey,
+
+                localPrivateKey =
+                    localEncryptionPrivateKey
+            )
+
+        val storedMessage =
+            decoded.toStoredIncomingMessage()
+
+        val now =
+            SystemClock.nowEpochMilliseconds()
+
+        chatDao.upsertMessage(
+            MessageEntity(
+                id =
+                    createId(
+                        prefix = "message"
+                    ),
+
+                conversationId =
+                    conversation.id,
+
+                text =
+                    storedMessage.text,
+
+                transportPayload =
+                    encodedTransportPayload,
+
+                transportMode =
+                    storedMessage.transportMode,
+
+                contentStatus =
+                    storedMessage.contentStatus.name,
+
+                isMine =
+                    false,
+
+                createdAtEpochMilliseconds =
+                    now
+            )
+        )
+
+        chatDao.updateConversationTimestamp(
+            conversationId =
+                conversation.id,
+
+            timestamp =
+                now
+        )
+    }
+
+    /**
+     * Transport encryption is active only in state 3:
+     *
+     * 1. no remote public keys -> plaintext
+     * 2. one-way key exchange -> plaintext
+     * 3. mutual key exchange -> sealed box
+     */
+    private suspend fun createOutgoingTransportPayload(
         plaintext: ByteArray,
         contact: Contact
     ): EncryptedTransportPayload {
 
-        val secureIdentity =
+        val identity =
             contact.secureChatIdentity
 
-        /*
-         * State 1:
-         *
-         * Phone contact only.
-         * We do not have their public encryption key.
-         */
         if (
-            secureIdentity == null ||
-            secureIdentity
+            identity == null ||
+            identity
                 .encryptionPublicKey
                 .isEmpty()
         ) {
@@ -206,14 +280,8 @@ class DefaultChatsRepository(
             )
         }
 
-        /*
-         * State 2:
-         *
-         * We possess their public keys, but they have not
-         * confirmed possession of our public keys.
-         */
         if (
-            secureIdentity.keyExchangeStatus !=
+            identity.keyExchangeStatus !=
             KeyExchangeStatus.MUTUAL
         ) {
             return createPlaintextPayload(
@@ -221,19 +289,12 @@ class DefaultChatsRepository(
             )
         }
 
-        /*
-         * State 3:
-         *
-         * We possess their public keys and they possess ours.
-         *
-         * Verification status is deliberately not checked here.
-         * Verification changes trust, not encryption availability.
-         */
         return transportMessageCipher
             .encryptForRecipient(
                 plaintext = plaintext,
+
                 recipientPublicKey =
-                    secureIdentity
+                    identity
                         .encryptionPublicKey
             )
             .getOrThrow()
@@ -244,35 +305,155 @@ class DefaultChatsRepository(
     ): EncryptedTransportPayload {
 
         return EncryptedTransportPayload(
-            version = TRANSPORT_VERSION,
+            version =
+                TRANSPORT_VERSION,
+
             mode =
-                TransportEncryptionMode.PLAINTEXT,
-            payload = plaintext
+                TransportEncryptionMode
+                    .PLAINTEXT,
+
+            payload =
+                plaintext
         )
+    }
+
+    private suspend fun getOrCreateConversation(
+        contactId: String
+    ): ConversationEntity {
+
+        val existing =
+            chatDao.findConversationByContactId(
+                contactId = contactId
+            )
+
+        if (existing != null) {
+            return existing
+        }
+
+        val now =
+            SystemClock.nowEpochMilliseconds()
+
+        val created =
+            ConversationEntity(
+                id =
+                    createId(
+                        prefix = "conversation"
+                    ),
+
+                contactId =
+                    contactId,
+
+                createdAtEpochMilliseconds =
+                    now,
+
+                updatedAtEpochMilliseconds =
+                    now
+            )
+
+        chatDao.upsertConversation(
+            conversation = created
+        )
+
+        return chatDao
+            .findConversationByContactId(
+                contactId = contactId
+            )
+            ?: error(
+                "Conversation could not be created"
+            )
+    }
+
+    private fun DecodedTransportMessage
+            .toStoredIncomingMessage():
+            StoredIncomingMessage {
+
+        return when (this) {
+            is DecodedTransportMessage.Readable -> {
+                StoredIncomingMessage(
+                    text =
+                        plaintext.decodeToString(),
+
+                    transportMode =
+                        mode.name,
+
+                    contentStatus =
+                        MessageContentStatus
+                            .READABLE
+                )
+            }
+
+            is DecodedTransportMessage.InvalidPacket -> {
+                StoredIncomingMessage(
+                    text =
+                        "Invalid message packet",
+
+                    transportMode =
+                        UNKNOWN_TRANSPORT_MODE,
+
+                    contentStatus =
+                        MessageContentStatus
+                            .INVALID_PACKET
+                )
+            }
+
+            is DecodedTransportMessage.InvalidPlaintext -> {
+                StoredIncomingMessage(
+                    text =
+                        "Unable to read plaintext message",
+
+                    transportMode =
+                        TransportEncryptionMode
+                            .PLAINTEXT
+                            .name,
+
+                    contentStatus =
+                        MessageContentStatus
+                            .INVALID_PLAINTEXT_PACKET
+                )
+            }
+
+            is DecodedTransportMessage.DecryptionFailed -> {
+                StoredIncomingMessage(
+                    text =
+                        "Unable to decrypt secure message",
+
+                    transportMode =
+                        TransportEncryptionMode
+                            .SEALED_BOX
+                            .name,
+
+                    contentStatus =
+                        MessageContentStatus
+                            .TRANSPORT_DECRYPTION_FAILED
+                )
+            }
+        }
     }
 
     private fun ConversationWithMessages.toDomain():
             Conversation {
 
-        val domainMessages =
-            messages
-                .sortedBy { message ->
-                    message
-                        .createdAtEpochMilliseconds
-                }
-                .map { message ->
-                    message.toDomain(
-                        contactId =
-                            conversation.contactId
-                    )
-                }
-
         return Conversation(
-            id = conversation.id,
+            id =
+                conversation.id,
+
             contactId =
                 conversation.contactId,
-            contactName = "",
-            messages = domainMessages
+
+            contactName =
+                "",
+
+            messages =
+                messages
+                    .sortedBy {
+                        it.createdAtEpochMilliseconds
+                    }
+                    .map { entity ->
+                        entity.toDomain(
+                            contactId =
+                                conversation.contactId
+                        )
+                    }
         )
     }
 
@@ -281,17 +462,28 @@ class DefaultChatsRepository(
     ): ChatMessage {
 
         return ChatMessage(
-            id = id,
-            contactId = contactId,
-            text = text,
-            isMine = isMine,
+            id =
+                id,
+
+            contactId =
+                contactId,
+
+            text =
+                text,
+
+            isMine =
+                isMine,
+
             timestamp =
                 createdAtEpochMilliseconds,
+
             security =
                 transportMode
                     .toMessageSecurity(),
+
             contentStatus =
-                MessageContentStatus.READABLE
+                contentStatus
+                    .toMessageContentStatus()
         )
     }
 
@@ -303,38 +495,43 @@ class DefaultChatsRepository(
                 ChatMessage(
                     id =
                         "summary-$conversationId",
-                    contactId = contactId,
-                    text = text,
-                    isMine = true,
+
+                    contactId =
+                        contactId,
+
+                    text =
+                        text,
+
+                    isMine =
+                        true,
+
                     timestamp =
                         lastMessageTimestamp
                             ?: updatedAtEpochMilliseconds,
 
-                    /*
-                     * ConversationSummary currently does not contain
-                     * transportMode, so the exact mode is unavailable
-                     * here.
-                     *
-                     * Add lastMessageTransportMode to the query later
-                     * if the chats list needs a security icon.
-                     */
                     security =
                         MessageSecurity.INSECURE,
 
                     contentStatus =
-                        MessageContentStatus.READABLE
+                        MessageContentStatus
+                            .READABLE
                 )
             }
 
         return Conversation(
-            id = conversationId,
-            contactId = contactId,
+            id =
+                conversationId,
+
+            contactId =
+                contactId,
+
             contactName =
                 contactName
                     ?.takeIf {
                         it.isNotBlank()
                     }
                     ?: "Unknown contact",
+
             messages =
                 listOfNotNull(
                     lastMessage
@@ -345,16 +542,53 @@ class DefaultChatsRepository(
     private fun String.toMessageSecurity():
             MessageSecurity {
 
-        return when (this) {
+        return if (
+            this ==
             TransportEncryptionMode
                 .SEALED_BOX
+                .name
+        ) {
+            MessageSecurity
+                .END_TO_END_ENCRYPTED
+        } else {
+            MessageSecurity
+                .INSECURE
+        }
+    }
+
+    private fun String.toMessageContentStatus():
+            MessageContentStatus {
+
+        return when (this) {
+            MessageContentStatus
+                .READABLE
                 .name -> {
-                MessageSecurity
-                    .END_TO_END_ENCRYPTED
+                MessageContentStatus.READABLE
+            }
+
+            MessageContentStatus
+                .INVALID_PACKET
+                .name -> {
+                MessageContentStatus.INVALID_PACKET
+            }
+
+            MessageContentStatus
+                .INVALID_PLAINTEXT_PACKET
+                .name -> {
+                MessageContentStatus
+                    .INVALID_PLAINTEXT_PACKET
+            }
+
+            MessageContentStatus
+                .TRANSPORT_DECRYPTION_FAILED
+                .name -> {
+                MessageContentStatus
+                    .TRANSPORT_DECRYPTION_FAILED
             }
 
             else -> {
-                MessageSecurity.INSECURE
+                MessageContentStatus
+                    .INVALID_PACKET
             }
         }
     }
@@ -366,7 +600,7 @@ class DefaultChatsRepository(
         val timestamp =
             SystemClock.nowEpochMilliseconds()
 
-        val randomPart =
+        val random =
             Random.nextLong()
                 .toString()
                 .replace(
@@ -374,12 +608,21 @@ class DefaultChatsRepository(
                     newValue = ""
                 )
 
-        return "$prefix-$timestamp-$randomPart"
+        return "$prefix-$timestamp-$random"
     }
 
-    private companion object {
+    private data class StoredIncomingMessage(
+        val text: String,
+        val transportMode: String,
+        val contentStatus:
+        MessageContentStatus
+    )
 
+    private companion object {
         const val TRANSPORT_VERSION =
             1
+
+        const val UNKNOWN_TRANSPORT_MODE =
+            "UNKNOWN"
     }
 }

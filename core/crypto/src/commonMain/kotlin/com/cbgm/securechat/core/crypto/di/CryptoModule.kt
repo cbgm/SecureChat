@@ -5,7 +5,9 @@ import com.cbgm.securechat.core.crypto.hash.DefaultCryptoHash
 import com.cbgm.securechat.core.crypto.identity.IdentityKeyGenerator
 import com.cbgm.securechat.core.crypto.identity.SodiumIdentityKeyGenerator
 import com.cbgm.securechat.core.crypto.safety.SafetyNumberGenerator
+import com.cbgm.securechat.core.crypto.transport.DefaultIncomingTransportMessageDecoder
 import com.cbgm.securechat.core.crypto.transport.DefaultTransportPayloadCodec
+import com.cbgm.securechat.core.crypto.transport.IncomingTransportMessageDecoder
 import com.cbgm.securechat.core.crypto.transport.SodiumTransportMessageCipher
 import com.cbgm.securechat.core.crypto.transport.TransportMessageCipher
 import com.cbgm.securechat.core.crypto.transport.TransportPayloadCodec
@@ -34,5 +36,12 @@ val cryptoModule =
 
         single<TransportPayloadCodec> {
             DefaultTransportPayloadCodec()
+        }
+
+        single<IncomingTransportMessageDecoder> {
+            DefaultIncomingTransportMessageDecoder(
+                payloadCodec = get(),
+                transportCipher = get()
+            )
         }
     }

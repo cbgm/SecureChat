@@ -20,4 +20,17 @@ interface ChatsRepository {
         contactId: String,
         text: String
     )
+
+    /**
+     * Stores one packet received from the transport layer.
+     *
+     * The local encryption key pair is supplied by the transport or
+     * identity integration layer.
+     */
+    suspend fun receiveMessage(
+        contactId: String,
+        encodedTransportPayload: String,
+        localEncryptionPublicKey: ByteArray,
+        localEncryptionPrivateKey: ByteArray
+    )
 }

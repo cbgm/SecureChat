@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "messages",
+
     foreignKeys = [
         ForeignKey(
             entity = ConversationEntity::class,
@@ -15,10 +16,12 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
+
     indices = [
         Index(
             value = ["conversationId"]
         ),
+
         Index(
             value = [
                 "conversationId",
@@ -34,25 +37,27 @@ data class MessageEntity(
     val conversationId: String,
 
     /**
-     * Sender-readable local copy, encrypted at rest.
+     * Readable local representation.
+     *
+     * For failed incoming packets, this contains a safe placeholder.
      */
     val text: String,
 
     /**
-     * Packet that will eventually be sent to the other device.
-     *
-     * PLAINTEXT:
-     * scmsg:1:PLAINTEXT:...
-     *
-     * Encrypted:
-     * scmsg:1:SEALED_BOX:...
+     * Original encoded transport packet.
      */
     val transportPayload: String?,
 
     /**
-     * TransportEncryptionMode enum name.
+     * TransportEncryptionMode name or UNKNOWN when the packet itself
+     * could not be parsed.
      */
     val transportMode: String,
+
+    /**
+     * MessageContentStatus enum name.
+     */
+    val contentStatus: String,
 
     val isMine: Boolean,
 

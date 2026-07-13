@@ -5,12 +5,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Warning
@@ -40,6 +43,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.feature.chats.domain.model.ChatMessage
 import com.cbgm.securechat.feature.chats.domain.model.ContactSecurityState
+import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
+import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -182,32 +187,47 @@ private fun SecurityHeaderLabel(
 ) {
     val text =
         when (securityState) {
-            ContactSecurityState.NO_REMOTE_PUBLIC_KEYS -> {
+            ContactSecurityState
+                .NO_REMOTE_PUBLIC_KEYS -> {
                 "Not encrypted · no public keys"
             }
 
-            ContactSecurityState.ONE_WAY_KEYS -> {
+            ContactSecurityState
+                .ONE_WAY_KEYS -> {
                 "Not encrypted · one-way keys"
             }
 
-            ContactSecurityState.MUTUAL_KEYS_UNVERIFIED -> {
+            ContactSecurityState
+                .MUTUAL_KEYS_UNVERIFIED -> {
                 "Encrypted · identity unverified"
             }
 
-            ContactSecurityState.MUTUAL_KEYS_VERIFIED -> {
+            ContactSecurityState
+                .MUTUAL_KEYS_VERIFIED -> {
                 "Encrypted · identity verified"
             }
         }
 
     Text(
         text = text,
-        modifier = modifier,
+
+        modifier =
+            modifier,
+
         style =
-            MaterialTheme.typography.labelSmall,
+            MaterialTheme
+                .typography
+                .labelSmall,
+
         color =
-            MaterialTheme.colorScheme.onSurfaceVariant,
+            MaterialTheme
+                .colorScheme
+                .onSurfaceVariant,
+
         maxLines = 1,
-        overflow = TextOverflow.Ellipsis
+
+        overflow =
+            TextOverflow.Ellipsis
     )
 }
 
@@ -218,55 +238,122 @@ private fun SecurityBanner(
 ) {
     val icon =
         when (securityState) {
-            ContactSecurityState.NO_REMOTE_PUBLIC_KEYS,
-            ContactSecurityState.ONE_WAY_KEYS -> {
+            ContactSecurityState
+                .NO_REMOTE_PUBLIC_KEYS,
+
+            ContactSecurityState
+                .ONE_WAY_KEYS -> {
                 Icons.Default.LockOpen
             }
 
-            ContactSecurityState.MUTUAL_KEYS_UNVERIFIED -> {
+            ContactSecurityState
+                .MUTUAL_KEYS_UNVERIFIED -> {
                 Icons.Default.Warning
             }
 
-            ContactSecurityState.MUTUAL_KEYS_VERIFIED -> {
+            ContactSecurityState
+                .MUTUAL_KEYS_VERIFIED -> {
                 Icons.Default.Lock
             }
         }
 
     val title =
         when (securityState) {
-            ContactSecurityState.NO_REMOTE_PUBLIC_KEYS -> {
+            ContactSecurityState
+                .NO_REMOTE_PUBLIC_KEYS -> {
                 "Messages are not end-to-end encrypted"
             }
 
-            ContactSecurityState.ONE_WAY_KEYS -> {
+            ContactSecurityState
+                .ONE_WAY_KEYS -> {
                 "Key exchange is incomplete"
             }
 
-            ContactSecurityState.MUTUAL_KEYS_UNVERIFIED -> {
+            ContactSecurityState
+                .MUTUAL_KEYS_UNVERIFIED -> {
                 "Encrypted using an unverified identity"
             }
 
-            ContactSecurityState.MUTUAL_KEYS_VERIFIED -> {
+            ContactSecurityState
+                .MUTUAL_KEYS_VERIFIED -> {
                 "End-to-end encrypted"
             }
         }
 
     val description =
         when (securityState) {
-            ContactSecurityState.NO_REMOTE_PUBLIC_KEYS -> {
+            ContactSecurityState
+                .NO_REMOTE_PUBLIC_KEYS -> {
                 "You do not have this contact’s SecureChat public keys. Messages use plaintext transport."
             }
 
-            ContactSecurityState.ONE_WAY_KEYS -> {
+            ContactSecurityState
+                .ONE_WAY_KEYS -> {
                 "You have this contact’s public keys, but they do not yet have yours. Messages remain plaintext."
             }
 
-            ContactSecurityState.MUTUAL_KEYS_UNVERIFIED -> {
+            ContactSecurityState
+                .MUTUAL_KEYS_UNVERIFIED -> {
                 "Both parties have exchanged public keys. Messages are encrypted, but the safety number has not been verified."
             }
 
-            ContactSecurityState.MUTUAL_KEYS_VERIFIED -> {
+            ContactSecurityState
+                .MUTUAL_KEYS_VERIFIED -> {
                 "Both parties have exchanged public keys and verified the safety number."
+            }
+        }
+
+    val containerColor =
+        when (securityState) {
+            ContactSecurityState
+                .NO_REMOTE_PUBLIC_KEYS,
+
+            ContactSecurityState
+                .ONE_WAY_KEYS -> {
+                MaterialTheme
+                    .colorScheme
+                    .errorContainer
+            }
+
+            ContactSecurityState
+                .MUTUAL_KEYS_UNVERIFIED -> {
+                MaterialTheme
+                    .colorScheme
+                    .secondaryContainer
+            }
+
+            ContactSecurityState
+                .MUTUAL_KEYS_VERIFIED -> {
+                MaterialTheme
+                    .colorScheme
+                    .primaryContainer
+            }
+        }
+
+    val contentColor =
+        when (securityState) {
+            ContactSecurityState
+                .NO_REMOTE_PUBLIC_KEYS,
+
+            ContactSecurityState
+                .ONE_WAY_KEYS -> {
+                MaterialTheme
+                    .colorScheme
+                    .onErrorContainer
+            }
+
+            ContactSecurityState
+                .MUTUAL_KEYS_UNVERIFIED -> {
+                MaterialTheme
+                    .colorScheme
+                    .onSecondaryContainer
+            }
+
+            ContactSecurityState
+                .MUTUAL_KEYS_VERIFIED -> {
+                MaterialTheme
+                    .colorScheme
+                    .onPrimaryContainer
             }
         }
 
@@ -275,20 +362,10 @@ private fun SecurityBanner(
             modifier.fillMaxWidth(),
 
         color =
-            when (securityState) {
-                ContactSecurityState.NO_REMOTE_PUBLIC_KEYS,
-                ContactSecurityState.ONE_WAY_KEYS -> {
-                    MaterialTheme.colorScheme.errorContainer
-                }
+            containerColor,
 
-                ContactSecurityState.MUTUAL_KEYS_UNVERIFIED -> {
-                    MaterialTheme.colorScheme.secondaryContainer
-                }
-
-                ContactSecurityState.MUTUAL_KEYS_VERIFIED -> {
-                    MaterialTheme.colorScheme.primaryContainer
-                }
-            }
+        contentColor =
+            contentColor
     ) {
         Row(
             modifier =
@@ -296,32 +373,49 @@ private fun SecurityBanner(
                     horizontal = 16.dp,
                     vertical = 12.dp
                 ),
+
             verticalAlignment =
                 Alignment.Top
         ) {
             Icon(
-                imageVector = icon,
-                contentDescription = null
+                imageVector =
+                    icon,
+
+                contentDescription =
+                    null
             )
 
             Column(
                 modifier =
                     Modifier
-                        .padding(start = 12.dp)
+                        .padding(
+                            start = 12.dp
+                        )
                         .weight(1f)
             ) {
                 Text(
-                    text = title,
+                    text =
+                        title,
+
                     style =
-                        MaterialTheme.typography.titleSmall
+                        MaterialTheme
+                            .typography
+                            .titleSmall
                 )
 
                 Text(
-                    text = description,
+                    text =
+                        description,
+
                     modifier =
-                        Modifier.padding(top = 2.dp),
+                        Modifier.padding(
+                            top = 2.dp
+                        ),
+
                     style =
-                        MaterialTheme.typography.bodySmall
+                        MaterialTheme
+                            .typography
+                            .bodySmall
                 )
             }
         }
@@ -344,7 +438,8 @@ private fun MessageList(
                 8.dp
             ),
 
-        reverseLayout = true
+        reverseLayout =
+            true
     ) {
         items(
             items =
@@ -367,6 +462,71 @@ private fun MessageBubble(
     message: ChatMessage,
     modifier: Modifier = Modifier
 ) {
+    val displayedText =
+        when (message.contentStatus) {
+            MessageContentStatus.READABLE -> {
+                message.text
+            }
+
+            MessageContentStatus.INVALID_PACKET -> {
+                "Invalid message packet"
+            }
+
+            MessageContentStatus.INVALID_PLAINTEXT_PACKET -> {
+                "Unable to read plaintext message"
+            }
+
+            MessageContentStatus.TRANSPORT_DECRYPTION_FAILED -> {
+                "Unable to decrypt secure message"
+            }
+        }
+
+    val contentFailed =
+        message.contentStatus !=
+                MessageContentStatus.READABLE
+
+    val bubbleColor =
+        when {
+            contentFailed -> {
+                MaterialTheme
+                    .colorScheme
+                    .errorContainer
+            }
+
+            message.isMine -> {
+                MaterialTheme
+                    .colorScheme
+                    .primaryContainer
+            }
+
+            else -> {
+                MaterialTheme
+                    .colorScheme
+                    .surfaceVariant
+            }
+        }
+
+    val bubbleContentColor =
+        when {
+            contentFailed -> {
+                MaterialTheme
+                    .colorScheme
+                    .onErrorContainer
+            }
+
+            message.isMine -> {
+                MaterialTheme
+                    .colorScheme
+                    .onPrimaryContainer
+            }
+
+            else -> {
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+            }
+        }
+
     Row(
         modifier =
             modifier.fillMaxWidth(),
@@ -379,6 +539,11 @@ private fun MessageBubble(
             }
     ) {
         Column(
+            modifier =
+                Modifier.fillMaxWidth(
+                    fraction = 0.78f
+                ),
+
             horizontalAlignment =
                 if (message.isMine) {
                     Alignment.End
@@ -386,51 +551,157 @@ private fun MessageBubble(
                     Alignment.Start
                 }
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth(
-                            fraction = 0.78f
-                        )
-                        .background(
-                            color =
-                                if (message.isMine) {
-                                    MaterialTheme
-                                        .colorScheme
-                                        .primaryContainer
-                                } else {
-                                    MaterialTheme
-                                        .colorScheme
-                                        .surfaceVariant
-                                },
+            Surface(
+                color =
+                    bubbleColor,
 
-                            shape =
-                                RoundedCornerShape(
-                                    size = 16.dp
-                                )
-                        )
-                        .padding(
+                contentColor =
+                    bubbleContentColor,
+
+                shape =
+                    RoundedCornerShape(
+                        size = 16.dp
+                    )
+            ) {
+                Row(
+                    modifier =
+                        Modifier.padding(
                             horizontal = 16.dp,
                             vertical = 10.dp
-                        )
-            ) {
-                Text(
-                    text =
-                        message.text,
+                        ),
 
-                    color =
-                        if (message.isMine) {
-                            MaterialTheme
-                                .colorScheme
-                                .onPrimaryContainer
-                        } else {
-                            MaterialTheme
-                                .colorScheme
-                                .onSurfaceVariant
-                        }
-                )
+                    verticalAlignment =
+                        Alignment.Top
+                ) {
+                    if (contentFailed) {
+                        Icon(
+                            imageVector =
+                                Icons.Default
+                                    .ErrorOutline,
+
+                            contentDescription =
+                                null
+                        )
+
+                        Spacer(
+                            modifier =
+                                Modifier.width(8.dp)
+                        )
+                    }
+
+                    Text(
+                        text =
+                            displayedText,
+
+                        modifier =
+                            Modifier.weight(1f)
+                    )
+                }
+            }
+
+            MessageMetadata(
+                message =
+                    message,
+
+                modifier =
+                    Modifier.padding(
+                        top = 3.dp,
+                        start = 4.dp,
+                        end = 4.dp
+                    )
+            )
+        }
+    }
+}
+
+@Composable
+private fun MessageMetadata(
+    message: ChatMessage,
+    modifier: Modifier = Modifier
+) {
+    val text =
+        when (message.contentStatus) {
+            MessageContentStatus.INVALID_PACKET -> {
+                "Invalid packet"
+            }
+
+            MessageContentStatus.INVALID_PLAINTEXT_PACKET -> {
+                "Invalid plaintext packet"
+            }
+
+            MessageContentStatus.TRANSPORT_DECRYPTION_FAILED -> {
+                "Secure-message decryption failed"
+            }
+
+            MessageContentStatus.READABLE -> {
+                when (message.security) {
+                    MessageSecurity.INSECURE -> {
+                        "Not encrypted"
+                    }
+
+                    MessageSecurity.END_TO_END_ENCRYPTED -> {
+                        "Encrypted"
+                    }
+                }
             }
         }
+
+    val icon =
+        when {
+            message.contentStatus !=
+                    MessageContentStatus.READABLE -> {
+                Icons.Default.ErrorOutline
+            }
+
+            message.security ==
+                    MessageSecurity.END_TO_END_ENCRYPTED -> {
+                Icons.Default.Lock
+            }
+
+            else -> {
+                Icons.Default.LockOpen
+            }
+        }
+
+    Row(
+        modifier =
+            modifier,
+
+        verticalAlignment =
+            Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector =
+                icon,
+
+            contentDescription =
+                null,
+
+            tint =
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+        )
+
+        Spacer(
+            modifier =
+                Modifier.width(4.dp)
+        )
+
+        Text(
+            text =
+                text,
+
+            style =
+                MaterialTheme
+                    .typography
+                    .labelSmall,
+
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+        )
     }
 }
 
@@ -462,7 +733,8 @@ private fun MessageInput(
             Alignment.CenterVertically
     ) {
         OutlinedTextField(
-            value = value,
+            value =
+                value,
 
             onValueChange =
                 onValueChange,
@@ -470,15 +742,18 @@ private fun MessageInput(
             modifier =
                 Modifier.weight(1f),
 
-            enabled = enabled,
+            enabled =
+                enabled,
 
             placeholder = {
                 Text(
-                    text = "Message"
+                    text =
+                        "Message"
                 )
             },
 
-            maxLines = 5
+            maxLines =
+                5
         )
 
         IconButton(
@@ -537,28 +812,42 @@ private fun EmptyChatContent(
             Text(
                 text =
                     when (securityState) {
-                        ContactSecurityState.NO_REMOTE_PUBLIC_KEYS -> {
+                        ContactSecurityState
+                            .NO_REMOTE_PUBLIC_KEYS -> {
                             "This contact has no SecureChat public keys. Messages use plaintext transport."
                         }
 
-                        ContactSecurityState.ONE_WAY_KEYS -> {
+                        ContactSecurityState
+                            .ONE_WAY_KEYS -> {
                             "You have this contact’s public keys, but they do not have yours yet. Messages remain plaintext."
                         }
 
-                        ContactSecurityState.MUTUAL_KEYS_UNVERIFIED -> {
+                        ContactSecurityState
+                            .MUTUAL_KEYS_UNVERIFIED -> {
                             "Messages are encrypted. Compare the safety number through a trusted channel."
                         }
 
-                        ContactSecurityState.MUTUAL_KEYS_VERIFIED -> {
+                        ContactSecurityState
+                            .MUTUAL_KEYS_VERIFIED -> {
                             "Messages use the verified SecureChat identity."
                         }
                     },
+
                 modifier =
-                    Modifier.padding(top = 8.dp),
+                    Modifier.padding(
+                        top = 8.dp
+                    ),
+
                 style =
-                    MaterialTheme.typography.bodySmall,
+                    MaterialTheme
+                        .typography
+                        .bodySmall,
+
                 color =
-                    MaterialTheme.colorScheme.onSurfaceVariant,
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant,
+
                 textAlign =
                     TextAlign.Center
             )
@@ -571,7 +860,8 @@ private fun LoadingChatContent(
     modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = modifier,
+        modifier =
+            modifier,
 
         contentAlignment =
             Alignment.Center
@@ -594,7 +884,8 @@ private fun ErrorMessage(
     modifier: Modifier = Modifier
 ) {
     Text(
-        text = message,
+        text =
+            message,
 
         modifier =
             modifier
