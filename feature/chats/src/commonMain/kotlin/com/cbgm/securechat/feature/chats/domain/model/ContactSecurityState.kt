@@ -3,22 +3,26 @@ package com.cbgm.securechat.feature.chats.domain.model
 enum class ContactSecurityState {
 
     /**
-     * The contact was imported from the phone book or otherwise
-     * has no SecureChat public identity.
+     * Phone-book contact only.
      *
-     * Messages can still be sent, but they cannot be protected
-     * with end-to-end encryption.
+     * We do not possess this contact's public keys.
      */
-    NO_PUBLIC_KEY,
+    NO_REMOTE_PUBLIC_KEYS,
 
     /**
-     * The contact has encryption and signing public keys, but the
-     * user has not verified that they belong to the expected person.
+     * We possess their public keys, but they do not yet possess ours.
      */
-    PUBLIC_KEY_UNVERIFIED,
+    ONE_WAY_KEYS,
 
     /**
-     * The contact has a public identity and the user has verified it.
+     * Both parties possess each other's public keys,
+     * but the safety number is unverified.
      */
-    PUBLIC_KEY_VERIFIED
+    MUTUAL_KEYS_UNVERIFIED,
+
+    /**
+     * Both parties possess each other's public keys,
+     * and the safety number is verified.
+     */
+    MUTUAL_KEYS_VERIFIED
 }

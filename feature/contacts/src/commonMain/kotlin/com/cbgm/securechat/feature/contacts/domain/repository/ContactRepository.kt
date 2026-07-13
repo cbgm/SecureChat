@@ -11,53 +11,47 @@ interface ContactRepository {
     suspend fun importDeviceContact(
         request: ImportDeviceContactRequest
     ): Result<Contact>
-    /**
-     * Imports a new cryptographic identity or updates an existing one.
-     *
-     * The signing public key will later be used as the primary
-     * cryptographic identity matching value.
-     *
-     * Importing the same identity again should update the existing
-     * contact instead of creating a duplicate.
-     */
+
     suspend fun importContact(
         request: ImportContactRequest
     ): Result<Contact>
 
-    /**
-     * Returns a contact by its local identifier.
-     */
     suspend fun getContact(
         contactId: String
     ): Result<Contact?>
 
-    /**
-     * Finds a contact using its signing public key.
-     *
-     * This is useful during repeated imports and incoming messages.
-     */
     suspend fun findBySigningPublicKey(
         signingPublicKey: ByteArray
     ): Result<Contact?>
 
-    /**
-     * Observes all stored contacts.
-     */
-    fun observeContacts(): Flow<List<Contact>>
+    fun observeContacts():
+            Flow<List<Contact>>
 
-    /**
-     * Updates the local user-friendly metadata without replacing keys.
-     */
     suspend fun updateContactDetails(
         contactId: String,
         displayName: String?,
         phoneNumber: String?
     ): Result<Contact>
 
-    /**
-     * Marks a contact's current key identity as verified.
-     */
     suspend fun markVerified(
+        contactId: String
+    ): Result<Contact>
+
+    /**
+     * Marks that both parties possess each other's current keys.
+     *
+     * Do not call this merely after importing their identity.
+     * It should only be called after an authenticated acknowledgement
+     * from the remote device.
+     */
+    suspend fun markKeyExchangeMutual(
+        contactId: String
+    ): Result<Contact>
+
+    /**
+     * Resets the exchange to one-way and removes verification.
+     */
+    suspend fun resetKeyExchange(
         contactId: String
     ): Result<Contact>
 

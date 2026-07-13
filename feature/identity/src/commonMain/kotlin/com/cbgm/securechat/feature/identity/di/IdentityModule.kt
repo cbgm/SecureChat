@@ -1,6 +1,5 @@
 package com.cbgm.securechat.feature.identity.di
 
-import com.cbgm.securechat.feature.identity.core.IdentityCrypto
 import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
 import com.cbgm.securechat.feature.identity.core.PublicIdentityStorage
 import com.cbgm.securechat.feature.identity.data.repository.DefaultIdentityRepository
@@ -17,84 +16,88 @@ import com.cbgm.securechat.feature.identity.startup.IdentityStartupManager
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
-val identityModule = module {
+val identityModule =
+    module {
 
-    single {
-        IdentityCrypto()
+        single<IdentityRepository> {
+            DefaultIdentityRepository(
+                identityKeyGenerator =
+                    get(),
+
+                privateKeyStorage =
+                    get(),
+
+                publicIdentityStorage =
+                    get()
+            )
+        }
+
+        single {
+            CreateIdentity(
+                repository = get()
+            )
+        }
+
+        single {
+            GetIdentityStatus(
+                repository = get()
+            )
+        }
+
+        single {
+            GetPublicIdentity(
+                repository = get()
+            )
+        }
+
+        single<IdentityShareCodec> {
+            DefaultIdentityShareCodec()
+        }
+
+        single<IdentityStartupManager> {
+            DefaultIdentityStartupManager(
+                identityExists = {
+                    get<PublicIdentityStorage>()
+                        .exists()
+                },
+
+                createIdentity = {
+                    get<CreateIdentity>()
+                        .invoke()
+                        .map {
+                            Unit
+                        }
+                }
+            )
+        }
+
+        factory {
+            CreateSharedIdentity(
+                getPublicIdentity =
+                    get(),
+
+                identityShareCodec =
+                    get()
+            )
+        }
+
+        viewModel {
+            IdentityViewModel(
+                getIdentityStatus =
+                    get(),
+
+                getPublicIdentity =
+                    get(),
+
+                createIdentity =
+                    get()
+            )
+        }
+
+        viewModel {
+            ShareIdentityViewModel(
+                createSharedIdentity =
+                    get()
+            )
+        }
     }
-
-    single<IdentityRepository> {
-        DefaultIdentityRepository(
-            identityCrypto = get(),
-            privateKeyStorage = get(),
-            publicIdentityStorage = get()
-        )
-    }
-
-    single {
-        CreateIdentity(
-            repository = get()
-        )
-    }
-
-    single {
-        GetIdentityStatus(
-            repository = get()
-        )
-    }
-
-    single {
-        GetPublicIdentity(
-            repository = get()
-        )
-    }
-
-    single<IdentityShareCodec> {
-        DefaultIdentityShareCodec()
-    }
-
-    single<IdentityStartupManager> {
-        DefaultIdentityStartupManager(
-            identityExists = {
-                /*
-                 * Replace with your existing identity existence API.
-                 *
-                 * Example:
-                 * get<PublicIdentityStorage>().exists()
-                 */
-                get<PublicIdentityStorage>()
-                    .exists()
-            },
-
-            createIdentity = {
-                /*
-                 * Replace CreateIdentity with the existing use-case
-                 * class that generates and persists both key pairs.
-                 */
-                get<CreateIdentity>()()
-                    .map { Unit }
-            }
-        )
-    }
-
-    factory {
-        CreateSharedIdentity(
-            getPublicIdentity = get(),
-            identityShareCodec = get()
-        )
-    }
-
-    viewModel {
-        IdentityViewModel(
-            getIdentityStatus = get(),
-            getPublicIdentity = get(),
-            createIdentity = get()
-        )
-    }
-
-    viewModel {
-        ShareIdentityViewModel(
-            createSharedIdentity = get()
-        )
-    }
-}

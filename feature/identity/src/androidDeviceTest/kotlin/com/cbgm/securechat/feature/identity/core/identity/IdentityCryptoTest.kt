@@ -1,7 +1,6 @@
 package com.cbgm.securechat.feature.identity.core.identity
 
 import com.cbgm.securechat.core.crypto.SodiumRuntime
-import com.cbgm.securechat.feature.identity.core.IdentityCrypto
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertFalse

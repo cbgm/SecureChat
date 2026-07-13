@@ -33,7 +33,26 @@ data class MessageEntity(
 
     val conversationId: String,
 
+    /**
+     * Sender-readable local copy, encrypted at rest.
+     */
     val text: String,
+
+    /**
+     * Packet that will eventually be sent to the other device.
+     *
+     * PLAINTEXT:
+     * scmsg:1:PLAINTEXT:...
+     *
+     * Encrypted:
+     * scmsg:1:SEALED_BOX:...
+     */
+    val transportPayload: String?,
+
+    /**
+     * TransportEncryptionMode enum name.
+     */
+    val transportMode: String,
 
     val isMine: Boolean,
 

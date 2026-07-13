@@ -6,6 +6,7 @@ import com.cbgm.securechat.feature.chats.domain.model.ContactSecurityState
 import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
+import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -42,7 +43,8 @@ class ChatViewModel(
                 }
             }
 
-    val uiState: StateFlow<ChatUiState> =
+    val uiState:
+            StateFlow<ChatUiState> =
         combine(
             conversation,
             contact,
@@ -91,7 +93,8 @@ class ChatViewModel(
 
                 started =
                     SharingStarted.WhileSubscribed(
-                        stopTimeoutMillis = 5_000
+                        stopTimeoutMillis =
+                            5_000
                     ),
 
                 initialValue =
@@ -103,7 +106,8 @@ class ChatViewModel(
                                 }
                                 ?: "Contact",
 
-                        isLoadingContact = true
+                        isLoadingContact =
+                            true
                     )
             )
 
@@ -150,38 +154,42 @@ class ChatViewModel(
         }
     }
 
-    fun clearError() {
-        errorMessage.value = null
-    }
-
-    private fun Contact?.toContactSecurityState():
+    private fun Contact?
+            .toContactSecurityState():
             ContactSecurityState {
 
-        val secureIdentity =
+        val identity =
             this?.secureChatIdentity
                 ?: return ContactSecurityState
-                    .NO_PUBLIC_KEY
+                    .NO_REMOTE_PUBLIC_KEYS
 
         if (
-            secureIdentity
-                .encryptionPublicKey
+            identity.encryptionPublicKey
                 .isEmpty()
         ) {
             return ContactSecurityState
-                .NO_PUBLIC_KEY
+                .NO_REMOTE_PUBLIC_KEYS
+        }
+
+        if (
+            identity.keyExchangeStatus ==
+            KeyExchangeStatus.ONE_WAY
+        ) {
+            return ContactSecurityState
+                .ONE_WAY_KEYS
         }
 
         return when (
-            secureIdentity.verificationStatus
+            identity.verificationStatus
         ) {
             ContactVerificationStatus.UNVERIFIED -> {
                 ContactSecurityState
-                    .PUBLIC_KEY_UNVERIFIED
+                    .MUTUAL_KEYS_UNVERIFIED
             }
 
             ContactVerificationStatus.VERIFIED -> {
                 ContactSecurityState
-                    .PUBLIC_KEY_VERIFIED
+                    .MUTUAL_KEYS_VERIFIED
             }
         }
     }

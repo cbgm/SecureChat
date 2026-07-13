@@ -3,7 +3,6 @@ package com.cbgm.securechat.feature.identity.data.repository
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.cbgm.securechat.core.crypto.SodiumRuntime
-import com.cbgm.securechat.feature.identity.core.IdentityCrypto
 import com.cbgm.securechat.feature.identity.data.storage.AndroidPrivateKeyStorage
 import com.cbgm.securechat.feature.identity.data.storage.AndroidPublicIdentityStorage
 import kotlinx.coroutines.runBlocking

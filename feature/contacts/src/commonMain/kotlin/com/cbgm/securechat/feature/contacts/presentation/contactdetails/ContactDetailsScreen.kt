@@ -43,6 +43,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.crypto.safety.SafetyNumber
 import com.cbgm.securechat.core.extensions.toHexString
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumber
@@ -58,6 +59,10 @@ fun ContactDetailsScreen(
     onBack: () -> Unit,
     onRetry: () -> Unit,
     onShareContact: () -> Unit,
+    onVerifyIdentity: () -> Unit,
+    onDismissVerification: () -> Unit,
+    onComparisonConfirmedChanged: (Boolean) -> Unit,
+    onConfirmVerification: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val title =
@@ -115,12 +120,48 @@ fun ContactDetailsScreen(
             is ContactDetailsUiState.Content -> {
                 ContactContent(
                     contact = uiState.contact,
+                    safetyNumber =
+                        uiState.safetyNumber,
                     onShareContact =
                         onShareContact,
+                    onVerifyIdentity =
+                        onVerifyIdentity,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
                 )
+
+                if (
+                    uiState.isVerificationDialogVisible &&
+                    uiState.safetyNumber != null
+                ) {
+                    SafetyNumberVerificationDialog(
+                        contactName =
+                            uiState.contact.displayName
+                                ?: "Contact",
+
+                        safetyNumber =
+                            uiState.safetyNumber,
+
+                        hasConfirmedComparison =
+                            uiState.hasConfirmedComparison,
+
+                        isSaving =
+                            uiState.isSavingVerification,
+
+                        errorMessage =
+                            uiState.verificationError,
+
+                        onConfirmedChanged =
+                            onComparisonConfirmedChanged,
+
+                        onConfirm =
+                            onConfirmVerification,
+
+                        onDismiss =
+                            onDismissVerification
+                    )
+                }
             }
 
             is ContactDetailsUiState.Error -> {
@@ -152,7 +193,9 @@ private fun LoadingContent(
 @Composable
 private fun ContactContent(
     contact: Contact,
+    safetyNumber: SafetyNumber?,
     onShareContact: () -> Unit,
+    onVerifyIdentity: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -254,7 +297,11 @@ private fun ContactContent(
         } else {
             SecureChatIdentityContent(
                 identity =
-                    secureChatIdentity
+                    secureChatIdentity,
+                safetyNumber =
+                    safetyNumber,
+                onVerifyIdentity =
+                    onVerifyIdentity
             )
         }
 
@@ -604,7 +651,9 @@ private fun NoSecureChatIdentityContent() {
 
 @Composable
 private fun SecureChatIdentityContent(
-    identity: SecureChatIdentity
+    identity: SecureChatIdentity,
+    safetyNumber: SafetyNumber?,
+    onVerifyIdentity: () -> Unit
 ) {
     SectionTitle(
         icon = {
@@ -613,14 +662,17 @@ private fun SecureChatIdentityContent(
                     Icons.Default.Security,
                 contentDescription = null,
                 tint =
-                    MaterialTheme.colorScheme.primary
+                    MaterialTheme
+                        .colorScheme
+                        .primary
             )
         },
         title = "SecureChat identity"
     )
 
     Spacer(
-        modifier = Modifier.height(12.dp)
+        modifier =
+            Modifier.height(12.dp)
     )
 
     VerificationStatus(
@@ -629,7 +681,108 @@ private fun SecureChatIdentityContent(
     )
 
     Spacer(
-        modifier = Modifier.height(24.dp)
+        modifier =
+            Modifier.height(24.dp)
+    )
+
+    if (safetyNumber != null) {
+        Text(
+            text = "Safety number",
+            style =
+                MaterialTheme
+                    .typography
+                    .titleSmall,
+            fontWeight =
+                FontWeight.SemiBold
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(8.dp)
+        )
+
+        Text(
+            text =
+                safetyNumber.formatted,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .surfaceVariant,
+                        shape =
+                            MaterialTheme
+                                .shapes
+                                .medium
+                    )
+                    .padding(16.dp),
+            style =
+                MaterialTheme
+                    .typography
+                    .bodyMedium,
+            fontFamily =
+                FontFamily.Monospace,
+            textAlign =
+                TextAlign.Center
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(8.dp)
+        )
+
+        Text(
+            text =
+                "Compare the entire number with this contact through a trusted phone or video call.",
+            style =
+                MaterialTheme
+                    .typography
+                    .bodySmall,
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+        )
+
+        if (
+            identity.verificationStatus ==
+            ContactVerificationStatus.UNVERIFIED
+        ) {
+            Spacer(
+                modifier =
+                    Modifier.height(16.dp)
+            )
+
+            Button(
+                onClick =
+                    onVerifyIdentity,
+                modifier =
+                    Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector =
+                        Icons.Default.Security,
+                    contentDescription = null
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.size(8.dp)
+                )
+
+                Text(
+                    text =
+                        "Verify safety number"
+                )
+            }
+        }
+    }
+
+    Spacer(
+        modifier =
+            Modifier.height(24.dp)
     )
 
     KeySection(
@@ -640,7 +793,8 @@ private fun SecureChatIdentityContent(
     )
 
     Spacer(
-        modifier = Modifier.height(20.dp)
+        modifier =
+            Modifier.height(20.dp)
     )
 
     KeySection(
@@ -706,7 +860,7 @@ private fun VerificationStatus(
                     when (status) {
                         ContactVerificationStatus
                             .UNVERIFIED ->
-                            "Compare fingerprints with the contact before trusting this identity."
+                            "Compare the safety number with the contact before trusting this identity."
 
                         ContactVerificationStatus
                             .VERIFIED ->

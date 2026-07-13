@@ -2,6 +2,7 @@ package com.cbgm.securechat
 
 import android.app.Application
 import com.cbgm.securechat.core.crypto.SodiumRuntime
+import com.cbgm.securechat.core.crypto.di.cryptoModule
 import com.cbgm.securechat.di.appModule
 import com.cbgm.securechat.feature.identity.di.identityModule
 import com.cbgm.securechat.data.database.di.androidDatabaseModule
@@ -51,6 +52,7 @@ class SecureChatApplication : Application() {
              * Load both shared and Android-specific definitions.
              */
             modules(
+                cryptoModule,
                 androidDatabaseModule,
                 identityModule,
                 contactsModule,

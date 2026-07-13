@@ -1,5 +1,8 @@
 package com.cbgm.securechat.feature.contacts.di
 
+import com.cbgm.securechat.core.crypto.hash.CryptoHash
+import com.cbgm.securechat.core.crypto.hash.DefaultCryptoHash
+import com.cbgm.securechat.core.crypto.safety.SafetyNumberGenerator
 import com.cbgm.securechat.feature.contacts.data.merge.ContactMergeService
 import com.cbgm.securechat.feature.contacts.data.repository.DefaultContactRepository
 import com.cbgm.securechat.feature.contacts.devicecontacts.ImportDeviceContacts
@@ -12,64 +15,68 @@ import com.cbgm.securechat.feature.contacts.presentation.contacts.ContactsViewMo
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
-val contactsModule = module {
+val contactsModule =
+    module {
 
-    single<ContactRepository> {
-        DefaultContactRepository(
-            contactDao = get(),
-            mergeService = get()
-        )
-    }
+        single {
+            ContactMergeService(
+                contactDao = get()
+            )
+        }
 
-    factory {
-        ImportContact(
-            repository = get()
-        )
-    }
+        single<ContactRepository> {
+            DefaultContactRepository(
+                contactDao = get(),
+                mergeService = get()
+            )
+        }
 
-    factory {
-        GetContact(
-            repository = get()
-        )
-    }
+        factory {
+            ImportContact(
+                repository = get()
+            )
+        }
 
-    factory {
-        ObserveContacts(
-            repository = get()
-        )
-    }
+        factory {
+            GetContact(
+                repository = get()
+            )
+        }
 
-    factory {
-        ImportDeviceContacts(
-            deviceContactsDataSource = get(),
-            repository = get()
-        )
-    }
+        factory {
+            ObserveContacts(
+                repository = get()
+            )
+        }
 
-    single {
-        ContactMergeService(
-            contactDao = get()
-        )
-    }
+        factory {
+            ImportDeviceContacts(
+                deviceContactsDataSource =
+                    get(),
+                repository =
+                    get()
+            )
+        }
 
-    single<ContactRepository> {
-        DefaultContactRepository(
-            contactDao = get(),
-            mergeService = get()
-        )
-    }
+        viewModel {
+            ContactsViewModel(
+                observeContacts = get(),
+                importDeviceContacts = get()
+            )
+        }
 
-    viewModel {
-        ContactsViewModel(
-            observeContacts = get(),
-            importDeviceContacts = get()
-        )
+        viewModel { parameters ->
+            ContactDetailsViewModel(
+                contactId =
+                    parameters.get(),
+                getContact =
+                    get(),
+                getPublicIdentity =
+                    get(),
+                contactRepository =
+                    get(),
+                safetyNumberGenerator =
+                    get()
+            )
+        }
     }
-
-    viewModel { parameters ->
-        ContactDetailsViewModel(
-            contactId = parameters.get(),
-            getContact = get()
-        )
-    }
-}

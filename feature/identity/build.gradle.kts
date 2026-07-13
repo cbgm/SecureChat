@@ -58,7 +58,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(projects.core)
-            implementation(libs.libsodium)
+            implementation(projects.core.crypto)
             implementation(libs.kotlinx.coroutines.core)
 
             implementation(libs.compose.runtime)

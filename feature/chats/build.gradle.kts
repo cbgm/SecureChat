@@ -59,6 +59,7 @@ kotlin {
         commonMain.dependencies {
             implementation(projects.data.database)
             implementation(projects.core)
+            implementation(projects.core.crypto)
             implementation(projects.feature.contacts)
             implementation(libs.kotlinx.coroutines.core)
 

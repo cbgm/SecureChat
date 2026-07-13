@@ -8,9 +8,7 @@ import androidx.room.PrimaryKey
 /**
  * Cryptographic SecureChat identity attached to a contact.
  *
- * A contact may have no row in this table.
- *
- * If a row exists, both public keys are mandatory.
+ * A phone-book contact may have no row in this table.
  */
 @Entity(
     tableName = "contact_public_identities",
@@ -18,45 +16,25 @@ import androidx.room.PrimaryKey
     foreignKeys = [
         ForeignKey(
             entity = ContactEntity::class,
-            parentColumns = [
-                "id"
-            ],
-            childColumns = [
-                "contactId"
-            ],
+            parentColumns = ["id"],
+            childColumns = ["contactId"],
             onDelete = ForeignKey.CASCADE
         )
     ],
 
     indices = [
-        /**
-         * Required by Room for efficient foreign-key operations.
-         */
         Index(
-            value = [
-                "contactId"
-            ],
+            value = ["contactId"],
             unique = true
         ),
 
-        /**
-         * A signing key identifies one SecureChat public identity.
-         */
         Index(
-            value = [
-                "signingPublicKey"
-            ],
+            value = ["signingPublicKey"],
             unique = true
         )
     ]
 )
 data class ContactPublicIdentityEntity(
-
-    /**
-     * One cryptographic identity per contact for now.
-     *
-     * This is both the primary key and foreign key.
-     */
     @PrimaryKey
     val contactId: String,
 
@@ -65,36 +43,71 @@ data class ContactPublicIdentityEntity(
     val signingPublicKey: ByteArray,
 
     /**
-     * Stored domain enum name:
-     *
-     * UNVERIFIED
-     * VERIFIED
+     * ContactVerificationStatus enum name.
      */
     val verificationStatus: String,
 
+    /**
+     * KeyExchangeStatus enum name:
+     *
+     * ONE_WAY
+     * MUTUAL
+     */
+    val keyExchangeStatus: String,
+
     val updatedAtEpochMilliseconds: Long
 ) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
 
-        other as ContactPublicIdentityEntity
+    override fun equals(
+        other: Any?
+    ): Boolean {
+        if (this === other) {
+            return true
+        }
 
-        if (updatedAtEpochMilliseconds != other.updatedAtEpochMilliseconds) return false
-        if (contactId != other.contactId) return false
-        if (!encryptionPublicKey.contentEquals(other.encryptionPublicKey)) return false
-        if (!signingPublicKey.contentEquals(other.signingPublicKey)) return false
-        if (verificationStatus != other.verificationStatus) return false
+        if (other !is ContactPublicIdentityEntity) {
+            return false
+        }
 
-        return true
+        return contactId == other.contactId &&
+                encryptionPublicKey.contentEquals(
+                    other.encryptionPublicKey
+                ) &&
+                signingPublicKey.contentEquals(
+                    other.signingPublicKey
+                ) &&
+                verificationStatus ==
+                other.verificationStatus &&
+                keyExchangeStatus ==
+                other.keyExchangeStatus &&
+                updatedAtEpochMilliseconds ==
+                other.updatedAtEpochMilliseconds
     }
 
     override fun hashCode(): Int {
-        var result = updatedAtEpochMilliseconds.hashCode()
-        result = 31 * result + contactId.hashCode()
-        result = 31 * result + encryptionPublicKey.contentHashCode()
-        result = 31 * result + signingPublicKey.contentHashCode()
-        result = 31 * result + verificationStatus.hashCode()
+        var result =
+            contactId.hashCode()
+
+        result =
+            31 * result +
+                    encryptionPublicKey.contentHashCode()
+
+        result =
+            31 * result +
+                    signingPublicKey.contentHashCode()
+
+        result =
+            31 * result +
+                    verificationStatus.hashCode()
+
+        result =
+            31 * result +
+                    keyExchangeStatus.hashCode()
+
+        result =
+            31 * result +
+                    updatedAtEpochMilliseconds.hashCode()
+
         return result
     }
 }

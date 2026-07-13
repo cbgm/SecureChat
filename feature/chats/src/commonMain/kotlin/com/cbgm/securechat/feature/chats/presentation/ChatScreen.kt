@@ -182,38 +182,32 @@ private fun SecurityHeaderLabel(
 ) {
     val text =
         when (securityState) {
-            ContactSecurityState.NO_PUBLIC_KEY -> {
-                "Not end-to-end encrypted"
+            ContactSecurityState.NO_REMOTE_PUBLIC_KEYS -> {
+                "Not encrypted · no public keys"
             }
 
-            ContactSecurityState.PUBLIC_KEY_UNVERIFIED -> {
+            ContactSecurityState.ONE_WAY_KEYS -> {
+                "Not encrypted · one-way keys"
+            }
+
+            ContactSecurityState.MUTUAL_KEYS_UNVERIFIED -> {
                 "Encrypted · identity unverified"
             }
 
-            ContactSecurityState.PUBLIC_KEY_VERIFIED -> {
-                "End-to-end encrypted"
+            ContactSecurityState.MUTUAL_KEYS_VERIFIED -> {
+                "Encrypted · identity verified"
             }
         }
 
     Text(
         text = text,
-
         modifier = modifier,
-
         style =
-            MaterialTheme
-                .typography
-                .labelSmall,
-
+            MaterialTheme.typography.labelSmall,
         color =
-            MaterialTheme
-                .colorScheme
-                .onSurfaceVariant,
-
+            MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1,
-
-        overflow =
-            TextOverflow.Ellipsis
+        overflow = TextOverflow.Ellipsis
     )
 }
 
@@ -224,46 +218,55 @@ private fun SecurityBanner(
 ) {
     val icon =
         when (securityState) {
-            ContactSecurityState.NO_PUBLIC_KEY -> {
+            ContactSecurityState.NO_REMOTE_PUBLIC_KEYS,
+            ContactSecurityState.ONE_WAY_KEYS -> {
                 Icons.Default.LockOpen
             }
 
-            ContactSecurityState.PUBLIC_KEY_UNVERIFIED -> {
+            ContactSecurityState.MUTUAL_KEYS_UNVERIFIED -> {
                 Icons.Default.Warning
             }
 
-            ContactSecurityState.PUBLIC_KEY_VERIFIED -> {
+            ContactSecurityState.MUTUAL_KEYS_VERIFIED -> {
                 Icons.Default.Lock
             }
         }
 
     val title =
         when (securityState) {
-            ContactSecurityState.NO_PUBLIC_KEY -> {
+            ContactSecurityState.NO_REMOTE_PUBLIC_KEYS -> {
                 "Messages are not end-to-end encrypted"
             }
 
-            ContactSecurityState.PUBLIC_KEY_UNVERIFIED -> {
+            ContactSecurityState.ONE_WAY_KEYS -> {
+                "Key exchange is incomplete"
+            }
+
+            ContactSecurityState.MUTUAL_KEYS_UNVERIFIED -> {
                 "Encrypted using an unverified identity"
             }
 
-            ContactSecurityState.PUBLIC_KEY_VERIFIED -> {
+            ContactSecurityState.MUTUAL_KEYS_VERIFIED -> {
                 "End-to-end encrypted"
             }
         }
 
     val description =
         when (securityState) {
-            ContactSecurityState.NO_PUBLIC_KEY -> {
-                "This phone-book contact has no SecureChat public key. Messages can still be sent normally."
+            ContactSecurityState.NO_REMOTE_PUBLIC_KEYS -> {
+                "You do not have this contact’s SecureChat public keys. Messages use plaintext transport."
             }
 
-            ContactSecurityState.PUBLIC_KEY_UNVERIFIED -> {
-                "This contact has a public encryption key, but you have not verified the identity yet."
+            ContactSecurityState.ONE_WAY_KEYS -> {
+                "You have this contact’s public keys, but they do not yet have yours. Messages remain plaintext."
             }
 
-            ContactSecurityState.PUBLIC_KEY_VERIFIED -> {
-                "Messages use this contact's verified SecureChat public identity."
+            ContactSecurityState.MUTUAL_KEYS_UNVERIFIED -> {
+                "Both parties have exchanged public keys. Messages are encrypted, but the safety number has not been verified."
+            }
+
+            ContactSecurityState.MUTUAL_KEYS_VERIFIED -> {
+                "Both parties have exchanged public keys and verified the safety number."
             }
         }
 
@@ -273,22 +276,17 @@ private fun SecurityBanner(
 
         color =
             when (securityState) {
-                ContactSecurityState.NO_PUBLIC_KEY -> {
-                    MaterialTheme
-                        .colorScheme
-                        .errorContainer
+                ContactSecurityState.NO_REMOTE_PUBLIC_KEYS,
+                ContactSecurityState.ONE_WAY_KEYS -> {
+                    MaterialTheme.colorScheme.errorContainer
                 }
 
-                ContactSecurityState.PUBLIC_KEY_UNVERIFIED -> {
-                    MaterialTheme
-                        .colorScheme
-                        .secondaryContainer
+                ContactSecurityState.MUTUAL_KEYS_UNVERIFIED -> {
+                    MaterialTheme.colorScheme.secondaryContainer
                 }
 
-                ContactSecurityState.PUBLIC_KEY_VERIFIED -> {
-                    MaterialTheme
-                        .colorScheme
-                        .primaryContainer
+                ContactSecurityState.MUTUAL_KEYS_VERIFIED -> {
+                    MaterialTheme.colorScheme.primaryContainer
                 }
             }
     ) {
@@ -298,35 +296,12 @@ private fun SecurityBanner(
                     horizontal = 16.dp,
                     vertical = 12.dp
                 ),
-
             verticalAlignment =
                 Alignment.Top
         ) {
             Icon(
                 imageVector = icon,
-
-                contentDescription = null,
-
-                tint =
-                    when (securityState) {
-                        ContactSecurityState.NO_PUBLIC_KEY -> {
-                            MaterialTheme
-                                .colorScheme
-                                .onErrorContainer
-                        }
-
-                        ContactSecurityState.PUBLIC_KEY_UNVERIFIED -> {
-                            MaterialTheme
-                                .colorScheme
-                                .onSecondaryContainer
-                        }
-
-                        ContactSecurityState.PUBLIC_KEY_VERIFIED -> {
-                            MaterialTheme
-                                .colorScheme
-                                .onPrimaryContainer
-                        }
-                    }
+                contentDescription = null
             )
 
             Column(
@@ -337,25 +312,16 @@ private fun SecurityBanner(
             ) {
                 Text(
                     text = title,
-
                     style =
-                        MaterialTheme
-                            .typography
-                            .titleSmall
+                        MaterialTheme.typography.titleSmall
                 )
 
                 Text(
                     text = description,
-
                     modifier =
-                        Modifier.padding(
-                            top = 2.dp
-                        ),
-
+                        Modifier.padding(top = 2.dp),
                     style =
-                        MaterialTheme
-                            .typography
-                            .bodySmall
+                        MaterialTheme.typography.bodySmall
                 )
             }
         }
@@ -571,34 +537,28 @@ private fun EmptyChatContent(
             Text(
                 text =
                     when (securityState) {
-                        ContactSecurityState.NO_PUBLIC_KEY -> {
-                            "This conversation is currently not end-to-end encrypted."
+                        ContactSecurityState.NO_REMOTE_PUBLIC_KEYS -> {
+                            "This contact has no SecureChat public keys. Messages use plaintext transport."
                         }
 
-                        ContactSecurityState.PUBLIC_KEY_UNVERIFIED -> {
-                            "Messages will use the imported public key. Verify the identity when possible."
+                        ContactSecurityState.ONE_WAY_KEYS -> {
+                            "You have this contact’s public keys, but they do not have yours yet. Messages remain plaintext."
                         }
 
-                        ContactSecurityState.PUBLIC_KEY_VERIFIED -> {
-                            "Messages will use the verified SecureChat identity."
+                        ContactSecurityState.MUTUAL_KEYS_UNVERIFIED -> {
+                            "Messages are encrypted. Compare the safety number through a trusted channel."
+                        }
+
+                        ContactSecurityState.MUTUAL_KEYS_VERIFIED -> {
+                            "Messages use the verified SecureChat identity."
                         }
                     },
-
                 modifier =
-                    Modifier.padding(
-                        top = 8.dp
-                    ),
-
+                    Modifier.padding(top = 8.dp),
                 style =
-                    MaterialTheme
-                        .typography
-                        .bodySmall,
-
+                    MaterialTheme.typography.bodySmall,
                 color =
-                    MaterialTheme
-                        .colorScheme
-                        .onSurfaceVariant,
-
+                    MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign =
                     TextAlign.Center
             )

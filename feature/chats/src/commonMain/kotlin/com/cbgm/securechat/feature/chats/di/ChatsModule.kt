@@ -13,7 +13,10 @@ val chatsModule =
 
         single<ChatsRepository> {
             DefaultChatsRepository(
-                chatDao = get()
+                chatDao = get(),
+                getContact = get(),
+                transportMessageCipher = get(),
+                transportPayloadCodec = get()
             )
         }
 

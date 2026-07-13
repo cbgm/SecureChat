@@ -10,10 +10,6 @@ import com.cbgm.securechat.data.database.entity.ContactPublicIdentityEntity
 import com.cbgm.securechat.data.database.model.ContactWithPublicIdentity
 import kotlinx.coroutines.flow.Flow
 
-/**
- * Persistence operations for contacts and their optional
- * SecureChat public identities.
- */
 @Dao
 interface ContactDao {
 
@@ -40,9 +36,6 @@ interface ContactDao {
         contactId: String
     ): ContactWithPublicIdentity?
 
-    /**
-     * Finds the contact owning a specific signing public key.
-     */
     @Transaction
     @Query(
         """
@@ -50,7 +43,8 @@ interface ContactDao {
         FROM contacts
         INNER JOIN contact_public_identities
             ON contact_public_identities.contactId = contacts.id
-        WHERE contact_public_identities.signingPublicKey = :signingPublicKey
+        WHERE contact_public_identities.signingPublicKey =
+            :signingPublicKey
         LIMIT 1
         """
     )
@@ -58,22 +52,16 @@ interface ContactDao {
         signingPublicKey: ByteArray
     ): ContactWithPublicIdentity?
 
-    /**
-     * Raw phone lookup.
-     *
-     * Later the repository/import feature will normalize phone
-     * numbers before querying.
-     */
     @Transaction
     @Query(
         """
-    SELECT contacts.*
-    FROM contacts
-    INNER JOIN contact_phone_numbers
-        ON contact_phone_numbers.contactId = contacts.id
-    WHERE contact_phone_numbers.value = :phoneNumber
-    LIMIT 1
-    """
+        SELECT contacts.*
+        FROM contacts
+        INNER JOIN contact_phone_numbers
+            ON contact_phone_numbers.contactId = contacts.id
+        WHERE contact_phone_numbers.value = :phoneNumber
+        LIMIT 1
+        """
     )
     suspend fun findByPhoneNumber(
         phoneNumber: String
@@ -96,28 +84,46 @@ interface ContactDao {
     fun observeAll():
             Flow<List<ContactWithPublicIdentity>>
 
-    @Query(
-        """
-        DELETE FROM contacts
-        WHERE id = :contactId
-        """
-    )
-    suspend fun deleteById(
-        contactId: String
-    )
-
     @Transaction
     @Query(
         """
-    SELECT *
-    FROM contacts
-    WHERE deviceContactId = :deviceContactId
-    LIMIT 1
-    """
+        SELECT *
+        FROM contacts
+        WHERE deviceContactId = :deviceContactId
+        LIMIT 1
+        """
     )
     suspend fun findByDeviceContactId(
         deviceContactId: String
     ): ContactWithPublicIdentity?
+
+    @Query(
+        """
+        UPDATE contact_public_identities
+        SET verificationStatus = :status,
+            updatedAtEpochMilliseconds = :updatedAt
+        WHERE contactId = :contactId
+        """
+    )
+    suspend fun updateVerificationStatus(
+        contactId: String,
+        status: String,
+        updatedAt: Long
+    )
+
+    @Query(
+        """
+        UPDATE contact_public_identities
+        SET keyExchangeStatus = :status,
+            updatedAtEpochMilliseconds = :updatedAt
+        WHERE contactId = :contactId
+        """
+    )
+    suspend fun updateKeyExchangeStatus(
+        contactId: String,
+        status: String,
+        updatedAt: Long
+    )
 
     @Upsert
     suspend fun upsertPhoneNumbers(
@@ -126,11 +132,21 @@ interface ContactDao {
 
     @Query(
         """
-    DELETE FROM contact_phone_numbers
-    WHERE contactId = :contactId
-    """
+        DELETE FROM contact_phone_numbers
+        WHERE contactId = :contactId
+        """
     )
     suspend fun deletePhoneNumbersForContact(
+        contactId: String
+    )
+
+    @Query(
+        """
+        DELETE FROM contacts
+        WHERE id = :contactId
+        """
+    )
+    suspend fun deleteById(
         contactId: String
     )
 }

@@ -8,12 +8,9 @@ import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumber
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
 import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
+import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.model.SecureChatIdentity
 
-/**
- * Converts the complete Room contact relation into the
- * contacts domain model.
- */
 fun ContactWithPublicIdentity.toDomain(): Contact {
     return Contact(
         id = contact.id,
@@ -32,7 +29,8 @@ fun ContactWithPublicIdentity.toDomain(): Contact {
             contact.deviceContactId,
 
         deviceContactLinkStatus =
-            contact.deviceContactLinkStatus
+            contact
+                .deviceContactLinkStatus
                 .toDeviceContactLinkStatus(),
 
         secureChatIdentity =
@@ -46,23 +44,18 @@ fun ContactWithPublicIdentity.toDomain(): Contact {
     )
 }
 
-/**
- * Converts one persisted phone-number row into the domain model.
- */
 private fun ContactPhoneNumberEntity.toDomain():
         ContactPhoneNumber {
 
     return ContactPhoneNumber(
         id = id,
         value = value,
-        type = type.toContactPhoneNumberType(),
+        type =
+            type.toContactPhoneNumberType(),
         label = label
     )
 }
 
-/**
- * Converts the persisted SecureChat identity into the domain model.
- */
 private fun ContactPublicIdentityEntity.toDomain():
         SecureChatIdentity {
 
@@ -76,6 +69,10 @@ private fun ContactPublicIdentityEntity.toDomain():
         verificationStatus =
             verificationStatus
                 .toContactVerificationStatus(),
+
+        keyExchangeStatus =
+            keyExchangeStatus
+                .toKeyExchangeStatus(),
 
         updatedAtEpochMilliseconds =
             updatedAtEpochMilliseconds
@@ -146,7 +143,24 @@ private fun String.toContactVerificationStatus():
 
         else ->
             error(
-                "Unknown contact verification status: $this"
+                "Unknown verification status: $this"
+            )
+    }
+}
+
+private fun String.toKeyExchangeStatus():
+        KeyExchangeStatus {
+
+    return when (this) {
+        KeyExchangeStatus.ONE_WAY.name ->
+            KeyExchangeStatus.ONE_WAY
+
+        KeyExchangeStatus.MUTUAL.name ->
+            KeyExchangeStatus.MUTUAL
+
+        else ->
+            error(
+                "Unknown key-exchange status: $this"
             )
     }
 }

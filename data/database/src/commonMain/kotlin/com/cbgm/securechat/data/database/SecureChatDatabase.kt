@@ -19,7 +19,7 @@ import com.cbgm.securechat.data.database.entity.MessageEntity
         ConversationEntity::class,
         MessageEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 @ConstructedBy(

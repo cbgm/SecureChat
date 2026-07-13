@@ -5,5 +5,7 @@ data class ChatMessage(
     val contactId: String,
     val text: String,
     val isMine: Boolean,
-    val timestamp: Long
+    val timestamp: Long,
+    val security: MessageSecurity,
+    val contentStatus: MessageContentStatus
 )

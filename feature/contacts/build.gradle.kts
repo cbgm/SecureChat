@@ -59,9 +59,10 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(project(":core"))
-            implementation(project(":data:database"))
-            implementation(project(":feature:identity"))
+            implementation(projects.core)
+            implementation(projects.core.crypto)
+            implementation(projects.data.database)
+            implementation(projects.feature.identity)
 
             implementation(libs.kotlinx.coroutines.core)
 

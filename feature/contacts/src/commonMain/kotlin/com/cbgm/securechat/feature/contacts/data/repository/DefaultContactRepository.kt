@@ -6,7 +6,6 @@ import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.data.database.entity.ContactEntity
 import com.cbgm.securechat.data.database.entity.ContactPhoneNumberEntity
 import com.cbgm.securechat.data.database.entity.ContactPublicIdentityEntity
-import com.cbgm.securechat.data.database.model.ContactWithPublicIdentity
 import com.cbgm.securechat.feature.contacts.data.mapper.toDomain
 import com.cbgm.securechat.feature.contacts.data.merge.ContactMergeService
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
@@ -16,6 +15,7 @@ import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
 import com.cbgm.securechat.feature.contacts.domain.model.ImportContactRequest
 import com.cbgm.securechat.feature.contacts.domain.model.ImportDeviceContactRequest
 import com.cbgm.securechat.feature.contacts.domain.model.ImportDevicePhoneNumber
+import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -29,34 +29,43 @@ class DefaultContactRepository(
         request: ImportContactRequest
     ): Result<Contact> {
         return runCatching {
-            require(request.encryptionPublicKey.isNotEmpty()) {
+            require(
+                request.encryptionPublicKey.isNotEmpty()
+            ) {
                 "Encryption public key must not be empty"
             }
 
-            require(request.signingPublicKey.isNotEmpty()) {
+            require(
+                request.signingPublicKey.isNotEmpty()
+            ) {
                 "Signing public key must not be empty"
             }
 
             val normalizedDisplayName =
                 request.displayName
                     ?.trim()
-                    ?.takeIf { it.isNotEmpty() }
+                    ?.takeIf {
+                        it.isNotEmpty()
+                    }
 
             val normalizedPhoneNumber =
                 request.phoneNumber
                     ?.trim()
-                    ?.takeIf { it.isNotEmpty() }
+                    ?.takeIf {
+                        it.isNotEmpty()
+                    }
 
             val now =
                 SystemClock.nowEpochMilliseconds()
 
             val mergeResult =
-                mergeService.findOrCreateForSecureChatIdentity(
-                    signingPublicKey =
-                        request.signingPublicKey,
-                    phoneNumber =
-                        normalizedPhoneNumber
-                )
+                mergeService
+                    .findOrCreateForSecureChatIdentity(
+                        signingPublicKey =
+                            request.signingPublicKey,
+                        phoneNumber =
+                            normalizedPhoneNumber
+                    )
 
             val contactId =
                 mergeResult.contactId
@@ -101,7 +110,8 @@ class DefaultContactRepository(
                         current.contact.copy(
                             displayName =
                                 normalizedDisplayName
-                                    ?: current.contact.displayName,
+                                    ?: current.contact
+                                        .displayName,
                             updatedAtEpochMilliseconds =
                                 now
                         )
@@ -166,24 +176,76 @@ class DefaultContactRepository(
                 )
             }
 
+            val encryptionKeyChanged =
+                existingIdentity != null &&
+                        !existingIdentity
+                            .encryptionPublicKey
+                            .contentEquals(
+                                request
+                                    .encryptionPublicKey
+                            )
+
+            val signingKeyChanged =
+                existingIdentity != null &&
+                        !existingIdentity
+                            .signingPublicKey
+                            .contentEquals(
+                                request.signingPublicKey
+                            )
+
+            val anyKeyChanged =
+                encryptionKeyChanged ||
+                        signingKeyChanged
+
             contactDao.upsertPublicIdentity(
                 identity =
                     ContactPublicIdentityEntity(
-                        contactId = contactId,
+                        contactId =
+                            contactId,
+
                         encryptionPublicKey =
                             request
                                 .encryptionPublicKey
                                 .copyOf(),
+
                         signingPublicKey =
                             request
                                 .signingPublicKey
                                 .copyOf(),
+
                         verificationStatus =
-                            existingIdentity
-                                ?.verificationStatus
-                                ?: ContactVerificationStatus
+                            if (anyKeyChanged) {
+                                ContactVerificationStatus
                                     .UNVERIFIED
-                                    .name,
+                                    .name
+                            } else {
+                                existingIdentity
+                                    ?.verificationStatus
+                                    ?: ContactVerificationStatus
+                                        .UNVERIFIED
+                                        .name
+                            },
+
+                        /**
+                         * Importing the contact's keys only establishes
+                         * one-way possession.
+                         *
+                         * MUTUAL is preserved only when the same keys are
+                         * imported again.
+                         */
+                        keyExchangeStatus =
+                            if (anyKeyChanged) {
+                                KeyExchangeStatus
+                                    .ONE_WAY
+                                    .name
+                            } else {
+                                existingIdentity
+                                    ?.keyExchangeStatus
+                                    ?: KeyExchangeStatus
+                                        .ONE_WAY
+                                        .name
+                            },
+
                         updatedAtEpochMilliseconds =
                             now
                     )
@@ -201,21 +263,27 @@ class DefaultContactRepository(
         request: ImportDeviceContactRequest
     ): Result<Contact> {
         return runCatching {
-            require(request.deviceContactId.isNotBlank()) {
+            require(
+                request.deviceContactId.isNotBlank()
+            ) {
                 "Device contact ID must not be blank"
             }
 
             val normalizedDisplayName =
                 request.displayName
                     ?.trim()
-                    ?.takeIf { it.isNotEmpty() }
+                    ?.takeIf {
+                        it.isNotEmpty()
+                    }
 
             val normalizedPhoneNumbers =
                 normalizeDevicePhoneNumbers(
                     request.phoneNumbers
                 )
 
-            require(normalizedPhoneNumbers.isNotEmpty()) {
+            require(
+                normalizedPhoneNumbers.isNotEmpty()
+            ) {
                 "Device contact must contain at least one phone number"
             }
 
@@ -223,12 +291,13 @@ class DefaultContactRepository(
                 SystemClock.nowEpochMilliseconds()
 
             val mergeResult =
-                mergeService.findOrCreateForDeviceContact(
-                    deviceContactId =
-                        request.deviceContactId,
-                    phoneNumbers =
-                        normalizedPhoneNumbers
-                )
+                mergeService
+                    .findOrCreateForDeviceContact(
+                        deviceContactId =
+                            request.deviceContactId,
+                        phoneNumbers =
+                            normalizedPhoneNumbers
+                    )
 
             val contactId =
                 mergeResult.contactId
@@ -285,7 +354,8 @@ class DefaultContactRepository(
                     current.contact.copy(
                         displayName =
                             normalizedDisplayName
-                                ?: current.contact.displayName,
+                                ?: current.contact
+                                    .displayName,
                         deviceContactId =
                             request.deviceContactId,
                         deviceContactLinkStatus =
@@ -361,12 +431,16 @@ class DefaultContactRepository(
             val normalizedDisplayName =
                 displayName
                     ?.trim()
-                    ?.takeIf { it.isNotEmpty() }
+                    ?.takeIf {
+                        it.isNotEmpty()
+                    }
 
             val normalizedPhoneNumber =
                 phoneNumber
                     ?.trim()
-                    ?.takeIf { it.isNotEmpty() }
+                    ?.takeIf {
+                        it.isNotEmpty()
+                    }
 
             val now =
                 SystemClock.nowEpochMilliseconds()
@@ -421,31 +495,113 @@ class DefaultContactRepository(
                         "Contact not found: $contactId"
                     )
 
-            val identity =
-                existing.publicIdentity
-                    ?: error(
-                        "Contact has no SecureChat identity"
-                    )
+            check(
+                existing.publicIdentity != null
+            ) {
+                "Contact has no SecureChat identity"
+            }
 
             val now =
                 SystemClock.nowEpochMilliseconds()
 
-            contactDao.upsertPublicIdentity(
-                identity =
-                    identity.copy(
-                        verificationStatus =
-                            ContactVerificationStatus
-                                .VERIFIED
-                                .name,
-                        updatedAtEpochMilliseconds =
-                            now
-                    )
+            contactDao.updateVerificationStatus(
+                contactId = contactId,
+                status =
+                    ContactVerificationStatus
+                        .VERIFIED
+                        .name,
+                updatedAt = now
             )
 
             loadContactOrThrow(
                 contactId = contactId,
                 message =
                     "Verified contact could not be loaded"
+            )
+        }
+    }
+
+    override suspend fun markKeyExchangeMutual(
+        contactId: String
+    ): Result<Contact> {
+        return runCatching {
+            val existing =
+                contactDao.findById(
+                    contactId = contactId
+                )
+                    ?: error(
+                        "Contact not found: $contactId"
+                    )
+
+            check(
+                existing.publicIdentity != null
+            ) {
+                "Contact has no SecureChat identity"
+            }
+
+            val now =
+                SystemClock.nowEpochMilliseconds()
+
+            contactDao.updateKeyExchangeStatus(
+                contactId = contactId,
+                status =
+                    KeyExchangeStatus
+                        .MUTUAL
+                        .name,
+                updatedAt = now
+            )
+
+            loadContactOrThrow(
+                contactId = contactId,
+                message =
+                    "Contact could not be loaded after key exchange"
+            )
+        }
+    }
+
+    override suspend fun resetKeyExchange(
+        contactId: String
+    ): Result<Contact> {
+        return runCatching {
+            val existing =
+                contactDao.findById(
+                    contactId = contactId
+                )
+                    ?: error(
+                        "Contact not found: $contactId"
+                    )
+
+            check(
+                existing.publicIdentity != null
+            ) {
+                "Contact has no SecureChat identity"
+            }
+
+            val now =
+                SystemClock.nowEpochMilliseconds()
+
+            contactDao.updateKeyExchangeStatus(
+                contactId = contactId,
+                status =
+                    KeyExchangeStatus
+                        .ONE_WAY
+                        .name,
+                updatedAt = now
+            )
+
+            contactDao.updateVerificationStatus(
+                contactId = contactId,
+                status =
+                    ContactVerificationStatus
+                        .UNVERIFIED
+                        .name,
+                updatedAt = now
+            )
+
+            loadContactOrThrow(
+                contactId = contactId,
+                message =
+                    "Contact could not be loaded after reset"
             )
         }
     }
@@ -580,7 +736,9 @@ class DefaultContactRepository(
                 val normalizedValue =
                     phoneNumber.value
                         .trim()
-                        .takeIf { it.isNotEmpty() }
+                        .takeIf {
+                            it.isNotEmpty()
+                        }
                         ?: return@mapNotNull null
 
                 phoneNumber.copy(
@@ -589,7 +747,9 @@ class DefaultContactRepository(
                     label =
                         phoneNumber.label
                             ?.trim()
-                            ?.takeIf { it.isNotEmpty() }
+                            ?.takeIf {
+                                it.isNotEmpty()
+                            }
                 )
             }
             .distinctBy { phoneNumber ->
