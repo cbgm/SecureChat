@@ -18,6 +18,20 @@ class DefaultIdentityRepository(
     PublicIdentityStorage
 ) : IdentityRepository {
 
+    @OptIn(ExperimentalUnsignedTypes::class)
+    override suspend fun getEncryptionPrivateKey():
+            Result<ByteArray> {
+
+        return runCatching {
+            privateKeyStorage
+                .loadEncryptionPrivateKey()
+                .getOrThrow()
+                ?.toByteArray()
+                ?: error(
+                    "Local encryption private key does not exist"
+                )
+        }
+    }
     override suspend fun getStatus():
             Result<IdentityStatus> {
 

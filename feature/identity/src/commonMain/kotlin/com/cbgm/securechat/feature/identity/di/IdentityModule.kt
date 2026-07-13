@@ -1,7 +1,11 @@
 package com.cbgm.securechat.feature.identity.di
 
+import com.cbgm.securechat.core.protocol.identity.LocalEncryptionKeyPairProvider
+import com.cbgm.securechat.core.protocol.identity.LocalSigningPublicKeyProvider
 import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
 import com.cbgm.securechat.feature.identity.core.PublicIdentityStorage
+import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalEncryptionKeyPairProvider
+import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalSigningPublicKeyProvider
 import com.cbgm.securechat.feature.identity.data.repository.DefaultIdentityRepository
 import com.cbgm.securechat.feature.identity.data.sharing.DefaultIdentityShareCodec
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
@@ -68,6 +72,19 @@ val identityModule =
                             Unit
                         }
                 }
+            )
+        }
+
+        single<LocalEncryptionKeyPairProvider> {
+            IdentityLocalEncryptionKeyPairProvider(
+                identityRepository = get()
+            )
+        }
+
+        single<LocalSigningPublicKeyProvider> {
+            IdentityLocalSigningPublicKeyProvider(
+                identityRepository =
+                    get()
             )
         }
 

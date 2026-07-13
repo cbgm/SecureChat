@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,10 +21,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -44,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.feature.chats.domain.model.ChatMessage
 import com.cbgm.securechat.feature.chats.domain.model.ContactSecurityState
 import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
+import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,6 +58,7 @@ fun ChatScreen(
     uiState: ChatUiState,
     onMessageTextChanged: (String) -> Unit,
     onSendClick: () -> Unit,
+    onRetryMessage: (String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -146,8 +153,7 @@ fun ChatScreen(
                             uiState.contactName,
 
                         securityState =
-                            uiState
-                                .contactSecurityState,
+                            uiState.contactSecurityState,
 
                         modifier =
                             Modifier
@@ -160,6 +166,9 @@ fun ChatScreen(
                     MessageList(
                         messages =
                             uiState.messages,
+
+                        onRetryMessage =
+                            onRetryMessage,
 
                         modifier =
                             Modifier
@@ -425,6 +434,7 @@ private fun SecurityBanner(
 @Composable
 private fun MessageList(
     messages: List<ChatMessage>,
+    onRetryMessage: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -451,7 +461,13 @@ private fun MessageList(
         ) { message ->
             MessageBubble(
                 message =
-                    message
+                    message,
+
+                onRetryClick = {
+                    onRetryMessage(
+                        message.id
+                    )
+                }
             )
         }
     }
@@ -460,6 +476,7 @@ private fun MessageList(
 @Composable
 private fun MessageBubble(
     message: ChatMessage,
+    onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val displayedText =
@@ -603,6 +620,9 @@ private fun MessageBubble(
                 message =
                     message,
 
+                onRetryClick =
+                    onRetryClick,
+
                 modifier =
                     Modifier.padding(
                         top = 3.dp,
@@ -617,7 +637,41 @@ private fun MessageBubble(
 @Composable
 private fun MessageMetadata(
     message: ChatMessage,
+    onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
+) {
+    Row(
+        modifier =
+            modifier,
+
+        verticalAlignment =
+            Alignment.CenterVertically,
+
+        horizontalArrangement =
+            Arrangement.spacedBy(
+                4.dp
+            )
+    ) {
+        MessageSecurityIndicator(
+            message =
+                message
+        )
+
+        if (message.isMine) {
+            OutgoingDeliveryIndicator(
+                deliveryStatus =
+                    message.deliveryStatus,
+
+                onRetryClick =
+                    onRetryClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun MessageSecurityIndicator(
+    message: ChatMessage
 ) {
     val text =
         when (message.contentStatus) {
@@ -626,11 +680,11 @@ private fun MessageMetadata(
             }
 
             MessageContentStatus.INVALID_PLAINTEXT_PACKET -> {
-                "Invalid plaintext packet"
+                "Invalid plaintext"
             }
 
             MessageContentStatus.TRANSPORT_DECRYPTION_FAILED -> {
-                "Secure-message decryption failed"
+                "Decryption failed"
             }
 
             MessageContentStatus.READABLE -> {
@@ -664,9 +718,6 @@ private fun MessageMetadata(
         }
 
     Row(
-        modifier =
-            modifier,
-
         verticalAlignment =
             Alignment.CenterVertically
     ) {
@@ -677,6 +728,11 @@ private fun MessageMetadata(
             contentDescription =
                 null,
 
+            modifier =
+                Modifier.size(
+                    14.dp
+                ),
+
             tint =
                 MaterialTheme
                     .colorScheme
@@ -685,7 +741,188 @@ private fun MessageMetadata(
 
         Spacer(
             modifier =
-                Modifier.width(4.dp)
+                Modifier.width(
+                    3.dp
+                )
+        )
+
+        Text(
+            text =
+                text,
+
+            style =
+                MaterialTheme
+                    .typography
+                    .labelSmall,
+
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun OutgoingDeliveryIndicator(
+    deliveryStatus: MessageDeliveryStatus,
+    onRetryClick: () -> Unit
+) {
+    when (deliveryStatus) {
+        MessageDeliveryStatus.NOT_APPLICABLE -> {
+            Unit
+        }
+
+        MessageDeliveryStatus.QUEUED -> {
+            DeliveryLabel(
+                text = "Queued",
+                icon = {
+                    Icon(
+                        imageVector =
+                            Icons.Default.Schedule,
+
+                        contentDescription =
+                            null,
+
+                        modifier =
+                            Modifier.size(
+                                14.dp
+                            )
+                    )
+                }
+            )
+        }
+
+        MessageDeliveryStatus.SENDING -> {
+            DeliveryLabel(
+                text = "Sending",
+                icon = {
+                    CircularProgressIndicator(
+                        modifier =
+                            Modifier.size(
+                                12.dp
+                            ),
+
+                        strokeWidth =
+                            1.5.dp
+                    )
+                }
+            )
+        }
+
+        MessageDeliveryStatus.SENT -> {
+            DeliveryLabel(
+                text = "Sent",
+                icon = {
+                    Icon(
+                        imageVector =
+                            Icons.Default.Check,
+
+                        contentDescription =
+                            null,
+
+                        modifier =
+                            Modifier.size(
+                                14.dp
+                            )
+                    )
+                }
+            )
+        }
+
+        MessageDeliveryStatus.FAILED -> {
+            Row(
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector =
+                        Icons.Default.ErrorOutline,
+
+                    contentDescription =
+                        null,
+
+                    modifier =
+                        Modifier.size(
+                            14.dp
+                        ),
+
+                    tint =
+                        MaterialTheme
+                            .colorScheme
+                            .error
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.width(
+                            3.dp
+                        )
+                )
+
+                Text(
+                    text =
+                        "Failed",
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelSmall,
+
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .error
+                )
+
+                IconButton(
+                    onClick =
+                        onRetryClick,
+
+                    modifier =
+                        Modifier.size(
+                            28.dp
+                        )
+                ) {
+                    Icon(
+                        imageVector =
+                            Icons.Default.Refresh,
+
+                        contentDescription =
+                            "Retry message",
+
+                        modifier =
+                            Modifier.size(
+                                16.dp
+                            ),
+
+                        tint =
+                            MaterialTheme
+                                .colorScheme
+                                .error
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeliveryLabel(
+    text: String,
+    icon: @Composable () -> Unit
+) {
+    Row(
+        verticalAlignment =
+            Alignment.CenterVertically
+    ) {
+        icon()
+
+        Spacer(
+            modifier =
+                Modifier.width(
+                    3.dp
+                )
         )
 
         Text(

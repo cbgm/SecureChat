@@ -7,5 +7,6 @@ data class ChatMessage(
     val isMine: Boolean,
     val timestamp: Long,
     val security: MessageSecurity,
-    val contentStatus: MessageContentStatus
+    val contentStatus: MessageContentStatus,
+    val deliveryStatus: MessageDeliveryStatus
 )

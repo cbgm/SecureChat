@@ -60,6 +60,7 @@ kotlin {
             implementation(projects.data.database)
             implementation(projects.core)
             implementation(projects.core.crypto)
+            implementation(projects.core.protocol)
             implementation(projects.feature.contacts)
             implementation(libs.kotlinx.coroutines.core)
 

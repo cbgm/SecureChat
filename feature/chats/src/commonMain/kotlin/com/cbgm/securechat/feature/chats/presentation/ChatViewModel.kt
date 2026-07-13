@@ -126,6 +126,28 @@ class ChatViewModel(
         errorMessage.value = null
     }
 
+    fun retryMessage(
+        messageId: String
+    ) {
+        if (messageId.isBlank()) {
+            return
+        }
+
+        errorMessage.value = null
+
+        viewModelScope.launch {
+            chatsRepository
+                .retryMessage(
+                    messageId = messageId
+                )
+                .onFailure { error ->
+                    errorMessage.value =
+                        error.message
+                            ?: "Message could not be queued again"
+                }
+        }
+    }
+
     fun sendMessage() {
         val normalizedText =
             messageText.value.trim()

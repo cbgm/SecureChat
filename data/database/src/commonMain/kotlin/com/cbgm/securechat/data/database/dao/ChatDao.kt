@@ -112,4 +112,16 @@ interface ChatDao {
     suspend fun deleteConversation(
         conversationId: String
     )
+
+    @Query(
+        """
+    SELECT *
+    FROM messages
+    WHERE id = :messageId
+    LIMIT 1
+    """
+    )
+    suspend fun findMessageById(
+        messageId: String
+    ): MessageEntity?
 }

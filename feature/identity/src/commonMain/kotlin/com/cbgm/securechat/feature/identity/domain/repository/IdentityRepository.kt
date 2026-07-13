@@ -30,4 +30,7 @@ interface IdentityRepository {
      * Private keys are never exposed through this repository method.
      */
     suspend fun getIdentity(): Result<PublicIdentity?>
+
+    suspend fun getEncryptionPrivateKey():
+            Result<ByteArray>
 }

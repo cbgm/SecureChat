@@ -7,6 +7,7 @@ import com.cbgm.securechat.feature.identity.core.PrivateKeyStorage
 import com.cbgm.securechat.feature.identity.core.PublicIdentityStorage
 import com.cbgm.securechat.feature.identity.data.storage.AndroidPrivateKeyStorage
 import com.cbgm.securechat.feature.identity.data.storage.AndroidPublicIdentityStorage
+import com.cbgm.securechat.feature.transport.relay.config.RelayTransportConfig
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -44,6 +45,13 @@ val appModule = module {
     single<DeviceContactsDataSource> {
         AndroidDeviceContactsDataSource(
             contentResolver = get()
+        )
+    }
+
+    single {
+        RelayTransportConfig(
+            serverUrl =
+                "ws://10.0.2.2:8080/relay"
         )
     }
 }

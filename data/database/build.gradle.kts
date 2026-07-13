@@ -62,9 +62,8 @@ kotlin {
                 project(":core:database")
             )
 
-            implementation(
-                project(":core")
-            )
+            implementation(projects.core)
+            implementation(projects.core.protocol)
 
             implementation(
                 libs.androidx.room.runtime

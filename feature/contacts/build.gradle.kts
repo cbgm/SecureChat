@@ -63,6 +63,7 @@ kotlin {
             implementation(projects.core.crypto)
             implementation(projects.data.database)
             implementation(projects.feature.identity)
+            implementation(projects.core.protocol)
 
             implementation(libs.kotlinx.coroutines.core)
 

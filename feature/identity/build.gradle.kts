@@ -59,6 +59,7 @@ kotlin {
         commonMain.dependencies {
             implementation(projects.core)
             implementation(projects.core.crypto)
+            implementation(projects.core.protocol)
             implementation(libs.kotlinx.coroutines.core)
 
             implementation(libs.compose.runtime)

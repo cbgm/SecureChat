@@ -33,4 +33,8 @@ interface ChatsRepository {
         localEncryptionPublicKey: ByteArray,
         localEncryptionPrivateKey: ByteArray
     )
+
+    suspend fun retryMessage(
+        messageId: String
+    ): Result<Unit>
 }

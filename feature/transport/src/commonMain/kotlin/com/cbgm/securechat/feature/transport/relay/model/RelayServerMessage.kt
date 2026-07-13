@@ -1,0 +1,38 @@
+package com.cbgm.securechat.feature.transport.relay.model
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+sealed interface RelayServerMessage {
+
+    @Serializable
+    @SerialName("registered")
+    data class Registered(
+        val relayId: String
+    ) : RelayServerMessage
+
+    @Serializable
+    @SerialName("incoming_envelope")
+    data class IncomingEnvelope(
+        val envelope: RelayEnvelope
+    ) : RelayServerMessage
+
+    /**
+     * Confirms that the relay accepted the envelope.
+     *
+     * This does not yet prove that the recipient device read it.
+     */
+    @Serializable
+    @SerialName("envelope_accepted")
+    data class EnvelopeAccepted(
+        val envelopeId: String
+    ) : RelayServerMessage
+
+    @Serializable
+    @SerialName("error")
+    data class Error(
+        val code: String,
+        val message: String
+    ) : RelayServerMessage
+}

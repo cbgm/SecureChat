@@ -27,7 +27,8 @@ fun ChatRoute(
         .collectAsStateWithLifecycle()
 
     ChatScreen(
-        uiState = uiState,
+        uiState =
+            uiState,
 
         onMessageTextChanged =
             viewModel::onMessageTextChanged,
@@ -35,10 +36,10 @@ fun ChatRoute(
         onSendClick =
             viewModel::sendMessage,
 
-        onBack =
-            onBack,
+        onRetryMessage =
+            viewModel::retryMessage,
 
-        modifier =
-            modifier
+        onBack =
+            onBack
     )
 }

@@ -27,6 +27,11 @@ import androidx.room.PrimaryKey
                 "conversationId",
                 "createdAtEpochMilliseconds"
             ]
+        ),
+
+        Index(
+            value = ["packetId"],
+            unique = true
         )
     ]
 )
@@ -37,20 +42,28 @@ data class MessageEntity(
     val conversationId: String,
 
     /**
-     * Readable local representation.
+     * Protocol packet associated with this message.
      *
-     * For failed incoming packets, this contains a safe placeholder.
+     * Outgoing messages always have a packet ID.
+     * Incoming failures may not have one.
+     */
+    val packetId: String?,
+
+    /**
+     * Locally readable representation.
      */
     val text: String,
 
     /**
-     * Original encoded transport packet.
+     * Final encoded wire payload.
+     *
+     * For outgoing queued messages, this remains null until a transport
+     * implementation optionally stores the prepared payload.
      */
     val transportPayload: String?,
 
     /**
-     * TransportEncryptionMode name or UNKNOWN when the packet itself
-     * could not be parsed.
+     * TransportEncryptionMode enum name.
      */
     val transportMode: String,
 
@@ -58,6 +71,11 @@ data class MessageEntity(
      * MessageContentStatus enum name.
      */
     val contentStatus: String,
+
+    /**
+     * MessageDeliveryStatus enum name.
+     */
+    val deliveryStatus: String,
 
     val isMine: Boolean,
 
