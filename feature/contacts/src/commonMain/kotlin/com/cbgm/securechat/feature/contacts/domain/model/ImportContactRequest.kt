@@ -1,36 +1,70 @@
 package com.cbgm.securechat.feature.contacts.domain.model
 
-/**
- * Data required to import or update another person's identity.
- *
- * Public keys are always required.
- * Contact metadata remains optional.
- */
 data class ImportContactRequest(
-    val encryptionPublicKey: ByteArray,
-    val signingPublicKey: ByteArray,
+
+    /**
+     * Existing contact to update.
+     *
+     * null:
+     * resolve by signing key or phone number and create a contact when
+     * no match exists.
+     *
+     * non-null:
+     * replace/update the SecureChat identity of exactly this contact.
+     */
+    val contactId: String? = null,
+
     val displayName: String?,
-    val phoneNumber: String?
+
+    val phoneNumber: String?,
+
+    val encryptionPublicKey: ByteArray,
+
+    val signingPublicKey: ByteArray
 ) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
 
-        other as ImportContactRequest
+    override fun equals(
+        other: Any?
+    ): Boolean {
+        if (this === other) {
+            return true
+        }
 
-        if (!encryptionPublicKey.contentEquals(other.encryptionPublicKey)) return false
-        if (!signingPublicKey.contentEquals(other.signingPublicKey)) return false
-        if (displayName != other.displayName) return false
-        if (phoneNumber != other.phoneNumber) return false
+        if (other !is ImportContactRequest) {
+            return false
+        }
 
-        return true
+        return contactId == other.contactId &&
+                displayName == other.displayName &&
+                phoneNumber == other.phoneNumber &&
+                encryptionPublicKey.contentEquals(
+                    other.encryptionPublicKey
+                ) &&
+                signingPublicKey.contentEquals(
+                    other.signingPublicKey
+                )
     }
 
     override fun hashCode(): Int {
-        var result = encryptionPublicKey.contentHashCode()
-        result = 31 * result + signingPublicKey.contentHashCode()
-        result = 31 * result + (displayName?.hashCode() ?: 0)
-        result = 31 * result + (phoneNumber?.hashCode() ?: 0)
+        var result =
+            contactId?.hashCode() ?: 0
+
+        result =
+            31 * result +
+                    (displayName?.hashCode() ?: 0)
+
+        result =
+            31 * result +
+                    (phoneNumber?.hashCode() ?: 0)
+
+        result =
+            31 * result +
+                    encryptionPublicKey.contentHashCode()
+
+        result =
+            31 * result +
+                    signingPublicKey.contentHashCode()
+
         return result
     }
 }

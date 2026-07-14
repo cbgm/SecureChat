@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,16 +25,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.extensions.toHexString
 import com.cbgm.securechat.feature.identity.domain.model.PublicIdentity
 import com.cbgm.securechat.feature.identity.presentation.model.IdentityUiState
 
-
 @Composable
 fun IdentityScreen(
     uiState: IdentityUiState,
+    onPhoneNumberChanged: (String) -> Unit,
     onCreateIdentity: () -> Unit,
     onRetry: () -> Unit,
     onShareIdentity: () -> Unit,
@@ -41,46 +44,80 @@ fun IdentityScreen(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier.fillMaxSize()
+        modifier =
+            modifier.fillMaxSize()
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .safeContentPadding()
-                .padding(24.dp),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        MaterialTheme
+                            .colorScheme
+                            .background
+                    )
+                    .safeContentPadding()
+                    .padding(
+                        24.dp
+                    ),
+
+            contentAlignment =
+                Alignment.Center
         ) {
             when (uiState) {
                 IdentityUiState.Loading -> {
                     LoadingContent()
                 }
 
-                IdentityUiState.NoIdentity -> {
+                is IdentityUiState.NoIdentity -> {
                     NoIdentityContent(
-                        onCreateIdentity = onCreateIdentity
+                        phoneNumber =
+                            uiState.phoneNumber,
+
+                        phoneNumberError =
+                            uiState.phoneNumberError,
+
+                        onPhoneNumberChanged =
+                            onPhoneNumberChanged,
+
+                        onCreateIdentity =
+                            onCreateIdentity
                     )
                 }
 
                 is IdentityUiState.Ready -> {
                     ReadyIdentityContent(
-                        publicIdentity = uiState.publicIdentity,
-                        onShareIdentity = onShareIdentity,
-                        onImportContact = onImportContact,
-                        onContacts = onContacts
+                        publicIdentity =
+                            uiState.publicIdentity,
+
+                        localPhoneNumber =
+                            uiState.localPhoneNumber,
+
+                        onShareIdentity =
+                            onShareIdentity,
+
+                        onImportContact =
+                            onImportContact,
+
+                        onContacts =
+                            onContacts
                     )
                 }
 
                 IdentityUiState.IncompleteIdentity -> {
                     IncompleteIdentityContent(
-                        onRetry = onRetry
+                        onRetry =
+                            onRetry
                     )
                 }
 
                 is IdentityUiState.Error -> {
                     ErrorContent(
-                        message = uiState.message,
-                        onRetry = onRetry
+                        message =
+                            uiState.message,
+
+                        onRetry =
+                            onRetry
                     )
                 }
             }
@@ -91,62 +128,171 @@ fun IdentityScreen(
 @Composable
 private fun LoadingContent() {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        horizontalAlignment =
+            Alignment.CenterHorizontally,
+
+        verticalArrangement =
+            Arrangement.Center
     ) {
         CircularProgressIndicator()
 
         Spacer(
-            modifier = Modifier.height(16.dp)
+            modifier =
+                Modifier.height(
+                    16.dp
+                )
         )
 
         Text(
-            text = "Checking secure identity…",
-            style = MaterialTheme.typography.bodyLarge
+            text =
+                "Checking secure identity…",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .bodyLarge
         )
     }
 }
 
 @Composable
 private fun NoIdentityContent(
+    phoneNumber: String,
+    phoneNumberError: String?,
+    onPhoneNumberChanged: (String) -> Unit,
     onCreateIdentity: () -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(
+                    rememberScrollState()
+                ),
+
+        horizontalAlignment =
+            Alignment.CenterHorizontally
     ) {
         Text(
-            text = "SecureChat",
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold
+            text =
+                "SecureChat",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .headlineLarge,
+
+            fontWeight =
+                FontWeight.Bold
         )
 
         Spacer(
-            modifier = Modifier.height(16.dp)
+            modifier =
+                Modifier.height(
+                    16.dp
+                )
         )
 
         Text(
-            text = "Create your cryptographic identity to enable encrypted conversations.",
-            style = MaterialTheme.typography.bodyLarge
+            text =
+                "Enter your phone number and create your cryptographic identity.",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .bodyLarge
         )
 
         Spacer(
-            modifier = Modifier.height(8.dp)
+            modifier =
+                Modifier.height(
+                    8.dp
+                )
         )
 
         Text(
-            text = "Your private keys remain protected locally on this device.",
-            style = MaterialTheme.typography.bodyMedium
+            text =
+                "Use international format, for example +491701234567.",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .bodyMedium
         )
 
         Spacer(
-            modifier = Modifier.height(24.dp)
+            modifier =
+                Modifier.height(
+                    24.dp
+                )
+        )
+
+        OutlinedTextField(
+            value =
+                phoneNumber,
+
+            onValueChange =
+                onPhoneNumberChanged,
+
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            label = {
+                Text(
+                    text =
+                        "Your phone number"
+                )
+            },
+
+            placeholder = {
+                Text(
+                    text =
+                        "+491701234567"
+                )
+            },
+
+            supportingText = {
+                Text(
+                    text =
+                        phoneNumberError
+                            ?: "This number becomes your stable SecureChat relay address."
+                )
+            },
+
+            isError =
+                phoneNumberError != null,
+
+            singleLine =
+                true,
+
+            keyboardOptions =
+                KeyboardOptions(
+                    keyboardType =
+                        KeyboardType.Phone
+                )
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    24.dp
+                )
         )
 
         Button(
-            onClick = onCreateIdentity
+            onClick =
+                onCreateIdentity,
+
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            enabled =
+                phoneNumber.isNotBlank()
         ) {
-            Text("Create identity")
+            Text(
+                text =
+                    "Create identity"
+            )
         }
     }
 }
@@ -154,84 +300,168 @@ private fun NoIdentityContent(
 @Composable
 private fun ReadyIdentityContent(
     publicIdentity: PublicIdentity,
+    localPhoneNumber: String,
     onShareIdentity: () -> Unit,
     onImportContact: () -> Unit,
     onContacts: () -> Unit
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .verticalScroll(
-                rememberScrollState()
-            ),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(
+                    rememberScrollState()
+                ),
+
+        horizontalAlignment =
+            Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Identity ready",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
+            text =
+                "Identity ready",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .headlineMedium,
+
+            fontWeight =
+                FontWeight.Bold
         )
 
         Spacer(
-            modifier = Modifier.height(8.dp)
+            modifier =
+                Modifier.height(
+                    8.dp
+                )
         )
 
         Text(
-            text = "Your private keys are protected locally.",
-            style = MaterialTheme.typography.bodyLarge
+            text =
+                "Your private keys are protected locally.",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .bodyLarge
         )
 
         Spacer(
-            modifier = Modifier.height(32.dp)
+            modifier =
+                Modifier.height(
+                    16.dp
+                )
+        )
+
+        Text(
+            text =
+                "Relay phone: $localPhoneNumber",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .bodyMedium,
+
+            fontWeight =
+                FontWeight.SemiBold
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    32.dp
+                )
         )
 
         PublicKeySection(
-            title = "Encryption public key",
-            description = "Used for encrypted conversations.",
-            key = publicIdentity.encryptionPublicKey
+            title =
+                "Encryption public key",
+
+            description =
+                "Used for encrypted conversations.",
+
+            key =
+                publicIdentity
+                    .encryptionPublicKey
         )
 
         Spacer(
-            modifier = Modifier.height(24.dp)
+            modifier =
+                Modifier.height(
+                    24.dp
+                )
         )
 
         PublicKeySection(
-            title = "Signing public key",
-            description = "Used to verify identity information.",
-            key = publicIdentity.signingPublicKey
+            title =
+                "Signing public key",
+
+            description =
+                "Used to verify identity information.",
+
+            key =
+                publicIdentity
+                    .signingPublicKey
         )
 
         Spacer(
-            modifier = Modifier.height(32.dp)
+            modifier =
+                Modifier.height(
+                    32.dp
+                )
         )
 
         Button(
-            onClick = onContacts,
-            modifier = Modifier.fillMaxWidth()
+            onClick =
+                onContacts,
+
+            modifier =
+                Modifier.fillMaxWidth()
         ) {
-            Text("Contacts")
+            Text(
+                text =
+                    "Contacts"
+            )
         }
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier =
+                Modifier.height(
+                    12.dp
+                )
         )
 
         Button(
-            onClick = onShareIdentity,
-            modifier = Modifier.fillMaxWidth()
+            onClick =
+                onShareIdentity,
+
+            modifier =
+                Modifier.fillMaxWidth()
         ) {
-            Text("Share my identity")
+            Text(
+                text =
+                    "Share my identity"
+            )
         }
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier =
+                Modifier.height(
+                    12.dp
+                )
         )
 
         OutlinedButton(
-            onClick = onImportContact,
-            modifier = Modifier.fillMaxWidth()
+            onClick =
+                onImportContact,
+
+            modifier =
+                Modifier.fillMaxWidth()
         ) {
-            Text("Import contact")
+            Text(
+                text =
+                    "Import contact"
+            )
         }
     }
 }
@@ -243,38 +473,75 @@ private fun PublicKeySection(
     key: ByteArray
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier =
+            Modifier.fillMaxWidth()
     ) {
         Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
+            text =
+                title,
+
+            style =
+                MaterialTheme
+                    .typography
+                    .titleMedium,
+
+            fontWeight =
+                FontWeight.SemiBold
         )
 
         Spacer(
-            modifier = Modifier.height(4.dp)
-        )
-
-        Text(
-            text = description,
-            style = MaterialTheme.typography.bodySmall
-        )
-
-        Spacer(
-            modifier = Modifier.height(8.dp)
-        )
-
-        Text(
-            text = key.toHexString(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = MaterialTheme.shapes.medium
+            modifier =
+                Modifier.height(
+                    4.dp
                 )
-                .padding(12.dp),
-            style = MaterialTheme.typography.bodySmall,
-            fontFamily = FontFamily.Monospace
+        )
+
+        Text(
+            text =
+                description,
+
+            style =
+                MaterialTheme
+                    .typography
+                    .bodySmall
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    8.dp
+                )
+        )
+
+        Text(
+            text =
+                key.toHexString(),
+
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .surfaceVariant,
+
+                        shape =
+                            MaterialTheme
+                                .shapes
+                                .medium
+                    )
+                    .padding(
+                        12.dp
+                    ),
+
+            style =
+                MaterialTheme
+                    .typography
+                    .bodySmall,
+
+            fontFamily =
+                FontFamily.Monospace
         )
     }
 }
@@ -284,32 +551,57 @@ private fun IncompleteIdentityContent(
     onRetry: () -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier =
+            Modifier.fillMaxWidth(),
+
+        horizontalAlignment =
+            Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Incomplete identity",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
+            text =
+                "Incomplete identity",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .headlineMedium,
+
+            fontWeight =
+                FontWeight.Bold
         )
 
         Spacer(
-            modifier = Modifier.height(16.dp)
+            modifier =
+                Modifier.height(
+                    16.dp
+                )
         )
 
         Text(
-            text = "Only part of your identity is available. Replacement keys will not be generated automatically.",
-            style = MaterialTheme.typography.bodyLarge
+            text =
+                "Only part of your identity is available. Replacement keys will not be generated automatically.",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .bodyLarge
         )
 
         Spacer(
-            modifier = Modifier.height(24.dp)
+            modifier =
+                Modifier.height(
+                    24.dp
+                )
         )
 
         OutlinedButton(
-            onClick = onRetry
+            onClick =
+                onRetry
         ) {
-            Text("Check again")
+            Text(
+                text =
+                    "Check again"
+            )
         }
     }
 }
@@ -320,49 +612,112 @@ private fun ErrorContent(
     onRetry: () -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier =
+            Modifier.fillMaxWidth(),
+
+        horizontalAlignment =
+            Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Something went wrong",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
+            text =
+                "Something went wrong",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .headlineMedium,
+
+            fontWeight =
+                FontWeight.Bold
         )
 
         Spacer(
-            modifier = Modifier.height(16.dp)
+            modifier =
+                Modifier.height(
+                    16.dp
+                )
         )
 
         Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge
+            text =
+                message,
+
+            style =
+                MaterialTheme
+                    .typography
+                    .bodyLarge
         )
 
         Spacer(
-            modifier = Modifier.height(24.dp)
+            modifier =
+                Modifier.height(
+                    24.dp
+                )
         )
 
         Button(
-            onClick = onRetry
+            onClick =
+                onRetry
         ) {
-            Text("Retry")
+            Text(
+                text =
+                    "Retry"
+            )
         }
     }
 }
 
-
-/**
- * Preview the stateless screen rather than App().
- *
- * App() requires Koin and a real IdentityViewModel.
- */
 @Preview(
     showBackground = true
 )
 @Composable
 private fun NoIdentityPreview() {
     IdentityScreen(
-        uiState = IdentityUiState.NoIdentity,
+        uiState =
+            IdentityUiState.NoIdentity(
+                phoneNumber =
+                    "+491701111111"
+            ),
+
+        onPhoneNumberChanged = {},
+        onCreateIdentity = {},
+        onRetry = {},
+        onShareIdentity = {},
+        onImportContact = {},
+        onContacts = {}
+    )
+}
+
+@Preview(
+    showBackground = true
+)
+@Composable
+private fun ReadyIdentityPreview() {
+    IdentityScreen(
+        uiState =
+            IdentityUiState.Ready(
+                publicIdentity =
+                    PublicIdentity(
+                        encryptionPublicKey =
+                            byteArrayOf(
+                                1,
+                                2,
+                                3
+                            ),
+
+                        signingPublicKey =
+                            byteArrayOf(
+                                4,
+                                5,
+                                6
+                            )
+                    ),
+
+                localPhoneNumber =
+                    "+491701111111"
+            ),
+
+        onPhoneNumberChanged = {},
         onCreateIdentity = {},
         onRetry = {},
         onShareIdentity = {},
@@ -377,7 +732,11 @@ private fun NoIdentityPreview() {
 @Composable
 private fun IncompleteIdentityPreview() {
     IdentityScreen(
-        uiState = IdentityUiState.IncompleteIdentity,
+        uiState =
+            IdentityUiState
+                .IncompleteIdentity,
+
+        onPhoneNumberChanged = {},
         onCreateIdentity = {},
         onRetry = {},
         onShareIdentity = {},

@@ -4,9 +4,13 @@ import com.cbgm.securechat.core.protocol.identity.LocalEncryptionKeyPairProvider
 import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentityProvider
 import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPairProvider
 import com.cbgm.securechat.core.protocol.identity.LocalSigningPublicKeyProvider
+import com.cbgm.securechat.core.protocol.phone.LocalPhoneNumberProvider
+import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
+import com.cbgm.securechat.feature.identity.core.LocalPhoneNumberStorage
 import com.cbgm.securechat.feature.identity.core.PublicIdentityStorage
 import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalEncryptionKeyPairProvider
+import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalPhoneNumberProvider
 import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalPublicIdentityProvider
 import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalSigningKeyPairProvider
 import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalSigningPublicKeyProvider
@@ -29,15 +33,45 @@ val identityModule =
 
         single<IdentityRepository> {
             DefaultIdentityRepository(
-                identityKeyGenerator = get(),
-                privateKeyStorage = get(),
-                publicIdentityStorage = get(),
+                identityKeyGenerator =
+                    get(),
+
+                privateKeyStorage =
+                    get(),
+
+                publicIdentityStorage =
+                    get()
             )
         }
 
         single {
             CreateIdentity(
-                repository = get()
+                repository =
+                    get<IdentityRepository>()
+            )
+        }
+
+        single {
+            GetIdentityStatus(
+                repository =
+                    get<IdentityRepository>()
+            )
+        }
+
+        single {
+            GetPublicIdentity(
+                repository =
+                    get<IdentityRepository>()
+            )
+        }
+
+        single<LocalPhoneNumberProvider> {
+            IdentityLocalPhoneNumberProvider(
+                localPhoneNumberStorage =
+                    get<LocalPhoneNumberStorage>(),
+
+                phoneNumberNormalizer =
+                    get<PhoneNumberNormalizer>()
             )
         }
 
@@ -45,39 +79,6 @@ val identityModule =
             IdentityLocalSigningKeyPairProvider(
                 identityRepository =
                     get<IdentityRepository>()
-            )
-        }
-
-        single {
-            GetIdentityStatus(
-                repository = get()
-            )
-        }
-
-        single {
-            GetPublicIdentity(
-                repository = get()
-            )
-        }
-
-        single<IdentityShareCodec> {
-            DefaultIdentityShareCodec()
-        }
-
-        single<IdentityStartupManager> {
-            DefaultIdentityStartupManager(
-                identityExists = {
-                    get<PublicIdentityStorage>()
-                        .exists()
-                },
-
-                createIdentity = {
-                    get<CreateIdentity>()
-                        .invoke()
-                        .map {
-                            Unit
-                        }
-                }
             )
         }
 
@@ -90,44 +91,64 @@ val identityModule =
 
         single<LocalEncryptionKeyPairProvider> {
             IdentityLocalEncryptionKeyPairProvider(
-                identityRepository = get()
+                identityRepository =
+                    get<IdentityRepository>()
             )
         }
 
         single<LocalSigningPublicKeyProvider> {
             IdentityLocalSigningPublicKeyProvider(
                 identityRepository =
-                    get()
+                    get<IdentityRepository>()
+            )
+        }
+
+        single<IdentityShareCodec> {
+            DefaultIdentityShareCodec()
+        }
+
+        single<IdentityStartupManager> {
+            DefaultIdentityStartupManager(
+                identityExists = {
+                    get<PublicIdentityStorage>()
+                        .exists()
+                }
             )
         }
 
         factory {
             CreateSharedIdentity(
                 getPublicIdentity =
-                    get(),
+                    get<GetPublicIdentity>(),
 
                 identityShareCodec =
-                    get()
+                    get<IdentityShareCodec>()
             )
         }
 
         viewModel {
             IdentityViewModel(
                 getIdentityStatus =
-                    get(),
+                    get<GetIdentityStatus>(),
 
                 getPublicIdentity =
-                    get(),
+                    get<GetPublicIdentity>(),
 
                 createIdentity =
-                    get()
+                    get<CreateIdentity>(),
+
+                localPhoneNumberStorage =
+                    get<LocalPhoneNumberStorage>(),
+
+                phoneNumberNormalizer =
+                    get<PhoneNumberNormalizer>()
             )
         }
 
         viewModel {
             ShareIdentityViewModel(
                 createSharedIdentity =
-                    get()
+                    get<CreateSharedIdentity>()
             )
         }
     }

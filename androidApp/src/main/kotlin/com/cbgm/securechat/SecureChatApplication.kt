@@ -5,13 +5,14 @@ import com.cbgm.securechat.core.crypto.SodiumRuntime
 import com.cbgm.securechat.core.crypto.di.cryptoModule
 import com.cbgm.securechat.core.protocol.di.protocolModule
 import com.cbgm.securechat.core.protocol.outbox.OutboxRunner
-import com.cbgm.securechat.di.appModule
-import com.cbgm.securechat.feature.identity.di.identityModule
 import com.cbgm.securechat.data.database.di.androidDatabaseModule
+import com.cbgm.securechat.di.appModule
 import com.cbgm.securechat.di.sharedModule
 import com.cbgm.securechat.feature.chats.di.chatsModule
 import com.cbgm.securechat.feature.contactimport.di.contactImportModule
 import com.cbgm.securechat.feature.contacts.di.contactsModule
+import com.cbgm.securechat.feature.identity.di.androidIdentityStorageModule
+import com.cbgm.securechat.feature.identity.di.identityModule
 import com.cbgm.securechat.feature.transport.connection.RelayConnectionManager
 import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
 import com.cbgm.securechat.feature.transport.di.transportModule
@@ -23,17 +24,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import org.koin.android.ext.android.getKoin
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
 
-/**
- * Android application entry point.
- *
- * Android creates this class before MainActivity.
- */
-class SecureChatApplication : Application() {
+class SecureChatApplication :
+    Application() {
 
     private val applicationScope =
         CoroutineScope(
@@ -44,57 +40,37 @@ class SecureChatApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        /**
-         * Initialize libsodium before constructing or using
-         * cryptographic services.
-         */
         initializeCrypto()
 
-        /**
-         * Start Koin once for this Android process.
-         */
-        val koinApplication = startKoin {
+        val koinApplication =
+            startKoin {
+                androidLogger()
 
-            /**
-             * Provides useful Koin messages in Logcat while developing.
-             */
-            androidLogger()
+                androidContext(
+                    this@SecureChatApplication
+                )
 
-            /**
-             * Makes the Android application Context available
-             * through androidContext().
-             */
-            androidContext(this@SecureChatApplication)
-
-            /**
-             * Load both shared and Android-specific definitions.
-             */
-            modules(
-                cryptoModule,
-                protocolModule,
-                transportModule,
-                androidDatabaseModule,
-                identityModule,
-                contactsModule,
-                appModule,
-                sharedModule,
-                contactImportModule,
-                startupModule,
-                chatsModule
-            )
-        }
+                modules(
+                    cryptoModule,
+                    protocolModule,
+                    transportModule,
+                    androidDatabaseModule,
+                    androidIdentityStorageModule,
+                    identityModule,
+                    contactsModule,
+                    appModule,
+                    sharedModule,
+                    contactImportModule,
+                    startupModule,
+                    chatsModule
+                )
+            }
 
         val koin =
             koinApplication.koin
 
-        val connectionManager =
-            koin.get<RelayConnectionManager>()
-
         val webSocketClient =
             koin.get<WebSocketTransportClient>()
-
-        val outboxRunner =
-            koin.get<OutboxRunner>()
 
         applicationScope.launch {
             webSocketClient
@@ -106,10 +82,9 @@ class SecureChatApplication : Application() {
                 }
         }
 
-        val incomingRelayRunner =
-            koin.get<IncomingRelayRunner>()
-
-        incomingRelayRunner.start()
+        koin
+            .get<IncomingRelayRunner>()
+            .start()
 
         val relayConnectionManager =
             koin.get<RelayConnectionManager>()
@@ -153,10 +128,6 @@ class SecureChatApplication : Application() {
         }
     }
 
-    /**
-     * Crypto initialization must complete before the application
-     * allows crypto-backed operations.
-     */
     private fun initializeCrypto() {
         runBlocking {
             SodiumRuntime

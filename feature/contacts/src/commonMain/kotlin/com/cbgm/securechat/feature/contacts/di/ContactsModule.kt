@@ -10,7 +10,9 @@ import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.feature.contacts.data.identity.ContactLocalIdentityChangeHandler
 import com.cbgm.securechat.feature.contacts.data.identity.DefaultIdentityExchangeStarter
+import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.feature.contacts.data.merge.ContactMergeService
+import com.cbgm.securechat.feature.contacts.data.merge.DefaultContactMergeService
 import com.cbgm.securechat.feature.contacts.data.protocol.IdentityAcknowledgementPacketHandler
 import com.cbgm.securechat.feature.contacts.data.protocol.IdentityPacketHandler
 import com.cbgm.securechat.feature.contacts.data.repository.DefaultContactKeyExchangeStore
@@ -32,9 +34,10 @@ import org.koin.dsl.module
 val contactsModule =
     module {
 
-        single {
-            ContactMergeService(
-                contactDao = get()
+        single<ContactMergeService> {
+            DefaultContactMergeService(
+                contactDao = get<ContactDao>(),
+                phoneNumberNormalizer = get<PhoneNumberNormalizer>()
             )
         }
 
@@ -81,7 +84,8 @@ val contactsModule =
                 contactDao = get(),
                 mergeService = get(),
                 contactKeyExchangeStore = get(),
-                identityExchangeStarter = get()
+                identityExchangeStarter = get(),
+                phoneNumberNormalizer = get<PhoneNumberNormalizer>()
             )
         }
 

@@ -2,10 +2,7 @@ package com.cbgm.securechat.feature.identity.startup
 
 class DefaultIdentityStartupManager(
     private val identityExists:
-    suspend () -> Result<Boolean>,
-
-    private val createIdentity:
-    suspend () -> Result<Unit>
+    suspend () -> Result<Boolean>
 ) : IdentityStartupManager {
 
     override suspend fun ensureIdentityExists():
@@ -17,20 +14,17 @@ class DefaultIdentityStartupManager(
                     .getOrThrow()
 
             if (exists) {
-                return@runCatching IdentityStartupResult.ALREADY_EXISTS
+                IdentityStartupResult.ALREADY_EXISTS
+            } else {
+                /*
+                 * Do not automatically create an identity here.
+                 *
+                 * The user must first enter and persist their local
+                 * phone number on the identity screen. The screen then
+                 * invokes CreateIdentity explicitly.
+                 */
+                IdentityStartupResult.NOT_CREATED
             }
-
-            createIdentity()
-                .getOrThrow()
-
-            require(
-                identityExists()
-                    .getOrThrow()
-            ) {
-                "Identity creation completed but no stored identity was found"
-            }
-
-            IdentityStartupResult.CREATED
         }
     }
 }

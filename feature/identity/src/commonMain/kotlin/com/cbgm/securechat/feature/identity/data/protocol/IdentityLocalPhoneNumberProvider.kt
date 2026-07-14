@@ -1,0 +1,38 @@
+package com.cbgm.securechat.feature.identity.data.protocol
+
+import com.cbgm.securechat.core.protocol.phone.LocalPhoneNumberProvider
+import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
+import com.cbgm.securechat.feature.identity.core.LocalPhoneNumberStorage
+
+class IdentityLocalPhoneNumberProvider(
+    private val localPhoneNumberStorage:
+    LocalPhoneNumberStorage,
+
+    private val phoneNumberNormalizer:
+    PhoneNumberNormalizer
+) : LocalPhoneNumberProvider {
+
+    override suspend fun getLocalPhoneNumber():
+            Result<String> {
+
+        return runCatching {
+            val storedPhoneNumber =
+                localPhoneNumberStorage
+                    .loadPhoneNumber()
+                    .getOrThrow()
+                    ?.takeIf {
+                        it.isNotBlank()
+                    }
+                    ?: error(
+                        "Local phone number has not been configured"
+                    )
+
+            phoneNumberNormalizer
+                .normalize(
+                    phoneNumber =
+                        storedPhoneNumber
+                )
+                .getOrThrow()
+        }
+    }
+}

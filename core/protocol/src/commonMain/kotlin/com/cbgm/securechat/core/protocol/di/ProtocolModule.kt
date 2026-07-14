@@ -6,6 +6,8 @@ import com.cbgm.securechat.core.protocol.codec.createProtocolJson
 import com.cbgm.securechat.core.protocol.handler.DefaultProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.handler.ProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.handler.TypedProtocolPacketHandler
+import com.cbgm.securechat.core.protocol.phone.DefaultPhoneNumberNormalizer
+import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
@@ -29,5 +31,9 @@ val protocolModule =
                             TypedProtocolPacketHandler
                             >()
             )
+        }
+
+        single<PhoneNumberNormalizer> {
+            DefaultPhoneNumberNormalizer()
         }
     }

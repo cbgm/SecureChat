@@ -5,31 +5,35 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/**
- * One phone number belonging to a contact.
- *
- * The preferred number is referenced by
- * ContactEntity.preferredPhoneNumberId.
- */
 @Entity(
-    tableName = "contact_phone_numbers",
+    tableName =
+        "contact_phone_numbers",
 
     foreignKeys = [
         ForeignKey(
-            entity = ContactEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["contactId"],
-            onDelete = ForeignKey.CASCADE
+            entity =
+                ContactEntity::class,
+
+            parentColumns =
+                ["id"],
+
+            childColumns =
+                ["contactId"],
+
+            onDelete =
+                ForeignKey.CASCADE
         )
     ],
 
     indices = [
         Index(
-            value = ["contactId"]
+            value =
+                ["contactId"]
         ),
 
         Index(
-            value = ["value"]
+            value =
+                ["normalizedValue"]
         )
     ]
 )
@@ -42,8 +46,10 @@ data class ContactPhoneNumberEntity(
     val value: String,
 
     /**
-     * Stored ContactPhoneNumberType enum name.
+     * Stable normalized representation used for matching and routing.
      */
+    val normalizedValue: String,
+
     val type: String,
 
     val label: String?,

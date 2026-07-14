@@ -1,11 +1,16 @@
 package com.cbgm.securechat.feature.transport.di
 
 import com.cbgm.securechat.core.protocol.identity.LocalEncryptionKeyPairProvider
-import com.cbgm.securechat.core.protocol.identity.LocalSigningPublicKeyProvider
 import com.cbgm.securechat.core.protocol.outbox.OutboxProcessor
 import com.cbgm.securechat.core.protocol.outbox.OutboxRunner
+import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
+import com.cbgm.securechat.core.protocol.phone.LocalPhoneNumberProvider
+import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
+import com.cbgm.securechat.data.database.SecureChatDatabase
 import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
+import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
+import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
 import com.cbgm.securechat.feature.transport.connection.DefaultRelayConnectionManager
 import com.cbgm.securechat.feature.transport.connection.RelayConnectionManager
 import com.cbgm.securechat.feature.transport.domain.ProcessOutbox
@@ -14,6 +19,7 @@ import com.cbgm.securechat.feature.transport.incoming.IncomingRelayRunner
 import com.cbgm.securechat.feature.transport.outbox.DefaultOutboxProcessor
 import com.cbgm.securechat.feature.transport.outbox.DefaultOutboxRunner
 import com.cbgm.securechat.feature.transport.relay.codec.createRelayJson
+import com.cbgm.securechat.feature.transport.relay.config.RelayTransportConfig
 import com.cbgm.securechat.feature.transport.relay.identity.ContactByRelayIdResolver
 import com.cbgm.securechat.feature.transport.relay.identity.ContactRelayIdResolver
 import com.cbgm.securechat.feature.transport.relay.identity.DefaultContactByRelayIdResolver
@@ -48,35 +54,46 @@ val transportModule =
         }
 
         single<RelayIdGenerator> {
-            Sha256RelayIdGenerator()
+            Sha256RelayIdGenerator(
+                phoneNumberNormalizer =
+                    get<PhoneNumberNormalizer>()
+            )
         }
 
         single<LocalRelayIdProvider> {
             DefaultLocalRelayIdProvider(
-                localSigningPublicKeyProvider =
-                    get<
-                            LocalSigningPublicKeyProvider
-                            >(),
+                localPhoneNumberProvider =
+                    get<LocalPhoneNumberProvider>(),
 
                 relayIdGenerator =
-                    get()
+                    get<RelayIdGenerator>()
             )
         }
 
         single<ContactRelayIdResolver> {
             DefaultContactRelayIdResolver(
                 getContact =
-                    get(),
+                    get<GetContact>(),
 
                 relayIdGenerator =
-                    get()
+                    get<RelayIdGenerator>()
+            )
+        }
+
+        single<ContactByRelayIdResolver> {
+            DefaultContactByRelayIdResolver(
+                contactRepository =
+                    get<ContactRepository>(),
+
+                relayIdGenerator =
+                    get<RelayIdGenerator>()
             )
         }
 
         single<WebSocketTransportClient> {
             DefaultWebSocketTransportClient(
                 httpClient =
-                    get(),
+                    get<HttpClient>(),
 
                 json =
                     get(
@@ -91,20 +108,64 @@ val transportModule =
         single<RelayConnectionManager> {
             DefaultRelayConnectionManager(
                 webSocketTransportClient =
-                    get(),
+                    get<WebSocketTransportClient>(),
 
                 localRelayIdProvider =
-                    get(),
+                    get<LocalRelayIdProvider>(),
 
                 relayTransportConfig =
+                    get<RelayTransportConfig>()
+            )
+        }
+
+        single<OutgoingWireSender> {
+            WebSocketOutgoingWireSender(
+                webSocketTransportClient =
+                    get<WebSocketTransportClient>(),
+
+                localRelayIdProvider =
+                    get<LocalRelayIdProvider>(),
+
+                contactRelayIdResolver =
+                    get<ContactRelayIdResolver>(),
+
+                relayTransportConfig =
+                    get<RelayTransportConfig>()
+            )
+        }
+
+        single<OutboxProcessor> {
+            DefaultOutboxProcessor(
+                protocolOutbox =
+                    get<ProtocolOutbox>(),
+
+                getContact =
+                    get<GetContact>(),
+
+                transportMessageCipher =
+                    get(),
+
+                transportPayloadCodec =
+                    get(),
+
+                outgoingWireSender =
+                    get<OutgoingWireSender>(),
+
+                deliveryStateListener =
+                    get(),
+
+                messageDeliveryStatusDao =
                     get()
             )
         }
 
-        single<ContactByRelayIdResolver> {
-            DefaultContactByRelayIdResolver(
-                contactRepository = get(),
-                relayIdGenerator = get()
+        single<OutboxRunner> {
+            DefaultOutboxRunner(
+                protocolOutbox =
+                    get<ProtocolOutbox>(),
+
+                outboxProcessor =
+                    get<OutboxProcessor>()
             )
         }
 
@@ -124,61 +185,10 @@ val transportModule =
             )
         }
 
-        single<OutgoingWireSender> {
-            WebSocketOutgoingWireSender(
-                webSocketTransportClient =
-                    get(),
-
-                localRelayIdProvider =
-                    get(),
-
-                contactRelayIdResolver =
-                    get(),
-
-                relayTransportConfig =
-                    get()
-            )
-        }
-
-        single<OutboxProcessor> {
-            DefaultOutboxProcessor(
-                protocolOutbox =
-                    get(),
-
-                getContact =
-                    get(),
-
-                transportMessageCipher =
-                    get(),
-
-                transportPayloadCodec =
-                    get(),
-
-                outgoingWireSender =
-                    get(),
-
-                deliveryStateListener =
-                    get(),
-
-                messageDeliveryStatusDao =
-                    get()
-            )
-        }
-
-        single<OutboxRunner> {
-            DefaultOutboxRunner(
-                protocolOutbox =
-                    get(),
-
-                outboxProcessor =
-                    get()
-            )
-        }
-
         single {
             ProcessOutbox(
                 outboxProcessor =
-                    get()
+                    get<OutboxProcessor>()
             )
         }
     }

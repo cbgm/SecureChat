@@ -21,28 +21,38 @@ class DefaultContactRelayIdResolver(
 
             val contact =
                 getContact(
-                    contactId = contactId
+                    contactId =
+                        contactId
                 )
                     .getOrThrow()
                     ?: error(
                         "Contact was not found"
                     )
 
-            val signingPublicKey =
+            val phoneNumber =
                 contact
-                    .secureChatIdentity
-                    ?.signingPublicKey
+                    .preferredPhoneNumber
+                    ?.value
+                    ?.trim()
                     ?.takeIf {
                         it.isNotEmpty()
                     }
+                    ?: contact
+                        .phoneNumbers
+                        .firstOrNull()
+                        ?.value
+                        ?.trim()
+                        ?.takeIf {
+                            it.isNotEmpty()
+                        }
                     ?: error(
-                        "Contact has no SecureChat signing public key"
+                        "Contact has no phone number"
                     )
 
             relayIdGenerator
-                .deriveFromSigningPublicKey(
-                    signingPublicKey =
-                        signingPublicKey
+                .deriveFromPhoneNumber(
+                    phoneNumber =
+                        phoneNumber
                 )
                 .getOrThrow()
         }

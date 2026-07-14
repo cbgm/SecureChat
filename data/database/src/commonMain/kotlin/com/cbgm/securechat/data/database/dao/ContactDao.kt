@@ -23,6 +23,36 @@ interface ContactDao {
         identity: ContactPublicIdentityEntity
     )
 
+    @Query(
+        """
+    SELECT contacts.*
+    FROM contacts
+    INNER JOIN contact_phone_numbers
+        ON contact_phone_numbers.contactId = contacts.id
+    WHERE contact_phone_numbers.normalizedValue =
+        :normalizedPhoneNumber
+    LIMIT 1
+    """
+    )
+    suspend fun findContactEntityByNormalizedPhoneNumber(
+        normalizedPhoneNumber: String
+    ): ContactEntity?
+
+    @Transaction
+    @Query(
+        """
+        SELECT contacts.*
+        FROM contacts
+        INNER JOIN contact_phone_numbers
+            ON contact_phone_numbers.contactId = contacts.id
+        WHERE contact_phone_numbers.normalizedValue = :normalizedPhoneNumber
+        LIMIT 1
+        """
+    )
+    suspend fun findByNormalizedPhoneNumber(
+        normalizedPhoneNumber: String
+    ): ContactWithPublicIdentity?
+
     @Transaction
     @Query(
         """

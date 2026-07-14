@@ -1,5 +1,6 @@
 package com.cbgm.securechat.feature.transport.sender
 
+import com.cbgm.securechat.core.id.IdGenerator
 import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.feature.transport.relay.config.RelayTransportConfig
@@ -7,7 +8,6 @@ import com.cbgm.securechat.feature.transport.relay.identity.ContactRelayIdResolv
 import com.cbgm.securechat.feature.transport.relay.identity.LocalRelayIdProvider
 import com.cbgm.securechat.feature.transport.relay.model.RelayEnvelope
 import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
-import kotlin.random.Random
 
 class WebSocketOutgoingWireSender(
     private val webSocketTransportClient:
@@ -34,34 +34,34 @@ class WebSocketOutgoingWireSender(
             }
 
             require(
-                encodedTransportPayload
-                    .isNotBlank()
+                encodedTransportPayload.isNotBlank()
             ) {
                 "Transport payload must not be blank"
             }
 
-            val senderId =
+            val senderRelayId =
                 localRelayIdProvider
                     .getLocalRelayId()
                     .getOrThrow()
 
-            val recipientId =
+            val recipientRelayId =
                 contactRelayIdResolver
                     .resolve(
-                        contactId = contactId
+                        contactId =
+                            contactId
                     )
                     .getOrThrow()
 
             val envelope =
                 RelayEnvelope(
                     envelopeId =
-                        createEnvelopeId(),
+                        IdGenerator.generate(),
 
                     senderId =
-                        senderId,
+                        senderRelayId,
 
                     recipientId =
-                        recipientId,
+                        recipientRelayId,
 
                     payload =
                         encodedTransportPayload,
@@ -82,23 +82,5 @@ class WebSocketOutgoingWireSender(
                 )
                 .getOrThrow()
         }
-    }
-
-    private fun createEnvelopeId():
-            String {
-
-        val timestamp =
-            SystemClock
-                .nowEpochMilliseconds()
-
-        val random =
-            Random.nextLong()
-                .toString()
-                .replace(
-                    oldValue = "-",
-                    newValue = ""
-                )
-
-        return "envelope-$timestamp-$random"
     }
 }

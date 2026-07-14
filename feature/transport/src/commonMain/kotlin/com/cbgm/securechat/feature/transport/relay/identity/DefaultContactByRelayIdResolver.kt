@@ -25,21 +25,48 @@ class DefaultContactByRelayIdResolver(
                     .observeContacts()
                     .first()
 
-            contacts.firstOrNull { contact ->
-                val signingPublicKey =
-                    contact
-                        .secureChatIdentity
-                        ?.signingPublicKey
-                        ?: return@firstOrNull false
+            contacts
+                .firstOrNull { contact ->
+                    val phoneNumbers =
+                        buildList<String> {
+                            contact
+                                .preferredPhoneNumber
+                                ?.value
+                                ?.trim()
+                                ?.takeIf {
+                                    it.isNotEmpty()
+                                }
+                                ?.let {
+                                    add(it)
+                                }
 
-                relayIdGenerator
-                    .deriveFromSigningPublicKey(
-                        signingPublicKey =
-                            signingPublicKey
-                    )
-                    .getOrNull() ==
-                        relayId
-            }?.id
+                            contact
+                                .phoneNumbers
+                                .forEach { phoneNumber ->
+                                    phoneNumber
+                                        .value
+                                        .trim()
+                                        .takeIf {
+                                            it.isNotEmpty()
+                                        }
+                                        ?.let {
+                                            add(it)
+                                        }
+                                }
+                        }
+                            .distinct()
+
+                    phoneNumbers.any { phoneNumber ->
+                        relayIdGenerator
+                            .deriveFromPhoneNumber(
+                                phoneNumber =
+                                    phoneNumber
+                            )
+                            .getOrNull() ==
+                                relayId
+                    }
+                }
+                ?.id
         }
     }
 }

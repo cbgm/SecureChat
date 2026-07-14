@@ -1,35 +1,41 @@
 package com.cbgm.securechat.feature.transport.relay.identity
 
+import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import okio.ByteString.Companion.toByteString
 
-class Sha256RelayIdGenerator :
-    RelayIdGenerator {
+class Sha256RelayIdGenerator(
+    private val phoneNumberNormalizer:
+    PhoneNumberNormalizer
+) : RelayIdGenerator {
 
-    override fun deriveFromSigningPublicKey(
-        signingPublicKey: ByteArray
+    override fun deriveFromPhoneNumber(
+        phoneNumber: String
     ): Result<String> {
+
         return runCatching {
-            require(
-                signingPublicKey.isNotEmpty()
-            ) {
-                "Signing public key must not be empty"
-            }
+            val normalizedPhoneNumber =
+                phoneNumberNormalizer
+                    .normalize(
+                        phoneNumber =
+                            phoneNumber
+                    )
+                    .getOrThrow()
 
             val digest =
-                signingPublicKey
+                normalizedPhoneNumber
+                    .encodeToByteArray()
                     .toByteString()
                     .sha256()
-
-            val encodedDigest =
-                digest.base64Url()
+                    .base64Url()
                     .trimEnd('=')
 
-            "$RELAY_ID_PREFIX$encodedDigest"
+            "$RELAY_ID_PREFIX$digest"
         }
     }
 
     private companion object {
+
         const val RELAY_ID_PREFIX =
-            "sc1_"
+            "scphone1_"
     }
 }
