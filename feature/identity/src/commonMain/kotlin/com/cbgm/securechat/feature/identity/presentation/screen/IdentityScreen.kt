@@ -35,6 +35,7 @@ import com.cbgm.securechat.feature.identity.presentation.model.IdentityUiState
 @Composable
 fun IdentityScreen(
     uiState: IdentityUiState,
+    onRequestPhoneNumberHint: () -> Unit,
     onPhoneNumberChanged: (String) -> Unit,
     onCreateIdentity: () -> Unit,
     onRetry: () -> Unit,
@@ -76,6 +77,9 @@ fun IdentityScreen(
 
                         phoneNumberError =
                             uiState.phoneNumberError,
+
+                        onRequestPhoneNumberHint =
+                            onRequestPhoneNumberHint,
 
                         onPhoneNumberChanged =
                             onPhoneNumberChanged,
@@ -159,6 +163,7 @@ private fun LoadingContent() {
 private fun NoIdentityContent(
     phoneNumber: String,
     phoneNumberError: String?,
+    onRequestPhoneNumberHint: () -> Unit,
     onPhoneNumberChanged: (String) -> Unit,
     onCreateIdentity: () -> Unit
 ) {
@@ -227,6 +232,26 @@ private fun NoIdentityContent(
                 )
         )
 
+        OutlinedButton(
+            onClick =
+                onRequestPhoneNumberHint,
+
+            modifier =
+                Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text =
+                    "Choose phone number from device"
+            )
+        }
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    12.dp
+                )
+        )
+
         OutlinedTextField(
             value =
                 phoneNumber,
@@ -291,7 +316,7 @@ private fun NoIdentityContent(
         ) {
             Text(
                 text =
-                    "Create identity"
+                    "Approve number and create identity"
             )
         }
     }
@@ -679,6 +704,7 @@ private fun NoIdentityPreview() {
                     "+491701111111"
             ),
 
+        onRequestPhoneNumberHint = {},
         onPhoneNumberChanged = {},
         onCreateIdentity = {},
         onRetry = {},
@@ -717,6 +743,7 @@ private fun ReadyIdentityPreview() {
                     "+491701111111"
             ),
 
+        onRequestPhoneNumberHint = {},
         onPhoneNumberChanged = {},
         onCreateIdentity = {},
         onRetry = {},
@@ -736,6 +763,7 @@ private fun IncompleteIdentityPreview() {
             IdentityUiState
                 .IncompleteIdentity,
 
+        onRequestPhoneNumberHint = {},
         onPhoneNumberChanged = {},
         onCreateIdentity = {},
         onRetry = {},

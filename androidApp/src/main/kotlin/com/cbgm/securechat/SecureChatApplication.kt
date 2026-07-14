@@ -11,8 +11,10 @@ import com.cbgm.securechat.di.sharedModule
 import com.cbgm.securechat.feature.chats.di.chatsModule
 import com.cbgm.securechat.feature.contactimport.di.contactImportModule
 import com.cbgm.securechat.feature.contacts.di.contactsModule
+import com.cbgm.securechat.feature.identity.core.LocalPhoneNumberStorage
 import com.cbgm.securechat.feature.identity.di.androidIdentityStorageModule
 import com.cbgm.securechat.feature.identity.di.identityModule
+import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
 import com.cbgm.securechat.feature.transport.connection.RelayConnectionManager
 import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
 import com.cbgm.securechat.feature.transport.di.transportModule
@@ -22,6 +24,8 @@ import com.cbgm.securechat.startup.startupModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.koin.androidContext
@@ -69,6 +73,33 @@ class SecureChatApplication :
         val koin =
             koinApplication.koin
 
+        applicationScope.launch {
+            val identityRepository =
+                koin.get<IdentityRepository>()
+
+            val phoneNumberStorage =
+                koin.get<LocalPhoneNumberStorage>()
+
+            combine(
+                identityRepository.observeIdentity(),
+                phoneNumberStorage.observePhoneNumber()
+            ) { identity, phoneNumber ->
+                identity != null &&
+                        !phoneNumber.isNullOrBlank()
+            }
+                .first { ready ->
+                    ready
+                }
+
+            startRuntimeServices(
+                koin = koin
+            )
+        }
+    }
+
+    private fun startRuntimeServices(
+        koin: org.koin.core.Koin
+    ) {
         val webSocketClient =
             koin.get<WebSocketTransportClient>()
 

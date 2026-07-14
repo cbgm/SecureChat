@@ -9,6 +9,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun StartupRoute(
     onStartupComplete: () -> Unit,
+    onIdentityRequired: () -> Unit,
     viewModel: StartupViewModel =
         koinViewModel()
 ) {
@@ -17,20 +18,24 @@ fun StartupRoute(
         .collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState) {
-        if (uiState == StartupUiState.Ready) {
-            onStartupComplete()
+        when (uiState) {
+            StartupUiState.Ready -> {
+                onStartupComplete()
+            }
+
+            StartupUiState.IdentityRequired -> {
+                onIdentityRequired()
+            }
+
+            StartupUiState.Loading,
+            is StartupUiState.Error -> {
+                Unit
+            }
         }
     }
 
     StartupScreen(
         uiState = uiState,
-
-        onContinue = {
-            viewModel.markContinuing()
-            onStartupComplete()
-        },
-
-        onRetry =
-            viewModel::retry
+        onRetry = viewModel::retry
     )
 }

@@ -18,12 +18,9 @@ class DefaultAppInitializer(
                     .getOrThrow()
 
             AppInitializationResult(
-                /*
-                 * Identity creation no longer happens automatically
-                 * during application startup.
-                 */
-                identityCreated =
-                    false
+                identityReady =
+                    identityResult ==
+                            IdentityStartupResult.ALREADY_EXISTS
             )
         }
     }

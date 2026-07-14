@@ -69,6 +69,41 @@ class IdentityViewModel(
     fun onPhoneNumberChanged(
         value: String
     ) {
+        updatePhoneNumber(
+            value = value,
+            errorMessage = null
+        )
+    }
+
+    fun onSuggestedPhoneNumber(
+        phoneNumber: String
+    ) {
+        updatePhoneNumber(
+            value = phoneNumber.trim(),
+            errorMessage = null
+        )
+    }
+
+    fun onPhoneNumberHintUnavailable() {
+        val currentState =
+            mutableUiState.value
+
+        if (
+            currentState is
+                    IdentityUiState.NoIdentity &&
+            currentState.phoneNumber.isBlank()
+        ) {
+            mutableUiState.value =
+                currentState.copy(
+                    phoneNumberError =
+                        "No number was available from this device. Enter it manually."
+                )
+        }
+    }
+
+    fun onPhoneNumberHintFailed(
+        message: String
+    ) {
         val currentState =
             mutableUiState.value
 
@@ -78,11 +113,10 @@ class IdentityViewModel(
         ) {
             mutableUiState.value =
                 currentState.copy(
-                    phoneNumber =
-                        value,
-
                     phoneNumberError =
-                        null
+                        message.ifBlank {
+                            "Phone number picker could not be opened"
+                        }
                 )
         }
     }
@@ -160,6 +194,26 @@ class IdentityViewModel(
         }
     }
 
+    private fun updatePhoneNumber(
+        value: String,
+        errorMessage: String?
+    ) {
+        val currentState =
+            mutableUiState.value
+
+        if (
+            currentState is
+                    IdentityUiState.NoIdentity
+        ) {
+            mutableUiState.value =
+                currentState.copy(
+                    phoneNumber = value,
+                    phoneNumberError =
+                        errorMessage
+                )
+        }
+    }
+
     private suspend fun handleIdentityStatus(
         status: IdentityStatus
     ) {
@@ -212,7 +266,7 @@ class IdentityViewModel(
             mutableUiState.value =
                 IdentityUiState.Error(
                     message =
-                        "Identity exists, but the local phone number is missing. Clear the app data once and create the identity again with a phone number."
+                        "Identity exists, but the local phone number is missing. Clear app data once and complete onboarding again."
                 )
 
             return

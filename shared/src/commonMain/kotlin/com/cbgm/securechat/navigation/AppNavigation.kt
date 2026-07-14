@@ -37,6 +37,18 @@ fun AppNavigation() {
     ) {
         composable<AppDestination.Identity> {
             IdentityRoute(
+                onIdentityReady = {
+                    navController.navigate(
+                        AppDestination.Main
+                    ) {
+                        popUpTo(
+                            AppDestination.Identity
+                        ) {
+                            inclusive = true
+                        }
+                    }
+                },
+
                 onShareIdentity = {
                     navController.navigate(
                         AppDestination.ShareIdentity
@@ -273,6 +285,18 @@ fun AppNavigation() {
                 onStartupComplete = {
                     navController.navigate(
                         AppDestination.Main
+                    ) {
+                        popUpTo(
+                            AppDestination.Startup
+                        ) {
+                            inclusive = true
+                        }
+                    }
+                },
+
+                onIdentityRequired = {
+                    navController.navigate(
+                        AppDestination.Identity
                     ) {
                         popUpTo(
                             AppDestination.Startup

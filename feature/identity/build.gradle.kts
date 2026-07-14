@@ -81,6 +81,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.zxing.core)
+            implementation(libs.play.services.auth)
         }
 
         commonTest.dependencies {

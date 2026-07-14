@@ -42,7 +42,6 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun StartupScreen(
     uiState: StartupUiState,
-    onContinue: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -201,7 +200,6 @@ fun StartupScreen(
             ) { state ->
                 StartupStateContent(
                     uiState = state,
-                    onContinue = onContinue,
                     onRetry = onRetry
                 )
             }
@@ -212,7 +210,6 @@ fun StartupScreen(
 @Composable
 private fun StartupStateContent(
     uiState: StartupUiState,
-    onContinue: () -> Unit,
     onRetry: () -> Unit
 ) {
     when (uiState) {
@@ -228,80 +225,10 @@ private fun StartupStateContent(
             )
         }
 
-        is StartupUiState.IdentityCreated -> {
-            Column(
-                horizontalAlignment =
-                    Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text =
-                        "Your secure identity is ready",
-                    style =
-                        MaterialTheme.typography
-                            .titleLarge,
-                    color = Color.White,
-                    textAlign =
-                        TextAlign.Center
-                )
-
-                Spacer(
-                    modifier =
-                        Modifier.height(12.dp)
-                )
-
-                Text(
-                    text =
-                        "SecureChat created private encryption keys on this device. They protect your messages and identify you to other SecureChat users.",
-                    style =
-                        MaterialTheme.typography
-                            .bodyMedium,
-                    color =
-                        Color.White.copy(
-                            alpha = 0.76f
-                        ),
-                    textAlign =
-                        TextAlign.Center
-                )
-
-                Spacer(
-                    modifier =
-                        Modifier.height(8.dp)
-                )
-
-                Text(
-                    text =
-                        "Your private keys stay on this device.",
-                    style =
-                        MaterialTheme.typography
-                            .labelLarge,
-                    color =
-                        Color(0xFF35E6FF),
-                    textAlign =
-                        TextAlign.Center
-                )
-
-                Spacer(
-                    modifier =
-                        Modifier.height(28.dp)
-                )
-
-                Button(
-                    onClick = onContinue,
-                    enabled =
-                        !uiState.isContinuing,
-                    modifier =
-                        Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text =
-                            if (uiState.isContinuing) {
-                                "Opening SecureChat…"
-                            } else {
-                                "Continue"
-                            }
-                    )
-                }
-            }
+        StartupUiState.IdentityRequired -> {
+            StartupProgress(
+                message = "Opening identity setup…"
+            )
         }
 
         is StartupUiState.Error -> {

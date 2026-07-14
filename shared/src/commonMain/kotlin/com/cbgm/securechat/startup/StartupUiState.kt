@@ -6,9 +6,7 @@ sealed interface StartupUiState {
 
     data object Ready : StartupUiState
 
-    data class IdentityCreated(
-        val isContinuing: Boolean = false
-    ) : StartupUiState
+    data object IdentityRequired : StartupUiState
 
     data class Error(
         val message: String

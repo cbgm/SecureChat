@@ -12,13 +12,14 @@ class StartupViewModel(
     AppInitializer
 ) : ViewModel() {
 
-    private val _uiState =
+    private val mutableUiState =
         MutableStateFlow<StartupUiState>(
             StartupUiState.Loading
         )
 
-    val uiState: StateFlow<StartupUiState> =
-        _uiState.asStateFlow()
+    val uiState:
+            StateFlow<StartupUiState> =
+        mutableUiState.asStateFlow()
 
     private var initializationCompleted =
         false
@@ -29,28 +30,14 @@ class StartupViewModel(
 
     fun retry() {
         if (
-            _uiState.value !is
+            mutableUiState.value !is
                     StartupUiState.Error
         ) {
             return
         }
 
+        initializationCompleted = false
         initialize()
-    }
-
-    fun markContinuing() {
-        val currentState =
-            _uiState.value
-
-        if (
-            currentState is
-                    StartupUiState.IdentityCreated
-        ) {
-            _uiState.value =
-                currentState.copy(
-                    isContinuing = true
-                )
-        }
     }
 
     private fun initialize() {
@@ -59,25 +46,23 @@ class StartupViewModel(
         }
 
         viewModelScope.launch {
-            _uiState.value =
+            mutableUiState.value =
                 StartupUiState.Loading
 
             appInitializer
                 .initialize()
                 .onSuccess { result ->
-                    initializationCompleted =
-                        true
+                    initializationCompleted = true
 
-                    _uiState.value =
-                        if (result.identityCreated) {
-                            StartupUiState
-                                .IdentityCreated()
-                        } else {
+                    mutableUiState.value =
+                        if (result.identityReady) {
                             StartupUiState.Ready
+                        } else {
+                            StartupUiState.IdentityRequired
                         }
                 }
                 .onFailure { error ->
-                    _uiState.value =
+                    mutableUiState.value =
                         StartupUiState.Error(
                             message =
                                 error.message
