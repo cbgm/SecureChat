@@ -2,6 +2,7 @@ package com.cbgm.securechat.feature.identity.presentation.screen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cbgm.securechat.feature.identity.core.LocalPhoneNumberStorage
 import com.cbgm.securechat.feature.identity.domain.usecase.CreateSharedIdentity
 import com.cbgm.securechat.feature.identity.presentation.model.ShareIdentityUiState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,11 +11,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/**
- * Manages the identity-sharing form and generated share text.
- */
 class ShareIdentityViewModel(
-    private val createSharedIdentity: CreateSharedIdentity
+    private val createSharedIdentity: CreateSharedIdentity,
+    private val localPhoneNumberStorage: LocalPhoneNumberStorage
 ) : ViewModel() {
 
     private val _uiState =
@@ -25,12 +24,16 @@ class ShareIdentityViewModel(
     val uiState: StateFlow<ShareIdentityUiState> =
         _uiState.asStateFlow()
 
-    fun onIncludeContactDetailsChanged(
+    init {
+        loadPhoneNumber()
+    }
+
+    fun onIncludeDisplayNameChanged(
         include: Boolean
     ) {
         _uiState.update { current ->
             current.copy(
-                includeContactDetails = include,
+                includeDisplayName = include,
                 encodedIdentity = null,
                 errorMessage = null
             )
@@ -43,18 +46,6 @@ class ShareIdentityViewModel(
         _uiState.update { current ->
             current.copy(
                 displayName = value,
-                encodedIdentity = null,
-                errorMessage = null
-            )
-        }
-    }
-
-    fun onPhoneNumberChanged(
-        value: String
-    ) {
-        _uiState.update { current ->
-            current.copy(
-                phoneNumber = value,
                 encodedIdentity = null,
                 errorMessage = null
             )
@@ -79,22 +70,14 @@ class ShareIdentityViewModel(
                 _uiState.value
 
             val displayName =
-                if (currentState.includeContactDetails) {
+                if (currentState.includeDisplayName) {
                     currentState.displayName
                 } else {
                     null
                 }
 
-            val phoneNumber =
-                if (currentState.includeContactDetails) {
-                    currentState.phoneNumber
-                } else {
-                    null
-                }
-
             createSharedIdentity(
-                displayName = displayName,
-                phoneNumber = phoneNumber
+                displayName = displayName
             )
                 .onSuccess { encodedIdentity ->
                     _uiState.update { current ->
@@ -110,8 +93,39 @@ class ShareIdentityViewModel(
                         current.copy(
                             isGenerating = false,
                             encodedIdentity = null,
-                            errorMessage = error.message
-                                ?: "Failed to create shared identity"
+                            errorMessage =
+                                error.message
+                                    ?: "Failed to create shared identity"
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun loadPhoneNumber() {
+        viewModelScope.launch {
+            localPhoneNumberStorage
+                .loadPhoneNumber()
+                .onSuccess { phoneNumber ->
+                    _uiState.update { current ->
+                        current.copy(
+                            phoneNumber =
+                                phoneNumber.orEmpty(),
+                            errorMessage =
+                                if (phoneNumber.isNullOrBlank()) {
+                                    "Local phone number has not been configured"
+                                } else {
+                                    current.errorMessage
+                                }
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update { current ->
+                        current.copy(
+                            errorMessage =
+                                error.message
+                                    ?: "Failed to load local phone number"
                         )
                     }
                 }

@@ -219,7 +219,19 @@ fun AppNavigation() {
                     val identity =
                         contact.secureChatIdentity
 
-                    if (identity != null) {
+                    val phoneNumber =
+                        contact.preferredPhoneNumber
+                            ?.value
+                            ?.takeIf { it.isNotBlank() }
+                            ?: contact.phoneNumbers
+                                .firstOrNull()
+                                ?.value
+                                ?.takeIf { it.isNotBlank() }
+
+                    if (
+                        identity != null &&
+                        phoneNumber != null
+                    ) {
                         identityShareCodec
                             .encode(
                                 payload =
@@ -238,9 +250,7 @@ fun AppNavigation() {
                                                     contact.displayName,
 
                                                 phoneNumber =
-                                                    contact
-                                                        .preferredPhoneNumber
-                                                        ?.value
+                                                    phoneNumber
                                             )
                                     )
                             )

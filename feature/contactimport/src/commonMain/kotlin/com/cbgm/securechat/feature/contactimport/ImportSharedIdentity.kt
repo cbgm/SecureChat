@@ -6,11 +6,11 @@ import com.cbgm.securechat.feature.contacts.domain.usecase.ImportContact
 import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
 
 /**
- * Coordinates decoding a shared SecureChat identity and importing
- * it into the contacts feature.
+ * Decodes and imports a shared SecureChat identity.
  *
- * Both public keys are always stored.
- * Name and phone number remain optional.
+ * A phone number is mandatory because it is the stable contact,
+ * conversation, and relay-routing anchor. The contact repository then
+ * merges by normalized phone number before considering public keys.
  */
 class ImportSharedIdentity(
     private val identityShareCodec: IdentityShareCodec,
@@ -26,30 +26,35 @@ class ImportSharedIdentity(
                     .decode(encodedIdentity)
                     .getOrThrow()
 
+            val phoneNumber =
+                sharedIdentity
+                    .contactDetails
+                    .phoneNumber
+                    .trim()
+                    .takeIf { it.isNotEmpty() }
+                    ?: error(
+                        "Shared identity does not contain a phone number"
+                    )
+
             importContact(
-                request = ImportContactRequest(
-                    encryptionPublicKey =
-                        sharedIdentity
-                            .encryptionPublicKey
-                            .copyOf(),
-
-                    signingPublicKey =
-                        sharedIdentity
-                            .signingPublicKey
-                            .copyOf(),
-
-                    displayName =
-                        sharedIdentity
-                            .contactDetails
-                            ?.displayName,
-
-                    phoneNumber =
-                        sharedIdentity
-                            .contactDetails
-                            ?.phoneNumber
-                )
-            )
-                .getOrThrow()
+                request =
+                    ImportContactRequest(
+                        encryptionPublicKey =
+                            sharedIdentity
+                                .encryptionPublicKey
+                                .copyOf(),
+                        signingPublicKey =
+                            sharedIdentity
+                                .signingPublicKey
+                                .copyOf(),
+                        displayName =
+                            sharedIdentity
+                                .contactDetails
+                                .displayName,
+                        phoneNumber =
+                            phoneNumber
+                    )
+            ).getOrThrow()
         }
     }
 }

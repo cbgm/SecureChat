@@ -47,14 +47,12 @@ fun ShareIdentityRoute(
     ShareIdentityScreen(
         uiState = uiState,
 
-        onIncludeContactDetailsChanged =
-            viewModel::onIncludeContactDetailsChanged,
+        onIncludeDisplayNameChanged =
+            viewModel::onIncludeDisplayNameChanged,
 
         onDisplayNameChanged =
             viewModel::onDisplayNameChanged,
 
-        onPhoneNumberChanged =
-            viewModel::onPhoneNumberChanged,
 
         onGenerateClick =
             viewModel::generateSharedIdentity,

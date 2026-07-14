@@ -7,29 +7,13 @@ import com.cbgm.securechat.feature.identity.domain.model.SharedContactDetails
 import com.cbgm.securechat.feature.identity.domain.model.SharedIdentityPayload
 
 /**
- * Default text codec for shared SecureChat identities.
+ * Text codec for shared SecureChat identities.
  *
  * Version 1 format:
  *
- * sc1|ek=<hex>|sk=<hex>|name=<escaped>|phone=<escaped>
+ * sc1|ek=<hex>|sk=<hex>|phone=<escaped>|name=<escaped>
  *
- * Examples:
- *
- * Keys only:
- *
- * sc1|ek=01ab...|sk=94cd...
- *
- * Full contact:
- *
- * sc1|ek=01ab...|sk=94cd...|name=Alice%20Smith|phone=%2B491701234567
- *
- * The prefix "sc1" identifies:
- *
- * - SecureChat payload
- * - format version 1
- *
- * This lets us support new formats later without breaking
- * previously shared identities.
+ * The phone field is mandatory. The name field is optional.
  */
 class DefaultIdentityShareCodec : IdentityShareCodec {
 
@@ -49,38 +33,35 @@ class DefaultIdentityShareCodec : IdentityShareCodec {
                 "Signing public key must not be empty"
             }
 
-            val fields = mutableListOf(
-                FORMAT_PREFIX,
-                "$ENCRYPTION_KEY_FIELD=${
-                    payload.encryptionPublicKey.toHexString()
-                }",
-                "$SIGNING_KEY_FIELD=${
-                    payload.signingPublicKey.toHexString()
-                }"
-            )
+            val phoneNumber =
+                payload.contactDetails.phoneNumber
+                    .trim()
+                    .takeIf { it.isNotEmpty() }
+                    ?: error(
+                        "Shared identity phone number is missing"
+                    )
 
-            /**
-             * Contact fields are added only when contact details
-             * were selected for sharing.
-             */
-            payload.contactDetails?.let { contactDetails ->
+            buildList {
+                add(FORMAT_PREFIX)
+                add(
+                    "$ENCRYPTION_KEY_FIELD=${payload.encryptionPublicKey.toHexString()}"
+                )
+                add(
+                    "$SIGNING_KEY_FIELD=${payload.signingPublicKey.toHexString()}"
+                )
+                add(
+                    "$PHONE_NUMBER_FIELD=${phoneNumber.escapeShareValue()}"
+                )
 
-                contactDetails.displayName
-                    ?.takeIf { it.isNotBlank() }
+                payload.contactDetails.displayName
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
                     ?.let { displayName ->
-                        fields +=
+                        add(
                             "$DISPLAY_NAME_FIELD=${displayName.escapeShareValue()}"
+                        )
                     }
-
-                contactDetails.phoneNumber
-                    ?.takeIf { it.isNotBlank() }
-                    ?.let { phoneNumber ->
-                        fields +=
-                            "$PHONE_NUMBER_FIELD=${phoneNumber.escapeShareValue()}"
-                    }
-            }
-
-            fields.joinToString(
+            }.joinToString(
                 separator = FIELD_SEPARATOR
             )
         }
@@ -94,93 +75,64 @@ class DefaultIdentityShareCodec : IdentityShareCodec {
                 "Shared identity payload is empty"
             }
 
-            val parts = encodedValue.split(
-                FIELD_SEPARATOR
-            )
+            val parts =
+                encodedValue.split(
+                    FIELD_SEPARATOR
+                )
 
             require(parts.firstOrNull() == FORMAT_PREFIX) {
                 "This is not a supported SecureChat identity payload"
             }
 
-            /**
-             * Convert fields such as:
-             *
-             * ek=0123abcd
-             *
-             * into:
-             *
-             * "ek" -> "0123abcd"
-             */
-            val values = parts
-                .drop(1)
-                .associate { part ->
-                    val separatorIndex =
-                        part.indexOf(KEY_VALUE_SEPARATOR)
+            val values =
+                parts
+                    .drop(1)
+                    .associate { part ->
+                        val separatorIndex =
+                            part.indexOf(
+                                KEY_VALUE_SEPARATOR
+                            )
 
-                    require(separatorIndex > 0) {
-                        "Malformed identity payload field"
+                        require(separatorIndex > 0) {
+                            "Malformed identity payload field"
+                        }
+
+                        part.substring(
+                            startIndex = 0,
+                            endIndex = separatorIndex
+                        ) to part.substring(
+                            startIndex = separatorIndex + 1
+                        )
                     }
 
-                    val key = part.substring(
-                        startIndex = 0,
-                        endIndex = separatorIndex
+            val encryptionPublicKey =
+                values[ENCRYPTION_KEY_FIELD]
+                    ?.hexToByteArray()
+                    ?: error(
+                        "Encryption public key is missing"
                     )
 
-                    val value = part.substring(
-                        startIndex = separatorIndex + 1
+            val signingPublicKey =
+                values[SIGNING_KEY_FIELD]
+                    ?.hexToByteArray()
+                    ?: error(
+                        "Signing public key is missing"
                     )
 
-                    key to value
-                }
-
-            val encryptionPublicKey = values[
-                ENCRYPTION_KEY_FIELD
-            ]?.hexToByteArray()
-                ?: error(
-                    "Encryption public key is missing"
-                )
-
-            val signingPublicKey = values[
-                SIGNING_KEY_FIELD
-            ]?.hexToByteArray()
-                ?: error(
-                    "Signing public key is missing"
-                )
-
-            require(encryptionPublicKey.isNotEmpty()) {
-                "Encryption public key must not be empty"
-            }
-
-            require(signingPublicKey.isNotEmpty()) {
-                "Signing public key must not be empty"
-            }
-
-            val displayName = values[
-                DISPLAY_NAME_FIELD
-            ]?.unescapeShareValue()
-                ?.takeIf { it.isNotBlank() }
-
-            val phoneNumber = values[
-                PHONE_NUMBER_FIELD
-            ]?.unescapeShareValue()
-                ?.takeIf { it.isNotBlank() }
-
-            /**
-             * Contact details are null when neither optional
-             * contact field was included.
-             */
-            val contactDetails =
-                if (
-                    displayName != null ||
-                    phoneNumber != null
-                ) {
-                    SharedContactDetails(
-                        displayName = displayName,
-                        phoneNumber = phoneNumber
+            val phoneNumber =
+                values[PHONE_NUMBER_FIELD]
+                    ?.unescapeShareValue()
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+                    ?: error(
+                        "Shared identity phone number is missing"
                     )
-                } else {
-                    null
-                }
+
+            val displayName =
+                values[DISPLAY_NAME_FIELD]
+                    ?.unescapeShareValue()
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
 
             SharedIdentityPayload(
                 version = SUPPORTED_VERSION,
@@ -189,27 +141,22 @@ class DefaultIdentityShareCodec : IdentityShareCodec {
                 signingPublicKey =
                     signingPublicKey,
                 contactDetails =
-                    contactDetails
+                    SharedContactDetails(
+                        displayName = displayName,
+                        phoneNumber = phoneNumber
+                    )
             )
         }
     }
 
     private companion object {
-
         const val SUPPORTED_VERSION = 1
-
         const val FORMAT_PREFIX = "sc1"
-
         const val FIELD_SEPARATOR = "|"
-
         const val KEY_VALUE_SEPARATOR = "="
-
         const val ENCRYPTION_KEY_FIELD = "ek"
-
         const val SIGNING_KEY_FIELD = "sk"
-
         const val DISPLAY_NAME_FIELD = "name"
-
         const val PHONE_NUMBER_FIELD = "phone"
     }
 }

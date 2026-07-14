@@ -121,6 +121,12 @@ val identityModule =
                 getPublicIdentity =
                     get<GetPublicIdentity>(),
 
+                localPhoneNumberStorage =
+                    get<LocalPhoneNumberStorage>(),
+
+                phoneNumberNormalizer =
+                    get<PhoneNumberNormalizer>(),
+
                 identityShareCodec =
                     get<IdentityShareCodec>()
             )
@@ -148,7 +154,10 @@ val identityModule =
         viewModel {
             ShareIdentityViewModel(
                 createSharedIdentity =
-                    get<CreateSharedIdentity>()
+                    get<CreateSharedIdentity>(),
+
+                localPhoneNumberStorage =
+                    get<LocalPhoneNumberStorage>()
             )
         }
     }

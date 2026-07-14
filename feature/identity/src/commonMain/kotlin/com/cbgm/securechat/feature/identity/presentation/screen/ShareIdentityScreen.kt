@@ -53,9 +53,8 @@ import com.cbgm.securechat.feature.identity.qr.QrCode
 @Composable
 fun ShareIdentityScreen(
     uiState: ShareIdentityUiState,
-    onIncludeContactDetailsChanged: (Boolean) -> Unit,
+    onIncludeDisplayNameChanged: (Boolean) -> Unit,
     onDisplayNameChanged: (String) -> Unit,
-    onPhoneNumberChanged: (String) -> Unit,
     onGenerateClick: () -> Unit,
     onBack: () -> Unit,
     showBackButton: Boolean = true,
@@ -238,14 +237,12 @@ fun ShareIdentityScreen(
                 IdentityOptionsContent(
                     uiState = uiState,
 
-                    onIncludeContactDetailsChanged =
-                        onIncludeContactDetailsChanged,
+                    onIncludeDisplayNameChanged =
+                        onIncludeDisplayNameChanged,
 
                     onDisplayNameChanged =
                         onDisplayNameChanged,
 
-                    onPhoneNumberChanged =
-                        onPhoneNumberChanged,
 
                     onGenerateClick =
                         onGenerateClick
@@ -297,9 +294,8 @@ fun ShareIdentityScreen(
 @Composable
 private fun IdentityOptionsContent(
     uiState: ShareIdentityUiState,
-    onIncludeContactDetailsChanged: (Boolean) -> Unit,
+    onIncludeDisplayNameChanged: (Boolean) -> Unit,
     onDisplayNameChanged: (String) -> Unit,
-    onPhoneNumberChanged: (String) -> Unit,
     onGenerateClick: () -> Unit
 ) {
     Column(
@@ -338,10 +334,10 @@ private fun IdentityOptionsContent(
             Checkbox(
                 checked =
                     uiState
-                        .includeContactDetails,
+                        .includeDisplayName,
 
                 onCheckedChange =
-                    onIncludeContactDetailsChanged
+                    onIncludeDisplayNameChanged
             )
 
             Column(
@@ -350,7 +346,7 @@ private fun IdentityOptionsContent(
             ) {
                 Text(
                     text =
-                        "Include contact details",
+                        "Include display name",
                     style =
                         MaterialTheme.typography
                             .bodyLarge
@@ -358,7 +354,7 @@ private fun IdentityOptionsContent(
 
                 Text(
                     text =
-                        "Add your display name and phone number.",
+                        "Your approved phone number is always included. Add a display name optionally.",
                     style =
                         MaterialTheme.typography
                             .bodySmall,
@@ -369,46 +365,28 @@ private fun IdentityOptionsContent(
             }
         }
 
-        if (
-            uiState.includeContactDetails
-        ) {
+        OutlinedTextField(
+            value = uiState.phoneNumber,
+            onValueChange = {},
+            modifier = Modifier.fillMaxWidth(),
+            enabled = false,
+            label = {
+                Text(text = "Phone number")
+            },
+            supportingText = {
+                Text(text = "Always included so contacts merge into the same chat.")
+            },
+            singleLine = true
+        )
+
+        if (uiState.includeDisplayName) {
             OutlinedTextField(
-                value =
-                    uiState.displayName,
-
-                onValueChange =
-                    onDisplayNameChanged,
-
-                modifier =
-                    Modifier.fillMaxWidth(),
-
+                value = uiState.displayName,
+                onValueChange = onDisplayNameChanged,
+                modifier = Modifier.fillMaxWidth(),
                 label = {
-                    Text(
-                        text =
-                            "Display name"
-                    )
+                    Text(text = "Display name")
                 },
-
-                singleLine = true
-            )
-
-            OutlinedTextField(
-                value =
-                    uiState.phoneNumber,
-
-                onValueChange =
-                    onPhoneNumberChanged,
-
-                modifier =
-                    Modifier.fillMaxWidth(),
-
-                label = {
-                    Text(
-                        text =
-                            "Phone number"
-                    )
-                },
-
                 singleLine = true
             )
         }
@@ -542,7 +520,7 @@ private fun GeneratedIdentityContent(
         } else {
             Text(
                 text =
-                    "Change included details"
+                    "Change display name"
             )
         }
     }
