@@ -3,7 +3,7 @@ package com.cbgm.securechat.feature.chats.domain.model
 enum class MessageDeliveryStatus {
 
     /**
-     * Used for incoming messages.
+     * Incoming messages do not use an outgoing delivery state.
      */
     NOT_APPLICABLE,
 
@@ -13,17 +13,29 @@ enum class MessageDeliveryStatus {
     QUEUED,
 
     /**
-     * The outbox processor is currently attempting delivery.
+     * The outbox processor is currently attempting transport.
      */
     SENDING,
 
     /**
-     * The configured transport accepted the packet.
+     * The relay accepted the outgoing envelope.
+     *
+     * This does not yet prove recipient storage.
      */
     SENT,
 
     /**
-     * The transport attempt failed.
+     * The recipient successfully decoded and stored the message.
+     */
+    DELIVERED,
+
+    /**
+     * Reserved for the later read-receipt implementation.
+     */
+    READ,
+
+    /**
+     * The latest outgoing transport attempt failed.
      */
     FAILED
 }

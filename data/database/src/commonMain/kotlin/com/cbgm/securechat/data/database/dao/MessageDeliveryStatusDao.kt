@@ -45,4 +45,53 @@ interface MessageDeliveryStatusDao {
         messageId: String,
         deliveryStatus: String
     ): Int
+
+    @Query(
+        """
+    UPDATE messages
+    SET deliveryStatus = 'DELIVERED'
+    WHERE id = :messageId
+      AND isMine = 1
+      AND conversationId IN (
+          SELECT id
+          FROM conversations
+          WHERE contactId = :contactId
+      )
+      AND deliveryStatus IN (
+          'QUEUED',
+          'SENDING',
+          'SENT'
+      )
+    """
+    )
+    suspend fun markOutgoingMessageDelivered(
+        messageId: String,
+        contactId: String
+    ): Int
+
+    @Query(
+        """
+    UPDATE messages
+    SET deliveryStatus = 'READ'
+    WHERE id = :messageId
+      AND isMine = 1
+      AND conversationId IN (
+          SELECT id
+          FROM conversations
+          WHERE contactId = :contactId
+      )
+      AND deliveryStatus IN (
+          'SENDING',
+          'SENT',
+          'DELIVERED'
+      )
+    """
+    )
+    suspend fun markOutgoingMessageRead(
+        messageId: String,
+        contactId: String
+    ): Int
+
+
+
 }

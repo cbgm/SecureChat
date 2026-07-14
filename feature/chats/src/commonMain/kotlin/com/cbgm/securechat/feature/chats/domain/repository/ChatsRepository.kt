@@ -37,4 +37,12 @@ interface ChatsRepository {
     suspend fun retryMessage(
         messageId: String
     ): Result<Unit>
+
+    /**
+     * Marks all currently unread incoming messages in this conversation as
+     * read by queueing one deterministic ReadReceiptPacket per message.
+     */
+    suspend fun markConversationRead(
+        contactId: String
+    ): Result<Unit>
 }

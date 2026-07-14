@@ -1,8 +1,10 @@
 package com.cbgm.securechat.core.protocol.codec
 
 import com.cbgm.securechat.core.protocol.packet.ChatMessagePacket
+import com.cbgm.securechat.core.protocol.packet.DeliveryReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.IdentityAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.IdentityPacket
+import com.cbgm.securechat.core.protocol.packet.ReadReceiptPacket
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -130,40 +132,95 @@ class KotlinxPacketCodecTest {
     }
 
     @Test
-    fun acknowledgementRoundTrip() {
+    fun deliveryReceiptRoundTrip() {
+        val original =
+            DeliveryReceiptPacket(
+                packetId =
+                    "delivery-receipt-message-1",
+
+                messageId =
+                    "message-1",
+
+                deliveredAtEpochMilliseconds =
+                    123_456L
+            )
+
+        val encoded =
+            codec.encode(
+                packet = original
+            ).getOrThrow()
+
+        val decoded =
+            codec.decode(
+                encodedPacket = encoded
+            ).getOrThrow()
+
+        val receipt =
+            assertIs<DeliveryReceiptPacket>(
+                decoded
+            )
+
+        assertEquals(
+            expected = original,
+            actual = receipt
+        )
+    }
+
+    @Test
+    fun identityAcknowledgementPacketRoundTrip() {
         val original =
             IdentityAcknowledgementPacket(
                 packetId =
-                    "packet-ack-1",
+                    "identity-acknowledgement-packet-1",
 
                 senderSigningPublicKey =
                     byteArrayOf(
                         1,
-                        2
-                    ),
-
-                acknowledgedIdentityFingerprint =
-                    byteArrayOf(
+                        2,
                         3,
                         4
                     ),
 
-                signature =
+                acknowledgedEncryptionPublicKey =
                     byteArrayOf(
                         5,
-                        6
+                        6,
+                        7,
+                        8
+                    ),
+
+                acknowledgedSigningPublicKey =
+                    byteArrayOf(
+                        9,
+                        10,
+                        11,
+                        12
+                    ),
+
+                signature =
+                    byteArrayOf(
+                        13,
+                        14,
+                        15,
+                        16
                     )
             )
 
-        val decoded =
-            codec.decode(
-                encodedPacket =
-                    codec.encode(
-                        packet = original
-                    ).getOrThrow()
-            ).getOrThrow()
+        val encoded =
+            codec
+                .encode(
+                    packet = original
+                )
+                .getOrThrow()
 
-        val packet =
+        val decoded =
+            codec
+                .decode(
+                    encodedPacket = encoded
+                )
+                .getOrThrow()
+
+        val acknowledgement =
             assertIs<
                     IdentityAcknowledgementPacket
                     >(
@@ -175,7 +232,15 @@ class KotlinxPacketCodecTest {
                 original.packetId,
 
             actual =
-                packet.packetId
+                acknowledgement.packetId
+        )
+
+        assertEquals(
+            expected =
+                original.version,
+
+            actual =
+                acknowledgement.version
         )
 
         assertContentEquals(
@@ -183,17 +248,28 @@ class KotlinxPacketCodecTest {
                 original.senderSigningPublicKey,
 
             actual =
-                packet.senderSigningPublicKey
+                acknowledgement
+                    .senderSigningPublicKey
         )
 
         assertContentEquals(
             expected =
                 original
-                    .acknowledgedIdentityFingerprint,
+                    .acknowledgedEncryptionPublicKey,
 
             actual =
-                packet
-                    .acknowledgedIdentityFingerprint
+                acknowledgement
+                    .acknowledgedEncryptionPublicKey
+        )
+
+        assertContentEquals(
+            expected =
+                original
+                    .acknowledgedSigningPublicKey,
+
+            actual =
+                acknowledgement
+                    .acknowledgedSigningPublicKey
         )
 
         assertContentEquals(
@@ -201,7 +277,42 @@ class KotlinxPacketCodecTest {
                 original.signature,
 
             actual =
-                packet.signature
+                acknowledgement.signature
+        )
+    }
+
+    @Test
+    fun readReceiptRoundTrip() {
+        val original =
+            ReadReceiptPacket(
+                packetId =
+                    "read-receipt-message-1",
+
+                messageId =
+                    "message-1",
+
+                readAtEpochMilliseconds =
+                    123_456L
+            )
+
+        val encoded =
+            codec.encode(
+                packet = original
+            ).getOrThrow()
+
+        val decoded =
+            codec.decode(
+                encodedPacket = encoded
+            ).getOrThrow()
+
+        val receipt =
+            assertIs<ReadReceiptPacket>(
+                decoded
+            )
+
+        assertEquals(
+            expected = original,
+            actual = receipt
         )
     }
 

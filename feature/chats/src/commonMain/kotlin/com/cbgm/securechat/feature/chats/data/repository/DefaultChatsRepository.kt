@@ -8,6 +8,7 @@ import com.cbgm.securechat.core.protocol.handler.IncomingPacketContext
 import com.cbgm.securechat.core.protocol.handler.ProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.packet.ChatMessagePacket
+import com.cbgm.securechat.core.protocol.packet.ReadReceiptPacket
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
 import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
@@ -268,6 +269,80 @@ class DefaultChatsRepository(
                 "Message delivery status could not be updated"
             }
         }
+    }
+
+    override suspend fun markConversationRead(
+        contactId: String
+    ): Result<Unit> {
+        return runCatching {
+            require(contactId.isNotBlank()) {
+                "Contact ID must not be blank"
+            }
+
+            val messages =
+                chatDao
+                    .findMessagesAwaitingReadReceipt(
+                        contactId = contactId
+                    )
+
+            messages.forEach { message ->
+                /*
+                 * Deterministic packet ID makes the operation idempotent.
+                 *
+                 * If the app crashes after enqueueing but before updating
+                 * readReceiptSent, the same packet ID is used next time,
+                 * and ProtocolOutbox returns the existing item.
+                 */
+                val receipt =
+                    ReadReceiptPacket(
+                        packetId =
+                            createReadReceiptPacketId(
+                                messageId =
+                                    message.messageId
+                            ),
+
+                        messageId =
+                            message.messageId,
+
+                        readAtEpochMilliseconds =
+                            SystemClock
+                                .nowEpochMilliseconds()
+                    )
+
+                protocolOutbox
+                    .enqueue(
+                        contactId =
+                            contactId,
+
+                        packet =
+                            receipt
+                    )
+                    .getOrThrow()
+
+                val updatedRows =
+                    chatDao
+                        .markReadReceiptSent(
+                            messageId =
+                                message.messageId
+                        )
+
+                check(updatedRows == 1) {
+                    "Incoming message could not be marked as read"
+                }
+
+                println(
+                    "Read receipt queued: " +
+                            "messageId=${message.messageId}, " +
+                            "contactId=$contactId"
+                )
+            }
+        }
+    }
+
+    private fun createReadReceiptPacketId(
+        messageId: String
+    ): String {
+        return "read-receipt-$messageId"
     }
 
     override suspend fun receiveMessage(
@@ -636,7 +711,6 @@ class DefaultChatsRepository(
     private fun MessageEntity.toDomain(
         contactId: String
     ): ChatMessage {
-
         return ChatMessage(
             id =
                 id,
@@ -662,8 +736,13 @@ class DefaultChatsRepository(
                     .toMessageContentStatus(),
 
             deliveryStatus =
-                deliveryStatus
-                    .toMessageDeliveryStatus()
+                if (isMine) {
+                    deliveryStatus
+                        .toMessageDeliveryStatus()
+                } else {
+                    MessageDeliveryStatus
+                        .NOT_APPLICABLE
+                }
         )
     }
 

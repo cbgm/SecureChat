@@ -38,6 +38,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -59,6 +60,7 @@ fun ChatScreen(
     onMessageTextChanged: (String) -> Unit,
     onSendClick: () -> Unit,
     onRetryMessage: (String) -> Unit,
+    onVerifyIdentity: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -134,7 +136,10 @@ fun ChatScreen(
         ) {
             SecurityBanner(
                 securityState =
-                    uiState.contactSecurityState
+                    uiState.contactSecurityState,
+
+                onVerifyIdentity =
+                    onVerifyIdentity
             )
 
             when {
@@ -243,8 +248,20 @@ private fun SecurityHeaderLabel(
 @Composable
 private fun SecurityBanner(
     securityState: ContactSecurityState,
+    onVerifyIdentity: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    if (
+        securityState ==
+        ContactSecurityState.MUTUAL_KEYS_VERIFIED
+    ) {
+        VerifiedSecurityIndicator(
+            modifier = modifier
+        )
+
+        return
+    }
+
     val icon =
         when (securityState) {
             ContactSecurityState
@@ -293,22 +310,22 @@ private fun SecurityBanner(
         when (securityState) {
             ContactSecurityState
                 .NO_REMOTE_PUBLIC_KEYS -> {
-                "You do not have this contact’s SecureChat public keys. Messages use plaintext transport."
+                "You do not have this contact’s SecureChat public keys."
             }
 
             ContactSecurityState
                 .ONE_WAY_KEYS -> {
-                "You have this contact’s public keys, but they do not yet have yours. Messages remain plaintext."
+                "Both parties have not completed the identity exchange."
             }
 
             ContactSecurityState
                 .MUTUAL_KEYS_UNVERIFIED -> {
-                "Both parties have exchanged public keys. Messages are encrypted, but the safety number has not been verified."
+                "Compare the safety number through another trusted channel."
             }
 
             ContactSecurityState
                 .MUTUAL_KEYS_VERIFIED -> {
-                "Both parties have exchanged public keys and verified the safety number."
+                ""
             }
         }
 
@@ -380,18 +397,21 @@ private fun SecurityBanner(
             modifier =
                 Modifier.padding(
                     horizontal = 16.dp,
-                    vertical = 12.dp
+                    vertical = 10.dp
                 ),
 
             verticalAlignment =
-                Alignment.Top
+                Alignment.CenterVertically
         ) {
             Icon(
                 imageVector =
                     icon,
 
                 contentDescription =
-                    null
+                    null,
+
+                modifier =
+                    Modifier.size(20.dp)
             )
 
             Column(
@@ -427,6 +447,87 @@ private fun SecurityBanner(
                             .bodySmall
                 )
             }
+
+            if (
+                securityState ==
+                ContactSecurityState
+                    .MUTUAL_KEYS_UNVERIFIED
+            ) {
+                TextButton(
+                    onClick =
+                        onVerifyIdentity
+                ) {
+                    Text(
+                        text =
+                            "Verify"
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun VerifiedSecurityIndicator(
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier =
+            modifier.fillMaxWidth(),
+
+        color =
+            MaterialTheme
+                .colorScheme
+                .surfaceContainerLow
+    ) {
+        Row(
+            modifier =
+                Modifier.padding(
+                    horizontal = 16.dp,
+                    vertical = 5.dp
+                ),
+
+            verticalAlignment =
+                Alignment.CenterVertically,
+
+            horizontalArrangement =
+                Arrangement.Center
+        ) {
+            Icon(
+                imageVector =
+                    Icons.Default.Lock,
+
+                contentDescription =
+                    null,
+
+                modifier =
+                    Modifier.size(14.dp),
+
+                tint =
+                    MaterialTheme
+                        .colorScheme
+                        .primary
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.width(5.dp)
+            )
+
+            Text(
+                text =
+                    "Verified end-to-end encrypted",
+
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelSmall,
+
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .primary
+            )
         }
     }
 }
@@ -648,16 +749,17 @@ private fun MessageMetadata(
             Alignment.CenterVertically,
 
         horizontalArrangement =
-            Arrangement.spacedBy(
-                4.dp
-            )
+            Arrangement.spacedBy(4.dp)
     ) {
         MessageSecurityIndicator(
-            message =
-                message
+            message = message
         )
 
-        if (message.isMine) {
+        if (
+            message.isMine &&
+            message.deliveryStatus !=
+            MessageDeliveryStatus.NOT_APPLICABLE
+        ) {
             OutgoingDeliveryIndicator(
                 deliveryStatus =
                     message.deliveryStatus,
@@ -785,9 +887,7 @@ private fun OutgoingDeliveryIndicator(
                             null,
 
                         modifier =
-                            Modifier.size(
-                                14.dp
-                            )
+                            Modifier.size(14.dp)
                     )
                 }
             )
@@ -799,9 +899,7 @@ private fun OutgoingDeliveryIndicator(
                 icon = {
                     CircularProgressIndicator(
                         modifier =
-                            Modifier.size(
-                                12.dp
-                            ),
+                            Modifier.size(12.dp),
 
                         strokeWidth =
                             1.5.dp
@@ -822,10 +920,78 @@ private fun OutgoingDeliveryIndicator(
                             null,
 
                         modifier =
-                            Modifier.size(
-                                14.dp
-                            )
+                            Modifier.size(14.dp)
                     )
+                }
+            )
+        }
+
+        MessageDeliveryStatus.DELIVERED -> {
+            DeliveryLabel(
+                text = "Delivered",
+                icon = {
+                    Row {
+                        Icon(
+                            imageVector =
+                                Icons.Default.Check,
+
+                            contentDescription =
+                                null,
+
+                            modifier =
+                                Modifier.size(14.dp)
+                        )
+
+                        Icon(
+                            imageVector =
+                                Icons.Default.Check,
+
+                            contentDescription =
+                                null,
+
+                            modifier =
+                                Modifier
+                                    .size(14.dp)
+                                    .padding(
+                                        start = 1.dp
+                                    )
+                        )
+                    }
+                }
+            )
+        }
+
+        MessageDeliveryStatus.READ -> {
+            DeliveryLabel(
+                text = "Read",
+                icon = {
+                    Row {
+                        Icon(
+                            imageVector =
+                                Icons.Default.Check,
+
+                            contentDescription =
+                                null,
+
+                            modifier =
+                                Modifier.size(14.dp)
+                        )
+
+                        Icon(
+                            imageVector =
+                                Icons.Default.Check,
+
+                            contentDescription =
+                                null,
+
+                            modifier =
+                                Modifier
+                                    .size(14.dp)
+                                    .padding(
+                                        start = 1.dp
+                                    )
+                        )
+                    }
                 }
             )
         }
@@ -843,9 +1009,7 @@ private fun OutgoingDeliveryIndicator(
                         null,
 
                     modifier =
-                        Modifier.size(
-                            14.dp
-                        ),
+                        Modifier.size(14.dp),
 
                     tint =
                         MaterialTheme
@@ -855,9 +1019,7 @@ private fun OutgoingDeliveryIndicator(
 
                 Spacer(
                     modifier =
-                        Modifier.width(
-                            3.dp
-                        )
+                        Modifier.width(3.dp)
                 )
 
                 Text(
@@ -880,9 +1042,7 @@ private fun OutgoingDeliveryIndicator(
                         onRetryClick,
 
                     modifier =
-                        Modifier.size(
-                            28.dp
-                        )
+                        Modifier.size(28.dp)
                 ) {
                     Icon(
                         imageVector =
@@ -892,9 +1052,7 @@ private fun OutgoingDeliveryIndicator(
                             "Retry message",
 
                         modifier =
-                            Modifier.size(
-                                16.dp
-                            ),
+                            Modifier.size(16.dp),
 
                         tint =
                             MaterialTheme

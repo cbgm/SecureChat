@@ -8,6 +8,7 @@ import com.cbgm.securechat.data.database.entity.ConversationEntity
 import com.cbgm.securechat.data.database.entity.MessageEntity
 import com.cbgm.securechat.data.database.model.ConversationSummary
 import com.cbgm.securechat.data.database.model.ConversationWithMessages
+import com.cbgm.securechat.data.database.model.UnreadIncomingMessage
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -124,4 +125,36 @@ interface ChatDao {
     suspend fun findMessageById(
         messageId: String
     ): MessageEntity?
+
+    @Query(
+        """
+    SELECT
+        messages.id AS messageId,
+        messages.conversationId AS conversationId,
+        conversations.contactId AS contactId
+    FROM messages
+    INNER JOIN conversations
+        ON conversations.id = messages.conversationId
+    WHERE conversations.contactId = :contactId
+      AND messages.isMine = 0
+      AND messages.readReceiptSent = 0
+      AND messages.contentStatus = 'READABLE'
+    ORDER BY messages.createdAtEpochMilliseconds ASC
+    """
+    )
+    suspend fun findMessagesAwaitingReadReceipt(
+        contactId: String
+    ): List<UnreadIncomingMessage>
+
+    @Query(
+        """
+    UPDATE messages
+    SET readReceiptSent = 1
+    WHERE id = :messageId
+      AND isMine = 0
+    """
+    )
+    suspend fun markReadReceiptSent(
+        messageId: String
+    ): Int
 }

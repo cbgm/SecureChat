@@ -27,7 +27,7 @@ import com.cbgm.securechat.data.database.entity.ProtocolOutboxEntity
     /*
      * Replace this with your next available version.
      */
-    version = 8,
+    version = 9,
 
     exportSchema = true
 )

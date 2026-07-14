@@ -78,6 +78,7 @@ kotlin {
             implementation(libs.koin.core)
             implementation(libs.koin.core.viewmodel)
             implementation(libs.koin.compose.viewmodel)
+            implementation(libs.okio)
         }
 
         androidMain.dependencies {

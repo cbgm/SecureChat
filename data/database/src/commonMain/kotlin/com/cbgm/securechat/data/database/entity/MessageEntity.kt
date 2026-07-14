@@ -41,41 +41,25 @@ data class MessageEntity(
 
     val conversationId: String,
 
-    /**
-     * Protocol packet associated with this message.
-     *
-     * Outgoing messages always have a packet ID.
-     * Incoming failures may not have one.
-     */
     val packetId: String?,
 
-    /**
-     * Locally readable representation.
-     */
     val text: String,
 
-    /**
-     * Final encoded wire payload.
-     *
-     * For outgoing queued messages, this remains null until a transport
-     * implementation optionally stores the prepared payload.
-     */
     val transportPayload: String?,
 
-    /**
-     * TransportEncryptionMode enum name.
-     */
     val transportMode: String,
 
-    /**
-     * MessageContentStatus enum name.
-     */
     val contentStatus: String,
 
-    /**
-     * MessageDeliveryStatus enum name.
-     */
     val deliveryStatus: String,
+
+    /**
+     * True after this device has queued a ReadReceiptPacket for this
+     * incoming message.
+     *
+     * Outgoing messages always keep this false.
+     */
+    val readReceiptSent: Boolean = false,
 
     val isMine: Boolean,
 
