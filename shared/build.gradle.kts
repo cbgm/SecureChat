@@ -59,6 +59,7 @@ kotlin {
         }
         commonMain.dependencies {
             implementation(projects.feature.identity)
+            implementation(projects.feature.onboarding)
             implementation(projects.core)
             implementation(projects.feature.chats)
             implementation(projects.feature.contacts)

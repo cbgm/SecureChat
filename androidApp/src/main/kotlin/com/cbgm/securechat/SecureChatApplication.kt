@@ -14,6 +14,7 @@ import com.cbgm.securechat.feature.contacts.di.contactsModule
 import com.cbgm.securechat.feature.identity.core.LocalPhoneNumberStorage
 import com.cbgm.securechat.feature.identity.di.androidIdentityStorageModule
 import com.cbgm.securechat.feature.identity.di.identityModule
+import com.cbgm.securechat.feature.onboarding.di.onboardingModule
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
 import com.cbgm.securechat.feature.transport.connection.RelayConnectionManager
 import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
@@ -61,6 +62,7 @@ class SecureChatApplication :
                     androidDatabaseModule,
                     androidIdentityStorageModule,
                     identityModule,
+                    onboardingModule,
                     contactsModule,
                     appModule,
                     sharedModule,
