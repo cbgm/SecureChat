@@ -1,10 +1,14 @@
 package com.cbgm.securechat.feature.identity.di
 
 import com.cbgm.securechat.core.protocol.identity.LocalEncryptionKeyPairProvider
+import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentityProvider
+import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPairProvider
 import com.cbgm.securechat.core.protocol.identity.LocalSigningPublicKeyProvider
 import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
 import com.cbgm.securechat.feature.identity.core.PublicIdentityStorage
 import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalEncryptionKeyPairProvider
+import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalPublicIdentityProvider
+import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalSigningKeyPairProvider
 import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalSigningPublicKeyProvider
 import com.cbgm.securechat.feature.identity.data.repository.DefaultIdentityRepository
 import com.cbgm.securechat.feature.identity.data.sharing.DefaultIdentityShareCodec
@@ -25,20 +29,22 @@ val identityModule =
 
         single<IdentityRepository> {
             DefaultIdentityRepository(
-                identityKeyGenerator =
-                    get(),
-
-                privateKeyStorage =
-                    get(),
-
-                publicIdentityStorage =
-                    get()
+                identityKeyGenerator = get(),
+                privateKeyStorage = get(),
+                publicIdentityStorage = get(),
             )
         }
 
         single {
             CreateIdentity(
                 repository = get()
+            )
+        }
+
+        single<LocalSigningKeyPairProvider> {
+            IdentityLocalSigningKeyPairProvider(
+                identityRepository =
+                    get<IdentityRepository>()
             )
         }
 
@@ -72,6 +78,13 @@ val identityModule =
                             Unit
                         }
                 }
+            )
+        }
+
+        single<LocalPublicIdentityProvider> {
+            IdentityLocalPublicIdentityProvider(
+                identityRepository =
+                    get<IdentityRepository>()
             )
         }
 

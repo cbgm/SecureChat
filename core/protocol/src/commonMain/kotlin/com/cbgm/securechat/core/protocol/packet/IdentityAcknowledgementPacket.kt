@@ -16,18 +16,26 @@ data class IdentityAcknowledgementPacket(
     @Serializable(
         with = ByteArrayAsBase64Serializer::class
     )
-    val senderSigningPublicKey: ByteArray,
-
-    @Serializable(
-        with = ByteArrayAsBase64Serializer::class
-    )
-    val acknowledgedIdentityFingerprint:
+    val senderSigningPublicKey:
     ByteArray,
 
     @Serializable(
         with = ByteArrayAsBase64Serializer::class
     )
-    val signature: ByteArray
+    val acknowledgedEncryptionPublicKey:
+    ByteArray,
+
+    @Serializable(
+        with = ByteArrayAsBase64Serializer::class
+    )
+    val acknowledgedSigningPublicKey:
+    ByteArray,
+
+    @Serializable(
+        with = ByteArrayAsBase64Serializer::class
+    )
+    val signature:
+    ByteArray
 ) : SecureChatPacket {
 
     init {
@@ -39,14 +47,24 @@ data class IdentityAcknowledgementPacket(
             "Protocol version must be positive"
         }
 
-        require(senderSigningPublicKey.isNotEmpty()) {
+        require(
+            senderSigningPublicKey.isNotEmpty()
+        ) {
             "Sender signing public key must not be empty"
         }
 
         require(
-            acknowledgedIdentityFingerprint.isNotEmpty()
+            acknowledgedEncryptionPublicKey
+                .isNotEmpty()
         ) {
-            "Acknowledged fingerprint must not be empty"
+            "Acknowledged encryption key must not be empty"
+        }
+
+        require(
+            acknowledgedSigningPublicKey
+                .isNotEmpty()
+        ) {
+            "Acknowledged signing key must not be empty"
         }
 
         require(signature.isNotEmpty()) {
@@ -68,15 +86,23 @@ data class IdentityAcknowledgementPacket(
             return false
         }
 
-        return packetId == other.packetId &&
-                version == other.version &&
-                senderSigningPublicKey.contentEquals(
-                    other.senderSigningPublicKey
-                ) &&
-                acknowledgedIdentityFingerprint
+        return packetId ==
+                other.packetId &&
+                version ==
+                other.version &&
+                senderSigningPublicKey
+                    .contentEquals(
+                        other.senderSigningPublicKey
+                    ) &&
+                acknowledgedEncryptionPublicKey
                     .contentEquals(
                         other
-                            .acknowledgedIdentityFingerprint
+                            .acknowledgedEncryptionPublicKey
+                    ) &&
+                acknowledgedSigningPublicKey
+                    .contentEquals(
+                        other
+                            .acknowledgedSigningPublicKey
                     ) &&
                 signature.contentEquals(
                     other.signature
@@ -88,7 +114,8 @@ data class IdentityAcknowledgementPacket(
             packetId.hashCode()
 
         result =
-            31 * result + version
+            31 * result +
+                    version
 
         result =
             31 * result +
@@ -97,7 +124,12 @@ data class IdentityAcknowledgementPacket(
 
         result =
             31 * result +
-                    acknowledgedIdentityFingerprint
+                    acknowledgedEncryptionPublicKey
+                        .contentHashCode()
+
+        result =
+            31 * result +
+                    acknowledgedSigningPublicKey
                         .contentHashCode()
 
         result =

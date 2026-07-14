@@ -6,6 +6,10 @@ import com.cbgm.securechat.feature.identity.core.PublicIdentityStorage
 import com.cbgm.securechat.feature.identity.domain.model.IdentityStatus
 import com.cbgm.securechat.feature.identity.domain.model.PublicIdentity
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 
 class DefaultIdentityRepository(
     private val identityKeyGenerator:
@@ -18,20 +22,28 @@ class DefaultIdentityRepository(
     PublicIdentityStorage
 ) : IdentityRepository {
 
-    @OptIn(ExperimentalUnsignedTypes::class)
-    override suspend fun getEncryptionPrivateKey():
-            Result<ByteArray> {
+    private val identityUpdates =
+        MutableSharedFlow<PublicIdentity?>(
+            replay = 1,
+            extraBufferCapacity = 1
+        )
 
-        return runCatching {
-            privateKeyStorage
-                .loadEncryptionPrivateKey()
-                .getOrThrow()
-                ?.toByteArray()
-                ?: error(
-                    "Local encryption private key does not exist"
-                )
+    override fun observeIdentity():
+            Flow<PublicIdentity?> {
+
+        return flow {
+            emit(
+                publicIdentityStorage
+                    .load()
+                    .getOrThrow()
+            )
+
+            emitAll(
+                identityUpdates
+            )
         }
     }
+
     override suspend fun getStatus():
             Result<IdentityStatus> {
 
@@ -110,16 +122,15 @@ class DefaultIdentityRepository(
             privateKeyStorage
                 .saveIdentityPrivateKeys(
                     encryptionPrivateKey =
-                        keyPair
-                            .encryptionPrivateKey,
+                        keyPair.encryptionPrivateKey,
 
                     signingPrivateKey =
-                        keyPair
-                            .signingPrivateKey
+                        keyPair.signingPrivateKey
                 )
                 .getOrThrow()
 
-            privateKeysWritten = true
+            privateKeysWritten =
+                true
 
             val publicIdentity =
                 PublicIdentity(
@@ -141,7 +152,12 @@ class DefaultIdentityRepository(
                 )
                 .getOrThrow()
 
-            publicIdentityWritten = true
+            publicIdentityWritten =
+                true
+
+            identityUpdates.emit(
+                publicIdentity
+            )
 
             Result.success(
                 publicIdentity
@@ -188,5 +204,35 @@ class DefaultIdentityRepository(
 
         return publicIdentityStorage
             .load()
+    }
+
+    @OptIn(ExperimentalUnsignedTypes::class)
+    override suspend fun getEncryptionPrivateKey():
+            Result<ByteArray> {
+
+        return runCatching {
+            privateKeyStorage
+                .loadEncryptionPrivateKey()
+                .getOrThrow()
+                ?.toByteArray()
+                ?: error(
+                    "Local encryption private key does not exist"
+                )
+        }
+    }
+
+    @OptIn(ExperimentalUnsignedTypes::class)
+    override suspend fun getSigningPrivateKey():
+            Result<ByteArray> {
+
+        return runCatching {
+            privateKeyStorage
+                .loadSigningPrivateKey()
+                .getOrThrow()
+                ?.toByteArray()
+                ?: error(
+                    "Local signing private key does not exist"
+                )
+        }
     }
 }

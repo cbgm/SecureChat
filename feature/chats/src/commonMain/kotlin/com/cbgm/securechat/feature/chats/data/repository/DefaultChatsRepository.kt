@@ -21,6 +21,7 @@ import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
 import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
+import com.cbgm.securechat.feature.contacts.domain.identity.IdentityExchangeStarter
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
@@ -33,6 +34,8 @@ class DefaultChatsRepository(
     private val messageDeliveryStatusDao:
     MessageDeliveryStatusDao,
     private val getContact: GetContact,
+    private val identityExchangeStarter:
+    IdentityExchangeStarter,
     private val protocolOutbox: ProtocolOutbox,
     private val incomingTransportMessageDecoder:
     IncomingTransportMessageDecoder,
@@ -93,6 +96,20 @@ class DefaultChatsRepository(
                 ?: error(
                     "Contact was not found"
                 )
+
+        /*
+ * For an existing ONE_WAY contact, make sure our IdentityPacket is
+ * queued before the chat packet.
+ *
+ * For phone-book-only contacts, this is a harmless no-op.
+ *
+ * For MUTUAL contacts, this is also a no-op.
+ */
+        identityExchangeStarter
+            .ensureStarted(
+                contactId = contactId
+            )
+            .getOrThrow()
 
         val conversation =
             getOrCreateConversation(

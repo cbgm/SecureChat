@@ -2,7 +2,10 @@ package com.cbgm.securechat.core.crypto.di
 
 import com.cbgm.securechat.core.crypto.hash.CryptoHash
 import com.cbgm.securechat.core.crypto.hash.DefaultCryptoHash
+import com.cbgm.securechat.core.crypto.identity.IdentityAcknowledgementCrypto
+import com.cbgm.securechat.core.crypto.identity.IdentityAcknowledgementPayloadEncoder
 import com.cbgm.securechat.core.crypto.identity.IdentityKeyGenerator
+import com.cbgm.securechat.core.crypto.identity.SodiumIdentityAcknowledgementCrypto
 import com.cbgm.securechat.core.crypto.identity.SodiumIdentityKeyGenerator
 import com.cbgm.securechat.core.crypto.safety.SafetyNumberGenerator
 import com.cbgm.securechat.core.crypto.transport.DefaultIncomingTransportMessageDecoder
@@ -23,6 +26,17 @@ val cryptoModule =
         single {
             SafetyNumberGenerator(
                 cryptoHash = get()
+            )
+        }
+
+        single {
+            IdentityAcknowledgementPayloadEncoder()
+        }
+
+        single<IdentityAcknowledgementCrypto> {
+            SodiumIdentityAcknowledgementCrypto(
+                payloadEncoder =
+                    get<IdentityAcknowledgementPayloadEncoder>()
             )
         }
 

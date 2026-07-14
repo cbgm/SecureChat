@@ -2,35 +2,28 @@ package com.cbgm.securechat.feature.identity.domain.repository
 
 import com.cbgm.securechat.feature.identity.domain.model.IdentityStatus
 import com.cbgm.securechat.feature.identity.domain.model.PublicIdentity
+import kotlinx.coroutines.flow.Flow
 
 interface IdentityRepository {
 
-    /**
-     * Returns the complete local identity state.
-     */
-    suspend fun getStatus(): Result<IdentityStatus>
+    fun observeIdentity():
+            Flow<PublicIdentity?>
 
-    /**
-     * Convenience function returning true only when the identity
-     * is complete and ready for use.
-     */
-    suspend fun hasIdentity(): Result<Boolean>
+    suspend fun getStatus():
+            Result<IdentityStatus>
 
-    /**
-     * Creates a new identity.
-     *
-     * This must fail if complete or partial identity data
-     * already exists.
-     */
-    suspend fun createIdentity(): Result<PublicIdentity>
+    suspend fun hasIdentity():
+            Result<Boolean>
 
-    /**
-     * Loads the public part of the local identity.
-     *
-     * Private keys are never exposed through this repository method.
-     */
-    suspend fun getIdentity(): Result<PublicIdentity?>
+    suspend fun createIdentity():
+            Result<PublicIdentity>
+
+    suspend fun getIdentity():
+            Result<PublicIdentity?>
 
     suspend fun getEncryptionPrivateKey():
+            Result<ByteArray>
+
+    suspend fun getSigningPrivateKey():
             Result<ByteArray>
 }

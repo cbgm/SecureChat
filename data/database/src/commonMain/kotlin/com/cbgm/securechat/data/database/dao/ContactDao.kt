@@ -149,4 +149,48 @@ interface ContactDao {
     suspend fun deleteById(
         contactId: String
     )
+
+    @Query(
+        """
+    SELECT *
+    FROM contact_public_identities
+    WHERE contactId = :contactId
+    LIMIT 1
+    """
+    )
+    suspend fun findPublicIdentityByContactId(
+        contactId: String
+    ): ContactPublicIdentityEntity?
+
+    @Query(
+        """
+    UPDATE contact_public_identities
+    SET keyExchangeStatus = :keyExchangeStatus,
+        updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
+    WHERE contactId = :contactId
+      AND encryptionPublicKey = :expectedEncryptionPublicKey
+      AND signingPublicKey = :expectedSigningPublicKey
+    """
+    )
+    suspend fun updateKeyExchangeStatusIfKeysMatch(
+        contactId: String,
+        expectedEncryptionPublicKey: ByteArray,
+        expectedSigningPublicKey: ByteArray,
+        keyExchangeStatus: String,
+        updatedAtEpochMilliseconds: Long
+    ): Int
+
+    @Query(
+        """
+    UPDATE contact_public_identities
+    SET keyExchangeStatus = :keyExchangeStatus,
+        updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
+    WHERE keyExchangeStatus = :currentKeyExchangeStatus
+    """
+    )
+    suspend fun replaceAllKeyExchangeStatuses(
+        currentKeyExchangeStatus: String,
+        keyExchangeStatus: String,
+        updatedAtEpochMilliseconds: Long
+    ): Int
 }
