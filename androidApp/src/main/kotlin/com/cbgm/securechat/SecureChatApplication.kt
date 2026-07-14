@@ -1,6 +1,8 @@
 package com.cbgm.securechat
 
+import android.Manifest
 import android.app.Application
+import android.content.pm.PackageManager
 import com.cbgm.securechat.core.crypto.SodiumRuntime
 import com.cbgm.securechat.core.crypto.di.cryptoModule
 import com.cbgm.securechat.core.protocol.di.protocolModule
@@ -11,6 +13,7 @@ import com.cbgm.securechat.di.sharedModule
 import com.cbgm.securechat.feature.chats.di.chatsModule
 import com.cbgm.securechat.feature.contactimport.di.contactImportModule
 import com.cbgm.securechat.feature.contacts.di.contactsModule
+import com.cbgm.securechat.feature.contacts.devicecontacts.ImportDeviceContacts
 import com.cbgm.securechat.feature.identity.core.LocalPhoneNumberStorage
 import com.cbgm.securechat.feature.identity.di.androidIdentityStorageModule
 import com.cbgm.securechat.feature.identity.di.identityModule
@@ -29,6 +32,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import androidx.core.content.ContextCompat
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
@@ -96,6 +100,10 @@ class SecureChatApplication :
             startRuntimeServices(
                 koin = koin
             )
+
+            syncDeviceContactsIfPermitted(
+                koin = koin
+            )
         }
     }
 
@@ -159,6 +167,55 @@ class SecureChatApplication :
                     }
                 }
         }
+    }
+
+    /**
+     * Refreshes the local SecureChat contact list from the Android
+     * address book on every process start.
+     *
+     * Onboarding owns the runtime permission request and explanation.
+     * Startup never displays another permission dialog; it only runs
+     * the synchronization when READ_CONTACTS is already granted.
+     *
+     * ImportDeviceContacts merges by normalized phone number, so:
+     * - new device contacts are added;
+     * - renamed/updated device contacts are refreshed;
+     * - existing SecureChat identities and conversations stay attached
+     *   to the same contact;
+     * - duplicate contacts are not intentionally created.
+     */
+    private suspend fun syncDeviceContactsIfPermitted(
+        koin: org.koin.core.Koin
+    ) {
+        val permissionGranted =
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_CONTACTS
+            ) == PackageManager.PERMISSION_GRANTED
+
+        if (!permissionGranted) {
+            println(
+                "Device contact sync skipped: READ_CONTACTS is not granted"
+            )
+
+            return
+        }
+
+        koin
+            .get<ImportDeviceContacts>()
+            .invoke()
+            .onSuccess {
+                println(
+                    "Device contact sync completed"
+                )
+            }
+            .onFailure { error ->
+                println(
+                    "Device contact sync failed: ${error.message}"
+                )
+
+                error.printStackTrace()
+            }
     }
 
     private fun initializeCrypto() {
