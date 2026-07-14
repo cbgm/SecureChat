@@ -36,6 +36,31 @@ interface ChatDao {
         message: MessageEntity
     )
 
+    /**
+     * Atomically creates/reuses the conversation and stores an incoming
+     * message. This guarantees that the recipient's chat list can observe
+     * the conversation as soon as the first message arrives.
+     */
+    @Transaction
+    suspend fun upsertIncomingChatMessage(
+        conversation: ConversationEntity,
+        message: MessageEntity,
+        timestamp: Long
+    ) {
+        upsertConversation(
+            conversation = conversation
+        )
+
+        upsertMessage(
+            message = message
+        )
+
+        updateConversationTimestamp(
+            conversationId = conversation.id,
+            timestamp = timestamp
+        )
+    }
+
     @Query(
         """
         UPDATE conversations

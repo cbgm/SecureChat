@@ -8,6 +8,7 @@ import com.cbgm.securechat.core.protocol.packet.DeliveryReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
+import com.cbgm.securechat.data.database.entity.ConversationEntity
 import com.cbgm.securechat.data.database.entity.MessageEntity
 import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
@@ -44,13 +45,26 @@ class ChatMessagePacketHandler(
              * Repeated delivery of the same message updates the same
              * database row rather than creating duplicates.
              */
-            chatDao.upsertMessage(
+            val conversation =
+                chatDao.findConversationByContactId(
+                    contactId = context.contactId
+                )
+                    ?: ConversationEntity(
+                        id = context.conversationId,
+                        contactId = context.contactId,
+                        createdAtEpochMilliseconds =
+                            context.receivedAtEpochMilliseconds,
+                        updatedAtEpochMilliseconds =
+                            context.receivedAtEpochMilliseconds
+                    )
+
+            val incomingMessage =
                 MessageEntity(
                     id =
                         chatPacket.messageId,
 
                     conversationId =
-                        context.conversationId,
+                        conversation.id,
 
                     packetId =
                         chatPacket.packetId,
@@ -80,14 +94,11 @@ class ChatMessagePacketHandler(
                     createdAtEpochMilliseconds =
                         chatPacket.sentAtEpochMilliseconds
                 )
-            )
 
-            chatDao.updateConversationTimestamp(
-                conversationId =
-                    context.conversationId,
-
-                timestamp =
-                    context.receivedAtEpochMilliseconds
+            chatDao.upsertIncomingChatMessage(
+                conversation = conversation,
+                message = incomingMessage,
+                timestamp = context.receivedAtEpochMilliseconds
             )
 
             /*
