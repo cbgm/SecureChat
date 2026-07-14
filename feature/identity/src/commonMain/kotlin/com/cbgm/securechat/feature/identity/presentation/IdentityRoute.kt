@@ -80,19 +80,6 @@ fun IdentityRoute(
         }
     }
 
-    LaunchedEffect(uiState) {
-        val noIdentityState =
-            uiState as?
-                    IdentityUiState.NoIdentity
-
-        if (
-            noIdentityState != null &&
-            noIdentityState.phoneNumber.isBlank() &&
-            phoneNumberHintRequestId == 0
-        ) {
-            phoneNumberHintRequestId = 1
-        }
-    }
 
     IdentityScreen(
         uiState =

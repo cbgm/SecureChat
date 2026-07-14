@@ -292,18 +292,6 @@ fun AppNavigation() {
                             inclusive = true
                         }
                     }
-                },
-
-                onIdentityRequired = {
-                    navController.navigate(
-                        AppDestination.Identity
-                    ) {
-                        popUpTo(
-                            AppDestination.Startup
-                        ) {
-                            inclusive = true
-                        }
-                    }
                 }
             )
         }
