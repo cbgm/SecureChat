@@ -25,14 +25,14 @@ kotlin {
         ).forEach { iosTarget ->
 
             iosTarget.binaries.framework {
-                baseName = "SecureChatShared"
+                baseName = "SecureChatNavigation"
                 isStatic = true
             }
         }
     }
 
     android {
-        namespace = "com.cbgm.securechat.shared"
+        namespace = "com.cbgm.securechat.navigation"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 
@@ -58,13 +58,13 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
         }
         commonMain.dependencies {
-            //implementation(projects.feature.identity)
-            //implementation(projects.feature.onboarding)
+            implementation(projects.feature.identity)
+            implementation(projects.feature.onboarding)
+            implementation(projects.startup)
             implementation(projects.core)
-            //implementation(projects.feature.chats)
-            //implementation(projects.feature.contacts)
-            //implementation(projects.feature.contactimport)
-            implementation(projects.navigation)
+            implementation(projects.feature.chats)
+            implementation(projects.feature.contacts)
+            implementation(projects.feature.contactimport)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)

@@ -6,7 +6,6 @@ plugins {
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.kotlin.serialization)
 }
 
 val isMacOs = System
@@ -25,14 +24,14 @@ kotlin {
         ).forEach { iosTarget ->
 
             iosTarget.binaries.framework {
-                baseName = "SecureChatShared"
+                baseName = "SecureChatStartup"
                 isStatic = true
             }
         }
     }
 
     android {
-        namespace = "com.cbgm.securechat.shared"
+        namespace = "com.cbgm.securechat.startup"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 
@@ -58,13 +57,8 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
         }
         commonMain.dependencies {
-            //implementation(projects.feature.identity)
-            //implementation(projects.feature.onboarding)
-            implementation(projects.core)
-            //implementation(projects.feature.chats)
-            //implementation(projects.feature.contacts)
-            //implementation(projects.feature.contactimport)
-            implementation(projects.navigation)
+            implementation(projects.feature.onboarding)
+            implementation(projects.feature.identity)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
@@ -77,10 +71,6 @@ kotlin {
             implementation(libs.koin.core)
             implementation(libs.koin.core.viewmodel)
             implementation(libs.koin.compose.viewmodel)
-            implementation(libs.jetbrains.navigation.compose)
-            implementation(libs.kotlinx.serialization.json)
-            implementation(libs.jetbrains.navigation.compose)
-            implementation(compose.materialIconsExtended)
 
         }
         commonTest.dependencies {

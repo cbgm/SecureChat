@@ -13,6 +13,7 @@ kotlin {
 }
 dependencies {
     implementation(projects.shared)
+    implementation(projects.startup)
     implementation(projects.core)
     implementation(projects.core.crypto)
     implementation(projects.core.protocol)
