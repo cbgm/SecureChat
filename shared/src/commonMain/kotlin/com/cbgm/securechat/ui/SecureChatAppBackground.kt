@@ -1,0 +1,52 @@
+package com.cbgm.securechat.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.startup.StartupArtwork
+
+val SecureChatChromeColor =
+    Color(0xFF071A2E)
+
+const val BACKGROUND_TINT_ALPHA =
+    0.09f
+
+const val LOGO_WATERMARK_ALPHA =
+    0.10f
+
+@Composable
+fun SecureChatAppBackground(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(
+                    color =
+                        SecureChatChromeColor.copy(
+                            alpha = BACKGROUND_TINT_ALPHA
+                        )
+                )
+    ) {
+        StartupArtwork(
+            modifier =
+                Modifier
+                    .align(Alignment.Center)
+                    .size(300.dp)
+                    .graphicsLayer {
+                        alpha = LOGO_WATERMARK_ALPHA
+                    }
+        )
+
+        content()
+    }
+}

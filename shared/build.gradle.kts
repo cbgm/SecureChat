@@ -79,6 +79,8 @@ kotlin {
             implementation(libs.jetbrains.navigation.compose)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.jetbrains.navigation.compose)
+            implementation(compose.materialIconsExtended)
+
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

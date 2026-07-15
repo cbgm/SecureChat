@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -46,17 +47,13 @@ fun IdentityScreen(
 ) {
     Surface(
         modifier =
-            modifier.fillMaxSize()
+            modifier.fillMaxSize(),
+        color = Color.Transparent
     ) {
         Box(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(
-                        MaterialTheme
-                            .colorScheme
-                            .background
-                    )
                     .safeContentPadding()
                     .padding(
                         24.dp

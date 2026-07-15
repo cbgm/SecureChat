@@ -1,6 +1,7 @@
 package com.cbgm.securechat.feature.chats.presentation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +44,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,6 +61,7 @@ fun ChatScreen(
     uiState: ChatUiState,
     onMessageTextChanged: (String) -> Unit,
     onSendClick: () -> Unit,
+    onClickHeader: () -> Unit,
     onRetryMessage: (String) -> Unit,
     onVerifyIdentity: () -> Unit,
     onBack: () -> Unit,
@@ -67,11 +70,17 @@ fun ChatScreen(
     Scaffold(
         modifier =
             modifier.fillMaxSize(),
+        containerColor = Color.Transparent,
 
         topBar = {
             TopAppBar(
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF071A2E).copy(alpha = 0.9f),
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                ),
                 title = {
-                    Column {
+                    Column(modifier = Modifier.clickable { onClickHeader() }) {
                         Text(
                             text =
                                 uiState.contactName,

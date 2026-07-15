@@ -7,27 +7,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 /**
- * Temporary UI model for one item in the conversations list.
- *
- * Later, this should probably come from a domain model or ViewModel.
+ * UI model for one item in the conversations list.
  */
 data class ChatListItem(
     val contactId: String,
@@ -36,7 +28,6 @@ data class ChatListItem(
     val timestamp: String
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatsScreen(
     chats: List<ChatListItem>,
@@ -44,53 +35,30 @@ fun ChatsScreen(
     onChatClick: (contactId: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(text = "Chats")
-                },
-                actions = {
-                    IconButton(
-                        onClick = onAddChatClick
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Start a new chat"
-                        )
-                    }
+    if (chats.isEmpty()) {
+        EmptyChatsContent(
+            modifier =
+                modifier.fillMaxSize()
+        )
+    } else {
+        LazyColumn(
+            modifier =
+                modifier.fillMaxSize()
+        ) {
+            items(
+                items = chats,
+                key = { chat ->
+                    chat.contactId
                 }
-            )
-        }
-    ) { innerPadding ->
-        if (chats.isEmpty()) {
-            EmptyChatsContent(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                items(
-                    items = chats,
-                    key = { chat ->
-                        chat.contactId
+            ) { chat ->
+                ChatItem(
+                    chat = chat,
+                    onClick = {
+                        onChatClick(chat.contactId)
                     }
-                ) { chat ->
-                    ChatItem(
-                        chat = chat,
-                        onClick = {
-                            onChatClick(chat.contactId)
-                        }
-                    )
+                )
 
-                    HorizontalDivider()
-                }
+                HorizontalDivider()
             }
         }
     }
@@ -103,9 +71,14 @@ private fun ChatItem(
     modifier: Modifier = Modifier
 ) {
     ListItem(
-        modifier = modifier.clickable(
-            onClick = onClick
-        ),
+        modifier =
+            modifier.clickable(
+                onClick = onClick
+            ),
+        colors =
+            androidx.compose.material3.ListItemDefaults.colors(
+                containerColor = Color.Transparent
+            ),
         headlineContent = {
             Text(
                 text = chat.contactName,

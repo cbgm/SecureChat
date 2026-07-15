@@ -42,12 +42,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.feature.identity.presentation.model.ShareIdentityUiState
 import com.cbgm.securechat.feature.identity.qr.QrCode
+
+val SecureChatChromeColor =
+    Color(0xFF071A2E)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,6 +79,7 @@ fun ShareIdentityScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = Color.Transparent,
         snackbarHost = {
             SnackbarHost(
                 hostState =
@@ -83,6 +88,12 @@ fun ShareIdentityScreen(
         },
         topBar = {
             TopAppBar(
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = SecureChatChromeColor,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
+                    actionIconContentColor = Color.White
+                ),
                 title = {
                     Text(
                         text = "Share identity"

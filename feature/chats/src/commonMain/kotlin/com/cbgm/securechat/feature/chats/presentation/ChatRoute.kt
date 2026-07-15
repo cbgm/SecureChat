@@ -17,6 +17,7 @@ fun ChatRoute(
     contactId: String,
     contactName: String,
     onBack: () -> Unit,
+    onClickHeader: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ChatViewModel =
         koinViewModel {
@@ -109,6 +110,8 @@ fun ChatRoute(
             showVerificationDialog =
                 true
         },
+
+        onClickHeader = onClickHeader,
 
         onBack =
             onBack,

@@ -39,10 +39,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
+import com.cbgm.securechat.feature.identity.presentation.screen.SecureChatChromeColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,10 +72,20 @@ fun ContactsScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,//Color(0xFF071A2E),
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                ),
                 title = {
-                    Text("Contacts")
+                    Text(
+                        text = "Contacts", color = Color.Black,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 26.sp
+                    )
                 },
                 navigationIcon = {
                     IconButton(
@@ -80,7 +94,8 @@ fun ContactsScreen(
                         Icon(
                             imageVector =
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = Color.Black
                         )
                     }
                 }
@@ -94,11 +109,13 @@ fun ContactsScreen(
                 FloatingActionButton(
                     onClick = {
                         showImportSheet = true
-                    }
+                    },
+                    containerColor = SecureChatChromeColor
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Add contact"
+                        contentDescription = "Add contact",
+                        tint = Color.White
                     )
                 }
             }
@@ -199,7 +216,7 @@ private fun ContactsContent(
             ContactListItem(
                 contact = contact,
                 onClick = {
-                    onContactClick(contact.id, contact.displayName?:"")
+                    onContactClick(contact.id, contact.displayName ?: "")
                 }
             )
 
