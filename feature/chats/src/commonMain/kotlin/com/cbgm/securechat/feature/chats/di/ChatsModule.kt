@@ -11,8 +11,8 @@ import com.cbgm.securechat.feature.chats.data.repository.DefaultChatsRepository
 import com.cbgm.securechat.feature.chats.data.security.DefaultGetContactSafetyNumber
 import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
 import com.cbgm.securechat.feature.chats.domain.usecase.GetContactSafetyNumber
-import com.cbgm.securechat.feature.chats.presentation.ChatViewModel
-import com.cbgm.securechat.feature.chats.presentation.ChatsViewModel
+import com.cbgm.securechat.feature.chats.presentation.screen.ChatViewModel
+import com.cbgm.securechat.feature.chats.presentation.screen.ChatsViewModel
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
@@ -73,8 +73,7 @@ val chatsModule =
 
         viewModel {
             ChatsViewModel(
-                chatsRepository =
-                    get()
+                chatsRepository = get()
             )
         }
 

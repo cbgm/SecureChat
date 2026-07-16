@@ -7,12 +7,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cbgm.securechat.feature.identity.presentation.screen.ShareIdentityScreen
 import com.cbgm.securechat.feature.identity.presentation.screen.ShareIdentityViewModel
 import com.cbgm.securechat.feature.identity.sharing.rememberIdentityShareLauncher
-import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -64,7 +62,11 @@ fun ShareIdentityRoute(
         modifier = modifier,
 
         onCopyIdentity = {
-            // Existing implementation
+            /*coroutineScope.launch {
+                snackbarHostState.showSnackbar(
+                    message = "Identity copied to clipboard."
+                )
+            }*/
         },
 
         onShareIdentity = shareIdentity,

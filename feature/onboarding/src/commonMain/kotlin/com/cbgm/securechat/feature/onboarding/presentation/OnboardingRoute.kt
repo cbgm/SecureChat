@@ -14,6 +14,9 @@ import com.cbgm.securechat.feature.identity.presentation.screen.IdentityViewMode
 import com.cbgm.securechat.feature.onboarding.platform.AutomaticPhoneNumberReader
 import com.cbgm.securechat.feature.onboarding.platform.AutomaticPhoneNumberResult
 import com.cbgm.securechat.feature.onboarding.platform.OnboardingPermissionRequester
+import com.cbgm.securechat.feature.onboarding.presentation.model.OnboardingPage
+import com.cbgm.securechat.feature.onboarding.presentation.screen.OnboardingScreen
+import com.cbgm.securechat.feature.onboarding.presentation.screen.OnboardingViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable

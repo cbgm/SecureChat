@@ -1,0 +1,8 @@
+package com.cbgm.securechat.core.ui.theme
+
+object Alpha {
+    const val Invisible = 0f
+    const val Subtle = 0.09f
+    const val Watermark = 0.15f
+    const val Opaque = 1f
+}

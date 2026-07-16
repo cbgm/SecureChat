@@ -22,13 +22,13 @@ kotlin {
         ).forEach { iosTarget ->
 
             iosTarget.binaries.framework {
-                baseName = "SecureChatDatabase"
+                baseName = "SecureChatCore"
                 isStatic = true
             }
         }
     }
 
-    androidLibrary {
+    android {
         namespace = "com.cbgm.securechat.core"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()

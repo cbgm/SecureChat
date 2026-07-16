@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.ui.component.StartupArtwork
 
 val SecureChatChromeColor =
     Color(0xFF071A2E)
@@ -29,12 +30,7 @@ fun SecureChatAppBackground(
         modifier =
             modifier
                 .fillMaxSize()
-                .background(
-                    color =
-                        SecureChatChromeColor.copy(
-                            alpha = BACKGROUND_TINT_ALPHA
-                        )
-                )
+                .background(color = SecureChatChromeColor.copy(alpha = BACKGROUND_TINT_ALPHA))
     ) {
         StartupArtwork(
             modifier =

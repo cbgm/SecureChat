@@ -61,6 +61,7 @@ kotlin {
             //implementation(projects.feature.identity)
             //implementation(projects.feature.onboarding)
             implementation(projects.core)
+            implementation(projects.core.ui)
             //implementation(projects.feature.chats)
             //implementation(projects.feature.contacts)
             //implementation(projects.feature.contactimport)

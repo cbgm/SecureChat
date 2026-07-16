@@ -64,6 +64,7 @@ kotlin {
             implementation(project(":core"))
             implementation(project(":feature:identity"))
             implementation(project(":feature:contacts"))
+            implementation(projects.core.ui)
 
             implementation(compose.runtime)
             implementation(compose.foundation)

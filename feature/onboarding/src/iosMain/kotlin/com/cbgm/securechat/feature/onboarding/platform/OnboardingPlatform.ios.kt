@@ -9,9 +9,7 @@ actual fun OnboardingPermissionRequester(
     onResult: (PermissionRequestResult) -> Unit
 ) {
     LaunchedEffect(requestId) {
-        if (requestId > 0) {
-            onResult(
-                PermissionRequestResult(
+        if (requestId > 0) { onResult(PermissionRequestResult(
                     contactsGranted = false,
                     cameraGranted = false,
                     notificationsGranted = false,

@@ -12,15 +12,10 @@ class DefaultAppInitializer(
             Result<AppInitializationResult> {
 
         return runCatching {
-            val identityResult =
-                identityStartupManager
-                    .ensureIdentityExists()
-                    .getOrThrow()
+            val identityResult = identityStartupManager.ensureIdentityExists().getOrThrow()
 
             AppInitializationResult(
-                identityReady =
-                    identityResult ==
-                            IdentityStartupResult.ALREADY_EXISTS
+                identityReady = identityResult == IdentityStartupResult.ALREADY_EXISTS
             )
         }
     }

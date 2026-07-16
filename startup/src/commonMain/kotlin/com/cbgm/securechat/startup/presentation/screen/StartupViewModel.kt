@@ -14,29 +14,18 @@ class StartupViewModel(
     AppInitializer
 ) : ViewModel() {
 
-    private val mutableUiState =
-        MutableStateFlow<StartupUiState>(
-            StartupUiState.Loading
-        )
+    private val mutableUiState = MutableStateFlow<StartupUiState>(StartupUiState.Loading)
 
-    val uiState:
-            StateFlow<StartupUiState> =
-        mutableUiState.asStateFlow()
+    val uiState: StateFlow<StartupUiState> = mutableUiState.asStateFlow()
 
-    private var initializationCompleted =
-        false
+    private var initializationCompleted = false
 
     init {
         initialize()
     }
 
     fun retry() {
-        if (
-            mutableUiState.value !is
-                    StartupUiState.Error
-        ) {
-            return
-        }
+        if (mutableUiState.value !is StartupUiState.Error) return
 
         initializationCompleted = false
         initialize()
@@ -48,27 +37,21 @@ class StartupViewModel(
         }
 
         viewModelScope.launch {
-            mutableUiState.value =
-                StartupUiState.Loading
+            mutableUiState.value = StartupUiState.Loading
 
-            appInitializer
-                .initialize()
-                .onSuccess { result ->
-                    initializationCompleted = true
+            appInitializer.initialize().onSuccess { result ->
+                initializationCompleted = true
 
-                    mutableUiState.value =
-                        if (result.identityReady) {
-                            StartupUiState.Ready
-                        } else {
-                            StartupUiState.IdentityRequired
-                        }
+                mutableUiState.value = if (result.identityReady) {
+                    StartupUiState.Ready
+                } else {
+                    StartupUiState.IdentityRequired
                 }
+            }
                 .onFailure { error ->
                     mutableUiState.value =
                         StartupUiState.Error(
-                            message =
-                                error.message
-                                    ?: "SecureChat could not complete startup."
+                            message = error.message ?: "SecureChat could not complete startup."
                         )
                 }
         }

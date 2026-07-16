@@ -8,7 +8,5 @@ sealed interface StartupUiState {
 
     data object IdentityRequired : StartupUiState
 
-    data class Error(
-        val message: String
-    ) : StartupUiState
+    data class Error(val message: String) : StartupUiState
 }

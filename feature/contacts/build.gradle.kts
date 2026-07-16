@@ -65,6 +65,7 @@ kotlin {
             implementation(projects.data.database)
             implementation(projects.feature.identity)
             implementation(projects.core.protocol)
+            implementation(projects.core.ui)
 
             implementation(libs.kotlinx.coroutines.core)
 
