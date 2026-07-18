@@ -30,76 +30,38 @@ class DefaultProtocolOutbox(
                 "Packet ID must not be blank"
             }
 
-            val existing =
-                outboxDao.findByPacketId(
-                    packetId = packet.packetId
-                )
+            val existing = outboxDao.findByPacketId(packetId = packet.packetId)
 
             if (existing != null) {
                 return@runCatching existing.toDomain()
             }
 
-            val encodedPacket =
-                packetCodec
-                    .encode(
-                        packet = packet
-                    )
-                    .getOrThrow()
+            val encodedPacket = packetCodec.encode(packet = packet).getOrThrow()
 
-            val now =
-                SystemClock.nowEpochMilliseconds()
+            val now = SystemClock.nowEpochMilliseconds()
 
-            val entity =
-                ProtocolOutboxEntity(
-                    id =
-                        createId(
-                            prefix = "outbox"
-                        ),
-
-                    contactId =
-                        contactId,
-
-                    packetId =
-                        packet.packetId,
-
-                    encodedPacket =
-                        encodedPacket,
-
-                    status =
-                        OutboxStatus
-                            .PENDING
-                            .name,
-
-                    attemptCount =
-                        0,
-
-                    lastError =
-                        null,
-
-                    createdAtEpochMilliseconds =
-                        now,
-
-                    updatedAtEpochMilliseconds =
-                        now
-                )
-
-            outboxDao.upsert(
-                entity = entity
+            val entity = ProtocolOutboxEntity(
+                id = createId(prefix = "outbox"),
+                contactId = contactId,
+                packetId = packet.packetId,
+                encodedPacket = encodedPacket,
+                status = OutboxStatus.PENDING.name,
+                attemptCount = 0,
+                lastError = null,
+                createdAtEpochMilliseconds = now,
+                updatedAtEpochMilliseconds = now
             )
 
+            outboxDao.upsert(entity = entity)
+
             outboxDao
-                .findByPacketId(
-                    packetId = packet.packetId
-                )
+                .findByPacketId(packetId = packet.packetId)
                 ?.toDomain()
-                ?: error(
-                    "Queued protocol packet could not be loaded"
-                )
+                ?: error("Queued protocol packet could not be loaded")
         }
     }
 
-    override fun observePending():
-            Flow<List<ProtocolOutboxItem>> {
+    override fun observePending(): Flow<List<ProtocolOutboxItem>> {
 
         return outboxDao
             .observePending()
@@ -110,76 +72,49 @@ class DefaultProtocolOutbox(
             }
     }
 
-    override suspend fun getPending(
-        limit: Int
-    ): Result<List<ProtocolOutboxItem>> {
+    override suspend fun getPending(limit: Int): Result<List<ProtocolOutboxItem>> {
         return runCatching {
             require(limit > 0) {
                 "Pending-item limit must be positive"
             }
 
-            outboxDao
-                .getPending(
-                    limit = limit
-                )
-                .map { entity ->
-                    entity.toDomain()
-                }
+            outboxDao.getPending(limit = limit).map { entity -> entity.toDomain() }
         }
     }
 
-    override suspend fun markProcessing(
-        itemId: String
-    ): Result<Unit> {
+    override suspend fun markProcessing(itemId: String): Result<Unit> {
         return runCatching {
             require(itemId.isNotBlank()) {
                 "Outbox item ID must not be blank"
             }
 
-            val existing =
-                outboxDao.findById(
-                    itemId = itemId
-                )
-                    ?: error(
-                        "Outbox item was not found"
-                    )
+            val existing = outboxDao.findById(itemId = itemId) ?: error("Outbox item was not found")
 
             check(
-                existing.status ==
-                        OutboxStatus.PENDING.name ||
-                        existing.status ==
-                        OutboxStatus.FAILED.name
+                existing.status == OutboxStatus.PENDING.name ||
+                        existing.status == OutboxStatus.FAILED.name
             ) {
                 "Only pending or failed items can start processing"
             }
 
             outboxDao.markProcessing(
                 itemId = itemId,
-                updatedAt =
-                    SystemClock.nowEpochMilliseconds()
+                updatedAt = SystemClock.nowEpochMilliseconds()
             )
         }
     }
 
-    override suspend fun findByPacketId(
-        packetId: String
-    ): Result<ProtocolOutboxItem?> {
+    override suspend fun findByPacketId(packetId: String): Result<ProtocolOutboxItem?> {
         return runCatching {
             require(packetId.isNotBlank()) {
                 "Packet ID must not be blank"
             }
 
-            outboxDao
-                .findByPacketId(
-                    packetId = packetId
-                )
-                ?.toDomain()
+            outboxDao.findByPacketId(packetId = packetId)?.toDomain()
         }
     }
 
-    override suspend fun markSent(
-        itemId: String
-    ): Result<Unit> {
+    override suspend fun markSent(itemId: String): Result<Unit> {
         return runCatching {
             require(itemId.isNotBlank()) {
                 "Outbox item ID must not be blank"
@@ -187,8 +122,7 @@ class DefaultProtocolOutbox(
 
             outboxDao.markSent(
                 itemId = itemId,
-                updatedAt =
-                    SystemClock.nowEpochMilliseconds()
+                updatedAt = SystemClock.nowEpochMilliseconds()
             )
         }
     }
@@ -208,19 +142,13 @@ class DefaultProtocolOutbox(
 
             outboxDao.markFailed(
                 itemId = itemId,
-                errorMessage =
-                    errorMessage.take(
-                        MAX_ERROR_LENGTH
-                    ),
-                updatedAt =
-                    SystemClock.nowEpochMilliseconds()
+                errorMessage = errorMessage.take(MAX_ERROR_LENGTH),
+                updatedAt = SystemClock.nowEpochMilliseconds()
             )
         }
     }
 
-    override suspend fun retry(
-        itemId: String
-    ): Result<Unit> {
+    override suspend fun retry(itemId: String): Result<Unit> {
         return runCatching {
             require(itemId.isNotBlank()) {
                 "Outbox item ID must not be blank"
@@ -228,87 +156,50 @@ class DefaultProtocolOutbox(
 
             outboxDao.retry(
                 itemId = itemId,
-                updatedAt =
-                    SystemClock.nowEpochMilliseconds()
+                updatedAt = SystemClock.nowEpochMilliseconds()
             )
         }
     }
 
-    private fun ProtocolOutboxEntity.toDomain():
-            ProtocolOutboxItem {
+    private fun ProtocolOutboxEntity.toDomain(): ProtocolOutboxItem {
 
         return ProtocolOutboxItem(
-            id =
-                id,
-
-            contactId =
-                contactId,
-
-            packetId =
-                packetId,
-
-            encodedPacket =
-                encodedPacket.copyOf(),
-
-            status =
-                status.toOutboxStatus(),
-
-            attemptCount =
-                attemptCount,
-
-            lastError =
-                lastError,
-
-            createdAtEpochMilliseconds =
-                createdAtEpochMilliseconds,
-
-            updatedAtEpochMilliseconds =
-                updatedAtEpochMilliseconds
+            id = id,
+            contactId = contactId,
+            packetId = packetId,
+            encodedPacket = encodedPacket.copyOf(),
+            status = status.toOutboxStatus(),
+            attemptCount = attemptCount,
+            lastError = lastError,
+            createdAtEpochMilliseconds = createdAtEpochMilliseconds,
+            updatedAtEpochMilliseconds = updatedAtEpochMilliseconds
         )
     }
 
-    private fun String.toOutboxStatus():
-            OutboxStatus {
+    private fun String.toOutboxStatus(): OutboxStatus {
 
         return when (this) {
-            OutboxStatus.PENDING.name ->
-                OutboxStatus.PENDING
+            OutboxStatus.PENDING.name -> OutboxStatus.PENDING
 
-            OutboxStatus.PROCESSING.name ->
-                OutboxStatus.PROCESSING
+            OutboxStatus.PROCESSING.name -> OutboxStatus.PROCESSING
 
-            OutboxStatus.SENT.name ->
-                OutboxStatus.SENT
+            OutboxStatus.SENT.name -> OutboxStatus.SENT
 
-            OutboxStatus.FAILED.name ->
-                OutboxStatus.FAILED
+            OutboxStatus.FAILED.name -> OutboxStatus.FAILED
 
-            else ->
-                error(
-                    "Unknown outbox status: $this"
-                )
+            else -> error("Unknown outbox status: $this")
         }
     }
 
-    private fun createId(
-        prefix: String
-    ): String {
-        val timestamp =
-            SystemClock.nowEpochMilliseconds()
+    private fun createId(prefix: String): String {
+        val timestamp = SystemClock.nowEpochMilliseconds()
 
-        val random =
-            Random.nextLong()
-                .toString()
-                .replace(
-                    oldValue = "-",
-                    newValue = ""
-                )
+        val random = Random.nextLong().toString().replace(oldValue = "-", newValue = "")
 
         return "$prefix-$timestamp-$random"
     }
 
     private companion object {
-        const val MAX_ERROR_LENGTH =
-            1_000
+        const val MAX_ERROR_LENGTH = 1_000
     }
 }

@@ -3,30 +3,16 @@ package com.cbgm.securechat.core.crypto.identity
 interface IdentityAcknowledgementCrypto {
 
     suspend fun sign(
-        acknowledgedEncryptionPublicKey:
-        ByteArray,
-
-        acknowledgedSigningPublicKey:
-        ByteArray,
-
-        senderSigningPublicKey:
-        ByteArray,
-
-        senderSigningPrivateKey:
-        ByteArray
+        acknowledgedEncryptionPublicKey: ByteArray,
+        acknowledgedSigningPublicKey: ByteArray,
+        senderSigningPublicKey: ByteArray,
+        senderSigningPrivateKey: ByteArray
     ): Result<ByteArray>
 
     suspend fun verify(
-        acknowledgedEncryptionPublicKey:
-        ByteArray,
-
-        acknowledgedSigningPublicKey:
-        ByteArray,
-
-        senderSigningPublicKey:
-        ByteArray,
-
-        signature:
-        ByteArray
+        acknowledgedEncryptionPublicKey: ByteArray,
+        acknowledgedSigningPublicKey: ByteArray,
+        senderSigningPublicKey: ByteArray,
+        signature: ByteArray
     ): Result<Unit>
 }

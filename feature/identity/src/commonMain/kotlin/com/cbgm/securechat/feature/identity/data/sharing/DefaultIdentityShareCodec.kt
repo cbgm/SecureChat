@@ -33,37 +33,23 @@ class DefaultIdentityShareCodec : IdentityShareCodec {
                 "Signing public key must not be empty"
             }
 
-            val phoneNumber =
-                payload.contactDetails.phoneNumber
-                    .trim()
-                    .takeIf { it.isNotEmpty() }
-                    ?: error(
-                        "Shared identity phone number is missing"
-                    )
+            val phoneNumber = payload.contactDetails.phoneNumber
+                .trim()
+                .takeIf { it.isNotEmpty() }
+                ?: error("Shared identity phone number is missing")
 
             buildList {
                 add(FORMAT_PREFIX)
-                add(
-                    "$ENCRYPTION_KEY_FIELD=${payload.encryptionPublicKey.toHexString()}"
-                )
-                add(
-                    "$SIGNING_KEY_FIELD=${payload.signingPublicKey.toHexString()}"
-                )
-                add(
-                    "$PHONE_NUMBER_FIELD=${phoneNumber.escapeShareValue()}"
-                )
-
+                add("$ENCRYPTION_KEY_FIELD=${payload.encryptionPublicKey.toHexString()}")
+                add("$SIGNING_KEY_FIELD=${payload.signingPublicKey.toHexString()}")
+                add("$PHONE_NUMBER_FIELD=${phoneNumber.escapeShareValue()}")
                 payload.contactDetails.displayName
                     ?.trim()
                     ?.takeIf { it.isNotEmpty() }
                     ?.let { displayName ->
-                        add(
-                            "$DISPLAY_NAME_FIELD=${displayName.escapeShareValue()}"
-                        )
+                        add("$DISPLAY_NAME_FIELD=${displayName.escapeShareValue()}")
                     }
-            }.joinToString(
-                separator = FIELD_SEPARATOR
-            )
+            }.joinToString(separator = FIELD_SEPARATOR)
         }
     }
 
@@ -75,73 +61,47 @@ class DefaultIdentityShareCodec : IdentityShareCodec {
                 "Shared identity payload is empty"
             }
 
-            val parts =
-                encodedValue.split(
-                    FIELD_SEPARATOR
-                )
+            val parts = encodedValue.split(FIELD_SEPARATOR)
 
             require(parts.firstOrNull() == FORMAT_PREFIX) {
                 "This is not a supported SecureChat identity payload"
             }
 
-            val values =
-                parts
-                    .drop(1)
-                    .associate { part ->
-                        val separatorIndex =
-                            part.indexOf(
-                                KEY_VALUE_SEPARATOR
-                            )
+            val values = parts
+                .drop(1)
+                .associate { part ->
+                    val separatorIndex = part.indexOf(KEY_VALUE_SEPARATOR)
 
-                        require(separatorIndex > 0) {
-                            "Malformed identity payload field"
-                        }
-
-                        part.substring(
-                            startIndex = 0,
-                            endIndex = separatorIndex
-                        ) to part.substring(
-                            startIndex = separatorIndex + 1
-                        )
+                    require(separatorIndex > 0) {
+                        "Malformed identity payload field"
                     }
 
-            val encryptionPublicKey =
-                values[ENCRYPTION_KEY_FIELD]
-                    ?.hexToByteArray()
-                    ?: error(
-                        "Encryption public key is missing"
+                    part.substring(
+                        startIndex = 0,
+                        endIndex = separatorIndex
+                    ) to part.substring(
+                        startIndex = separatorIndex + 1
                     )
+                }
 
-            val signingPublicKey =
-                values[SIGNING_KEY_FIELD]
-                    ?.hexToByteArray()
-                    ?: error(
-                        "Signing public key is missing"
-                    )
+            val encryptionPublicKey = values[ENCRYPTION_KEY_FIELD]?.hexToByteArray()
+                ?: error("Encryption public key is missing")
+
+            val signingPublicKey = values[SIGNING_KEY_FIELD]?.hexToByteArray()
+                ?: error("Signing public key is missing")
 
             val phoneNumber =
-                values[PHONE_NUMBER_FIELD]
-                    ?.unescapeShareValue()
-                    ?.trim()
-                    ?.takeIf { it.isNotEmpty() }
-                    ?: error(
-                        "Shared identity phone number is missing"
-                    )
+                values[PHONE_NUMBER_FIELD]?.unescapeShareValue()?.trim()?.takeIf { it.isNotEmpty() }
+                    ?: error("Shared identity phone number is missing")
 
             val displayName =
-                values[DISPLAY_NAME_FIELD]
-                    ?.unescapeShareValue()
-                    ?.trim()
-                    ?.takeIf { it.isNotEmpty() }
+                values[DISPLAY_NAME_FIELD]?.unescapeShareValue()?.trim()?.takeIf { it.isNotEmpty() }
 
             SharedIdentityPayload(
                 version = SUPPORTED_VERSION,
-                encryptionPublicKey =
-                    encryptionPublicKey,
-                signingPublicKey =
-                    signingPublicKey,
-                contactDetails =
-                    SharedContactDetails(
+                encryptionPublicKey = encryptionPublicKey,
+                signingPublicKey = signingPublicKey,
+                contactDetails = SharedContactDetails(
                         displayName = displayName,
                         phoneNumber = phoneNumber
                     )

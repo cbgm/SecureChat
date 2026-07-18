@@ -20,55 +20,29 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.serialization.json.Json
 
 fun Application.relayModule() {
-    install(
-        CallLogging
-    )
+    install(CallLogging)
 
-    install(
-        WebSockets
-    ) {
-        pingPeriod =
-            20.seconds
-
-        timeout =
-            60.seconds
-
-        maxFrameSize =
-            1_048_576L
-
-        masking =
-            false
+    install(WebSockets) {
+        pingPeriod = 20.seconds
+        timeout = 60.seconds
+        maxFrameSize = 1_048_576L
+        masking = false
     }
 
-    val json:
-            Json =
-        createRelayJson()
+    val json: Json = createRelayJson()
 
-    val connectionRegistry:
-            RelayConnectionRegistry =
-        InMemoryRelayConnectionRegistry()
+    val connectionRegistry: RelayConnectionRegistry = InMemoryRelayConnectionRegistry()
 
-    val envelopeRouter:
-            RelayEnvelopeRouter =
-        DefaultRelayEnvelopeRouter(
-            connectionRegistry =
-                connectionRegistry,
+    val envelopeRouter: RelayEnvelopeRouter = DefaultRelayEnvelopeRouter(
+        connectionRegistry = connectionRegistry,
+        json = json
+    )
 
-            json =
-                json
-        )
-
-    val handler =
-        RelayWebSocketHandler(
-            connectionRegistry =
-                connectionRegistry,
-
-            envelopeRouter =
-                envelopeRouter,
-
-            json =
-                json
-        )
+    val handler = RelayWebSocketHandler(
+        connectionRegistry = connectionRegistry,
+        envelopeRouter = envelopeRouter,
+        json = json
+    )
 
     routing {
         get("/") {
@@ -78,9 +52,7 @@ fun Application.relayModule() {
         }
 
         get("/health") {
-            val connectedClients =
-                connectionRegistry
-                    .connectedCount()
+            val connectedClients = connectionRegistry.connectedCount()
 
             call.respondText(
                 "ok connectedClients=$connectedClients"
@@ -88,10 +60,7 @@ fun Application.relayModule() {
         }
 
         webSocket("/relay") {
-            handler.handle(
-                session =
-                    this
-            )
+            handler.handle(session = this)
         }
     }
 }

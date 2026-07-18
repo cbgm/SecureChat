@@ -12,60 +12,37 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 
 class DefaultIdentityRepository(
-    private val identityKeyGenerator:
-    IdentityKeyGenerator,
-
-    private val privateKeyStorage:
-    PrivateKeyStorage,
-
-    private val publicIdentityStorage:
-    PublicIdentityStorage
+    private val identityKeyGenerator: IdentityKeyGenerator,
+    private val privateKeyStorage: PrivateKeyStorage,
+    private val publicIdentityStorage: PublicIdentityStorage
 ) : IdentityRepository {
 
-    private val identityUpdates =
-        MutableSharedFlow<PublicIdentity?>(
-            replay = 1,
-            extraBufferCapacity = 1
-        )
+    private val identityUpdates = MutableSharedFlow<PublicIdentity?>(
+        replay = 1,
+        extraBufferCapacity = 1
+    )
 
-    override fun observeIdentity():
-            Flow<PublicIdentity?> {
+    override fun observeIdentity(): Flow<PublicIdentity?> {
 
         return flow {
-            emit(
-                publicIdentityStorage
-                    .load()
-                    .getOrThrow()
-            )
-
-            emitAll(
-                identityUpdates
-            )
+            emit(publicIdentityStorage.load().getOrThrow())
+            emitAll(identityUpdates)
         }
     }
 
-    override suspend fun getStatus():
-            Result<IdentityStatus> {
+    override suspend fun getStatus(): Result<IdentityStatus> {
 
         return runCatching {
-            val publicIdentityExists =
-                publicIdentityStorage
-                    .exists()
-                    .getOrThrow()
+            val publicIdentityExists = publicIdentityStorage.exists().getOrThrow()
 
-            val privateKeysExist =
-                privateKeyStorage
-                    .hasIdentityPrivateKeys()
-                    .getOrThrow()
+            val privateKeysExist = privateKeyStorage.hasIdentityPrivateKeys().getOrThrow()
 
             when {
-                publicIdentityExists &&
-                        privateKeysExist -> {
+                publicIdentityExists && privateKeysExist -> {
                     IdentityStatus.READY
                 }
 
-                !publicIdentityExists &&
-                        !privateKeysExist -> {
+                !publicIdentityExists && !privateKeysExist -> {
                     IdentityStatus.NOT_CREATED
                 }
 
@@ -76,115 +53,66 @@ class DefaultIdentityRepository(
         }
     }
 
-    override suspend fun hasIdentity():
-            Result<Boolean> {
+    override suspend fun hasIdentity(): Result<Boolean> {
 
-        return getStatus()
-            .map { status ->
-                status ==
-                        IdentityStatus.READY
-            }
+        return getStatus().map { status -> status == IdentityStatus.READY }
     }
 
     @OptIn(ExperimentalUnsignedTypes::class)
-    override suspend fun createIdentity():
-            Result<PublicIdentity> {
+    override suspend fun createIdentity(): Result<PublicIdentity> {
 
-        var privateKeysWritten =
-            false
+        var privateKeysWritten = false
 
-        var publicIdentityWritten =
-            false
+        var publicIdentityWritten = false
 
         return try {
-            val publicIdentityExists =
-                publicIdentityStorage
-                    .exists()
-                    .getOrThrow()
+            val publicIdentityExists = publicIdentityStorage.exists().getOrThrow()
 
-            val privateKeysExist =
-                privateKeyStorage
-                    .hasIdentityPrivateKeys()
-                    .getOrThrow()
+            val privateKeysExist = privateKeyStorage.hasIdentityPrivateKeys().getOrThrow()
 
-            check(
-                !publicIdentityExists &&
-                        !privateKeysExist
-            ) {
+            check(!publicIdentityExists && !privateKeysExist) {
                 "Identity or partial identity state already exists"
             }
 
-            val keyPair =
-                identityKeyGenerator
-                    .generate()
-                    .getOrThrow()
+            val keyPair = identityKeyGenerator.generate().getOrThrow()
 
-            privateKeyStorage
-                .saveIdentityPrivateKeys(
-                    encryptionPrivateKey =
-                        keyPair.encryptionPrivateKey,
-
-                    signingPrivateKey =
-                        keyPair.signingPrivateKey
-                )
+            privateKeyStorage.saveIdentityPrivateKeys(
+                encryptionPrivateKey = keyPair.encryptionPrivateKey,
+                signingPrivateKey = keyPair.signingPrivateKey
+            )
                 .getOrThrow()
 
-            privateKeysWritten =
-                true
+            privateKeysWritten = true
 
-            val publicIdentity =
-                PublicIdentity(
-                    encryptionPublicKey =
-                        keyPair
-                            .encryptionPublicKey
-                            .toByteArray(),
-
-                    signingPublicKey =
-                        keyPair
-                            .signingPublicKey
-                            .toByteArray()
-                )
-
-            publicIdentityStorage
-                .save(
-                    identity =
-                        publicIdentity
-                )
-                .getOrThrow()
-
-            publicIdentityWritten =
-                true
-
-            identityUpdates.emit(
-                publicIdentity
+            val publicIdentity = PublicIdentity(
+                encryptionPublicKey = keyPair.encryptionPublicKey.toByteArray(),
+                signingPublicKey = keyPair.signingPublicKey.toByteArray()
             )
 
-            Result.success(
-                publicIdentity
-            )
+            publicIdentityStorage.save(identity = publicIdentity).getOrThrow()
+
+            publicIdentityWritten = true
+
+            identityUpdates.emit(publicIdentity)
+
+            Result.success(publicIdentity)
         } catch (
             creationError: Throwable
         ) {
-            val publicRollback =
-                if (publicIdentityWritten) {
-                    publicIdentityStorage
-                        .delete()
-                } else {
-                    Result.success(Unit)
-                }
+            val publicRollback = if (publicIdentityWritten) {
+                publicIdentityStorage.delete()
+            } else {
+                Result.success(Unit)
+            }
 
-            val privateRollback =
-                if (privateKeysWritten) {
-                    privateKeyStorage
-                        .deleteIdentityPrivateKeys()
-                } else {
-                    Result.success(Unit)
-                }
+            val privateRollback = if (privateKeysWritten) {
+                privateKeyStorage
+                    .deleteIdentityPrivateKeys()
+            } else {
+                Result.success(Unit)
+            }
 
-            if (
-                publicRollback.isFailure ||
-                privateRollback.isFailure
-            ) {
+            if (publicRollback.isFailure || privateRollback.isFailure) {
                 Result.failure(
                     IllegalStateException(
                         "Identity creation failed and rollback was incomplete",
@@ -192,47 +120,31 @@ class DefaultIdentityRepository(
                     )
                 )
             } else {
-                Result.failure(
-                    creationError
-                )
+                Result.failure(creationError)
             }
         }
     }
 
-    override suspend fun getIdentity():
-            Result<PublicIdentity?> {
+    override suspend fun getIdentity(): Result<PublicIdentity?> {
 
-        return publicIdentityStorage
-            .load()
+        return publicIdentityStorage.load()
     }
 
     @OptIn(ExperimentalUnsignedTypes::class)
-    override suspend fun getEncryptionPrivateKey():
-            Result<ByteArray> {
+    override suspend fun getEncryptionPrivateKey(): Result<ByteArray> {
 
         return runCatching {
-            privateKeyStorage
-                .loadEncryptionPrivateKey()
-                .getOrThrow()
-                ?.toByteArray()
-                ?: error(
-                    "Local encryption private key does not exist"
-                )
+            privateKeyStorage.loadEncryptionPrivateKey().getOrThrow()?.toByteArray()
+                ?: error("Local encryption private key does not exist")
         }
     }
 
     @OptIn(ExperimentalUnsignedTypes::class)
-    override suspend fun getSigningPrivateKey():
-            Result<ByteArray> {
+    override suspend fun getSigningPrivateKey(): Result<ByteArray> {
 
         return runCatching {
-            privateKeyStorage
-                .loadSigningPrivateKey()
-                .getOrThrow()
-                ?.toByteArray()
-                ?: error(
-                    "Local signing private key does not exist"
-                )
+            privateKeyStorage.loadSigningPrivateKey().getOrThrow()?.toByteArray()
+                ?: error("Local signing private key does not exist")
         }
     }
 }

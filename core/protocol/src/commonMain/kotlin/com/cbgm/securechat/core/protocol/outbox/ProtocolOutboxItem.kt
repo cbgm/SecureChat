@@ -41,9 +41,7 @@ data class ProtocolOutboxItem(
             return true
         }
 
-        if (other !is ProtocolOutboxItem) {
-            return false
-        }
+        if (other !is ProtocolOutboxItem) return false
 
         return id == other.id &&
                 contactId == other.contactId &&
@@ -63,37 +61,21 @@ data class ProtocolOutboxItem(
     override fun hashCode(): Int {
         var result = id.hashCode()
 
-        result =
-            31 * result +
-                    contactId.hashCode()
+        result = 31 * result + contactId.hashCode()
 
-        result =
-            31 * result +
-                    packetId.hashCode()
+        result = 31 * result + packetId.hashCode()
 
-        result =
-            31 * result +
-                    encodedPacket.contentHashCode()
+        result = 31 * result + encodedPacket.contentHashCode()
 
-        result =
-            31 * result +
-                    status.hashCode()
+        result = 31 * result + status.hashCode()
 
-        result =
-            31 * result +
-                    attemptCount
+        result = 31 * result + attemptCount
 
-        result =
-            31 * result +
-                    (lastError?.hashCode() ?: 0)
+        result = 31 * result + (lastError?.hashCode() ?: 0)
 
-        result =
-            31 * result +
-                    createdAtEpochMilliseconds.hashCode()
+        result = 31 * result + createdAtEpochMilliseconds.hashCode()
 
-        result =
-            31 * result +
-                    updatedAtEpochMilliseconds.hashCode()
+        result = 31 * result + updatedAtEpochMilliseconds.hashCode()
 
         return result
     }

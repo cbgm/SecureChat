@@ -37,16 +37,12 @@ import androidx.room.PrimaryKey
 data class ContactPublicIdentityEntity(
     @PrimaryKey
     val contactId: String,
-
     val encryptionPublicKey: ByteArray,
-
     val signingPublicKey: ByteArray,
-
     /**
      * ContactVerificationStatus enum name.
      */
     val verificationStatus: String,
-
     /**
      * KeyExchangeStatus enum name:
      *
@@ -54,59 +50,36 @@ data class ContactPublicIdentityEntity(
      * MUTUAL
      */
     val keyExchangeStatus: String,
-
     val updatedAtEpochMilliseconds: Long
 ) {
 
     override fun equals(
         other: Any?
     ): Boolean {
-        if (this === other) {
-            return true
-        }
+        if (this === other) return true
 
-        if (other !is ContactPublicIdentityEntity) {
-            return false
-        }
+        if (other !is ContactPublicIdentityEntity) return false
 
         return contactId == other.contactId &&
-                encryptionPublicKey.contentEquals(
-                    other.encryptionPublicKey
-                ) &&
-                signingPublicKey.contentEquals(
-                    other.signingPublicKey
-                ) &&
-                verificationStatus ==
-                other.verificationStatus &&
-                keyExchangeStatus ==
-                other.keyExchangeStatus &&
-                updatedAtEpochMilliseconds ==
-                other.updatedAtEpochMilliseconds
+                encryptionPublicKey.contentEquals(other.encryptionPublicKey) &&
+                signingPublicKey.contentEquals(other.signingPublicKey) &&
+                verificationStatus == other.verificationStatus &&
+                keyExchangeStatus == other.keyExchangeStatus &&
+                updatedAtEpochMilliseconds == other.updatedAtEpochMilliseconds
     }
 
     override fun hashCode(): Int {
-        var result =
-            contactId.hashCode()
+        var result = contactId.hashCode()
 
-        result =
-            31 * result +
-                    encryptionPublicKey.contentHashCode()
+        result = 31 * result + encryptionPublicKey.contentHashCode()
 
-        result =
-            31 * result +
-                    signingPublicKey.contentHashCode()
+        result = 31 * result + signingPublicKey.contentHashCode()
 
-        result =
-            31 * result +
-                    verificationStatus.hashCode()
+        result = 31 * result + verificationStatus.hashCode()
 
-        result =
-            31 * result +
-                    keyExchangeStatus.hashCode()
+        result = 31 * result + keyExchangeStatus.hashCode()
 
-        result =
-            31 * result +
-                    updatedAtEpochMilliseconds.hashCode()
+        result = 31 * result + updatedAtEpochMilliseconds.hashCode()
 
         return result
     }

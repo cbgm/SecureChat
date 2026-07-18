@@ -9,125 +9,66 @@ class SafetyNumberGenerator(
 ) {
 
     fun generate(
-        firstIdentity:
-        PublicIdentityKeySet,
-
-        secondIdentity:
-        PublicIdentityKeySet
+        firstIdentity: PublicIdentityKeySet,
+        secondIdentity: PublicIdentityKeySet
     ): Result<SafetyNumber> {
 
         return runCatching {
-            val firstEncoded =
-                encodeIdentity(
-                    identity =
-                        firstIdentity
-                )
+            val firstEncoded = encodeIdentity(identity = firstIdentity)
 
-            val secondEncoded =
-                encodeIdentity(
-                    identity =
-                        secondIdentity
-                )
+            val secondEncoded = encodeIdentity(identity = secondIdentity)
 
             val ordered =
-                if (
-                    ByteArrays
-                        .compareUnsigned(
-                            first =
-                                firstEncoded,
-                            second =
-                                secondEncoded
-                        ) <= 0
-                ) {
+                if (ByteArrays.compareUnsigned(first = firstEncoded, second = secondEncoded) <= 0) {
                     OrderedIdentities(
-                        first =
-                            firstEncoded,
-                        second =
-                            secondEncoded
+                        first = firstEncoded,
+                        second = secondEncoded
                     )
                 } else {
-                    OrderedIdentities(
-                        first =
-                            secondEncoded,
-                        second =
-                            firstEncoded
-                    )
+                    OrderedIdentities(first = secondEncoded, second = firstEncoded)
                 }
 
-            val input =
-                ByteArrays.concatenate(
-                    DOMAIN_SEPARATOR,
-                    ordered.first,
-                    ordered.second
-                )
+            val input = ByteArrays.concatenate(
+                DOMAIN_SEPARATOR,
+                ordered.first,
+                ordered.second
+            )
 
-            val digest =
-                cryptoHash.sha256(
-                    input = input
-                )
+            val digest = cryptoHash.sha256(input = input)
 
-            check(
-                digest.size ==
-                        SHA_256_SIZE_BYTES
-            ) {
+            check(digest.size == SHA_256_SIZE_BYTES) {
                 "Expected a 32-byte SHA-256 digest"
             }
 
-            SafetyNumber(
-                groups =
-                    digest.toFiveDigitGroups()
-            )
+            SafetyNumber(groups = digest.toFiveDigitGroups())
         }
     }
 
     private fun encodeIdentity(
-        identity:
-        PublicIdentityKeySet
+        identity: PublicIdentityKeySet
     ): ByteArray {
 
         return ByteArrays.concatenate(
-            ByteArrays.withLengthPrefix(
-                value =
-                    identity.signingPublicKey
-            ),
-
-            ByteArrays.withLengthPrefix(
-                value =
-                    identity.encryptionPublicKey
-            )
+            ByteArrays.withLengthPrefix(value = identity.signingPublicKey),
+            ByteArrays.withLengthPrefix(value = identity.encryptionPublicKey)
         )
     }
 
-    private fun ByteArray
-            .toFiveDigitGroups():
-            List<String> {
+    private fun ByteArray.toFiveDigitGroups(): List<String> {
 
-        require(
-            size % 2 == 0
-        ) {
+        require(size % 2 == 0) {
             "Digest byte count must be even"
         }
 
         return indices
             .step(2)
             .map { index ->
-                val high =
-                    this[index]
-                        .toInt() and 0xFF
+                val high = this[index].toInt() and 0xFF
+                val low = this[index + 1].toInt() and 0xFF
 
-                val low =
-                    this[index + 1]
-                        .toInt() and 0xFF
+                val value = high shl 8 or low
 
-                val value =
-                    high shl 8 or low
-
-                value
-                    .toString()
-                    .padStart(
-                        length = 5,
-                        padChar = '0'
-                    )
+                value.toString().padStart(length = 5, padChar = '0')
             }
     }
 
@@ -155,11 +96,8 @@ class SafetyNumberGenerator(
     }
 
     private companion object {
-        const val SHA_256_SIZE_BYTES =
-            32
+        const val SHA_256_SIZE_BYTES = 32
 
-        val DOMAIN_SEPARATOR =
-            "SecureChat Safety Number v1"
-                .encodeToByteArray()
+        val DOMAIN_SEPARATOR = "SecureChat Safety Number v1".encodeToByteArray()
     }
 }

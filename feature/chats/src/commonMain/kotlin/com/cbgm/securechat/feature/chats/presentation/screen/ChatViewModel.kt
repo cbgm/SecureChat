@@ -207,7 +207,6 @@ class ChatViewModel(
 
         if (safetyNumber.value.isBlank()) {
             errorMessage.value = "Safety number is unavailable"
-
             return
         }
 
@@ -242,7 +241,6 @@ class ChatViewModel(
 
         if (!supportsSafetyNumber) {
             safetyNumber.value = ""
-
             return
         }
 

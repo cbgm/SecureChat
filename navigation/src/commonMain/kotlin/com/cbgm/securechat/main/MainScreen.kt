@@ -45,6 +45,7 @@ import org.jetbrains.compose.resources.painterResource
 fun MainScreen(
     onAddChat: () -> Unit,
     onOpenChat: (contactId: String, contactName: String) -> Unit,
+    onShareIdentity: () -> Unit,
     onImportContact: () -> Unit,
     onContacts: () -> Unit,
     modifier: Modifier = Modifier
@@ -68,7 +69,7 @@ fun MainScreen(
                 title = {
                     Text(
                         text = selectedTab.label,
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -141,7 +142,8 @@ fun MainScreen(
             onOpenChat = onOpenChat,
             innerPadding = innerPadding,
             onImportContact = onImportContact,
-            onContacts = onContacts
+            onContacts = onContacts,
+            onShareIdentity = onShareIdentity
         )
     }
 }
@@ -150,6 +152,7 @@ fun MainScreen(
 private fun Content(
     selectedTab: MainTab,
     onAddChat: () -> Unit,
+    onShareIdentity: () -> Unit,
     onOpenChat: (String, String) -> Unit,
     innerPadding: PaddingValues,
     onImportContact: () -> Unit,
@@ -174,6 +177,7 @@ private fun Content(
                 onShareIdentity = {
                     /*selectedMeScreen =
                             MeScreen.ShareIdentity*/
+                    onShareIdentity()
                 },
                 onImportContact = onImportContact,
                 onContacts = onContacts
@@ -247,7 +251,8 @@ fun MainScreenPreview() {
             onAddChat = {},
             onOpenChat = { _, _ -> },
             onImportContact = {},
-            onContacts = {}
+            onContacts = {},
+            onShareIdentity = {}
         )
     }
 }

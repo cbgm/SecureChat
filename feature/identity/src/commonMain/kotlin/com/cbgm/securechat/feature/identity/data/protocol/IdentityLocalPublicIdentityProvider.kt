@@ -5,16 +5,13 @@ import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentityProvider
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
 
 class IdentityLocalPublicIdentityProvider(
-    private val identityRepository:
-    IdentityRepository
+    private val identityRepository: IdentityRepository
 ) : LocalPublicIdentityProvider {
 
-    override suspend fun getLocalPublicIdentity():
-            Result<LocalPublicIdentity> {
+    override suspend fun getLocalPublicIdentity(): Result<LocalPublicIdentity> {
 
         return runCatching {
-            val identity =
-                identityRepository
+            val identity = identityRepository
                     .getIdentity()
                     .getOrThrow()
                     ?: error(
@@ -22,15 +19,8 @@ class IdentityLocalPublicIdentityProvider(
                     )
 
             LocalPublicIdentity(
-                encryptionPublicKey =
-                    identity
-                        .encryptionPublicKey
-                        .copyOf(),
-
-                signingPublicKey =
-                    identity
-                        .signingPublicKey
-                        .copyOf()
+                encryptionPublicKey = identity.encryptionPublicKey.copyOf(),
+                signingPublicKey = identity.signingPublicKey.copyOf()
             )
         }
     }

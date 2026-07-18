@@ -9,8 +9,7 @@ val outboxModule =
     module {
 
         single {
-            get<SecureChatDatabase>()
-                .protocolOutboxDao()
+            get<SecureChatDatabase>().protocolOutboxDao()
         }
 
         single<ProtocolOutbox> {

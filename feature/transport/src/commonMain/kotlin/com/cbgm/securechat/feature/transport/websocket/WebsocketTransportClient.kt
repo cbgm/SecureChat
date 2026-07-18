@@ -7,11 +7,8 @@ import kotlinx.coroutines.flow.StateFlow
 
 interface WebSocketTransportClient {
 
-    val connectionState:
-            StateFlow<TransportConnectionState>
-
-    val incomingEnvelopes:
-            Flow<RelayEnvelope>
+    val connectionState: StateFlow<TransportConnectionState>
+    val incomingEnvelopes: Flow<RelayEnvelope>
 
     fun connect(
         serverUrl: String,

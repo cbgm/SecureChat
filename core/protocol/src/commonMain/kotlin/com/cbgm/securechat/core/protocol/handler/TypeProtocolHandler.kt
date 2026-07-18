@@ -16,9 +16,7 @@ import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
  */
 interface TypedProtocolPacketHandler {
 
-    fun canHandle(
-        packet: SecureChatPacket
-    ): Boolean
+    fun canHandle(packet: SecureChatPacket): Boolean
 
     suspend fun handle(
         context: IncomingPacketContext,

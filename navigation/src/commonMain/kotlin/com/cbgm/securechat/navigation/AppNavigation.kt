@@ -127,6 +127,9 @@ fun AppNavigation() {
                     },
                     onContacts = {
                         navController.navigate(AppDestination.Contacts)
+                    },
+                    onShareIdentity = {
+                        navController.navigate(AppDestination.ShareIdentity)
                     }
                 )
             }

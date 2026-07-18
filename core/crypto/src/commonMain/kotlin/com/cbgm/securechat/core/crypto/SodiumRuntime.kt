@@ -12,62 +12,44 @@ import kotlinx.coroutines.sync.withLock
  */
 object SodiumRuntime {
 
-    private val initializationMutex =
-        Mutex()
+    private val initializationMutex = Mutex()
 
     @Volatile
-    private var initialized =
-        false
+    private var initialized = false
 
     @Volatile
-    private var initializationFailure:
-            Throwable? = null
+    private var initializationFailure: Throwable? = null
 
-    suspend fun initialize():
-            Result<Unit> {
+    suspend fun initialize(): Result<Unit> {
 
         if (initialized) {
-            return Result.success(
-                Unit
-            )
+            return Result.success(Unit)
         }
 
-        initializationFailure
-            ?.let { error ->
-                return Result.failure(
-                    error
-                )
+        initializationFailure?.let { error ->
+            return Result.failure(error)
+        }
+
+        return initializationMutex.withLock {
+            if (initialized) {
+                return@withLock Result.success(Unit)
             }
 
-        return initializationMutex
-            .withLock {
-                if (initialized) {
-                    return@withLock Result.success(
-                        Unit
-                    )
-                }
-
-                initializationFailure
-                    ?.let { error ->
-                        return@withLock Result.failure(
-                            error
-                        )
-                    }
-
-                runCatching {
-                    LibsodiumInitializer
-                        .initialize()
-
-                    initialized = true
-                }.onFailure { error ->
-                    initializationFailure =
-                        error
-                }
+            initializationFailure?.let { error ->
+                return@withLock Result.failure(error)
             }
+
+            runCatching {
+                LibsodiumInitializer.initialize()
+
+                initialized = true
+            }.onFailure { error ->
+                initializationFailure = error
+            }
+        }
     }
 
-    fun isInitialized():
-            Boolean {
+    fun isInitialized(): Boolean {
 
         return initialized
     }

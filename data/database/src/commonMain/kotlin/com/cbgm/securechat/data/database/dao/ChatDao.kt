@@ -22,19 +22,14 @@ interface ChatDao {
         LIMIT 1
         """
     )
-    suspend fun findConversationByContactId(
-        contactId: String
-    ): ConversationEntity?
+    suspend fun findConversationByContactId(contactId: String): ConversationEntity?
 
     @Upsert
-    suspend fun upsertConversation(
-        conversation: ConversationEntity
+    suspend fun upsertConversation(conversation: ConversationEntity
     )
 
     @Upsert
-    suspend fun upsertMessage(
-        message: MessageEntity
-    )
+    suspend fun upsertMessage(message: MessageEntity)
 
     /**
      * Atomically creates/reuses the conversation and stores an incoming
@@ -82,9 +77,7 @@ interface ChatDao {
         LIMIT 1
         """
     )
-    fun observeConversationByContactId(
-        contactId: String
-    ): Flow<ConversationWithMessages?>
+    fun observeConversationByContactId(contactId: String): Flow<ConversationWithMessages?>
 
     @Query(
         """
@@ -126,8 +119,7 @@ interface ChatDao {
         ORDER BY conversations.updatedAtEpochMilliseconds DESC
         """
     )
-    fun observeConversationSummaries():
-            Flow<List<ConversationSummary>>
+    fun observeConversationSummaries(): Flow<List<ConversationSummary>>
 
     @Query(
         """
@@ -135,9 +127,7 @@ interface ChatDao {
         WHERE id = :conversationId
         """
     )
-    suspend fun deleteConversation(
-        conversationId: String
-    )
+    suspend fun deleteConversation(conversationId: String)
 
     @Query(
         """
@@ -147,9 +137,7 @@ interface ChatDao {
     LIMIT 1
     """
     )
-    suspend fun findMessageById(
-        messageId: String
-    ): MessageEntity?
+    suspend fun findMessageById(messageId: String): MessageEntity?
 
     @Query(
         """
@@ -167,9 +155,7 @@ interface ChatDao {
     ORDER BY messages.createdAtEpochMilliseconds ASC
     """
     )
-    suspend fun findMessagesAwaitingReadReceipt(
-        contactId: String
-    ): List<UnreadIncomingMessage>
+    suspend fun findMessagesAwaitingReadReceipt(contactId: String): List<UnreadIncomingMessage>
 
     @Query(
         """
@@ -179,7 +165,5 @@ interface ChatDao {
       AND isMine = 0
     """
     )
-    suspend fun markReadReceiptSent(
-        messageId: String
-    ): Int
+    suspend fun markReadReceiptSent(messageId: String): Int
 }

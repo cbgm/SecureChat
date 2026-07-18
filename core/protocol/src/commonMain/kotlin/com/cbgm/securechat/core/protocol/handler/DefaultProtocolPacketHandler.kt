@@ -12,16 +12,9 @@ class DefaultProtocolPacketHandler(
         packet: SecureChatPacket
     ): Result<Unit> {
         return runCatching {
-            val matchingHandler =
-                handlers.firstOrNull { handler ->
-                    handler.canHandle(
-                        packet = packet
-                    )
-                }
-                    ?: error(
-                        "No handler registered for " +
-                                packet::class.simpleName
-                    )
+            val matchingHandler = handlers.firstOrNull { handler ->
+                handler.canHandle(packet = packet)
+            } ?: error("No handler registered for " + packet::class.simpleName)
 
             println(
                 "Handling protocol packet: " +
@@ -30,11 +23,10 @@ class DefaultProtocolPacketHandler(
                         "contactId=${context.contactId}"
             )
 
-            matchingHandler
-                .handle(
-                    context = context,
-                    packet = packet
-                )
+            matchingHandler.handle(
+                context = context,
+                packet = packet
+            )
                 .getOrThrow()
 
             println(

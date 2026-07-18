@@ -2,7 +2,6 @@ package com.cbgm.securechat.relay.session
 
 import io.ktor.server.websocket.DefaultWebSocketServerSession
 import io.ktor.websocket.Frame
-import io.ktor.websocket.send
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -11,16 +10,13 @@ class RelayClientConnection(
     private val session: DefaultWebSocketServerSession
 ) {
 
-    private val sendMutex =
-        Mutex()
+    private val sendMutex = Mutex()
 
     suspend fun sendText(
         text: String
     ) {
         sendMutex.withLock {
-            session.send(
-                Frame.Text(text)
-            )
+            session.send(Frame.Text(text))
         }
     }
 }

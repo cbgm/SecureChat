@@ -15,31 +15,20 @@ interface ProtocolOutbox {
         packet: SecureChatPacket
     ): Result<ProtocolOutboxItem>
 
-    fun observePending():
-            Flow<List<ProtocolOutboxItem>>
+    fun observePending(): Flow<List<ProtocolOutboxItem>>
 
-    suspend fun getPending(
-        limit: Int
-    ): Result<List<ProtocolOutboxItem>>
+    suspend fun getPending(limit: Int): Result<List<ProtocolOutboxItem>>
 
-    suspend fun markProcessing(
-        itemId: String
-    ): Result<Unit>
+    suspend fun markProcessing(itemId: String): Result<Unit>
 
-    suspend fun markSent(
-        itemId: String
-    ): Result<Unit>
+    suspend fun markSent(itemId: String): Result<Unit>
 
     suspend fun markFailed(
         itemId: String,
         errorMessage: String
     ): Result<Unit>
 
-    suspend fun retry(
-        itemId: String
-    ): Result<Unit>
+    suspend fun retry(itemId: String): Result<Unit>
 
-    suspend fun findByPacketId(
-        packetId: String
-    ): Result<ProtocolOutboxItem?>
+    suspend fun findByPacketId(packetId: String): Result<ProtocolOutboxItem?>
 }

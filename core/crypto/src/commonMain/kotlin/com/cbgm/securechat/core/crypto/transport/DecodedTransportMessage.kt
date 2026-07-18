@@ -10,27 +10,17 @@ sealed interface DecodedTransportMessage {
         override fun equals(
             other: Any?
         ): Boolean {
-            if (this === other) {
-                return true
-            }
+            if (this === other) return true
 
-            if (other !is Readable) {
-                return false
-            }
+            if (other !is Readable) return false
 
-            return mode == other.mode &&
-                    plaintext.contentEquals(
-                        other.plaintext
-                    )
+            return mode == other.mode && plaintext.contentEquals(other.plaintext)
         }
 
         override fun hashCode(): Int {
-            var result =
-                plaintext.contentHashCode()
+            var result = plaintext.contentHashCode()
 
-            result =
-                31 * result +
-                        mode.hashCode()
+            result = 31 * result + mode.hashCode()
 
             return result
         }

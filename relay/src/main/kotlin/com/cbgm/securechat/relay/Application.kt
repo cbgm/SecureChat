@@ -5,15 +5,9 @@ import io.ktor.server.netty.Netty
 
 fun main() {
     embeddedServer(
-        factory =
-            Netty,
-
-        host =
-            "0.0.0.0",
-
-        port =
-            8080,
-
+        factory = Netty,
+        host = "0.0.0.0",
+        port = 8080,
         module = {
             relayModule()
         }

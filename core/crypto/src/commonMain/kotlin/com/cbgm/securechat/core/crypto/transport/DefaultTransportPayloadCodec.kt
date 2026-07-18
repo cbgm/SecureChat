@@ -10,10 +10,7 @@ class DefaultTransportPayloadCodec :
     override fun encode(
         payload: EncryptedTransportPayload
     ): String {
-        val encodedPayload =
-            Base64.Default.encode(
-                payload.payload
-            )
+        val encodedPayload = Base64.Default.encode(payload.payload)
 
         return buildString {
             append(PREFIX)
@@ -31,35 +28,23 @@ class DefaultTransportPayloadCodec :
         encoded: String
     ): Result<EncryptedTransportPayload> {
         return runCatching {
-            val parts: List<String> =
-                encoded.split(
-                    ':',
-                    limit = 4
-                )
+            val parts: List<String> = encoded.split(':', limit = 4)
 
             require(parts.size == 4) {
                 "Invalid transport payload"
             }
 
-            val prefix: String =
-                parts[0]
+            val prefix: String = parts[0]
 
             require(prefix == PREFIX) {
                 "Unsupported transport payload prefix"
             }
 
-            val version: Int =
-                parts[1].toInt()
+            val version: Int = parts[1].toInt()
 
-            val mode: TransportEncryptionMode =
-                TransportEncryptionMode.valueOf(
-                    parts[2]
-                )
+            val mode: TransportEncryptionMode = TransportEncryptionMode.valueOf(parts[2])
 
-            val payload: ByteArray =
-                Base64.Default.decode(
-                    parts[3]
-                )
+            val payload: ByteArray = Base64.decode(parts[3])
 
             EncryptedTransportPayload(
                 version = version,
@@ -70,7 +55,6 @@ class DefaultTransportPayloadCodec :
     }
 
     private companion object {
-        const val PREFIX =
-            "scmsg"
+        const val PREFIX = "scmsg"
     }
 }

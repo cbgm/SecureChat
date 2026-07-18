@@ -21,31 +21,19 @@ class SodiumTransportMessageCipher :
                 "Plaintext must not be empty"
             }
 
-            validatePublicKey(
-                publicKey = recipientPublicKey
+            validatePublicKey(publicKey = recipientPublicKey)
+
+            SodiumRuntime.initialize().getOrThrow()
+
+            val ciphertext: UByteArray = Box.seal(
+                message = plaintext.toUByteArray(),
+                recipientsPublicKey = recipientPublicKey.toUByteArray()
             )
-
-            SodiumRuntime
-                .initialize()
-                .getOrThrow()
-
-            val ciphertext: UByteArray =
-                Box.seal(
-                    message =
-                        plaintext.toUByteArray(),
-
-                    recipientsPublicKey =
-                        recipientPublicKey.toUByteArray()
-                )
 
             EncryptedTransportPayload(
                 version = CURRENT_VERSION,
-
-                mode =
-                    TransportEncryptionMode.SEALED_BOX,
-
-                payload =
-                    ciphertext.toByteArray()
+                mode = TransportEncryptionMode.SEALED_BOX,
+                payload = ciphertext.toByteArray()
             )
         }.recoverCatching { error ->
             when (error) {
@@ -64,58 +52,33 @@ class SodiumTransportMessageCipher :
 
     @OptIn(ExperimentalUnsignedTypes::class)
     override suspend fun decryptFromSender(
-        encryptedPayload:
-        EncryptedTransportPayload,
-
+        encryptedPayload: EncryptedTransportPayload,
         localPublicKey: ByteArray,
-
         localPrivateKey: ByteArray
     ): Result<ByteArray> {
         return runCatching {
-            if (
-                encryptedPayload.version !=
-                CURRENT_VERSION
-            ) {
+            if (encryptedPayload.version != CURRENT_VERSION) {
                 throw UnsupportedCryptoVersionException(
                     version =
                         encryptedPayload.version
                 )
             }
 
-            require(
-                encryptedPayload.mode ==
-                        TransportEncryptionMode.SEALED_BOX
-            ) {
+            require(encryptedPayload.mode == TransportEncryptionMode.SEALED_BOX) {
                 "Expected a sealed-box payload"
             }
 
-            validatePublicKey(
-                publicKey = localPublicKey
+            validatePublicKey(publicKey = localPublicKey)
+
+            validatePrivateKey(privateKey = localPrivateKey)
+
+            SodiumRuntime.initialize().getOrThrow()
+
+            val plaintext: UByteArray = Box.sealOpen(
+                ciphertext = encryptedPayload.payload.toUByteArray(),
+                recipientsPublicKey = localPublicKey.toUByteArray(),
+                recipientsSecretKey = localPrivateKey.toUByteArray()
             )
-
-            validatePrivateKey(
-                privateKey = localPrivateKey
-            )
-
-            SodiumRuntime
-                .initialize()
-                .getOrThrow()
-
-            val plaintext: UByteArray =
-                Box.sealOpen(
-                    ciphertext =
-                        encryptedPayload
-                            .payload
-                            .toUByteArray(),
-
-                    recipientsPublicKey =
-                        localPublicKey
-                            .toUByteArray(),
-
-                    recipientsSecretKey =
-                        localPrivateKey
-                            .toUByteArray()
-                )
 
             plaintext.toByteArray()
         }.recoverCatching { error ->
@@ -138,39 +101,22 @@ class SodiumTransportMessageCipher :
     private fun validatePublicKey(
         publicKey: ByteArray
     ) {
-        if (
-            publicKey.size !=
-            BOX_PUBLIC_KEY_SIZE
-        ) {
-            throw InvalidPublicKeyException(
-                message =
-                    "Expected a $BOX_PUBLIC_KEY_SIZE-byte public key, but received ${publicKey.size}"
-            )
+        if (publicKey.size != BOX_PUBLIC_KEY_SIZE) {
+            throw InvalidPublicKeyException(message = "Expected a $BOX_PUBLIC_KEY_SIZE-byte public key, but received ${publicKey.size}")
         }
     }
 
     private fun validatePrivateKey(
         privateKey: ByteArray
     ) {
-        if (
-            privateKey.size !=
-            BOX_PRIVATE_KEY_SIZE
-        ) {
-            throw InvalidPrivateKeyException(
-                message =
-                    "Expected a $BOX_PRIVATE_KEY_SIZE-byte private key, but received ${privateKey.size}"
-            )
+        if (privateKey.size != BOX_PRIVATE_KEY_SIZE) {
+            throw InvalidPrivateKeyException(message = "Expected a $BOX_PRIVATE_KEY_SIZE-byte private key, but received ${privateKey.size}")
         }
     }
 
     private companion object {
-        const val CURRENT_VERSION =
-            1
-
-        const val BOX_PUBLIC_KEY_SIZE =
-            32
-
-        const val BOX_PRIVATE_KEY_SIZE =
-            32
+        const val CURRENT_VERSION = 1
+        const val BOX_PUBLIC_KEY_SIZE = 32
+        const val BOX_PRIVATE_KEY_SIZE = 32
     }
 }

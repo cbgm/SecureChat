@@ -18,29 +18,19 @@ data class LocalPublicIdentity(
     override fun equals(
         other: Any?
     ): Boolean {
-        if (this === other) {
-            return true
-        }
+        if (this === other) return true
 
-        if (other !is LocalPublicIdentity) {
-            return false
-        }
+        if (other !is LocalPublicIdentity) return false
 
-        return encryptionPublicKey.contentEquals(
-            other.encryptionPublicKey
-        ) &&
-                signingPublicKey.contentEquals(
-                    other.signingPublicKey
-                )
+        return encryptionPublicKey.contentEquals(other.encryptionPublicKey) && signingPublicKey.contentEquals(
+            other.signingPublicKey
+        )
     }
 
     override fun hashCode(): Int {
-        var result =
-            encryptionPublicKey.contentHashCode()
+        var result = encryptionPublicKey.contentHashCode()
 
-        result =
-            31 * result +
-                    signingPublicKey.contentHashCode()
+        result = 31 * result + signingPublicKey.contentHashCode()
 
         return result
     }

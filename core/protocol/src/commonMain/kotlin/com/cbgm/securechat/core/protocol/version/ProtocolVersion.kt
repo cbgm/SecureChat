@@ -4,9 +4,7 @@ object ProtocolVersion {
 
     const val CURRENT: Int = 1
 
-    fun isSupported(
-        version: Int
-    ): Boolean {
+    fun isSupported(version: Int): Boolean {
         return version == CURRENT
     }
 }

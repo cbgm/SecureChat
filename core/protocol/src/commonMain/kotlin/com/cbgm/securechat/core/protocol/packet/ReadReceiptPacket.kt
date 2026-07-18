@@ -8,15 +8,12 @@ import kotlinx.serialization.Serializable
 @SerialName("read_receipt")
 data class ReadReceiptPacket(
     override val packetId: String,
-
-    override val version: Int =
-        ProtocolVersion.CURRENT,
+    override val version: Int = ProtocolVersion.CURRENT,
 
     /**
      * ChatMessagePacket.messageId that was read.
      */
     val messageId: String,
-
     val readAtEpochMilliseconds: Long
 ) : SecureChatPacket {
 

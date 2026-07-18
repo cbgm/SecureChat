@@ -10,10 +10,7 @@ data class OutboxProcessingResult(
         require(sentCount >= 0)
         require(failedCount >= 0)
 
-        require(
-            sentCount + failedCount ==
-                    processedCount
-        ) {
+        require(sentCount + failedCount == processedCount) {
             "Sent and failed counts must equal processed count"
         }
     }

@@ -11,11 +11,12 @@ import androidx.compose.ui.Modifier
 @Composable
 fun SecureChatApprovalButton(
     onClick: () -> Unit,
-    text: String,
     modifier: Modifier = Modifier,
+    text: String = "",
+    content: @Composable () -> Unit = {},
     enabled: Boolean = true,
 
-) {
+    ) {
     Button(
         onClick = onClick,
         enabled = enabled,
@@ -25,10 +26,16 @@ fun SecureChatApprovalButton(
         ),
         modifier = modifier.fillMaxWidth()
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodySmall
-        )
+
+        if (text.isNotBlank()) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+        if (content != {}) {
+            content()
+        }
     }
 }
 

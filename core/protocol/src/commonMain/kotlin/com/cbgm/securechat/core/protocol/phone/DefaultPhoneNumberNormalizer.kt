@@ -1,48 +1,36 @@
 package com.cbgm.securechat.core.protocol.phone
 
-class DefaultPhoneNumberNormalizer :
-    PhoneNumberNormalizer {
+class DefaultPhoneNumberNormalizer : PhoneNumberNormalizer {
 
-    override fun normalize(
-        phoneNumber: String
-    ): Result<String> {
+    override fun normalize(phoneNumber: String): Result<String> {
         return runCatching {
-            val trimmed =
-                phoneNumber.trim()
+            val trimmed = phoneNumber.trim()
 
             require(trimmed.isNotEmpty()) {
                 "Phone number must not be blank"
             }
 
-            val digits =
-                trimmed.filter { character ->
-                    character.isDigit()
-                }
+            val digits = trimmed.filter { character -> character.isDigit() }
 
             require(digits.isNotEmpty()) {
                 "Phone number contains no digits"
             }
 
-            val normalized =
-                when {
-                    trimmed.startsWith("+") -> {
-                        "+$digits"
-                    }
-
-                    digits.startsWith("00") -> {
-                        "+${digits.drop(2)}"
-                    }
-
-                    else -> {
-                        digits
-                    }
+            val normalized = when {
+                trimmed.startsWith("+") -> {
+                    "+$digits"
                 }
 
-            require(
-                normalized.count { character ->
-                    character.isDigit()
-                } >= MINIMUM_DIGIT_COUNT
-            ) {
+                digits.startsWith("00") -> {
+                    "+${digits.drop(2)}"
+                }
+
+                else -> {
+                    digits
+                }
+            }
+
+            require(normalized.count { character -> character.isDigit() } >= MINIMUM_DIGIT_COUNT) {
                 "Phone number is too short"
             }
 
@@ -52,7 +40,6 @@ class DefaultPhoneNumberNormalizer :
 
     private companion object {
 
-        const val MINIMUM_DIGIT_COUNT =
-            5
+        const val MINIMUM_DIGIT_COUNT = 5
     }
 }

@@ -10,9 +10,7 @@ import kotlinx.coroutines.flow.Flow
 interface ProtocolOutboxDao {
 
     @Upsert
-    suspend fun upsert(
-        entity: ProtocolOutboxEntity
-    )
+    suspend fun upsert(entity: ProtocolOutboxEntity)
 
     @Query(
         """
@@ -22,9 +20,7 @@ interface ProtocolOutboxDao {
         LIMIT 1
         """
     )
-    suspend fun findByPacketId(
-        packetId: String
-    ): ProtocolOutboxEntity?
+    suspend fun findByPacketId(packetId: String): ProtocolOutboxEntity?
 
     @Query(
         """
@@ -34,9 +30,7 @@ interface ProtocolOutboxDao {
         LIMIT 1
         """
     )
-    suspend fun findById(
-        itemId: String
-    ): ProtocolOutboxEntity?
+    suspend fun findById(itemId: String): ProtocolOutboxEntity?
 
     @Query(
         """
@@ -46,8 +40,7 @@ interface ProtocolOutboxDao {
         ORDER BY createdAtEpochMilliseconds ASC
         """
     )
-    fun observePending():
-            Flow<List<ProtocolOutboxEntity>>
+    fun observePending(): Flow<List<ProtocolOutboxEntity>>
 
     @Query(
         """
@@ -58,9 +51,7 @@ interface ProtocolOutboxDao {
         LIMIT :limit
         """
     )
-    suspend fun getPending(
-        limit: Int
-    ): List<ProtocolOutboxEntity>
+    suspend fun getPending(limit: Int): List<ProtocolOutboxEntity>
 
     @Query(
         """
@@ -129,9 +120,7 @@ interface ProtocolOutboxDao {
           AND updatedAtEpochMilliseconds < :beforeTimestamp
         """
     )
-    suspend fun deleteSentBefore(
-        beforeTimestamp: Long
-    )
+    suspend fun deleteSentBefore(beforeTimestamp: Long)
 
 
 }

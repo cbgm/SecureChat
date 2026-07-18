@@ -21,46 +21,23 @@ fun ShareIdentityRoute(
     viewModel: ShareIdentityViewModel = koinViewModel()
 
 ) {
-    val uiState by
-    viewModel.uiState
-        .collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val shareIdentity =
-        rememberIdentityShareLauncher(
-            encodedIdentity =
-                uiState.encodedIdentity.orEmpty()
-        )
+        rememberIdentityShareLauncher(encodedIdentity = uiState.encodedIdentity.orEmpty())
 
-    val clipboardManager =
-        LocalClipboardManager.current
+    val clipboardManager = LocalClipboardManager.current
 
-    val snackbarHostState =
-        remember {
-            SnackbarHostState()
-        }
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    val coroutineScope =
-        rememberCoroutineScope()
+    val coroutineScope = rememberCoroutineScope()
 
     ShareIdentityScreen(
         uiState = uiState,
-
-        onIncludeDisplayNameChanged =
-            viewModel::onIncludeDisplayNameChanged,
-
-        onDisplayNameChanged =
-            viewModel::onDisplayNameChanged,
-
-
-        onGenerateClick =
-            viewModel::generateSharedIdentity,
-
+        onGenerateClick = viewModel::generateSharedIdentity,
         onBack = onBack,
-
         showBackButton = showBackButton,
-
         modifier = modifier,
-
         onCopyIdentity = {
             /*coroutineScope.launch {
                 snackbarHostState.showSnackbar(
@@ -68,9 +45,7 @@ fun ShareIdentityRoute(
                 )
             }*/
         },
-
         onShareIdentity = shareIdentity,
-
         snackbarHostState = snackbarHostState
     )
 }

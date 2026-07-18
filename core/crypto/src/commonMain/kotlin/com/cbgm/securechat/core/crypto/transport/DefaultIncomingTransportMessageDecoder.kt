@@ -1,11 +1,8 @@
 package com.cbgm.securechat.core.crypto.transport
 
 class DefaultIncomingTransportMessageDecoder(
-    private val payloadCodec:
-    TransportPayloadCodec,
-
-    private val transportCipher:
-    TransportMessageCipher
+    private val payloadCodec: TransportPayloadCodec,
+    private val transportCipher: TransportMessageCipher
 ) : IncomingTransportMessageDecoder {
 
     override suspend fun decode(
@@ -14,32 +11,27 @@ class DefaultIncomingTransportMessageDecoder(
         localPrivateKey: ByteArray
     ): DecodedTransportMessage {
 
-        val payload =
-            payloadCodec
-                .decode(
-                    encoded = encodedPayload
-                )
-                .getOrElse { error ->
-                    return DecodedTransportMessage
-                        .InvalidPacket(
-                            cause = error
-                        )
-                }
+        val payload = payloadCodec
+            .decode(
+                encoded = encodedPayload
+            )
+            .getOrElse { error ->
+                return DecodedTransportMessage
+                    .InvalidPacket(
+                        cause = error
+                    )
+            }
 
         return when (payload.mode) {
             TransportEncryptionMode.PLAINTEXT -> {
-                decodePlaintext(
-                    payload = payload
-                )
+                decodePlaintext(payload = payload)
             }
 
             TransportEncryptionMode.SEALED_BOX -> {
                 decodeSealedBox(
                     payload = payload,
-                    localPublicKey =
-                        localPublicKey,
-                    localPrivateKey =
-                        localPrivateKey
+                    localPublicKey = localPublicKey,
+                    localPrivateKey = localPrivateKey
                 )
             }
         }
@@ -56,26 +48,16 @@ class DefaultIncomingTransportMessageDecoder(
              * No cryptographic decryption is performed for a
              * PLAINTEXT packet.
              */
-            val text =
-                payload.payload.decodeToString(
-                    throwOnInvalidSequence = true
-                )
+            val text = payload.payload.decodeToString(throwOnInvalidSequence = true)
 
             DecodedTransportMessage.Readable(
-                plaintext =
-                    text.encodeToByteArray(),
-
-                mode =
-                    TransportEncryptionMode
-                        .PLAINTEXT
+                plaintext = text.encodeToByteArray(),
+                mode = TransportEncryptionMode.PLAINTEXT
             )
         } catch (
             error: Throwable
         ) {
-            DecodedTransportMessage
-                .InvalidPlaintext(
-                    cause = error
-                )
+            DecodedTransportMessage.InvalidPlaintext(cause = error)
         }
     }
 
@@ -87,14 +69,9 @@ class DefaultIncomingTransportMessageDecoder(
 
         return transportCipher
             .decryptFromSender(
-                encryptedPayload =
-                    payload,
-
-                localPublicKey =
-                    localPublicKey,
-
-                localPrivateKey =
-                    localPrivateKey
+                encryptedPayload = payload,
+                localPublicKey = localPublicKey,
+                localPrivateKey = localPrivateKey
             )
             .fold(
                 onSuccess = { plaintext ->
@@ -103,27 +80,16 @@ class DefaultIncomingTransportMessageDecoder(
                      * because chat messages are textual.
                      */
                     try {
-                        val text =
-                            plaintext.decodeToString(
-                                throwOnInvalidSequence = true
-                            )
+                        val text = plaintext.decodeToString(throwOnInvalidSequence = true)
 
-                        DecodedTransportMessage
-                            .Readable(
-                                plaintext =
-                                    text.encodeToByteArray(),
-
-                                mode =
-                                    TransportEncryptionMode
-                                        .SEALED_BOX
-                            )
+                        DecodedTransportMessage.Readable(
+                            plaintext = text.encodeToByteArray(),
+                            mode = TransportEncryptionMode.SEALED_BOX
+                        )
                     } catch (
                         error: Throwable
                     ) {
-                        DecodedTransportMessage
-                            .DecryptionFailed(
-                                cause = error
-                            )
+                        DecodedTransportMessage.DecryptionFailed(cause = error)
                     }
                 },
 
@@ -131,10 +97,7 @@ class DefaultIncomingTransportMessageDecoder(
                     /*
                      * Never try to decode failed ciphertext directly.
                      */
-                    DecodedTransportMessage
-                        .DecryptionFailed(
-                            cause = error
-                        )
+                    DecodedTransportMessage.DecryptionFailed(cause = error)
                 }
             )
     }

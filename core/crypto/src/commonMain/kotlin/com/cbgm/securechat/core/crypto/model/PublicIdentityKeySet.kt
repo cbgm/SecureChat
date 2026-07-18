@@ -5,54 +5,29 @@ data class PublicIdentityKeySet(
     val encryptionPublicKey: ByteArray
 ) {
     init {
-        require(
-            signingPublicKey.isNotEmpty()
-        ) {
+        require(signingPublicKey.isNotEmpty()) {
             "Signing public key must not be empty"
         }
 
-        require(
-            encryptionPublicKey.isNotEmpty()
-        ) {
+        require(encryptionPublicKey.isNotEmpty()) {
             "Encryption public key must not be empty"
         }
     }
 
-    override fun equals(
-        other: Any?
-    ): Boolean {
-        if (this === other) {
-            return true
-        }
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
 
-        if (
-            other !is
-                    PublicIdentityKeySet
-        ) {
-            return false
-        }
+        if (other !is PublicIdentityKeySet) return false
 
-        return signingPublicKey
-            .contentEquals(
-                other.signingPublicKey
-            ) &&
-                encryptionPublicKey
-                    .contentEquals(
-                        other.encryptionPublicKey
-                    )
+        return signingPublicKey.contentEquals(other.signingPublicKey) &&
+                encryptionPublicKey.contentEquals(other.encryptionPublicKey)
     }
 
-    override fun hashCode():
-            Int {
+    override fun hashCode(): Int {
 
-        var result =
-            signingPublicKey
-                .contentHashCode()
+        var result = signingPublicKey.contentHashCode()
 
-        result =
-            31 * result +
-                    encryptionPublicKey
-                        .contentHashCode()
+        result = 31 * result + encryptionPublicKey.contentHashCode()
 
         return result
     }

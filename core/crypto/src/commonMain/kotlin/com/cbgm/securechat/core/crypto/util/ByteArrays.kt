@@ -5,15 +5,9 @@ object ByteArrays {
     fun concatenate(
         vararg arrays: ByteArray
     ): ByteArray {
-        val totalSize =
-            arrays.sumOf { array ->
-                array.size
-            }
+        val totalSize = arrays.sumOf { array -> array.size }
 
-        val result =
-            ByteArray(
-                size = totalSize
-            )
+        val result = ByteArray(size = totalSize)
 
         var offset = 0
 
@@ -37,87 +31,48 @@ object ByteArrays {
         }
 
         return byteArrayOf(
-            (
-                    value ushr 24 and 0xFF
-                    ).toByte(),
-
-            (
-                    value ushr 16 and 0xFF
-                    ).toByte(),
-
-            (
-                    value ushr 8 and 0xFF
-                    ).toByte(),
-
-            (
-                    value and 0xFF
-                    ).toByte()
+            (value ushr 24 and 0xFF).toByte(),
+            (value ushr 16 and 0xFF).toByte(),
+            (value ushr 8 and 0xFF).toByte(),
+            (value and 0xFF).toByte()
         )
     }
 
     fun withLengthPrefix(
         value: ByteArray
     ): ByteArray {
-        return concatenate(
-            encodeInt(
-                value.size
-            ),
-            value
-        )
+        return concatenate(encodeInt(value.size), value)
     }
 
     fun compareUnsigned(
         first: ByteArray,
         second: ByteArray
     ): Int {
-        val sharedSize =
-            minOf(
-                first.size,
-                second.size
-            )
+        val sharedSize = minOf(first.size, second.size)
 
-        for (
-        index in 0 until sharedSize
-        ) {
-            val firstValue =
-                first[index].toInt() and 0xFF
+        for (index in 0 until sharedSize) {
+            val firstValue = first[index].toInt() and 0xFF
 
-            val secondValue =
-                second[index].toInt() and 0xFF
+            val secondValue = second[index].toInt() and 0xFF
 
-            if (
-                firstValue !=
-                secondValue
-            ) {
-                return firstValue -
-                        secondValue
+            if (firstValue != secondValue) {
+                return firstValue - secondValue
             }
         }
 
-        return first.size -
-                second.size
+        return first.size - second.size
     }
 
     fun contentEqualsConstantTime(
         first: ByteArray,
         second: ByteArray
     ): Boolean {
-        if (
-            first.size !=
-            second.size
-        ) {
-            return false
-        }
+        if (first.size != second.size)  return false
 
         var difference = 0
 
         first.indices.forEach { index ->
-            difference =
-                difference or
-                        (
-                                first[index].toInt() xor
-                                        second[index].toInt()
-                                )
+            difference = difference or (first[index].toInt() xor second[index].toInt())
         }
 
         return difference == 0

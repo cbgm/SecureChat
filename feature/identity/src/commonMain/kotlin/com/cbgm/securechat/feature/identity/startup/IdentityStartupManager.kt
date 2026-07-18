@@ -9,6 +9,5 @@ package com.cbgm.securechat.feature.identity.startup
  */
 interface IdentityStartupManager {
 
-    suspend fun ensureIdentityExists():
-            Result<IdentityStartupResult>
+    suspend fun ensureIdentityExists(): Result<IdentityStartupResult>
 }

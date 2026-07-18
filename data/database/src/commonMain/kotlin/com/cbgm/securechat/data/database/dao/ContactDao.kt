@@ -14,14 +14,10 @@ import kotlinx.coroutines.flow.Flow
 interface ContactDao {
 
     @Upsert
-    suspend fun upsertContact(
-        contact: ContactEntity
-    )
+    suspend fun upsertContact(contact: ContactEntity)
 
     @Upsert
-    suspend fun upsertPublicIdentity(
-        identity: ContactPublicIdentityEntity
-    )
+    suspend fun upsertPublicIdentity(identity: ContactPublicIdentityEntity)
 
     @Query(
         """
@@ -34,9 +30,7 @@ interface ContactDao {
     LIMIT 1
     """
     )
-    suspend fun findContactEntityByNormalizedPhoneNumber(
-        normalizedPhoneNumber: String
-    ): ContactEntity?
+    suspend fun findContactEntityByNormalizedPhoneNumber(normalizedPhoneNumber: String): ContactEntity?
 
     @Transaction
     @Query(
@@ -49,9 +43,7 @@ interface ContactDao {
         LIMIT 1
         """
     )
-    suspend fun findByNormalizedPhoneNumber(
-        normalizedPhoneNumber: String
-    ): ContactWithPublicIdentity?
+    suspend fun findByNormalizedPhoneNumber(normalizedPhoneNumber: String): ContactWithPublicIdentity?
 
     @Transaction
     @Query(
@@ -62,9 +54,7 @@ interface ContactDao {
         LIMIT 1
         """
     )
-    suspend fun findById(
-        contactId: String
-    ): ContactWithPublicIdentity?
+    suspend fun findById(contactId: String): ContactWithPublicIdentity?
 
     @Transaction
     @Query(
@@ -78,9 +68,7 @@ interface ContactDao {
         LIMIT 1
         """
     )
-    suspend fun findBySigningPublicKey(
-        signingPublicKey: ByteArray
-    ): ContactWithPublicIdentity?
+    suspend fun findBySigningPublicKey(signingPublicKey: ByteArray): ContactWithPublicIdentity?
 
     @Transaction
     @Query(
@@ -93,9 +81,7 @@ interface ContactDao {
         LIMIT 1
         """
     )
-    suspend fun findByPhoneNumber(
-        phoneNumber: String
-    ): ContactWithPublicIdentity?
+    suspend fun findByPhoneNumber(phoneNumber: String): ContactWithPublicIdentity?
 
     @Transaction
     @Query(
@@ -111,8 +97,7 @@ interface ContactDao {
             createdAtEpochMilliseconds
         """
     )
-    fun observeAll():
-            Flow<List<ContactWithPublicIdentity>>
+    fun observeAll(): Flow<List<ContactWithPublicIdentity>>
 
     @Transaction
     @Query(
@@ -123,9 +108,7 @@ interface ContactDao {
         LIMIT 1
         """
     )
-    suspend fun findByDeviceContactId(
-        deviceContactId: String
-    ): ContactWithPublicIdentity?
+    suspend fun findByDeviceContactId(deviceContactId: String): ContactWithPublicIdentity?
 
     @Query(
         """
@@ -156,9 +139,7 @@ interface ContactDao {
     )
 
     @Upsert
-    suspend fun upsertPhoneNumbers(
-        phoneNumbers: List<ContactPhoneNumberEntity>
-    )
+    suspend fun upsertPhoneNumbers(phoneNumbers: List<ContactPhoneNumberEntity>)
 
     @Query(
         """
@@ -166,9 +147,7 @@ interface ContactDao {
         WHERE contactId = :contactId
         """
     )
-    suspend fun deletePhoneNumbersForContact(
-        contactId: String
-    )
+    suspend fun deletePhoneNumbersForContact(contactId: String)
 
     @Query(
         """
@@ -176,9 +155,7 @@ interface ContactDao {
         WHERE id = :contactId
         """
     )
-    suspend fun deleteById(
-        contactId: String
-    )
+    suspend fun deleteById(contactId: String)
 
     @Query(
         """
@@ -188,9 +165,7 @@ interface ContactDao {
     LIMIT 1
     """
     )
-    suspend fun findPublicIdentityByContactId(
-        contactId: String
-    ): ContactPublicIdentityEntity?
+    suspend fun findPublicIdentityByContactId(contactId: String): ContactPublicIdentityEntity?
 
     @Query(
         """

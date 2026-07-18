@@ -8,9 +8,7 @@ import kotlinx.serialization.Serializable
 @SerialName("chat_message")
 data class ChatMessagePacket(
     override val packetId: String,
-
-    override val version: Int =
-        ProtocolVersion.CURRENT,
+    override val version: Int = ProtocolVersion.CURRENT,
 
     /**
      * Stable ID of the logical chat message.
@@ -19,9 +17,7 @@ data class ChatMessagePacket(
      * separate allows a message to be retransmitted in another packet.
      */
     val messageId: String,
-
     val sentAtEpochMilliseconds: Long,
-
     val text: String
 ) : SecureChatPacket {
 

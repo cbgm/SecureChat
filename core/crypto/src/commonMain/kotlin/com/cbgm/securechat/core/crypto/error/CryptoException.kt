@@ -10,20 +10,17 @@ sealed class CryptoException(
 
 class CryptoNotInitializedException :
     CryptoException(
-        message =
-            "Cryptographic runtime is not initialized"
+        message = "Cryptographic runtime is not initialized"
     )
 
 class InvalidPublicKeyException(
-    message: String =
-        "Public key is invalid"
+    message: String = "Public key is invalid"
 ) : CryptoException(
     message = message
 )
 
 class InvalidPrivateKeyException(
-    message: String =
-        "Private key is invalid"
+    message: String = "Private key is invalid"
 ) : CryptoException(
     message = message
 )
@@ -31,22 +28,19 @@ class InvalidPrivateKeyException(
 class MessageEncryptionException(
     cause: Throwable? = null
 ) : CryptoException(
-    message =
-        "Message encryption failed",
+    message = "Message encryption failed",
     cause = cause
 )
 
 class MessageDecryptionException(
     cause: Throwable? = null
 ) : CryptoException(
-    message =
-        "Message decryption failed",
+    message = "Message decryption failed",
     cause = cause
 )
 
 class UnsupportedCryptoVersionException(
     version: Int
 ) : CryptoException(
-    message =
-        "Unsupported crypto payload version: $version"
+    message = "Unsupported crypto payload version: $version"
 )

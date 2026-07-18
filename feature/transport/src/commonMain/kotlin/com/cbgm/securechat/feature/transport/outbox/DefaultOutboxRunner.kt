@@ -15,45 +15,32 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 class DefaultOutboxRunner(
-    private val protocolOutbox:
-    ProtocolOutbox,
-
-    private val outboxProcessor:
-    OutboxProcessor
+    private val protocolOutbox: ProtocolOutbox,
+    private val outboxProcessor: OutboxProcessor
 ) : OutboxRunner {
 
-    private val runnerScope =
-        CoroutineScope(
-            SupervisorJob() +
-                    Dispatchers.Default
-        )
+    private val runnerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    private val processingMutex =
-        Mutex()
+    private val processingMutex = Mutex()
 
-    private var observationJob:
-            Job? = null
+    private var observationJob: Job? = null
 
     override fun start() {
-        if (
-            observationJob?.isActive ==
-            true
-        ) {
+        if (observationJob?.isActive == true) {
             return
         }
 
-        observationJob =
-            runnerScope.launch {
-                protocolOutbox
-                    .observePending()
-                    .collect { pendingItems ->
-                        if (
-                            pendingItems.isNotEmpty()
-                        ) {
-                            processAvailableItems()
-                        }
+        observationJob = runnerScope.launch {
+            protocolOutbox
+                .observePending()
+                .collect { pendingItems ->
+                    if (
+                        pendingItems.isNotEmpty()
+                    ) {
+                        processAvailableItems()
                     }
-            }
+                }
+        }
     }
 
     override fun stop() {
@@ -64,21 +51,12 @@ class DefaultOutboxRunner(
     private suspend fun processAvailableItems() {
         processingMutex.withLock {
             while (true) {
-                val result =
-                    outboxProcessor
-                        .processPending(
-                            limit =
-                                PROCESSING_BATCH_SIZE
-                        )
+                val result = outboxProcessor.processPending(limit = PROCESSING_BATCH_SIZE)
 
                 if (result.isFailure) {
-                    val error =
-                        result.exceptionOrNull()
+                    val error = result.exceptionOrNull()
 
-                    if (
-                        error is
-                                CancellationException
-                    ) {
+                    if (error is CancellationException) {
                         throw error
                     }
 
@@ -91,28 +69,19 @@ class DefaultOutboxRunner(
                     return
                 }
 
-                val processingResult =
-                    result.getOrThrow()
+                val processingResult = result.getOrThrow()
 
                 /*
                  * No pending items remain.
                  */
-                if (
-                    processingResult
-                        .processedCount ==
-                    0
-                ) {
+                if (processingResult.processedCount == 0) {
                     return
                 }
 
                 /*
                  * A smaller batch means the queue was exhausted.
                  */
-                if (
-                    processingResult
-                        .processedCount <
-                    PROCESSING_BATCH_SIZE
-                ) {
+                if (processingResult.processedCount < PROCESSING_BATCH_SIZE) {
                     return
                 }
             }
@@ -120,7 +89,6 @@ class DefaultOutboxRunner(
     }
 
     private companion object {
-        const val PROCESSING_BATCH_SIZE =
-            20
+        const val PROCESSING_BATCH_SIZE = 20
     }
 }

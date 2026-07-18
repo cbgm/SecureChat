@@ -14,7 +14,7 @@ import com.cbgm.securechat.feature.chats.di.chatsModule
 import com.cbgm.securechat.feature.contactimport.di.contactImportModule
 import com.cbgm.securechat.feature.contacts.di.contactsModule
 import com.cbgm.securechat.feature.contacts.devicecontacts.ImportDeviceContacts
-import com.cbgm.securechat.feature.identity.core.LocalPhoneNumberStorage
+import com.cbgm.securechat.feature.identity.core.LocalPhoneNameStorage
 import com.cbgm.securechat.feature.identity.di.androidIdentityStorageModule
 import com.cbgm.securechat.feature.identity.di.identityModule
 import com.cbgm.securechat.feature.onboarding.di.onboardingModule
@@ -35,80 +35,66 @@ import androidx.core.content.ContextCompat
 import com.cbgm.securechat.startup.di.startupModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
+import org.koin.core.Koin
 import org.koin.core.context.startKoin
 
 class SecureChatApplication :
     Application() {
 
-    private val applicationScope =
-        CoroutineScope(
-            SupervisorJob() +
-                    Dispatchers.Default
-        )
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onCreate() {
         super.onCreate()
 
         initializeCrypto()
 
-        val koinApplication =
-            startKoin {
-                androidLogger()
+        val koinApplication = startKoin {
+            androidLogger()
+            androidContext(
+                this@SecureChatApplication
+            )
+            modules(
+                cryptoModule,
+                protocolModule,
+                transportModule,
+                androidDatabaseModule,
+                androidIdentityStorageModule,
+                identityModule,
+                onboardingModule,
+                contactsModule,
+                appModule,
+                sharedModule,
+                contactImportModule,
+                startupModule,
+                chatsModule
+            )
+        }
 
-                androidContext(
-                    this@SecureChatApplication
-                )
-
-                modules(
-                    cryptoModule,
-                    protocolModule,
-                    transportModule,
-                    androidDatabaseModule,
-                    androidIdentityStorageModule,
-                    identityModule,
-                    onboardingModule,
-                    contactsModule,
-                    appModule,
-                    sharedModule,
-                    contactImportModule,
-                    startupModule,
-                    chatsModule
-                )
-            }
-
-        val koin =
-            koinApplication.koin
+        val koin = koinApplication.koin
 
         applicationScope.launch {
-            val identityRepository =
-                koin.get<IdentityRepository>()
+            val identityRepository = koin.get<IdentityRepository>()
 
-            val phoneNumberStorage =
-                koin.get<LocalPhoneNumberStorage>()
+            val phoneNumberStorage = koin.get<LocalPhoneNameStorage>()
 
             combine(
                 identityRepository.observeIdentity(),
                 phoneNumberStorage.observePhoneNumber()
             ) { identity, phoneNumber ->
-                identity != null &&
-                        !phoneNumber.isNullOrBlank()
+                identity != null && !phoneNumber.isNullOrBlank()
             }
                 .first { ready ->
                     ready
                 }
 
-            startRuntimeServices(
-                koin = koin
-            )
+            startRuntimeServices(koin = koin)
 
-            syncDeviceContactsIfPermitted(
-                koin = koin
-            )
+            syncDeviceContactsIfPermitted(koin = koin)
         }
     }
 
     private fun startRuntimeServices(
-        koin: org.koin.core.Koin
+        koin: Koin
     ) {
         val webSocketClient =
             koin.get<WebSocketTransportClient>()
@@ -123,12 +109,9 @@ class SecureChatApplication :
                 }
         }
 
-        koin
-            .get<IncomingRelayRunner>()
-            .start()
+        koin.get<IncomingRelayRunner>().start()
 
-        val relayConnectionManager =
-            koin.get<RelayConnectionManager>()
+        val relayConnectionManager = koin.get<RelayConnectionManager>()
 
         relayConnectionManager.start()
 
@@ -138,31 +121,21 @@ class SecureChatApplication :
                 .collect { state ->
                     when (state) {
                         is TransportConnectionState.Connected -> {
-                            println(
-                                "Relay connected: ${state.relayId}"
-                            )
+                            println("Relay connected: ${state.relayId}")
 
-                            koin
-                                .get<OutboxRunner>()
-                                .start()
+                            koin.get<OutboxRunner>().start()
                         }
 
                         is TransportConnectionState.Connecting -> {
-                            println(
-                                "Relay connecting"
-                            )
+                            println("Relay connecting")
                         }
 
                         is TransportConnectionState.Disconnected -> {
-                            println(
-                                "Relay disconnected"
-                            )
+                            println("Relay disconnected")
                         }
 
                         is TransportConnectionState.Failed -> {
-                            println(
-                                "Relay failed: ${state.message}"
-                            )
+                            println("Relay failed: ${state.message}")
                         }
                     }
                 }
@@ -185,34 +158,25 @@ class SecureChatApplication :
      * - duplicate contacts are not intentionally created.
      */
     private suspend fun syncDeviceContactsIfPermitted(
-        koin: org.koin.core.Koin
+        koin: Koin
     ) {
-        val permissionGranted =
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_CONTACTS
-            ) == PackageManager.PERMISSION_GRANTED
+        val permissionGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.READ_CONTACTS
+        ) == PackageManager.PERMISSION_GRANTED
 
         if (!permissionGranted) {
-            println(
-                "Device contact sync skipped: READ_CONTACTS is not granted"
-            )
+            println("Device contact sync skipped: READ_CONTACTS is not granted")
 
             return
         }
 
-        koin
-            .get<ImportDeviceContacts>()
-            .invoke()
+        koin.get<ImportDeviceContacts>().invoke()
             .onSuccess {
-                println(
-                    "Device contact sync completed"
-                )
+                println("Device contact sync completed")
             }
             .onFailure { error ->
-                println(
-                    "Device contact sync failed: ${error.message}"
-                )
+                println("Device contact sync failed: ${error.message}")
 
                 error.printStackTrace()
             }
@@ -220,14 +184,12 @@ class SecureChatApplication :
 
     private fun initializeCrypto() {
         runBlocking {
-            SodiumRuntime
-                .initialize()
-                .getOrElse { error ->
-                    throw IllegalStateException(
-                        "SecureChat could not initialize its cryptographic runtime",
-                        error
-                    )
-                }
+            SodiumRuntime.initialize().getOrElse { error ->
+                throw IllegalStateException(
+                    "SecureChat could not initialize its cryptographic runtime",
+                    error
+                )
+            }
         }
     }
 }

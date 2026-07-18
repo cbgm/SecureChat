@@ -4,11 +4,7 @@ import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 
 interface PacketCodec {
 
-    fun encode(
-        packet: SecureChatPacket
-    ): Result<ByteArray>
+    fun encode(packet: SecureChatPacket): Result<ByteArray>
 
-    fun decode(
-        encodedPacket: ByteArray
-    ): Result<SecureChatPacket>
+    fun decode(encodedPacket: ByteArray): Result<SecureChatPacket>
 }

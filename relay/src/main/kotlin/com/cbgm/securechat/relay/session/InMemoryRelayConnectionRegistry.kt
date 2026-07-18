@@ -6,14 +6,9 @@ import kotlinx.coroutines.sync.withLock
 class InMemoryRelayConnectionRegistry :
     RelayConnectionRegistry {
 
-    private val mutex =
-        Mutex()
+    private val mutex = Mutex()
 
-    private val connections =
-        mutableMapOf<
-                String,
-                RelayClientConnection
-                >()
+    private val connections = mutableMapOf<String, RelayClientConnection>()
 
     override suspend fun register(
         connection: RelayClientConnection
@@ -41,8 +36,7 @@ class InMemoryRelayConnectionRegistry :
         connection: RelayClientConnection
     ) {
         mutex.withLock {
-            val currentlyRegistered =
-                connections[relayId]
+            val currentlyRegistered = connections[relayId]
 
             if (currentlyRegistered === connection) {
                 connections.remove(relayId)
@@ -50,8 +44,7 @@ class InMemoryRelayConnectionRegistry :
         }
     }
 
-    override suspend fun connectedCount():
-            Int {
+    override suspend fun connectedCount(): Int {
 
         return mutex.withLock {
             connections.size

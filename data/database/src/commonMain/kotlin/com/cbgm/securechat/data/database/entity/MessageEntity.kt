@@ -18,9 +18,7 @@ import androidx.room.PrimaryKey
     ],
 
     indices = [
-        Index(
-            value = ["conversationId"]
-        ),
+        Index(value = ["conversationId"]),
 
         Index(
             value = [
@@ -38,19 +36,12 @@ import androidx.room.PrimaryKey
 data class MessageEntity(
     @PrimaryKey
     val id: String,
-
     val conversationId: String,
-
     val packetId: String?,
-
     val text: String,
-
     val transportPayload: String?,
-
     val transportMode: String,
-
     val contentStatus: String,
-
     val deliveryStatus: String,
 
     /**
@@ -60,8 +51,6 @@ data class MessageEntity(
      * Outgoing messages always keep this false.
      */
     val readReceiptSent: Boolean = false,
-
     val isMine: Boolean,
-
     val createdAtEpochMilliseconds: Long
 )

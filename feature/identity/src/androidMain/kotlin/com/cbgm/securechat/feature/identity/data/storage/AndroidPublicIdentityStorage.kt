@@ -130,14 +130,11 @@ class AndroidPublicIdentityStorage(
 
     private companion object {
 
-        const val PREFERENCES_NAME =
-            "securechat_public_identity_storage"
+        const val PREFERENCES_NAME = "securechat_public_identity_storage"
 
-        const val ENCRYPTION_PUBLIC_KEY =
-            "encryption_public_key"
+        const val ENCRYPTION_PUBLIC_KEY = "encryption_public_key"
 
-        const val SIGNING_PUBLIC_KEY =
-            "signing_public_key"
+        const val SIGNING_PUBLIC_KEY = "signing_public_key"
     }
 
     override suspend fun delete(): Result<Unit> {
@@ -149,12 +146,8 @@ class AndroidPublicIdentityStorage(
              * A public identity is complete only when both exist.
              */
             val deleted = preferences.edit()
-                .remove(
-                    ENCRYPTION_PUBLIC_KEY
-                )
-                .remove(
-                    SIGNING_PUBLIC_KEY
-                )
+                .remove(ENCRYPTION_PUBLIC_KEY)
+                .remove(SIGNING_PUBLIC_KEY)
                 .commit()
 
             check(deleted) {

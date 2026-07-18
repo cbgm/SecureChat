@@ -4,8 +4,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 interface RelayConnectionManager {
 
-    val connectionState:
-            StateFlow<TransportConnectionState>
+    val connectionState: StateFlow<TransportConnectionState>
 
     /**
      * Starts the persistent connection loop.

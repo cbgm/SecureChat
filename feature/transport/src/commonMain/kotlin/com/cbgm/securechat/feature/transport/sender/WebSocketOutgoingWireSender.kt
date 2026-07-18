@@ -10,17 +10,10 @@ import com.cbgm.securechat.feature.transport.relay.model.RelayEnvelope
 import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
 
 class WebSocketOutgoingWireSender(
-    private val webSocketTransportClient:
-    WebSocketTransportClient,
-
-    private val localRelayIdProvider:
-    LocalRelayIdProvider,
-
-    private val contactRelayIdResolver:
-    ContactRelayIdResolver,
-
-    private val relayTransportConfig:
-    RelayTransportConfig
+    private val webSocketTransportClient: WebSocketTransportClient,
+    private val localRelayIdProvider: LocalRelayIdProvider,
+    private val contactRelayIdResolver: ContactRelayIdResolver,
+    private val relayTransportConfig: RelayTransportConfig
 ) : OutgoingWireSender {
 
     override suspend fun send(
@@ -39,47 +32,23 @@ class WebSocketOutgoingWireSender(
                 "Transport payload must not be blank"
             }
 
-            val senderRelayId =
-                localRelayIdProvider
-                    .getLocalRelayId()
-                    .getOrThrow()
+            val senderRelayId = localRelayIdProvider.getLocalRelayId().getOrThrow()
 
             val recipientRelayId =
-                contactRelayIdResolver
-                    .resolve(
-                        contactId =
-                            contactId
-                    )
-                    .getOrThrow()
+                contactRelayIdResolver.resolve(contactId = contactId).getOrThrow()
 
-            val envelope =
-                RelayEnvelope(
-                    envelopeId =
-                        IdGenerator.generate(),
+            val envelope = RelayEnvelope(
+                envelopeId = IdGenerator.generate(),
+                senderId = senderRelayId,
+                recipientId = recipientRelayId,
+                payload = encodedTransportPayload,
+                createdAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+            )
 
-                    senderId =
-                        senderRelayId,
-
-                    recipientId =
-                        recipientRelayId,
-
-                    payload =
-                        encodedTransportPayload,
-
-                    createdAtEpochMilliseconds =
-                        SystemClock
-                            .nowEpochMilliseconds()
-                )
-
-            webSocketTransportClient
-                .sendEnvelopeAndAwaitAcceptance(
-                    envelope =
-                        envelope,
-
-                    timeoutMilliseconds =
-                        relayTransportConfig
-                            .acknowledgementTimeoutMilliseconds
-                )
+            webSocketTransportClient.sendEnvelopeAndAwaitAcceptance(
+                envelope = envelope,
+                timeoutMilliseconds = relayTransportConfig.acknowledgementTimeoutMilliseconds
+            )
                 .getOrThrow()
         }
     }

@@ -18,135 +18,78 @@ import kotlinx.coroutines.withTimeout
 import kotlin.time.Duration.Companion.milliseconds
 
 class DefaultRelayConnectionManager(
-    private val webSocketTransportClient:
-    WebSocketTransportClient,
-
-    private val localRelayIdProvider:
-    LocalRelayIdProvider,
-
-    private val relayTransportConfig:
-    RelayTransportConfig
+    private val webSocketTransportClient: WebSocketTransportClient,
+    private val localRelayIdProvider: LocalRelayIdProvider,
+    private val relayTransportConfig: RelayTransportConfig
 ) : RelayConnectionManager {
 
-    private val connectionScope =
-        CoroutineScope(
-            SupervisorJob() +
-                    Dispatchers.Default
-        )
+    private val connectionScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    private var connectionLoopJob:
-            Job? =
-        null
+    private var connectionLoopJob: Job? = null
 
-    override val connectionState:
-            StateFlow<TransportConnectionState> =
-        webSocketTransportClient
-            .connectionState
+    override val connectionState: StateFlow<TransportConnectionState> =
+        webSocketTransportClient.connectionState
 
     override fun start() {
-        if (
-            connectionLoopJob?.isActive ==
-            true
-        ) {
+        if (connectionLoopJob?.isActive == true) {
             return
         }
 
-        connectionLoopJob =
-            connectionScope.launch {
-                runConnectionLoop()
-            }
+        connectionLoopJob = connectionScope.launch { runConnectionLoop() }
     }
 
     override suspend fun stop() {
-        val activeJob =
-            connectionLoopJob
+        val activeJob = connectionLoopJob
 
-        connectionLoopJob =
-            null
+        connectionLoopJob = null
 
-        activeJob
-            ?.cancelAndJoin()
+        activeJob?.cancelAndJoin()
 
-        webSocketTransportClient
-            .disconnect()
+        webSocketTransportClient.disconnect()
     }
 
     private suspend fun runConnectionLoop() {
-        var reconnectDelay =
-            INITIAL_RECONNECT_DELAY_MILLISECONDS
+        var reconnectDelay = INITIAL_RECONNECT_DELAY_MILLISECONDS
 
-        while (
-            connectionScope
-                .isActive
-        ) {
+        while (connectionScope.isActive) {
             try {
-                val relayId =
-                    localRelayIdProvider
-                        .getLocalRelayId()
-                        .getOrThrow()
+                val relayId = localRelayIdProvider.getLocalRelayId().getOrThrow()
 
-                println(
-                    "Connecting to relay as $relayId"
+                println("Connecting to relay as $relayId")
+
+                webSocketTransportClient.connect(
+                    serverUrl = relayTransportConfig.serverUrl,
+                    localRelayId = relayId
                 )
 
-                webSocketTransportClient
-                    .connect(
-                        serverUrl =
-                            relayTransportConfig
-                                .serverUrl,
-
-                        localRelayId =
-                            relayId
-                    )
-
-                val connectionResult =
-                    withTimeout(
-                        CONNECTION_TIMEOUT_MILLISECONDS.milliseconds
-                    ) {
-                        webSocketTransportClient
-                            .connectionState
-                            .first { state ->
-                                state is
-                                        TransportConnectionState
-                                        .Connected ||
-                                        state is
-                                                TransportConnectionState
-                                                .Failed
-                            }
-                    }
+                val connectionResult = withTimeout(CONNECTION_TIMEOUT_MILLISECONDS.milliseconds) {
+                    webSocketTransportClient
+                        .connectionState
+                        .first { state ->
+                            state is TransportConnectionState.Connected ||
+                                    state is TransportConnectionState.Failed
+                        }
+                }
 
                 when (connectionResult) {
-                    is TransportConnectionState
-                    .Connected -> {
+                    is TransportConnectionState.Connected -> {
 
-                        println(
-                            "Relay connected as ${connectionResult.relayId}"
-                        )
+                        println("Relay connected as ${connectionResult.relayId}")
 
-                        reconnectDelay =
-                            INITIAL_RECONNECT_DELAY_MILLISECONDS
+                        reconnectDelay = INITIAL_RECONNECT_DELAY_MILLISECONDS
 
                         /*
                          * Wait until the current connection ends.
                          */
-                        webSocketTransportClient
-                            .connectionState
-                            .first { state ->
-                                state is
-                                        TransportConnectionState
-                                        .Disconnected ||
-                                        state is
-                                                TransportConnectionState
-                                                .Failed
-                            }
+                        webSocketTransportClient.connectionState.first { state ->
+                            state is TransportConnectionState.Disconnected ||
+                                    state is TransportConnectionState.Failed
+                        }
                     }
 
-                    is TransportConnectionState
-                    .Failed -> {
+                    is TransportConnectionState.Failed -> {
 
-                        println(
-                            "Relay connection failed: ${connectionResult.message}"
-                        )
+                        println("Relay connection failed: ${connectionResult.message}")
                     }
 
                     else -> {
@@ -160,9 +103,7 @@ class DefaultRelayConnectionManager(
             } catch (
                 error: Throwable
             ) {
-                println(
-                    "Relay connection error: ${error.message}"
-                )
+                println("Relay connection error: ${error.message}")
             }
 
             /*
@@ -170,35 +111,22 @@ class DefaultRelayConnectionManager(
              * attempting another connection.
              */
             runCatching {
-                webSocketTransportClient
-                    .disconnect()
+                webSocketTransportClient.disconnect()
             }
 
-            println(
-                "Relay reconnecting in ${reconnectDelay}ms"
-            )
+            println("Relay reconnecting in ${reconnectDelay}ms")
 
-            delay(
-                reconnectDelay.milliseconds
-            )
+            delay(reconnectDelay.milliseconds)
 
-            reconnectDelay =
-                (
-                        reconnectDelay * 2L
-                        ).coerceAtMost(
-                        MAX_RECONNECT_DELAY_MILLISECONDS
-                    )
+            reconnectDelay = (reconnectDelay * 2L).coerceAtMost(MAX_RECONNECT_DELAY_MILLISECONDS)
         }
     }
 
     private companion object {
-        const val CONNECTION_TIMEOUT_MILLISECONDS =
-            15_000L
+        const val CONNECTION_TIMEOUT_MILLISECONDS = 15_000L
 
-        const val INITIAL_RECONNECT_DELAY_MILLISECONDS =
-            1_000L
+        const val INITIAL_RECONNECT_DELAY_MILLISECONDS = 1_000L
 
-        const val MAX_RECONNECT_DELAY_MILLISECONDS =
-            30_000L
+        const val MAX_RECONNECT_DELAY_MILLISECONDS = 30_000L
     }
 }

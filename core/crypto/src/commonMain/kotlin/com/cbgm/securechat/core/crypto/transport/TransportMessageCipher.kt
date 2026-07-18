@@ -16,9 +16,7 @@ interface TransportMessageCipher {
      * Decrypts an encrypted packet using the local encryption key pair.
      */
     suspend fun decryptFromSender(
-        encryptedPayload:
-        EncryptedTransportPayload,
-
+        encryptedPayload: EncryptedTransportPayload,
         localPublicKey: ByteArray,
         localPrivateKey: ByteArray
     ): Result<ByteArray>

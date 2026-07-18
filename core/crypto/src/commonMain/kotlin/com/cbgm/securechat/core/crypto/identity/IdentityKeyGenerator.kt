@@ -9,6 +9,5 @@ interface IdentityKeyGenerator {
      * - an Ed25519 signing key pair.
      */
     @OptIn(ExperimentalUnsignedTypes::class)
-    suspend fun generate():
-            Result<IdentityKeyPair>
+    suspend fun generate(): Result<IdentityKeyPair>
 }

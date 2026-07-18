@@ -12,53 +12,32 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 class DefaultIncomingRelayRunner(
-    private val webSocketTransportClient:
-    WebSocketTransportClient,
-
-    private val contactByRelayIdResolver:
-    ContactByRelayIdResolver,
-
-    private val localEncryptionKeyPairProvider:
-    LocalEncryptionKeyPairProvider,
-
-    private val chatsRepository:
-    ChatsRepository
+    private val webSocketTransportClient: WebSocketTransportClient,
+    private val contactByRelayIdResolver: ContactByRelayIdResolver,
+    private val localEncryptionKeyPairProvider: LocalEncryptionKeyPairProvider,
+    private val chatsRepository: ChatsRepository
 ) : IncomingRelayRunner {
 
-    private val scope =
-        CoroutineScope(
-            SupervisorJob() +
-                    Dispatchers.Default
-        )
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    private var collectionJob:
-            Job? = null
+    private var collectionJob: Job? = null
 
     override fun start() {
-        if (
-            collectionJob?.isActive ==
-            true
-        ) {
+        if (collectionJob?.isActive == true) {
             return
         }
 
-        collectionJob =
-            scope.launch {
-                webSocketTransportClient
-                    .incomingEnvelopes
-                    .collect { envelope ->
-                        processEnvelope(
-                            senderRelayId =
-                                envelope.senderId,
-
-                            recipientRelayId =
-                                envelope.recipientId,
-
-                            encodedTransportPayload =
-                                envelope.payload
-                        )
-                    }
-            }
+        collectionJob = scope.launch {
+            webSocketTransportClient
+                .incomingEnvelopes
+                .collect { envelope ->
+                    processEnvelope(
+                        senderRelayId = envelope.senderId,
+                        recipientRelayId = envelope.recipientId,
+                        encodedTransportPayload = envelope.payload
+                    )
+                }
+        }
     }
 
     override fun stop() {
@@ -72,44 +51,27 @@ class DefaultIncomingRelayRunner(
         encodedTransportPayload: String
     ) {
         try {
-            val contactId =
-                contactByRelayIdResolver
-                    .resolveContactId(
-                        relayId =
-                            senderRelayId
-                    )
-                    .getOrThrow()
-                    ?: run {
-                        println(
-                            "Incoming envelope ignored: " +
-                                    "unknown sender $senderRelayId"
-                        )
+            val contactId = contactByRelayIdResolver
+                .resolveContactId(
+                    relayId = senderRelayId
+                )
+                .getOrThrow()
+                ?: run {
+                    println("Incoming envelope ignored: " + "unknown sender $senderRelayId")
 
-                        return
-                    }
+                    return
+                }
 
-            val keyPair =
-                localEncryptionKeyPairProvider
-                    .getEncryptionKeyPair()
-                    .getOrThrow()
+            val keyPair = localEncryptionKeyPairProvider.getEncryptionKeyPair().getOrThrow()
 
             chatsRepository.receiveMessage(
-                contactId =
-                    contactId,
-
-                encodedTransportPayload =
-                    encodedTransportPayload,
-
-                localEncryptionPublicKey =
-                    keyPair.publicKey,
-
-                localEncryptionPrivateKey =
-                    keyPair.privateKey
+                contactId = contactId,
+                encodedTransportPayload = encodedTransportPayload,
+                localEncryptionPublicKey = keyPair.publicKey,
+                localEncryptionPrivateKey = keyPair.privateKey
             )
 
-            println(
-                "Incoming envelope stored for contact $contactId"
-            )
+            println("Incoming envelope stored for contact $contactId")
         } catch (
             error: CancellationException
         ) {
@@ -117,9 +79,7 @@ class DefaultIncomingRelayRunner(
         } catch (
             error: Throwable
         ) {
-            println(
-                "Incoming envelope failed: ${error.message}"
-            )
+            println("Incoming envelope failed: ${error.message}")
         }
     }
 }

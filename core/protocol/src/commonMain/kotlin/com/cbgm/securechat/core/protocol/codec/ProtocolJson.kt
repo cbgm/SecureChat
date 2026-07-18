@@ -2,8 +2,7 @@ package com.cbgm.securechat.core.protocol.codec
 
 import kotlinx.serialization.json.Json
 
-fun createProtocolJson():
-        Json {
+fun createProtocolJson(): Json {
 
     return Json {
         /**
@@ -15,22 +14,16 @@ fun createProtocolJson():
          *   ...
          * }
          */
-        classDiscriminator =
-            "packetType"
+        classDiscriminator = "packetType"
 
-        encodeDefaults =
-            true
+        encodeDefaults = true
 
-        ignoreUnknownKeys =
-            false
+        ignoreUnknownKeys = false
 
-        isLenient =
-            false
+        isLenient = false
 
-        explicitNulls =
-            false
+        explicitNulls = false
 
-        prettyPrint =
-            false
+        prettyPrint = false
     }
 }

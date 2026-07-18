@@ -6,15 +6,11 @@ data class EncryptedTransportPayload(
     val payload: ByteArray
 ) {
     init {
-        require(
-            version > 0
-        ) {
+        require(version > 0) {
             "Transport payload version must be positive"
         }
 
-        require(
-            payload.isNotEmpty()
-        ) {
+        require(payload.isNotEmpty()) {
             "Transport payload must not be empty"
         }
     }
@@ -22,39 +18,20 @@ data class EncryptedTransportPayload(
     override fun equals(
         other: Any?
     ): Boolean {
-        if (this === other) {
-            return true
-        }
+        if (this === other) return true
 
-        if (
-            other !is
-                    EncryptedTransportPayload
-        ) {
-            return false
-        }
+        if (other !is EncryptedTransportPayload) return false
 
-        return version ==
-                other.version &&
-                mode ==
-                other.mode &&
-                payload.contentEquals(
-                    other.payload
-                )
+        return version == other.version && mode == other.mode && payload.contentEquals(other.payload)
     }
 
-    override fun hashCode():
-            Int {
+    override fun hashCode(): Int {
 
-        var result =
-            version
+        var result = version
 
-        result =
-            31 * result +
-                    mode.hashCode()
+        result = 31 * result + mode.hashCode()
 
-        result =
-            31 * result +
-                    payload.contentHashCode()
+        result = 31 * result + payload.contentHashCode()
 
         return result
     }

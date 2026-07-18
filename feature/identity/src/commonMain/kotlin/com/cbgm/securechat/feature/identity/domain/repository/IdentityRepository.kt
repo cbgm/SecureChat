@@ -6,24 +6,17 @@ import kotlinx.coroutines.flow.Flow
 
 interface IdentityRepository {
 
-    fun observeIdentity():
-            Flow<PublicIdentity?>
+    fun observeIdentity(): Flow<PublicIdentity?>
 
-    suspend fun getStatus():
-            Result<IdentityStatus>
+    suspend fun getStatus(): Result<IdentityStatus>
 
-    suspend fun hasIdentity():
-            Result<Boolean>
+    suspend fun hasIdentity(): Result<Boolean>
 
-    suspend fun createIdentity():
-            Result<PublicIdentity>
+    suspend fun createIdentity(): Result<PublicIdentity>
 
-    suspend fun getIdentity():
-            Result<PublicIdentity?>
+    suspend fun getIdentity(): Result<PublicIdentity?>
 
-    suspend fun getEncryptionPrivateKey():
-            Result<ByteArray>
+    suspend fun getEncryptionPrivateKey(): Result<ByteArray>
 
-    suspend fun getSigningPrivateKey():
-            Result<ByteArray>
+    suspend fun getSigningPrivateKey(): Result<ByteArray>
 }

@@ -31,21 +31,14 @@ import com.cbgm.securechat.data.database.entity.ProtocolOutboxEntity
 
     exportSchema = true
 )
-@ConstructedBy(
-    SecureChatDatabaseConstructor::class
-)
-abstract class SecureChatDatabase :
-    RoomDatabase() {
+@ConstructedBy(SecureChatDatabaseConstructor::class)
+abstract class SecureChatDatabase : RoomDatabase() {
 
-    abstract fun contactDao():
-            ContactDao
+    abstract fun contactDao(): ContactDao
 
-    abstract fun chatDao():
-            ChatDao
+    abstract fun chatDao(): ChatDao
 
-    abstract fun protocolOutboxDao():
-            ProtocolOutboxDao
+    abstract fun protocolOutboxDao(): ProtocolOutboxDao
 
-    abstract fun messageDeliveryStatusDao():
-            MessageDeliveryStatusDao
+    abstract fun messageDeliveryStatusDao(): MessageDeliveryStatusDao
 }

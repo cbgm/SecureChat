@@ -7,7 +7,6 @@ import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.phone.LocalPhoneNumberProvider
 import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
-import com.cbgm.securechat.data.database.SecureChatDatabase
 import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
@@ -44,154 +43,90 @@ val transportModule =
             createPlatformHttpClient()
         }
 
-        single<Json>(
-            qualifier =
-                named(
-                    RELAY_JSON_QUALIFIER
-                )
-        ) {
+        single<Json>(qualifier = named(RELAY_JSON_QUALIFIER)) {
             createRelayJson()
         }
 
         single<RelayIdGenerator> {
-            Sha256RelayIdGenerator(
-                phoneNumberNormalizer =
-                    get<PhoneNumberNormalizer>()
-            )
+            Sha256RelayIdGenerator(phoneNumberNormalizer = get<PhoneNumberNormalizer>())
         }
 
         single<LocalRelayIdProvider> {
             DefaultLocalRelayIdProvider(
-                localPhoneNumberProvider =
-                    get<LocalPhoneNumberProvider>(),
-
-                relayIdGenerator =
-                    get<RelayIdGenerator>()
+                localPhoneNumberProvider = get<LocalPhoneNumberProvider>(),
+                relayIdGenerator = get<RelayIdGenerator>()
             )
         }
 
         single<ContactRelayIdResolver> {
             DefaultContactRelayIdResolver(
-                getContact =
-                    get<GetContact>(),
-
-                relayIdGenerator =
-                    get<RelayIdGenerator>()
+                getContact = get<GetContact>(),
+                relayIdGenerator = get<RelayIdGenerator>()
             )
         }
 
         single<ContactByRelayIdResolver> {
             DefaultContactByRelayIdResolver(
-                contactRepository =
-                    get<ContactRepository>(),
-
-                relayIdGenerator =
-                    get<RelayIdGenerator>()
+                contactRepository = get<ContactRepository>(),
+                relayIdGenerator = get<RelayIdGenerator>()
             )
         }
 
         single<WebSocketTransportClient> {
             DefaultWebSocketTransportClient(
-                httpClient =
-                    get<HttpClient>(),
-
-                json =
-                    get(
-                        qualifier =
-                            named(
-                                RELAY_JSON_QUALIFIER
-                            )
-                    )
+                httpClient = get<HttpClient>(),
+                json = get(qualifier = named(RELAY_JSON_QUALIFIER))
             )
         }
 
         single<RelayConnectionManager> {
             DefaultRelayConnectionManager(
-                webSocketTransportClient =
-                    get<WebSocketTransportClient>(),
-
-                localRelayIdProvider =
-                    get<LocalRelayIdProvider>(),
-
-                relayTransportConfig =
-                    get<RelayTransportConfig>()
+                webSocketTransportClient = get<WebSocketTransportClient>(),
+                localRelayIdProvider = get<LocalRelayIdProvider>(),
+                relayTransportConfig = get<RelayTransportConfig>()
             )
         }
 
         single<OutgoingWireSender> {
             WebSocketOutgoingWireSender(
-                webSocketTransportClient =
-                    get<WebSocketTransportClient>(),
-
-                localRelayIdProvider =
-                    get<LocalRelayIdProvider>(),
-
-                contactRelayIdResolver =
-                    get<ContactRelayIdResolver>(),
-
-                relayTransportConfig =
-                    get<RelayTransportConfig>()
+                webSocketTransportClient = get<WebSocketTransportClient>(),
+                localRelayIdProvider = get<LocalRelayIdProvider>(),
+                contactRelayIdResolver = get<ContactRelayIdResolver>(),
+                relayTransportConfig = get<RelayTransportConfig>()
             )
         }
 
         single<OutboxProcessor> {
             DefaultOutboxProcessor(
-                protocolOutbox =
-                    get<ProtocolOutbox>(),
-
-                getContact =
-                    get<GetContact>(),
-
-                transportMessageCipher =
-                    get(),
-
-                transportPayloadCodec =
-                    get(),
-
-                outgoingWireSender =
-                    get<OutgoingWireSender>(),
-
-                deliveryStateListener =
-                    get(),
-
-                messageDeliveryStatusDao =
-                    get()
+                protocolOutbox = get<ProtocolOutbox>(),
+                getContact = get<GetContact>(),
+                transportMessageCipher = get(),
+                transportPayloadCodec = get(),
+                outgoingWireSender = get<OutgoingWireSender>(),
+                deliveryStateListener = get(),
+                messageDeliveryStatusDao = get()
             )
         }
 
         single<OutboxRunner> {
             DefaultOutboxRunner(
-                protocolOutbox =
-                    get<ProtocolOutbox>(),
-
-                outboxProcessor =
-                    get<OutboxProcessor>()
+                protocolOutbox = get<ProtocolOutbox>(),
+                outboxProcessor = get<OutboxProcessor>()
             )
         }
 
         single<IncomingRelayRunner> {
             DefaultIncomingRelayRunner(
-                webSocketTransportClient =
-                    get<WebSocketTransportClient>(),
-
-                contactByRelayIdResolver =
-                    get<ContactByRelayIdResolver>(),
-
-                localEncryptionKeyPairProvider =
-                    get<LocalEncryptionKeyPairProvider>(),
-
-                chatsRepository =
-                    get<ChatsRepository>()
+                webSocketTransportClient = get<WebSocketTransportClient>(),
+                contactByRelayIdResolver = get<ContactByRelayIdResolver>(),
+                localEncryptionKeyPairProvider = get<LocalEncryptionKeyPairProvider>(),
+                chatsRepository = get<ChatsRepository>()
             )
         }
 
         single {
-            ProcessOutbox(
-                outboxProcessor =
-                    get<OutboxProcessor>()
-            )
+            ProcessOutbox(outboxProcessor = get<OutboxProcessor>())
         }
     }
 
-private const val RELAY_JSON_QUALIFIER =
-    "RelayJson"
+private const val RELAY_JSON_QUALIFIER = "RelayJson"

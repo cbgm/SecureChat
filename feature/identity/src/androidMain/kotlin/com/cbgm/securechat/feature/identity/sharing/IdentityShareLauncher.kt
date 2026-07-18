@@ -11,29 +11,20 @@ actual fun rememberIdentityShareLauncher(
     encodedIdentity: String,
     shareTitle: String
 ): () -> Unit {
-    val context =
-        LocalContext.current
+    val context = LocalContext.current
 
-    val currentEncodedIdentity =
-        rememberUpdatedState(
-            newValue = encodedIdentity
-        )
+    val currentEncodedIdentity = rememberUpdatedState(newValue = encodedIdentity)
 
-    val currentShareTitle =
-        rememberUpdatedState(
-            newValue = shareTitle
-        )
+    val currentShareTitle = rememberUpdatedState(newValue = shareTitle)
 
     return remember(context) {
         {
-            val payload =
-                currentEncodedIdentity.value
-                    .trim()
+            val payload = currentEncodedIdentity.value.trim()
 
             if (payload.isNotEmpty()) {
                 val sendIntent =
-                    Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
+                    Intent(Intent.ACTION_SEND)
+                        .apply { type = "text/plain"
 
                         putExtra(
                             Intent.EXTRA_SUBJECT,
@@ -48,8 +39,7 @@ actual fun rememberIdentityShareLauncher(
                         )
                     }
 
-                val chooserIntent =
-                    Intent.createChooser(
+                val chooserIntent = Intent.createChooser(
                         sendIntent,
                         currentShareTitle.value
                     ).apply {
@@ -57,14 +47,10 @@ actual fun rememberIdentityShareLauncher(
                          * LocalContext may theoretically be backed by
                          * a non-Activity Context.
                          */
-                        addFlags(
-                            Intent.FLAG_ACTIVITY_NEW_TASK
-                        )
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
 
-                context.startActivity(
-                    chooserIntent
-                )
+                context.startActivity(chooserIntent)
             }
         }
     }
@@ -74,20 +60,14 @@ private fun buildShareText(
     encodedIdentity: String
 ): String {
     return buildString {
-        appendLine(
-            "Add me on SecureChat."
-        )
+        appendLine("Add me on SecureChat.")
 
         appendLine()
 
-        appendLine(
-            "Open SecureChat and import this identity:"
-        )
+        appendLine("Open SecureChat and import this identity:")
 
         appendLine()
 
-        append(
-            encodedIdentity
-        )
+        append(encodedIdentity)
     }
 }

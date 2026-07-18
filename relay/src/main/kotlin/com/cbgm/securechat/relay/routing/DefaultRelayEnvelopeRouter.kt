@@ -3,7 +3,6 @@ package com.cbgm.securechat.relay.routing
 import com.cbgm.securechat.relay.model.RelayEnvelope
 import com.cbgm.securechat.relay.model.RelayServerMessage
 import com.cbgm.securechat.relay.session.RelayConnectionRegistry
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class DefaultRelayEnvelopeRouter(
@@ -18,39 +17,17 @@ class DefaultRelayEnvelopeRouter(
     ): RelayRoutingResult {
 
         val recipientConnection =
-            connectionRegistry.find(
-                relayId =
-                    envelope.recipientId
-            )
-                ?: return RelayRoutingResult
-                    .RecipientOffline(
-                        recipientId =
-                            envelope.recipientId
-                    )
+            connectionRegistry.find(relayId = envelope.recipientId)
+                ?: return RelayRoutingResult.RecipientOffline(recipientId = envelope.recipientId)
 
         return runCatching {
-            val serverMessage =
-                RelayServerMessage
-                    .IncomingEnvelope(
-                        envelope =
-                            envelope
-                    )
+            val serverMessage = RelayServerMessage.IncomingEnvelope(envelope = envelope)
 
-            recipientConnection.sendText(
-                json.encodeToString<
-                        RelayServerMessage
-                        >(
-                    serverMessage
-                )
-            )
+            recipientConnection.sendText(json.encodeToString<RelayServerMessage>(serverMessage))
 
             RelayRoutingResult.Delivered
         }.getOrElse { error ->
-            RelayRoutingResult.Failed(
-                message =
-                    error.message
-                        ?: "Envelope delivery failed"
-            )
+            RelayRoutingResult.Failed(message = error.message ?: "Envelope delivery failed")
         }
     }
 }

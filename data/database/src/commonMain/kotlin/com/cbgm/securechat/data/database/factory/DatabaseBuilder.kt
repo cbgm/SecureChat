@@ -3,13 +3,6 @@ package com.cbgm.securechat.data.database.factory
 import androidx.room.RoomDatabase
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.cbgm.securechat.data.database.SecureChatDatabase
-import com.cbgm.securechat.data.database.migration.MIGRATION_1_2
-import com.cbgm.securechat.data.database.migration.MIGRATION_2_3
-import com.cbgm.securechat.data.database.migration.MIGRATION_3_4
-import com.cbgm.securechat.data.database.migration.MIGRATION_4_5
-import com.cbgm.securechat.data.database.migration.MIGRATION_5_6
-import com.cbgm.securechat.data.database.migration.MIGRATION_6_7
-import com.cbgm.securechat.data.database.migration.MIGRATION_7_8
 import com.cbgm.securechat.data.database.migration.MIGRATION_8_9
 import kotlinx.coroutines.Dispatchers
 
@@ -32,11 +25,7 @@ fun buildSecureChatDatabase(
             MIGRATION_8_9
 
         )
-        .setDriver(
-            BundledSQLiteDriver()
-        )
-        .setQueryCoroutineContext(
-            Dispatchers.IO
-        )
+        .setDriver(BundledSQLiteDriver())
+        .setQueryCoroutineContext(Dispatchers.IO)
         .build()
 }

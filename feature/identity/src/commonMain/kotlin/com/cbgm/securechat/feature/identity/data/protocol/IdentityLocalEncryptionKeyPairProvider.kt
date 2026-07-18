@@ -9,43 +9,29 @@ class IdentityLocalEncryptionKeyPairProvider(
     IdentityRepository
 ) : LocalEncryptionKeyPairProvider {
 
-    override suspend fun getEncryptionKeyPair():
-            Result<LocalEncryptionKeyPair> {
+    override suspend fun getEncryptionKeyPair(): Result<LocalEncryptionKeyPair> {
 
         return runCatching {
-            val identity =
-                identityRepository
-                    .getIdentity()
-                    .getOrThrow()
-                    ?: error(
-                        "Local SecureChat identity does not exist"
-                    )
+            val identity = identityRepository
+                .getIdentity()
+                .getOrThrow()
+                ?: error(
+                    "Local SecureChat identity does not exist"
+                )
 
-            val privateKey =
-                identityRepository
-                    .getEncryptionPrivateKey()
-                    .getOrThrow()
+            val privateKey = identityRepository.getEncryptionPrivateKey().getOrThrow()
 
-            require(
-                identity.encryptionPublicKey.isNotEmpty()
-            ) {
+            require(identity.encryptionPublicKey.isNotEmpty()) {
                 "Local encryption public key is empty"
             }
 
-            require(
-                privateKey.isNotEmpty()
-            ) {
+            require(privateKey.isNotEmpty()) {
                 "Local encryption private key is empty"
             }
 
             LocalEncryptionKeyPair(
-                publicKey =
-                    identity
-                        .encryptionPublicKey
-                        .copyOf(),
-
-                privateKey =
-                    privateKey.copyOf()
+                publicKey = identity.encryptionPublicKey.copyOf(),
+                privateKey = privateKey.copyOf()
             )
         }
     }

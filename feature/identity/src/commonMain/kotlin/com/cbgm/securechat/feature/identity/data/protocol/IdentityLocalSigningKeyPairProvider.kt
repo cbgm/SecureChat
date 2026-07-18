@@ -5,35 +5,26 @@ import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPairProvider
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
 
 class IdentityLocalSigningKeyPairProvider(
-    private val identityRepository:
-    IdentityRepository
+    private val identityRepository: IdentityRepository
 ) : LocalSigningKeyPairProvider {
 
-    override suspend fun getSigningKeyPair():
-            Result<LocalSigningKeyPair> {
+    override suspend fun getSigningKeyPair(): Result<LocalSigningKeyPair> {
 
         return runCatching {
-            val identity =
-                identityRepository
-                    .getIdentity()
-                    .getOrThrow()
-                    ?: error(
-                        "Local SecureChat identity does not exist"
-                    )
+            val identity = identityRepository
+                .getIdentity()
+                .getOrThrow()
+                ?: error(
+                    "Local SecureChat identity does not exist"
+                )
 
-            val privateKey =
-                identityRepository
-                    .getSigningPrivateKey()
-                    .getOrThrow()
+            val privateKey = identityRepository
+                .getSigningPrivateKey()
+                .getOrThrow()
 
             LocalSigningKeyPair(
-                publicKey =
-                    identity
-                        .signingPublicKey
-                        .copyOf(),
-
-                privateKey =
-                    privateKey.copyOf()
+                publicKey = identity.signingPublicKey.copyOf(),
+                privateKey = privateKey.copyOf()
             )
         }
     }

@@ -9,9 +9,7 @@ class DefaultIdentityStartupManager(
             Result<IdentityStartupResult> {
 
         return runCatching {
-            val exists =
-                identityExists()
-                    .getOrThrow()
+            val exists = identityExists().getOrThrow()
 
             if (exists) {
                 IdentityStartupResult.ALREADY_EXISTS

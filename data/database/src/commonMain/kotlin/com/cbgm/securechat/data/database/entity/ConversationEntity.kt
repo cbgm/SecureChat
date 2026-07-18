@@ -20,9 +20,7 @@ import androidx.room.PrimaryKey
             value = ["contactId"],
             unique = true
         ),
-        Index(
-            value = ["updatedAtEpochMilliseconds"]
-        )
+        Index(value = ["updatedAtEpochMilliseconds"])
     ]
 )
 data class ConversationEntity(

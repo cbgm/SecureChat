@@ -11,7 +11,6 @@ import io.ktor.websocket.CloseReason
 import io.ktor.websocket.Frame
 import io.ktor.websocket.close
 import io.ktor.websocket.readText
-import io.ktor.websocket.send
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -30,7 +29,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class DefaultWebSocketTransportClient(
@@ -38,53 +36,30 @@ class DefaultWebSocketTransportClient(
     private val json: Json
 ) : WebSocketTransportClient {
 
-    private val clientScope =
-        CoroutineScope(
-            SupervisorJob() +
-                    Dispatchers.Default
-        )
+    private val clientScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val mutableConnectionState =
-        MutableStateFlow<TransportConnectionState>(
-            TransportConnectionState.Disconnected
-        )
+        MutableStateFlow<TransportConnectionState>(TransportConnectionState.Disconnected)
 
-    override val connectionState:
-            StateFlow<TransportConnectionState> =
+    override val connectionState: StateFlow<TransportConnectionState> =
         mutableConnectionState.asStateFlow()
 
     private val mutableIncomingEnvelopes =
-        MutableSharedFlow<RelayEnvelope>(
-            extraBufferCapacity =
-                INCOMING_BUFFER_CAPACITY
-        )
+        MutableSharedFlow<RelayEnvelope>(extraBufferCapacity = INCOMING_BUFFER_CAPACITY)
 
-    override val incomingEnvelopes:
-            Flow<RelayEnvelope> =
-        mutableIncomingEnvelopes.asSharedFlow()
+    override val incomingEnvelopes: Flow<RelayEnvelope> = mutableIncomingEnvelopes.asSharedFlow()
 
-    private val sessionMutex =
-        Mutex()
+    private val sessionMutex = Mutex()
 
-    private val sendMutex =
-        Mutex()
+    private val sendMutex = Mutex()
 
-    private val acknowledgementsMutex =
-        Mutex()
+    private val acknowledgementsMutex = Mutex()
 
-    private var session:
-            DefaultClientWebSocketSession? =
-        null
+    private var session: DefaultClientWebSocketSession? = null
 
-    private var connectionJob:
-            Job? =
-        null
+    private var connectionJob: Job? = null
 
-    private val pendingAcknowledgements =
-        mutableMapOf<
-                String,
-                CompletableDeferred<Unit>
-                >()
+    private val pendingAcknowledgements = mutableMapOf<String, CompletableDeferred<Unit>>()
 
     override fun connect(
         serverUrl: String,
@@ -98,23 +73,14 @@ class DefaultWebSocketTransportClient(
             "Local relay ID must not be blank"
         }
 
-        if (
-            connectionJob?.isActive ==
-            true
-        ) {
-            return
+        if (connectionJob?.isActive == true) return
+
+        connectionJob = clientScope.launch {
+            runConnection(
+                serverUrl = serverUrl,
+                localRelayId = localRelayId
+            )
         }
-
-        connectionJob =
-            clientScope.launch {
-                runConnection(
-                    serverUrl =
-                        serverUrl,
-
-                    localRelayId =
-                        localRelayId
-                )
-            }
     }
 
     override suspend fun sendEnvelopeAndAwaitAcceptance(
@@ -126,145 +92,92 @@ class DefaultWebSocketTransportClient(
                 "Acknowledgement timeout must be positive"
             }
 
-            check(
-                connectionState.value is
-                        TransportConnectionState.Connected
-            ) {
+            check(connectionState.value is TransportConnectionState.Connected) {
                 "WebSocket relay is not connected"
             }
 
-            val acknowledgement =
-                CompletableDeferred<Unit>()
+            val acknowledgement = CompletableDeferred<Unit>()
 
             acknowledgementsMutex.withLock {
-                check(
-                    !pendingAcknowledgements
-                        .containsKey(
-                            envelope.envelopeId
-                        )
-                ) {
+                check(!pendingAcknowledgements.containsKey(envelope.envelopeId)) {
                     "Envelope is already awaiting acknowledgement"
                 }
 
-                pendingAcknowledgements[
-                    envelope.envelopeId
-                ] =
-                    acknowledgement
+                pendingAcknowledgements[envelope.envelopeId] = acknowledgement
             }
 
             try {
-                sendEnvelopeFrame(
-                    envelope =
-                        envelope
-                )
+                sendEnvelopeFrame(envelope = envelope)
 
-                withTimeout(
-                    timeoutMilliseconds
-                ) {
+                withTimeout(timeoutMilliseconds) {
                     acknowledgement.await()
                 }
             } finally {
                 acknowledgementsMutex.withLock {
-                    pendingAcknowledgements
-                        .remove(
-                            envelope.envelopeId
-                        )
+                    pendingAcknowledgements.remove(envelope.envelopeId)
                 }
             }
         }
     }
 
     override suspend fun disconnect() {
-        val activeConnectionJob =
-            connectionJob
+        val activeConnectionJob = connectionJob
 
-        connectionJob =
-            null
+        connectionJob = null
 
-        val activeSession =
-            sessionMutex.withLock {
-                val result =
-                    session
+        val activeSession = sessionMutex.withLock {
+            val result = session
+            session = null
 
-                session =
-                    null
-
-                result
-            }
+            result
+        }
 
         runCatching {
             activeSession?.close(
-                reason =
-                    CloseReason(
-                        code =
-                            CloseReason.Codes.NORMAL,
-
-                        message =
-                            "Client disconnect"
-                    )
+                reason = CloseReason(
+                    code = CloseReason.Codes.NORMAL,
+                    message = "Client disconnect"
+                )
             )
         }
 
-        activeConnectionJob
-            ?.cancelAndJoin()
+        activeConnectionJob?.cancelAndJoin()
 
-        failPendingAcknowledgements(
-            error =
-                IllegalStateException(
-                    "WebSocket disconnected"
-                )
-        )
+        failPendingAcknowledgements(error = IllegalStateException("WebSocket disconnected"))
 
-        mutableConnectionState.value =
-            TransportConnectionState
-                .Disconnected
+        mutableConnectionState.value = TransportConnectionState.Disconnected
     }
 
     private suspend fun runConnection(
         serverUrl: String,
         localRelayId: String
     ) {
-        mutableConnectionState.value =
-            TransportConnectionState
-                .Connecting
+        mutableConnectionState.value = TransportConnectionState.Connecting
 
         try {
-            httpClient.webSocket(
-                urlString =
-                    serverUrl
-            ) {
+            httpClient.webSocket(urlString = serverUrl) {
                 sessionMutex.withLock {
-                    session =
-                        this
+                    session = this
                 }
 
-                println(
-                    "WebSocket session opened"
-                )
+                println("WebSocket session opened")
 
                 sendRegistration(
-                    activeSession =
-                        this,
-
-                    localRelayId =
-                        localRelayId
+                    activeSession = this,
+                    localRelayId = localRelayId
                 )
 
                 incoming.consumeEach { frame ->
                     when (frame) {
                         is Frame.Text -> {
                             handleTextFrame(
-                                encodedMessage =
-                                    frame.readText(),
-
-                                expectedRelayId =
-                                    localRelayId
+                                encodedMessage = frame.readText(),
+                                expectedRelayId = localRelayId
                             )
                         }
 
                         is Frame.Close -> {
-                            val reason =
-                                closeReason.await()
+                            val reason = closeReason.await()
 
                             println(
                                 "Received WebSocket close frame: " +
@@ -274,9 +187,7 @@ class DefaultWebSocketTransportClient(
                         }
 
                         is Frame.Binary -> {
-                            println(
-                                "Ignoring unsupported binary WebSocket frame"
-                            )
+                            println("Ignoring unsupported binary WebSocket frame")
                         }
 
                         is Frame.Ping -> {
@@ -293,8 +204,7 @@ class DefaultWebSocketTransportClient(
                     }
                 }
 
-                val reason =
-                    closeReason.await()
+                val reason = closeReason.await()
 
                 println(
                     "WebSocket session ended: " +
@@ -303,46 +213,29 @@ class DefaultWebSocketTransportClient(
                 )
             }
 
-            mutableConnectionState.value =
-                TransportConnectionState
-                    .Disconnected
+            mutableConnectionState.value = TransportConnectionState.Disconnected
         } catch (
             error: CancellationException
         ) {
-            mutableConnectionState.value =
-                TransportConnectionState
-                    .Disconnected
+            mutableConnectionState.value = TransportConnectionState.Disconnected
 
             throw error
         } catch (
             error: Throwable
         ) {
-            println(
-                "WebSocket connection failed: ${error.message}"
-            )
+            println("WebSocket connection failed: ${error.message}")
 
-            mutableConnectionState.value =
-                TransportConnectionState
-                    .Failed(
-                        message =
-                            error.message
-                                ?: "WebSocket connection failed"
-                    )
+            mutableConnectionState.value = TransportConnectionState.Failed(
+                message = error.message ?: "WebSocket connection failed"
+            )
         } finally {
             sessionMutex.withLock {
-                session =
-                    null
+                session = null
             }
 
-            failPendingAcknowledgements(
-                error =
-                    IllegalStateException(
-                        "WebSocket connection closed"
-                    )
-            )
+            failPendingAcknowledgements(error = IllegalStateException("WebSocket connection closed"))
 
-            connectionJob =
-                null
+            connectionJob = null
         }
     }
 
@@ -352,61 +245,30 @@ class DefaultWebSocketTransportClient(
 
         localRelayId: String
     ) {
-        val registration =
-            RelayClientMessage.Register(
-                relayId =
-                    localRelayId
-            )
+        val registration = RelayClientMessage.Register(relayId = localRelayId)
 
-        val encodedRegistration =
-            json.encodeToString<
-                    RelayClientMessage
-                    >(
-                registration
-            )
+        val encodedRegistration = json.encodeToString<RelayClientMessage>(registration)
 
-        activeSession.send(
-            Frame.Text(
-                encodedRegistration
-            )
-        )
+        activeSession.send(Frame.Text(encodedRegistration))
 
-        println(
-            "Relay registration sent for $localRelayId"
-        )
+        println("Relay registration sent for $localRelayId")
     }
 
     private suspend fun sendEnvelopeFrame(
         envelope: RelayEnvelope
     ) {
         sendMutex.withLock {
-            val activeSession =
-                sessionMutex.withLock {
-                    session
-                }
-                    ?: error(
-                        "WebSocket session is not available"
-                    )
-
-            val clientMessage =
-                RelayClientMessage
-                    .SendEnvelope(
-                        envelope =
-                            envelope
-                    )
-
-            val encodedMessage =
-                json.encodeToString<
-                        RelayClientMessage
-                        >(
-                    clientMessage
-                )
-
-            activeSession.send(
-                Frame.Text(
-                    encodedMessage
-                )
+            val activeSession = sessionMutex.withLock {
+                session
+            } ?: error(
+                "WebSocket session is not available"
             )
+
+            val clientMessage = RelayClientMessage.SendEnvelope(envelope = envelope)
+
+            val encodedMessage = json.encodeToString<RelayClientMessage>(clientMessage)
+
+            activeSession.send(Frame.Text(encodedMessage))
         }
     }
 
@@ -416,80 +278,46 @@ class DefaultWebSocketTransportClient(
     ) {
         val message =
             runCatching {
-                json.decodeFromString<
-                        RelayServerMessage
-                        >(
-                    encodedMessage
-                )
+                json.decodeFromString<RelayServerMessage>(encodedMessage)
             }.getOrElse { error ->
-                println(
-                    "Invalid relay response: ${error.message}"
-                )
+                println("Invalid relay response: ${error.message}")
 
-                mutableConnectionState.value =
-                    TransportConnectionState
-                        .Failed(
-                            message =
-                                error.message
-                                    ?: "Invalid relay response"
-                        )
+                mutableConnectionState.value = TransportConnectionState.Failed(
+                    message = error.message ?: "Invalid relay response"
+                )
 
                 return
             }
 
         when (message) {
             is RelayServerMessage.Registered -> {
-                if (
-                    message.relayId !=
-                    expectedRelayId
-                ) {
+                if (message.relayId != expectedRelayId) {
                     mutableConnectionState.value =
-                        TransportConnectionState
-                            .Failed(
-                                message =
-                                    "Relay registered an unexpected identity"
-                            )
+                        TransportConnectionState.Failed(message = "Relay registered an unexpected identity")
 
                     return
                 }
 
-                println(
-                    "Relay registration accepted for ${message.relayId}"
-                )
+                println("Relay registration accepted for ${message.relayId}")
 
                 mutableConnectionState.value =
-                    TransportConnectionState
-                        .Connected(
-                            relayId =
-                                message.relayId
-                        )
+                    TransportConnectionState.Connected(relayId = message.relayId)
             }
 
             is RelayServerMessage.IncomingEnvelope -> {
-                mutableIncomingEnvelopes.emit(
-                    message.envelope
-                )
+                mutableIncomingEnvelopes.emit(message.envelope)
             }
 
             is RelayServerMessage.EnvelopeAccepted -> {
-                val acknowledgement =
-                    acknowledgementsMutex
-                        .withLock {
-                            pendingAcknowledgements[
-                                message.envelopeId
-                            ]
-                        }
+                val acknowledgement = acknowledgementsMutex.withLock {
+                    pendingAcknowledgements[message.envelopeId]
+                }
 
-                acknowledgement
-                    ?.complete(
-                        Unit
-                    )
+                acknowledgement?.complete(Unit)
             }
 
             is RelayServerMessage.Error -> {
-                println(
-                    "Relay error ${message.code}: ${message.message}"
-                )
+                println("Relay error ${message.code}: ${message.message}")
 
                 /*
                  * A relay error does not always mean the underlying
@@ -506,32 +334,22 @@ class DefaultWebSocketTransportClient(
     private suspend fun failPendingAcknowledgements(
         error: Throwable
     ) {
-        val acknowledgements =
-            acknowledgementsMutex.withLock {
-                val values =
-                    pendingAcknowledgements
-                        .values
-                        .toList()
+        val acknowledgements = acknowledgementsMutex.withLock {
+            val values = pendingAcknowledgements.values.toList()
 
-                pendingAcknowledgements
-                    .clear()
+            pendingAcknowledgements.clear()
 
-                values
-            }
+            values
+        }
 
-        acknowledgements.forEach {
-                acknowledgement ->
+        acknowledgements.forEach { acknowledgement ->
 
-            acknowledgement
-                .completeExceptionally(
-                    error
-                )
+            acknowledgement.completeExceptionally(error)
         }
     }
 
     private companion object {
 
-        const val INCOMING_BUFFER_CAPACITY =
-            64
+        const val INCOMING_BUFFER_CAPACITY = 64
     }
 }

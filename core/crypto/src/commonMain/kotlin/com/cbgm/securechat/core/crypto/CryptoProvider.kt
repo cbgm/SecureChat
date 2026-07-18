@@ -6,8 +6,7 @@ import com.cbgm.securechat.core.crypto.safety.SafetyNumberGenerator
 
 object CryptoProvider {
 
-    fun createCryptoHash():
-            CryptoHash {
+    fun createCryptoHash(): CryptoHash {
 
         return DefaultCryptoHash()
     }

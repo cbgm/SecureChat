@@ -80,6 +80,7 @@ fun OnboardingRoute(
         onChooseAnotherNumber = { hintRequestId += 1 },
         onRetryAutomaticNumber = viewModel::retryAutomaticPhoneNumber,
         onPhoneNumberChanged = identityViewModel::onPhoneNumberChanged,
-        onApproveAndCreate = identityViewModel::createNewIdentity
+        onApproveAndCreate = identityViewModel::createNewIdentity,
+        onNameChanged = identityViewModel::onNameChanged
     )
 }

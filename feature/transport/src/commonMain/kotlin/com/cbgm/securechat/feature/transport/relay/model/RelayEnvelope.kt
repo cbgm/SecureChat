@@ -10,22 +10,17 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class RelayEnvelope(
-    val version: Int =
-        CURRENT_VERSION,
-
+    val version: Int = CURRENT_VERSION,
     val envelopeId: String,
-
     /**
      * Stable relay address derived from the sender's signing identity.
      */
     val senderId: String,
-
     /**
      * Stable relay address derived from the recipient's signing
      * identity.
      */
     val recipientId: String,
-
     /**
      * Fully encoded SecureChat transport payload.
      *
@@ -35,7 +30,6 @@ data class RelayEnvelope(
      * scmsg:1:SEALED_BOX:...
      */
     val payload: String,
-
     val createdAtEpochMilliseconds: Long
 ) {
     init {
@@ -65,7 +59,6 @@ data class RelayEnvelope(
     }
 
     companion object {
-        const val CURRENT_VERSION =
-            1
+        const val CURRENT_VERSION = 1
     }
 }

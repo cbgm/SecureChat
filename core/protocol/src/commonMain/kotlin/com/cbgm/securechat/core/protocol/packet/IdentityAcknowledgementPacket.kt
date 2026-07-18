@@ -9,33 +9,19 @@ import kotlinx.serialization.Serializable
 @SerialName("identity_acknowledgement")
 data class IdentityAcknowledgementPacket(
     override val packetId: String,
+    override val version: Int = ProtocolVersion.CURRENT,
 
-    override val version: Int =
-        ProtocolVersion.CURRENT,
+    @Serializable(with = ByteArrayAsBase64Serializer::class)
+    val senderSigningPublicKey: ByteArray,
 
-    @Serializable(
-        with = ByteArrayAsBase64Serializer::class
-    )
-    val senderSigningPublicKey:
-    ByteArray,
+    @Serializable(with = ByteArrayAsBase64Serializer::class)
+    val acknowledgedEncryptionPublicKey: ByteArray,
 
-    @Serializable(
-        with = ByteArrayAsBase64Serializer::class
-    )
-    val acknowledgedEncryptionPublicKey:
-    ByteArray,
+    @Serializable(with = ByteArrayAsBase64Serializer::class)
+    val acknowledgedSigningPublicKey: ByteArray,
 
-    @Serializable(
-        with = ByteArrayAsBase64Serializer::class
-    )
-    val acknowledgedSigningPublicKey:
-    ByteArray,
-
-    @Serializable(
-        with = ByteArrayAsBase64Serializer::class
-    )
-    val signature:
-    ByteArray
+    @Serializable(with = ByteArrayAsBase64Serializer::class)
+    val signature: ByteArray
 ) : SecureChatPacket {
 
     init {
@@ -47,23 +33,15 @@ data class IdentityAcknowledgementPacket(
             "Protocol version must be positive"
         }
 
-        require(
-            senderSigningPublicKey.isNotEmpty()
-        ) {
+        require(senderSigningPublicKey.isNotEmpty()) {
             "Sender signing public key must not be empty"
         }
 
-        require(
-            acknowledgedEncryptionPublicKey
-                .isNotEmpty()
-        ) {
+        require(acknowledgedEncryptionPublicKey.isNotEmpty()) {
             "Acknowledged encryption key must not be empty"
         }
 
-        require(
-            acknowledgedSigningPublicKey
-                .isNotEmpty()
-        ) {
+        require(acknowledgedSigningPublicKey.isNotEmpty()) {
             "Acknowledged signing key must not be empty"
         }
 
@@ -75,66 +53,31 @@ data class IdentityAcknowledgementPacket(
     override fun equals(
         other: Any?
     ): Boolean {
-        if (this === other) {
-            return true
-        }
+        if (this === other) return true
 
-        if (
-            other !is
-                    IdentityAcknowledgementPacket
-        ) {
-            return false
-        }
+        if (other !is IdentityAcknowledgementPacket) return false
 
         return packetId ==
                 other.packetId &&
-                version ==
-                other.version &&
-                senderSigningPublicKey
-                    .contentEquals(
-                        other.senderSigningPublicKey
-                    ) &&
-                acknowledgedEncryptionPublicKey
-                    .contentEquals(
-                        other
-                            .acknowledgedEncryptionPublicKey
-                    ) &&
-                acknowledgedSigningPublicKey
-                    .contentEquals(
-                        other
-                            .acknowledgedSigningPublicKey
-                    ) &&
-                signature.contentEquals(
-                    other.signature
-                )
+                version == other.version &&
+                senderSigningPublicKey.contentEquals(other.senderSigningPublicKey) &&
+                acknowledgedEncryptionPublicKey.contentEquals(other.acknowledgedEncryptionPublicKey) &&
+                acknowledgedSigningPublicKey.contentEquals(other.acknowledgedSigningPublicKey) &&
+                signature.contentEquals(other.signature)
     }
 
     override fun hashCode(): Int {
-        var result =
-            packetId.hashCode()
+        var result = packetId.hashCode()
 
-        result =
-            31 * result +
-                    version
+        result = 31 * result + version
 
-        result =
-            31 * result +
-                    senderSigningPublicKey
-                        .contentHashCode()
+        result = 31 * result + senderSigningPublicKey.contentHashCode()
 
-        result =
-            31 * result +
-                    acknowledgedEncryptionPublicKey
-                        .contentHashCode()
+        result = 31 * result + acknowledgedEncryptionPublicKey.contentHashCode()
 
-        result =
-            31 * result +
-                    acknowledgedSigningPublicKey
-                        .contentHashCode()
+        result = 31 * result + acknowledgedSigningPublicKey.contentHashCode()
 
-        result =
-            31 * result +
-                    signature.contentHashCode()
+        result = 31 * result + signature.contentHashCode()
 
         return result
     }

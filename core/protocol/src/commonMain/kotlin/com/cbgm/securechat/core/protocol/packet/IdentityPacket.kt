@@ -9,20 +9,13 @@ import kotlinx.serialization.Serializable
 @SerialName("identity")
 data class IdentityPacket(
     override val packetId: String,
-
-    override val version: Int =
-        ProtocolVersion.CURRENT,
-
+    override val version: Int = ProtocolVersion.CURRENT,
     val displayName: String?,
 
-    @Serializable(
-        with = ByteArrayAsBase64Serializer::class
-    )
+    @Serializable(with = ByteArrayAsBase64Serializer::class)
     val encryptionPublicKey: ByteArray,
 
-    @Serializable(
-        with = ByteArrayAsBase64Serializer::class
-    )
+    @Serializable(with = ByteArrayAsBase64Serializer::class)
     val signingPublicKey: ByteArray
 ) : SecureChatPacket {
 
@@ -47,43 +40,27 @@ data class IdentityPacket(
     override fun equals(
         other: Any?
     ): Boolean {
-        if (this === other) {
-            return true
-        }
+        if (this === other) return true
 
-        if (other !is IdentityPacket) {
-            return false
-        }
+        if (other !is IdentityPacket) return false
 
         return packetId == other.packetId &&
                 version == other.version &&
                 displayName == other.displayName &&
-                encryptionPublicKey.contentEquals(
-                    other.encryptionPublicKey
-                ) &&
-                signingPublicKey.contentEquals(
-                    other.signingPublicKey
-                )
+                encryptionPublicKey.contentEquals(other.encryptionPublicKey) &&
+                signingPublicKey.contentEquals(other.signingPublicKey)
     }
 
     override fun hashCode(): Int {
-        var result =
-            packetId.hashCode()
+        var result = packetId.hashCode()
 
-        result =
-            31 * result + version
+        result = 31 * result + version
 
-        result =
-            31 * result +
-                    (displayName?.hashCode() ?: 0)
+        result = 31 * result + (displayName?.hashCode() ?: 0)
 
-        result =
-            31 * result +
-                    encryptionPublicKey.contentHashCode()
+        result = 31 * result + encryptionPublicKey.contentHashCode()
 
-        result =
-            31 * result +
-                    signingPublicKey.contentHashCode()
+        result = 31 * result + signingPublicKey.contentHashCode()
 
         return result
     }

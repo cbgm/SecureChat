@@ -23,39 +23,23 @@ fun IdentityRoute(
     viewModel: IdentityViewModel =
         koinViewModel()
 ) {
-    val uiState by
-    viewModel
-        .uiState
-        .collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var phoneNumberHintRequestId by
-    remember {
-        mutableIntStateOf(0)
-    }
+    var phoneNumberHintRequestId by remember { mutableIntStateOf(0) }
 
-    val canRequestPhoneNumber =
-        uiState is
-                IdentityUiState.NoIdentity
+    val canRequestPhoneNumber = uiState is IdentityUiState.NoIdentity
 
     PhoneNumberHintLauncher(
-        requestId =
-            phoneNumberHintRequestId,
-
-        enabled =
-            canRequestPhoneNumber,
-
+        requestId = phoneNumberHintRequestId,
+        enabled = canRequestPhoneNumber,
         onResult = { result ->
             when (result) {
                 is PhoneNumberHintResult.Selected -> {
-                    viewModel.onSuggestedPhoneNumber(
-                        phoneNumber =
-                            result.phoneNumber
-                    )
+                    viewModel.onSuggestedPhoneNumber(phoneNumber = result.phoneNumber)
                 }
 
                 PhoneNumberHintResult.Unavailable -> {
-                    viewModel
-                        .onPhoneNumberHintUnavailable()
+                    viewModel.onPhoneNumberHintUnavailable()
                 }
 
                 PhoneNumberHintResult.Cancelled -> {
@@ -66,9 +50,7 @@ fun IdentityRoute(
                 }
 
                 is PhoneNumberHintResult.Failed -> {
-                    viewModel.onPhoneNumberHintFailed(
-                        message = result.message
-                    )
+                    viewModel.onPhoneNumberHintFailed(message = result.message)
                 }
             }
         }
@@ -82,29 +64,15 @@ fun IdentityRoute(
 
 
     IdentityScreen(
-        uiState =
-            uiState,
-
+        uiState = uiState,
         onRequestPhoneNumberHint = {
             phoneNumberHintRequestId += 1
         },
-
-        onPhoneNumberChanged =
-            viewModel::onPhoneNumberChanged,
-
-        onCreateIdentity =
-            viewModel::createNewIdentity,
-
-        onRetry =
-            viewModel::loadIdentityState,
-
-        onShareIdentity =
-            onShareIdentity,
-
-        onImportContact =
-            onImportContact,
-
-        onContacts =
-            onContacts
+        onPhoneNumberChanged = viewModel::onPhoneNumberChanged,
+        onCreateIdentity = viewModel::createNewIdentity,
+        onRetry = viewModel::loadIdentityState,
+        onShareIdentity = onShareIdentity,
+        onImportContact = onImportContact,
+        onContacts = onContacts
     )
 }

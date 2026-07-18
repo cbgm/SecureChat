@@ -4,11 +4,11 @@ import com.cbgm.securechat.feature.identity.domain.model.PublicIdentity
 
 sealed interface IdentityUiState {
 
-    data object Loading :
-        IdentityUiState
+    data object Loading :IdentityUiState
 
     data class NoIdentity(
         val phoneNumber: String = "",
+        val name: String = "",
         val phoneNumberError: String? = null
     ) : IdentityUiState
 
@@ -17,8 +17,7 @@ sealed interface IdentityUiState {
         val localPhoneNumber: String
     ) : IdentityUiState
 
-    data object IncompleteIdentity :
-        IdentityUiState
+    data object IncompleteIdentity : IdentityUiState
 
     data class Error(
         val message: String

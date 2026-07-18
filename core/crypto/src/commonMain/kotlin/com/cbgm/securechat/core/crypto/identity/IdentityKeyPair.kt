@@ -36,35 +36,20 @@ data class IdentityKeyPair(
             return false
         }
 
-        return encryptionPublicKey.contentEquals(
-            other.encryptionPublicKey
-        ) &&
-                encryptionPrivateKey.contentEquals(
-                    other.encryptionPrivateKey
-                ) &&
-                signingPublicKey.contentEquals(
-                    other.signingPublicKey
-                ) &&
-                signingPrivateKey.contentEquals(
-                    other.signingPrivateKey
-                )
+        return encryptionPublicKey.contentEquals(other.encryptionPublicKey) &&
+                encryptionPrivateKey.contentEquals(other.encryptionPrivateKey) &&
+                signingPublicKey.contentEquals(other.signingPublicKey) &&
+                signingPrivateKey.contentEquals(other.signingPrivateKey)
     }
 
     override fun hashCode(): Int {
-        var result =
-            encryptionPublicKey.contentHashCode()
+        var result = encryptionPublicKey.contentHashCode()
 
-        result =
-            31 * result +
-                    encryptionPrivateKey.contentHashCode()
+        result = 31 * result + encryptionPrivateKey.contentHashCode()
 
-        result =
-            31 * result +
-                    signingPublicKey.contentHashCode()
+        result = 31 * result + signingPublicKey.contentHashCode()
 
-        result =
-            31 * result +
-                    signingPrivateKey.contentHashCode()
+        result = 31 * result + signingPrivateKey.contentHashCode()
 
         return result
     }

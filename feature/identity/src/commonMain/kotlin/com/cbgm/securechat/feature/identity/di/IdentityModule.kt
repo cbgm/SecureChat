@@ -7,7 +7,7 @@ import com.cbgm.securechat.core.protocol.identity.LocalSigningPublicKeyProvider
 import com.cbgm.securechat.core.protocol.phone.LocalPhoneNumberProvider
 import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
-import com.cbgm.securechat.feature.identity.core.LocalPhoneNumberStorage
+import com.cbgm.securechat.feature.identity.core.LocalPhoneNameStorage
 import com.cbgm.securechat.feature.identity.core.PublicIdentityStorage
 import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalEncryptionKeyPairProvider
 import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalPhoneNumberProvider
@@ -33,74 +33,45 @@ val identityModule =
 
         single<IdentityRepository> {
             DefaultIdentityRepository(
-                identityKeyGenerator =
-                    get(),
-
-                privateKeyStorage =
-                    get(),
-
-                publicIdentityStorage =
-                    get()
+                identityKeyGenerator = get(),
+                privateKeyStorage = get(),
+                publicIdentityStorage = get()
             )
         }
 
         single {
-            CreateIdentity(
-                repository =
-                    get<IdentityRepository>()
-            )
+            CreateIdentity(repository = get<IdentityRepository>())
         }
 
         single {
-            GetIdentityStatus(
-                repository =
-                    get<IdentityRepository>()
-            )
+            GetIdentityStatus(repository = get<IdentityRepository>())
         }
 
         single {
-            GetPublicIdentity(
-                repository =
-                    get<IdentityRepository>()
-            )
+            GetPublicIdentity(repository = get<IdentityRepository>())
         }
 
         single<LocalPhoneNumberProvider> {
             IdentityLocalPhoneNumberProvider(
-                localPhoneNumberStorage =
-                    get<LocalPhoneNumberStorage>(),
-
-                phoneNumberNormalizer =
-                    get<PhoneNumberNormalizer>()
+                localPhoneNameStorage = get<LocalPhoneNameStorage>(),
+                phoneNumberNormalizer = get<PhoneNumberNormalizer>()
             )
         }
 
         single<LocalSigningKeyPairProvider> {
-            IdentityLocalSigningKeyPairProvider(
-                identityRepository =
-                    get<IdentityRepository>()
-            )
+            IdentityLocalSigningKeyPairProvider(identityRepository = get<IdentityRepository>())
         }
 
         single<LocalPublicIdentityProvider> {
-            IdentityLocalPublicIdentityProvider(
-                identityRepository =
-                    get<IdentityRepository>()
-            )
+            IdentityLocalPublicIdentityProvider(identityRepository = get<IdentityRepository>())
         }
 
         single<LocalEncryptionKeyPairProvider> {
-            IdentityLocalEncryptionKeyPairProvider(
-                identityRepository =
-                    get<IdentityRepository>()
-            )
+            IdentityLocalEncryptionKeyPairProvider(identityRepository = get<IdentityRepository>())
         }
 
         single<LocalSigningPublicKeyProvider> {
-            IdentityLocalSigningPublicKeyProvider(
-                identityRepository =
-                    get<IdentityRepository>()
-            )
+            IdentityLocalSigningPublicKeyProvider(identityRepository = get<IdentityRepository>())
         }
 
         single<IdentityShareCodec> {
@@ -108,56 +79,31 @@ val identityModule =
         }
 
         single<IdentityStartupManager> {
-            DefaultIdentityStartupManager(
-                identityExists = {
-                    get<PublicIdentityStorage>()
-                        .exists()
-                }
-            )
+            DefaultIdentityStartupManager(identityExists = { get<PublicIdentityStorage>().exists() })
         }
 
         factory {
             CreateSharedIdentity(
-                getPublicIdentity =
-                    get<GetPublicIdentity>(),
-
-                localPhoneNumberStorage =
-                    get<LocalPhoneNumberStorage>(),
-
-                phoneNumberNormalizer =
-                    get<PhoneNumberNormalizer>(),
-
-                identityShareCodec =
-                    get<IdentityShareCodec>()
+                getPublicIdentity = get<GetPublicIdentity>(),
+                localPhoneNameStorage = get<LocalPhoneNameStorage>(),
+                phoneNumberNormalizer = get<PhoneNumberNormalizer>(),
+                identityShareCodec = get<IdentityShareCodec>()
             )
         }
 
         viewModel {
             IdentityViewModel(
-                getIdentityStatus =
-                    get<GetIdentityStatus>(),
-
-                getPublicIdentity =
-                    get<GetPublicIdentity>(),
-
-                createIdentity =
-                    get<CreateIdentity>(),
-
-                localPhoneNumberStorage =
-                    get<LocalPhoneNumberStorage>(),
-
-                phoneNumberNormalizer =
-                    get<PhoneNumberNormalizer>()
+                getIdentityStatus = get<GetIdentityStatus>(),
+                getPublicIdentity = get<GetPublicIdentity>(),
+                createIdentity = get<CreateIdentity>(),
+                localPhoneNameStorage = get<LocalPhoneNameStorage>(),
+                phoneNumberNormalizer = get<PhoneNumberNormalizer>()
             )
         }
 
         viewModel {
             ShareIdentityViewModel(
-                createSharedIdentity =
-                    get<CreateSharedIdentity>(),
-
-                localPhoneNumberStorage =
-                    get<LocalPhoneNumberStorage>()
+                createSharedIdentity = get<CreateSharedIdentity>()
             )
         }
     }

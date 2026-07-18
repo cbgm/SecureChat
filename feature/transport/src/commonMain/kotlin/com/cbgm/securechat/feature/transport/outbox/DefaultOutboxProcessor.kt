@@ -19,16 +19,11 @@ import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
 class DefaultOutboxProcessor(
     private val protocolOutbox: ProtocolOutbox,
     private val getContact: GetContact,
-    private val transportMessageCipher:
-    TransportMessageCipher,
-    private val transportPayloadCodec:
-    TransportPayloadCodec,
-    private val outgoingWireSender:
-    OutgoingWireSender,
-    private val deliveryStateListener:
-    OutboxDeliveryStateListener,
-    private val messageDeliveryStatusDao:
-    MessageDeliveryStatusDao
+    private val transportMessageCipher: TransportMessageCipher,
+    private val transportPayloadCodec: TransportPayloadCodec,
+    private val outgoingWireSender: OutgoingWireSender,
+    private val deliveryStateListener: OutboxDeliveryStateListener,
+    private val messageDeliveryStatusDao: MessageDeliveryStatusDao
 ) : OutboxProcessor {
 
     override suspend fun processPending(
@@ -39,21 +34,13 @@ class DefaultOutboxProcessor(
                 "Outbox processing limit must be positive"
             }
 
-            val pendingItems =
-                protocolOutbox
-                    .getPending(
-                        limit = limit
-                    )
-                    .getOrThrow()
+            val pendingItems = protocolOutbox.getPending(limit = limit).getOrThrow()
 
             var sentCount = 0
             var failedCount = 0
 
             pendingItems.forEach { item ->
-                val result =
-                    processItem(
-                        item = item
-                    )
+                val result = processItem(item = item)
 
                 if (result.isSuccess) {
                     sentCount += 1
@@ -63,14 +50,9 @@ class DefaultOutboxProcessor(
             }
 
             OutboxProcessingResult(
-                processedCount =
-                    pendingItems.size,
-
-                sentCount =
-                    sentCount,
-
-                failedCount =
-                    failedCount
+                processedCount = pendingItems.size,
+                sentCount = sentCount,
+                failedCount = failedCount
             )
         }
     }
@@ -78,46 +60,24 @@ class DefaultOutboxProcessor(
     private suspend fun processItem(
         item: ProtocolOutboxItem
     ): Result<Unit> {
-        val processingResult =
-            protocolOutbox
-                .markProcessing(
-                    itemId = item.id
-                )
+        val processingResult = protocolOutbox.markProcessing(itemId = item.id)
 
         if (processingResult.isFailure) {
             return processingResult
         }
 
-        deliveryStateListener
-            .onProcessing(
-                packetId = item.packetId
-            )
+        deliveryStateListener.onProcessing(packetId = item.packetId)
 
         return runCatching {
-            val contact =
-                getContact(
-                    contactId = item.contactId
-                )
-                    .getOrThrow()
-                    ?: error(
-                        "Outbox contact was not found"
-                    )
+            val contact = getContact(contactId = item.contactId).getOrThrow()
+                ?: error("Outbox contact was not found")
 
-            val transportPayload =
-                createTransportPayload(
-                    encodedPacket =
-                        item.encodedPacket,
+            val transportPayload = createTransportPayload(
+                encodedPacket = item.encodedPacket,
+                contact = contact
+            )
 
-                    contact =
-                        contact
-                )
-
-            val encodedTransportPayload =
-                transportPayloadCodec
-                    .encode(
-                        payload =
-                            transportPayload
-                    )
+            val encodedTransportPayload = transportPayloadCodec.encode(payload = transportPayload)
 
             /*
              * Store the exact final payload and actual encryption mode
@@ -125,62 +85,34 @@ class DefaultOutboxProcessor(
              */
             messageDeliveryStatusDao
                 .updatePreparedTransport(
-                    packetId =
-                        item.packetId,
-
+                    packetId = item.packetId,
                     deliveryStatus = MessageDeliveryStatus.SENDING.name,
-
-                    transportPayload =
-                        encodedTransportPayload,
-
-                    transportMode =
-                        transportPayload.mode.name
+                    transportPayload = encodedTransportPayload,
+                    transportMode = transportPayload.mode.name
                 )
 
             outgoingWireSender
                 .send(
-                    contactId =
-                        item.contactId,
-
-                    encodedTransportPayload =
-                        encodedTransportPayload
+                    contactId = item.contactId,
+                    encodedTransportPayload = encodedTransportPayload
                 )
                 .getOrThrow()
 
-            protocolOutbox
-                .markSent(
-                    itemId = item.id
-                )
-                .getOrThrow()
+            protocolOutbox.markSent(itemId = item.id).getOrThrow()
 
-            deliveryStateListener
-                .onSent(
-                    packetId =
-                        item.packetId
-                )
-                .getOrThrow()
+            deliveryStateListener.onSent(packetId = item.packetId).getOrThrow()
         }.onFailure { error ->
-            val errorMessage =
-                error.message
-                    ?: "Outgoing packet could not be sent"
+            val errorMessage = error.message ?: "Outgoing packet could not be sent"
 
-            protocolOutbox
-                .markFailed(
-                    itemId =
-                        item.id,
+            protocolOutbox.markFailed(
+                itemId = item.id,
+                errorMessage = errorMessage
+            )
 
-                    errorMessage =
-                        errorMessage
-                )
-
-            deliveryStateListener
-                .onFailed(
-                    packetId =
-                        item.packetId,
-
-                    errorMessage =
-                        errorMessage
-                )
+            deliveryStateListener.onFailed(
+                packetId = item.packetId,
+                errorMessage = errorMessage
+            )
         }
     }
 
@@ -193,45 +125,29 @@ class DefaultOutboxProcessor(
             "Encoded protocol packet must not be empty"
         }
 
-        val identity =
-            contact.secureChatIdentity
+        val identity = contact.secureChatIdentity
 
-        val canEncrypt =
-            identity != null &&
-                    identity
-                        .encryptionPublicKey
-                        .isNotEmpty() &&
-                    identity.keyExchangeStatus ==
-                    KeyExchangeStatus.MUTUAL
+        val canEncrypt = identity != null &&
+                identity.encryptionPublicKey.isNotEmpty() &&
+                identity.keyExchangeStatus == KeyExchangeStatus.MUTUAL
 
         if (!canEncrypt) {
             return EncryptedTransportPayload(
-                version =
-                    TRANSPORT_VERSION,
-
-                mode =
-                    TransportEncryptionMode
-                        .PLAINTEXT,
-
-                payload =
-                    encodedPacket
+                version = TRANSPORT_VERSION,
+                mode = TransportEncryptionMode.PLAINTEXT,
+                payload = encodedPacket
             )
         }
 
         return transportMessageCipher
             .encryptForRecipient(
-                plaintext =
-                    encodedPacket,
-
-                recipientPublicKey =
-                    identity
-                        .encryptionPublicKey
+                plaintext = encodedPacket,
+                recipientPublicKey = identity.encryptionPublicKey
             )
             .getOrThrow()
     }
 
     private companion object {
-        const val TRANSPORT_VERSION =
-            1
+        const val TRANSPORT_VERSION = 1
     }
 }

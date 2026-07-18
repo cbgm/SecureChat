@@ -14,32 +14,24 @@ import org.koin.dsl.module
 val androidDatabaseModule = module {
 
     single<SecureChatDatabase> {
-        buildSecureChatDatabase(
-            builder = createAndroidDatabaseBuilder(
-                context = androidContext()
-            )
-        )
+        buildSecureChatDatabase(builder = createAndroidDatabaseBuilder(context = androidContext()))
     }
 
     single {
-        get<SecureChatDatabase>()
-            .contactDao()
+        get<SecureChatDatabase>().contactDao()
     }
 
     single {
-        get<SecureChatDatabase>()
-            .chatDao()
+        get<SecureChatDatabase>().chatDao()
     }
 
 
     single {
-        get<SecureChatDatabase>()
-            .protocolOutboxDao()
+        get<SecureChatDatabase>().protocolOutboxDao()
     }
 
     single {
-        get<SecureChatDatabase>()
-            .messageDeliveryStatusDao()
+        get<SecureChatDatabase>().messageDeliveryStatusDao()
     }
 
     single<ProtocolOutbox> {

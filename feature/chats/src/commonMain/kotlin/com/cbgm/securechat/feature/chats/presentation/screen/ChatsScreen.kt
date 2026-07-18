@@ -17,9 +17,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.theme.Colors
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
+import com.cbgm.securechat.core.ui.theme.spacing
 
 /**
  * UI model for one item in the conversations list.
@@ -69,7 +69,6 @@ private fun ChatItem(
 ) {
     ListItem(
         modifier = modifier.clickable(onClick = onClick),
-        //colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         headlineContent = {
             Text(
                 text = chat.contactName,
@@ -111,20 +110,22 @@ private fun EmptyChatsContent(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.padding(32.dp),
+        modifier = modifier.padding(MaterialTheme.spacing.large),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
             text = "No conversations yet",
-            style = MaterialTheme.typography.headlineSmall
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground
+
         )
 
         Text(
             text = "Press + to choose a contact and start chatting.",
-            modifier = Modifier.padding(top = 8.dp),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            modifier = Modifier.padding(top = MaterialTheme.spacing.base),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground
         )
     }
 }
@@ -136,7 +137,7 @@ fun ChatsScreenPreview() {
 
         ChatsScreen(
             chats = listOf(
-                ChatListItem(
+                /*ChatListItem(
                     contactId = "1",
                     contactName = "Alice",
                     lastMessage = "Hello!",
@@ -147,7 +148,7 @@ fun ChatsScreenPreview() {
                     contactName = "Bob",
                     lastMessage = "Hi there!",
                     timestamp = "9:30 AM"
-                )
+                )*/
             ),
             onAddChatClick = {},
             onChatClick = {}

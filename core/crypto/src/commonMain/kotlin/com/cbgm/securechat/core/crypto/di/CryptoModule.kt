@@ -35,8 +35,7 @@ val cryptoModule =
 
         single<IdentityAcknowledgementCrypto> {
             SodiumIdentityAcknowledgementCrypto(
-                payloadEncoder =
-                    get<IdentityAcknowledgementPayloadEncoder>()
+                payloadEncoder = get<IdentityAcknowledgementPayloadEncoder>()
             )
         }
 

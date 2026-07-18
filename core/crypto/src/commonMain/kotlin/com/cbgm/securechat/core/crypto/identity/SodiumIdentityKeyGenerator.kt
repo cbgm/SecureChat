@@ -4,36 +4,23 @@ import com.cbgm.securechat.core.crypto.SodiumRuntime
 import com.ionspin.kotlin.crypto.box.Box
 import com.ionspin.kotlin.crypto.signature.Signature
 
-class SodiumIdentityKeyGenerator :
-    IdentityKeyGenerator {
+class SodiumIdentityKeyGenerator : IdentityKeyGenerator {
 
     @OptIn(ExperimentalUnsignedTypes::class)
-    override suspend fun generate():
-            Result<IdentityKeyPair> {
+    override suspend fun generate(): Result<IdentityKeyPair> {
 
         return runCatching {
-            SodiumRuntime
-                .initialize()
-                .getOrThrow()
+            SodiumRuntime.initialize().getOrThrow()
 
-            val encryptionKeyPair =
-                Box.keypair()
+            val encryptionKeyPair = Box.keypair()
 
-            val signingKeyPair =
-                Signature.keypair()
+            val signingKeyPair = Signature.keypair()
 
             IdentityKeyPair(
-                encryptionPublicKey =
-                    encryptionKeyPair.publicKey,
-
-                encryptionPrivateKey =
-                    encryptionKeyPair.secretKey,
-
-                signingPublicKey =
-                    signingKeyPair.publicKey,
-
-                signingPrivateKey =
-                    signingKeyPair.secretKey
+                encryptionPublicKey = encryptionKeyPair.publicKey,
+                encryptionPrivateKey = encryptionKeyPair.secretKey,
+                signingPublicKey = signingKeyPair.publicKey,
+                signingPrivateKey = signingKeyPair.secretKey
             )
         }
     }

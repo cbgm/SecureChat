@@ -46,9 +46,7 @@ import javax.crypto.spec.GCMParameterSpec
  * assume that X25519 and Ed25519 private keys can themselves be
  * stored directly in Android Keystore on every supported device.
  */
-class AndroidPrivateKeyStorage(
-    context: Context
-) : PrivateKeyStorage {
+class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
 
     /**
      * App-private SharedPreferences storage.
@@ -74,9 +72,7 @@ class AndroidPrivateKeyStorage(
      *
      * securechat_identity_wrapping_key
      */
-    private val keyStore: KeyStore = KeyStore.getInstance(
-        ANDROID_KEYSTORE
-    ).apply {
+    private val keyStore: KeyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply {
 
         // Required before accessing entries in the KeyStore.
         load(null)
@@ -204,18 +200,10 @@ class AndroidPrivateKeyStorage(
 
         return runCatching {
 
-            preferences.contains(
-                ENCRYPTION_PRIVATE_KEY_CIPHERTEXT
-            ) &&
-                    preferences.contains(
-                        ENCRYPTION_PRIVATE_KEY_IV
-                    ) &&
-                    preferences.contains(
-                        SIGNING_PRIVATE_KEY_CIPHERTEXT
-                    ) &&
-                    preferences.contains(
-                        SIGNING_PRIVATE_KEY_IV
-                    )
+            preferences.contains(ENCRYPTION_PRIVATE_KEY_CIPHERTEXT) &&
+                    preferences.contains(ENCRYPTION_PRIVATE_KEY_IV) &&
+                    preferences.contains(SIGNING_PRIVATE_KEY_CIPHERTEXT) &&
+                    preferences.contains(SIGNING_PRIVATE_KEY_IV)
         }
     }
 
@@ -347,9 +335,7 @@ class AndroidPrivateKeyStorage(
          * Reusing the existing key is required because previously
          * encrypted private keys depend on it.
          */
-        getExistingWrappingKey()?.let {
-            return it
-        }
+        getExistingWrappingKey()?.let { return it }
 
         /**
          * Create an AES KeyGenerator backed by Android Keystore.
@@ -600,58 +586,49 @@ class AndroidPrivateKeyStorage(
         /**
          * Name of Android's special KeyStore provider.
          */
-        const val ANDROID_KEYSTORE =
-            "AndroidKeyStore"
+        const val ANDROID_KEYSTORE = "AndroidKeyStore"
 
         /**
          * Alias under which our AES wrapping key is stored.
          *
          * This is a reference/name, not the actual AES key.
          */
-        const val WRAPPING_KEY_ALIAS =
-            "securechat_identity_wrapping_key"
+        const val WRAPPING_KEY_ALIAS = "securechat_identity_wrapping_key"
 
         /**
          * Authenticated encryption transformation.
          */
-        const val AES_GCM_TRANSFORMATION =
-            "AES/GCM/NoPadding"
+        const val AES_GCM_TRANSFORMATION = "AES/GCM/NoPadding"
 
         /**
          * AES-GCM authentication tag length.
          */
-        const val GCM_TAG_LENGTH_BITS =
-            128
+        const val GCM_TAG_LENGTH_BITS = 128
 
         /**
          * Name of our app-private SharedPreferences file.
          */
-        const val PREFERENCES_NAME =
-            "securechat_private_key_storage"
+        const val PREFERENCES_NAME = "securechat_private_key_storage"
 
         /**
          * Storage key for encrypted X25519 private-key bytes.
          */
-        const val ENCRYPTION_PRIVATE_KEY_CIPHERTEXT =
-            "encryption_private_key_ciphertext"
+        const val ENCRYPTION_PRIVATE_KEY_CIPHERTEXT = "encryption_private_key_ciphertext"
 
         /**
          * Storage key for the X25519 encryption IV.
          */
-        const val ENCRYPTION_PRIVATE_KEY_IV =
-            "encryption_private_key_iv"
+        const val ENCRYPTION_PRIVATE_KEY_IV = "encryption_private_key_iv"
 
         /**
          * Storage key for encrypted Ed25519 private-key bytes.
          */
-        const val SIGNING_PRIVATE_KEY_CIPHERTEXT =
-            "signing_private_key_ciphertext"
+        const val SIGNING_PRIVATE_KEY_CIPHERTEXT = "signing_private_key_ciphertext"
 
         /**
          * Storage key for the Ed25519 encryption IV.
          */
-        const val SIGNING_PRIVATE_KEY_IV =
-            "signing_private_key_iv"
+        const val SIGNING_PRIVATE_KEY_IV = "signing_private_key_iv"
     }
 
     override suspend fun deleteIdentityPrivateKeys(): Result<Unit> {
@@ -669,18 +646,10 @@ class AndroidPrivateKeyStorage(
              * No plaintext private key is stored here.
              */
             val deleted = preferences.edit()
-                .remove(
-                    ENCRYPTION_PRIVATE_KEY_CIPHERTEXT
-                )
-                .remove(
-                    ENCRYPTION_PRIVATE_KEY_IV
-                )
-                .remove(
-                    SIGNING_PRIVATE_KEY_CIPHERTEXT
-                )
-                .remove(
-                    SIGNING_PRIVATE_KEY_IV
-                )
+                .remove(ENCRYPTION_PRIVATE_KEY_CIPHERTEXT)
+                .remove(ENCRYPTION_PRIVATE_KEY_IV)
+                .remove(SIGNING_PRIVATE_KEY_CIPHERTEXT)
+                .remove(SIGNING_PRIVATE_KEY_IV)
                 .commit()
 
             /**

@@ -17,29 +17,17 @@ data class LocalSigningKeyPair(
     override fun equals(
         other: Any?
     ): Boolean {
-        if (this === other) {
-            return true
-        }
+        if (this === other) return true
 
-        if (other !is LocalSigningKeyPair) {
-            return false
-        }
+        if (other !is LocalSigningKeyPair) return false
 
-        return publicKey.contentEquals(
-            other.publicKey
-        ) &&
-                privateKey.contentEquals(
-                    other.privateKey
-                )
+        return publicKey.contentEquals(other.publicKey) && privateKey.contentEquals(other.privateKey)
     }
 
     override fun hashCode(): Int {
-        var result =
-            publicKey.contentHashCode()
+        var result = publicKey.contentHashCode()
 
-        result =
-            31 * result +
-                    privateKey.contentHashCode()
+        result = 31 * result + privateKey.contentHashCode()
 
         return result
     }

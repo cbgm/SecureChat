@@ -2,11 +2,9 @@ package com.cbgm.securechat.feature.transport.connection
 
 sealed interface TransportConnectionState {
 
-    data object Disconnected :
-        TransportConnectionState
+    data object Disconnected : TransportConnectionState
 
-    data object Connecting :
-        TransportConnectionState
+    data object Connecting : TransportConnectionState
 
     data class Connected(
         val relayId: String
