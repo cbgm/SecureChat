@@ -17,9 +17,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.startup
 import org.jetbrains.compose.resources.painterResource
-import securechat.core.ui.generated.resources.Res
-import securechat.core.ui.generated.resources.startup
 
 
 @Composable

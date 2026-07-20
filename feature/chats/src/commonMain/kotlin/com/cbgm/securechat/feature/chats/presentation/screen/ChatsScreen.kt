@@ -1,15 +1,27 @@
 package com.cbgm.securechat.feature.chats.presentation.screen
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,9 +29,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.theme.Colors
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
+import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
 
 /**
  * UI model for one item in the conversations list.
@@ -36,12 +50,18 @@ fun ChatsScreen(
     chats: List<ChatListItem>,
     onAddChatClick: () -> Unit,
     onChatClick: (contactId: String) -> Unit,
+    scrollState: LazyListState,
+    innerPadding: PaddingValues,
     modifier: Modifier = Modifier
 ) {
     if (chats.isEmpty()) {
         EmptyChatsContent(modifier = modifier.fillMaxSize())
     } else {
-        LazyColumn(modifier = modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = modifier.fillMaxSize(),
+            contentPadding = innerPadding,
+            state = scrollState,
+        ) {
             items(
                 items = chats,
                 key = { chat ->
@@ -54,8 +74,19 @@ fun ChatsScreen(
                         onChatClick(chat.contactId)
                     }
                 )
-
-                HorizontalDivider()
+            }
+            items(20) { index ->
+                ChatItem(
+                    chat = ChatListItem(
+                        contactId = index.toString(),
+                        contactName = "Alice",
+                        lastMessage = "Hello!",
+                        timestamp = "10:00 AM"
+                    ),
+                    onClick = {
+                        //onChatClick(chat.contactId)
+                    }
+                )
             }
         }
     }
@@ -67,42 +98,69 @@ private fun ChatItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    ListItem(
-        modifier = modifier.clickable(onClick = onClick),
-        headlineContent = {
-            Text(
-                text = chat.contactName,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        },
-        supportingContent = {
-            Text(
-                text = chat.lastMessage,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        },
-        trailingContent = {
-            Column {
+    Column(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        ListItem(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
+
+            leadingContent = {
+                ContactAvatar(chat.contactName)
+            },
+
+            headlineContent = {
                 Text(
-                    text = chat.timestamp,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = chat.contactName,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            },
+
+            supportingContent = {
                 Text(
-                    text = 15.toString(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Colors.UnreadMessageIndicator
+                    text = chat.lastMessage,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .74f)
                 )
-            }
-        }
-    )
+            },
+
+            trailingContent = {
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = chat.timestamp,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .74f)
+                    )
+
+                    Text(
+                        text = "15",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            },
+
+            colors = ListItemDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.background
+            )
+        )
+
+        HorizontalDivider(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 80.dp),
+            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .05f)
+        )
+    }
 }
 
 @Composable
@@ -137,21 +195,17 @@ fun ChatsScreenPreview() {
 
         ChatsScreen(
             chats = listOf(
-                /*ChatListItem(
+                ChatListItem(
                     contactId = "1",
                     contactName = "Alice",
                     lastMessage = "Hello!",
                     timestamp = "10:00 AM"
                 ),
-                ChatListItem(
-                    contactId = "2",
-                    contactName = "Bob",
-                    lastMessage = "Hi there!",
-                    timestamp = "9:30 AM"
-                )*/
             ),
             onAddChatClick = {},
-            onChatClick = {}
+            onChatClick = {},
+            scrollState = LazyListState(),
+            innerPadding = PaddingValues()
         )
     }
 }

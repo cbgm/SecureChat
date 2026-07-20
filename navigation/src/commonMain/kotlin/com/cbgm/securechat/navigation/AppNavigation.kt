@@ -36,7 +36,7 @@ fun AppNavigation() {
             startDestination = AppDestination.Startup
         ) {
             composable<AppDestination.Identity> {
-                IdentityRoute(
+                /*IdentityRoute(
                     onIdentityReady = {
                         navController.navigate(AppDestination.Main) {
                             popUpTo(AppDestination.Identity) {
@@ -56,7 +56,7 @@ fun AppNavigation() {
                     onContacts = {
                         navController.navigate(AppDestination.Contacts)
                     }
-                )
+                )*/
             }
 
             composable<AppDestination.ShareIdentity> {

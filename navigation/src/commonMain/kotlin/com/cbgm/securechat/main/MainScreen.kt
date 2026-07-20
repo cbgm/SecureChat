@@ -1,10 +1,17 @@
 package com.cbgm.securechat.main
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -13,14 +20,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemColors
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,11 +45,6 @@ import com.cbgm.securechat.feature.chats.presentation.ChatsRoute
 import com.cbgm.securechat.feature.identity.presentation.IdentityRoute
 import org.jetbrains.compose.resources.painterResource
 
-/*private enum class MeScreen {
-    Identity,
-    ShareIdentity
-}*/
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
@@ -50,21 +55,39 @@ fun MainScreen(
     onContacts: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedTab by rememberSaveable { mutableStateOf(MainTab.Settings) }
+    var selectedTab by rememberSaveable {
+        mutableStateOf(MainTab.Chats)
+    }
 
-    /*var selectedMeScreen by rememberSaveable {
-        mutableStateOf(MeScreen.Identity)
-    }*/
+    val chatListState = rememberLazyListState()
+    val identityScrollState = rememberScrollState()
+    val settingsScrollState = rememberScrollState()
 
-    /*val showSharedTopBar =
-        selectedTab != MainTab.Me ||
-                selectedMeScreen == MeScreen.Identity*/
+    val barsState = rememberMainBarsState(
+        selectedTab = selectedTab,
+        chatListState = chatListState,
+        identityScrollState = identityScrollState,
+        settingsScrollState = settingsScrollState
+    )
+
+    val topBarColor by animateColorAsState(
+        targetValue = MaterialTheme.colorScheme.background.copy(
+            alpha = barsState.topBarAlpha
+        ),
+        label = "TopBarColor"
+    )
+
+    val bottomBarColor by animateColorAsState(
+        targetValue = MaterialTheme.colorScheme.background.copy(
+            alpha = barsState.bottomBarAlpha
+        ),
+        label = "BottomBarColor"
+    )
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = Color.Transparent,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            //if (showSharedTopBar) {
             TopAppBar(
                 title = {
                     Text(
@@ -75,28 +98,27 @@ fun MainScreen(
                 },
                 actions = {
                     if (selectedTab == MainTab.Chats) {
-                        IconButton(
-                            onClick = onAddChat
-                        ) {
+                        IconButton(onClick = onAddChat) {
                             Icon(
                                 imageVector = Icons.Default.Add,
-                                contentDescription = "Start a new chat",
+                                contentDescription = "Start a new chat"
                             )
                         }
                     }
                 },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground,
-                        actionIconContentColor = MaterialTheme.colorScheme.onBackground
-                    )
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = topBarColor,
+                    scrolledContainerColor = topBarColor,
+                    titleContentColor =
+                        MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor =
+                        MaterialTheme.colorScheme.onBackground
+                )
             )
-            //}
         },
         bottomBar = {
             NavigationBar(
-                containerColor = MaterialTheme.colorScheme.primary,
+                containerColor = bottomBarColor,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 MainTab.entries.forEach { tab ->
@@ -104,11 +126,6 @@ fun MainScreen(
                         selected = selectedTab == tab,
                         onClick = {
                             selectedTab = tab
-
-                            /*if (tab == MainTab.Me) {
-                                selectedMeScreen =
-                                    MeScreen.Identity
-                            }*/
                         },
                         icon = {
                             Icon(
@@ -122,14 +139,20 @@ fun MainScreen(
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         },
-                        colors = NavigationBarItemColors(
-                            selectedIconColor = MaterialTheme.colorScheme.secondary,
-                            selectedTextColor = MaterialTheme.colorScheme.secondary,
-                            selectedIndicatorColor = Color.Transparent,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            disabledIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor =
+                                MaterialTheme.colorScheme.secondary,
+                            selectedTextColor =
+                                MaterialTheme.colorScheme.secondary,
+                            indicatorColor = Color.Transparent,
+                            unselectedIconColor =
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor =
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                            disabledIconColor =
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                            disabledTextColor =
+                                MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
                 }
@@ -141,6 +164,9 @@ fun MainScreen(
             onAddChat = onAddChat,
             onOpenChat = onOpenChat,
             innerPadding = innerPadding,
+            chatListState = chatListState,
+            identityScrollState = identityScrollState,
+            settingsScrollState = settingsScrollState,
             onImportContact = onImportContact,
             onContacts = onContacts,
             onShareIdentity = onShareIdentity
@@ -155,76 +181,69 @@ private fun Content(
     onShareIdentity: () -> Unit,
     onOpenChat: (String, String) -> Unit,
     innerPadding: PaddingValues,
+    chatListState: LazyListState,
+    identityScrollState: ScrollState,
+    settingsScrollState: ScrollState,
     onImportContact: () -> Unit,
     onContacts: () -> Unit
 ) {
+    // Notice: Outer Modifier.padding(innerPadding) is completely removed.
+    // Content is injected inside the components via innerPadding calculations.
     when (selectedTab) {
         MainTab.Chats -> {
             ChatsRoute(
                 onAddChatClick = onAddChat,
                 onChatClick = onOpenChat,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
+                chatListState = chatListState,
+                innerPadding = innerPadding,
+                modifier = Modifier.fillMaxSize()
             )
         }
 
         MainTab.Me -> {
-            /*when (selectedMeScreen) {
-                    MeScreen.Identity -> {*/
             IdentityRoute(
-                onShareIdentity = {
-                    /*selectedMeScreen =
-                            MeScreen.ShareIdentity*/
-                    onShareIdentity()
-                },
+                onShareIdentity = onShareIdentity,
                 onImportContact = onImportContact,
-                onContacts = onContacts
+                onContacts = onContacts,
+                identityListState = identityScrollState, // Pass the scroll state
+                innerPadding = innerPadding,       // Pass the padding layout boundaries
+                modifier = Modifier.fillMaxSize()
             )
-            /*}
-
-                MeScreen.ShareIdentity -> {
-                    ShareIdentityRoute(
-                        onBack = {
-                            selectedMeScreen =
-                                MeScreen.Identity
-                        },
-                        showBackButton = true,
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .padding(
-                                    bottom =
-                                        innerPadding
-                                            .calculateBottomPadding()
-                                )
-                    )*/
-            //}
-            //}
         }
 
         MainTab.Settings -> {
             PlaceholderScreen(
                 title = "Settings",
                 message = "Settings are coming soon.",
-                modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
+                scrollState = settingsScrollState, // Pass the scroll state
+                innerPadding = innerPadding,       // Pass the padding layout boundaries
+                modifier = Modifier.fillMaxSize()
             )
         }
     }
 }
 
 
+
 @Composable
 private fun PlaceholderScreen(
     title: String,
     message: String,
+    scrollState: ScrollState,
+    innerPadding: PaddingValues,
     modifier: Modifier = Modifier
 ) {
+    // For simple static screens like this, use innerPadding directly on the content padding
     Column(
-        modifier = modifier.padding(32.dp),
+        modifier = modifier
+            .verticalScroll(scrollState) // Makes the column scrollable
+            // Apply innerPadding properties as margins to keep elements visible at endpoints
+            .padding(
+                top = innerPadding.calculateTopPadding() + 32.dp,
+                bottom = innerPadding.calculateBottomPadding() + 32.dp,
+                start = 32.dp,
+                end = 32.dp
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -242,6 +261,65 @@ private fun PlaceholderScreen(
         )
     }
 }
+
+@Stable
+private data class MainBarsState(
+    val topBarAlpha: Float,
+    val bottomBarAlpha: Float
+)
+
+@Composable
+private fun rememberMainBarsState(
+    selectedTab: MainTab,
+    chatListState: LazyListState,
+    identityScrollState: ScrollState,
+    settingsScrollState: ScrollState
+): MainBarsState {
+    val contentBehindTopBar by remember {
+        derivedStateOf {
+            when (selectedTab) {
+                MainTab.Chats -> {
+                    chatListState.firstVisibleItemIndex > 0 ||
+                            chatListState.firstVisibleItemScrollOffset > 0
+                }
+
+                MainTab.Me -> {
+                    identityScrollState.value > 0
+                }
+
+                MainTab.Settings -> {
+                    settingsScrollState.value > 0
+                }
+            }
+        }
+    }
+
+    val contentBehindBottomBar by remember {
+        derivedStateOf {
+            when (selectedTab) {
+                MainTab.Chats -> chatListState.canScrollForward
+                MainTab.Me -> identityScrollState.canScrollForward
+                MainTab.Settings -> settingsScrollState.canScrollForward
+            }
+        }
+    }
+
+    val topBarAlpha by animateFloatAsState(
+        targetValue = if (contentBehindTopBar) 0.97f else 1f,
+        label = "TopBarAlpha"
+    )
+
+    val bottomBarAlpha by animateFloatAsState(
+        targetValue = if (contentBehindBottomBar) 0.97f else 1f,
+        label = "BottomBarAlpha"
+    )
+
+    return MainBarsState(
+        topBarAlpha = topBarAlpha,
+        bottomBarAlpha = bottomBarAlpha
+    )
+}
+
 
 @Preview
 @Composable

@@ -21,88 +21,48 @@ class DefaultGetContactSafetyNumber(
                 "Contact ID must not be blank"
             }
 
-            val localIdentity =
-                localPublicIdentityProvider
-                    .getLocalPublicIdentity()
-                    .getOrThrow()
+            val localIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
 
             val contact =
-                contactRepository
-                    .getContact(
-                        contactId = contactId
-                    )
-                    .getOrThrow()
-                    ?: error(
-                        "Contact was not found"
-                    )
+                contactRepository.getContact(contactId = contactId).getOrThrow()
+                    ?: error("Contact was not found")
 
             val remoteIdentity =
-                contact.secureChatIdentity
-                    ?: error(
-                        "Contact has no SecureChat identity"
-                    )
+                contact.secureChatIdentity ?: error("Contact has no SecureChat identity")
 
             val localEncodedIdentity =
                 encodeIdentity(
-                    encryptionPublicKey =
-                        localIdentity
-                            .encryptionPublicKey,
+                    encryptionPublicKey = localIdentity.encryptionPublicKey,
 
-                    signingPublicKey =
-                        localIdentity
-                            .signingPublicKey
+                    signingPublicKey = localIdentity.signingPublicKey
                 )
 
             val remoteEncodedIdentity =
                 encodeIdentity(
-                    encryptionPublicKey =
-                        remoteIdentity
-                            .encryptionPublicKey,
+                    encryptionPublicKey = remoteIdentity.encryptionPublicKey,
 
-                    signingPublicKey =
-                        remoteIdentity
-                            .signingPublicKey
+                    signingPublicKey = remoteIdentity.signingPublicKey
                 )
 
             val orderedIdentities =
                 listOf(
                     localEncodedIdentity,
                     remoteEncodedIdentity
-                )
-                    .sortedWith(
-                        BYTE_ARRAY_COMPARATOR
-                    )
+                ).sortedWith(BYTE_ARRAY_COMPARATOR)
 
             val payload =
-                buildList<Byte> {
-                    addAll(
-                        DOMAIN_SEPARATOR
-                            .encodeToByteArray()
-                            .asList()
-                    )
+                buildList {
+                    addAll(DOMAIN_SEPARATOR.encodeToByteArray().asList())
+                    addInt(PROTOCOL_VERSION)
 
-                    addInt(
-                        PROTOCOL_VERSION
-                    )
+                    orderedIdentities.forEach { identity ->
+                        addBytes(identity)
+                    }
+                }.toByteArray()
 
-                    orderedIdentities
-                        .forEach { identity ->
-                            addBytes(
-                                identity
-                            )
-                        }
-                }
-                    .toByteArray()
+            val digest = payload.toByteString().sha256().toByteArray()
 
-            val digest =
-                payload
-                    .toByteString()
-                    .sha256()
-                    .toByteArray()
-
-            formatSafetyNumber(
-                digest = digest
-            )
+            formatSafetyNumber(digest = digest)
         }
     }
 
@@ -118,16 +78,10 @@ class DefaultGetContactSafetyNumber(
             "Signing public key must not be empty"
         }
 
-        return buildList<Byte> {
-            addBytes(
-                encryptionPublicKey
-            )
-
-            addBytes(
-                signingPublicKey
-            )
-        }
-            .toByteArray()
+        return buildList {
+            addBytes(encryptionPublicKey)
+            addBytes(signingPublicKey)
+        }.toByteArray()
     }
 
     private fun formatSafetyNumber(
@@ -137,109 +91,55 @@ class DefaultGetContactSafetyNumber(
             digest.joinToString(
                 separator = ""
             ) { byte ->
-                byte
-                    .toUByte()
-                    .toInt()
-                    .toString()
-                    .padStart(
-                        length = 3,
-                        padChar = '0'
-                    )
+                byte.toUByte().toInt().toString().padStart(length = 3, padChar = '0')
             }
 
         return digits
-            .take(
-                SAFETY_NUMBER_DIGIT_COUNT
-            )
-            .chunked(
-                GROUP_SIZE
-            )
-            .joinToString(
-                separator = " "
-            )
+            .take(SAFETY_NUMBER_DIGIT_COUNT)
+            .chunked(GROUP_SIZE)
+            .joinToString(separator = " ")
     }
 
     private fun MutableList<Byte>.addBytes(
         value: ByteArray
     ) {
-        addInt(
-            value.size
-        )
-
-        addAll(
-            value.asList()
-        )
+        addInt(value.size)
+        addAll(value.asList())
     }
 
     private fun MutableList<Byte>.addInt(
         value: Int
     ) {
-        add(
-            ((value ushr 24) and 0xFF)
-                .toByte()
-        )
+        add(((value ushr 24) and 0xFF).toByte())
 
-        add(
-            ((value ushr 16) and 0xFF)
-                .toByte()
-        )
+        add(((value ushr 16) and 0xFF).toByte())
 
-        add(
-            ((value ushr 8) and 0xFF)
-                .toByte()
-        )
+        add(((value ushr 8) and 0xFF).toByte())
 
-        add(
-            (value and 0xFF)
-                .toByte()
-        )
+        add((value and 0xFF).toByte())
     }
 
     private companion object {
 
-        const val DOMAIN_SEPARATOR =
-            "SecureChat.SafetyNumber"
+        const val DOMAIN_SEPARATOR = "SecureChat.SafetyNumber"
+        const val PROTOCOL_VERSION = 1
+        const val SAFETY_NUMBER_DIGIT_COUNT = 60
+        const val GROUP_SIZE = 5
 
-        const val PROTOCOL_VERSION =
-            1
-
-        const val SAFETY_NUMBER_DIGIT_COUNT =
-            60
-
-        const val GROUP_SIZE =
-            5
-
-        val BYTE_ARRAY_COMPARATOR =
-            Comparator<ByteArray> {
-                    first,
-                    second ->
-
-                compareByteArrays(
-                    first = first,
-                    second = second
-                )
-            }
+        val BYTE_ARRAY_COMPARATOR = Comparator<ByteArray> { first, second ->
+            compareByteArrays(first = first, second = second)
+        }
 
         fun compareByteArrays(
             first: ByteArray,
             second: ByteArray
         ): Int {
-            val sharedLength =
-                minOf(
-                    first.size,
-                    second.size
-                )
+            val sharedLength = minOf(first.size, second.size)
 
             for (index in 0 until sharedLength) {
-                val firstValue =
-                    first[index]
-                        .toUByte()
-                        .toInt()
+                val firstValue = first[index].toUByte().toInt()
 
-                val secondValue =
-                    second[index]
-                        .toUByte()
-                        .toInt()
+                val secondValue = second[index].toUByte().toInt()
 
                 if (firstValue != secondValue) {
                     return firstValue - secondValue

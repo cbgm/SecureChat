@@ -64,7 +64,7 @@ kotlin {
             implementation(projects.core.protocol)
             implementation(projects.feature.contacts)
             implementation(libs.kotlinx.coroutines.core)
-
+            implementation(libs.compose.components.resources)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)

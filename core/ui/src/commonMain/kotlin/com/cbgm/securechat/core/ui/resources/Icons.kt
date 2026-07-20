@@ -1,9 +1,10 @@
 package com.cbgm.securechat.core.ui.resources
 
-import securechat.core.ui.generated.resources.Res
-import securechat.core.ui.generated.resources.ic_chat
-import securechat.core.ui.generated.resources.ic_identity
-import securechat.core.ui.generated.resources.ic_settings
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.ic_chat
+import com.cbgm.securechat.resources.ic_identity
+import com.cbgm.securechat.resources.ic_settings
+
 
 object SecureChatIcons {
     val ic_chats = Res.drawable.ic_chat

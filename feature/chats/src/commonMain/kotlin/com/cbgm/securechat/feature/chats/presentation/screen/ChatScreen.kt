@@ -1,11 +1,15 @@
 package com.cbgm.securechat.feature.chats.presentation.screen
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -18,8 +22,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -32,11 +40,9 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -44,14 +50,25 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
@@ -61,6 +78,12 @@ import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
+import com.cbgm.securechat.feature.chats.presentation.screen.component.ChatPatternBackground
+import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.startup
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,101 +97,149 @@ fun ChatScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
 
-        topBar = {
-            TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                ),
-                title = {
-                    Column(modifier = Modifier.clickable { onClickHeader() }) {
-                        Text(
-                            text = uiState.contactName,
-                            maxLines = 1,
-                            style = MaterialTheme.typography.titleSmall,
-                            overflow = TextOverflow.Ellipsis
-                        )
 
-                        /*SecurityHeaderLabel(
-                            securityState = uiState.contactSecurityState
-                        )*/
-                    }
-                },
+    val chatListState = rememberLazyListState()
 
-                navigationIcon = {
-                    IconButton(
-                        onClick = onBack
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
+    val barsState = rememberMainBarsState(
+        chatListState = chatListState,
+    )
+
+    val topBarColor by animateColorAsState(
+        targetValue = MaterialTheme.colorScheme.background.copy(
+            alpha = barsState.topBarAlpha
+        ),
+        label = "TopBarColor"
+    )
+
+    val bottomBarColor by animateColorAsState(
+        targetValue = MaterialTheme.colorScheme.background.copy(
+            alpha = barsState.bottomBarAlpha
+        ),
+        label = "BottomBarColor"
+    )
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        ChatPatternBackground(
+            modifier = Modifier.matchParentSize(),
+            backgroundColor = MaterialTheme.colorScheme.background,
+            alpha = 0.04f
+        )
+
+        Scaffold(
+            modifier = modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+
+            topBar = {
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    TopAppBar(
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = topBarColor,
+                            scrolledContainerColor = topBarColor,
+                            titleContentColor = MaterialTheme.colorScheme.onBackground,
+                            actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+                            navigationIconContentColor = MaterialTheme.colorScheme.onBackground
+                        ),
+                        title = {
+                            Row(
+                                modifier = Modifier.clickable(onClick = onClickHeader),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                ContactAvatar(
+                                    name = uiState.contactName,
+                                    size = 36.dp
+                                )
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                Text(
+                                    text = uiState.contactName,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back"
+                                )
+                            }
+                        }
+                    )
+
+                    SecurityBanner(
+                        securityState = uiState.contactSecurityState,
+                        onVerifyIdentity = onVerifyIdentity
+                    )
+                    uiState.errorMessage
+                        ?.let { errorMessage ->
+                            ErrorMessage(
+                                message =
+                                    errorMessage
+                            )
+                        }
                 }
-            )
-        },
+            },
 
-        bottomBar = {
-            Column {
-                HorizontalDivider()
-
-                MessageInput(
-                    value = uiState.messageText,
-                    onValueChange = onMessageTextChanged,
-                    onSendClick = onSendClick,
-                    enabled = !uiState.isLoadingContact
-                )
+            bottomBar = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(bottomBarColor)
+                ) {
+                    MessageInput(
+                        value = uiState.messageText,
+                        onValueChange = onMessageTextChanged,
+                        onSendClick = onSendClick,
+                        enabled = !uiState.isLoadingContact
+                    )
+                }
             }
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White)
-                .padding(innerPadding)
-        ) {
-            SecurityBanner(
-                securityState = uiState.contactSecurityState,
-                onVerifyIdentity = onVerifyIdentity
-            )
-
+        ) { innerPadding ->
             when {
                 uiState.isLoadingContact -> {
                     LoadingChatContent(
                         modifier = Modifier
                             .fillMaxSize()
-                            .weight(1f)
+                            .padding(innerPadding)
                     )
                 }
 
                 uiState.messages.isEmpty() -> {
-                    EmptyChatContent(
-                        contactName = uiState.contactName,
-                        securityState = uiState.contactSecurityState,
+                    Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .weight(1f)
-                    )
+                            .padding(innerPadding)
+                    ) {
+                        EmptyChatContent(
+                            contactName = uiState.contactName,
+                            securityState = uiState.contactSecurityState,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        )
+                    }
                 }
+
 
                 else -> {
                     MessageList(
                         messages = uiState.messages,
+                        listState = chatListState,
                         onRetryMessage = onRetryMessage,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .weight(1f)
+                        onVerifyIdentity = onVerifyIdentity,
+                        topPadding = innerPadding.calculateTopPadding(),
+                        bottomPadding = innerPadding.calculateBottomPadding(),
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
-            }
-
-            uiState.errorMessage?.let { errorMessage ->
-                ErrorMessage(message = errorMessage)
             }
         }
     }
@@ -343,19 +414,28 @@ private fun VerifiedSecurityIndicator(
 @Composable
 private fun MessageList(
     messages: List<ChatMessage>,
+    listState: LazyListState,
     onRetryMessage: (String) -> Unit,
+    onVerifyIdentity: () -> Unit,
+    topPadding: Dp,
+    bottomPadding: Dp,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
-        modifier = modifier.padding(top = MaterialTheme.spacing.small, start = 12.dp, end = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        reverseLayout = true
+        modifier = modifier,
+        state = listState,
+        reverseLayout = true,
+        contentPadding = PaddingValues(
+            start = 12.dp,
+            top = topPadding + MaterialTheme.spacing.small,
+            end = 12.dp,
+            bottom = bottomPadding + MaterialTheme.spacing.small
+        ),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(
-            items = messages.reversed(),
-            key = { message ->
-                message.id
-            }
+            items = messages,
+            key = { message -> message.id }
         ) { message ->
             MessageBubble(
                 message = message,
@@ -385,14 +465,14 @@ private fun MessageBubble(
             text = message.text,
             isContentFailed = false,
             bubbleColor = if (message.isMine) {
-                MaterialTheme.colorScheme.primary
+                Color(0x463697B3)
             } else {
-                MaterialTheme.colorScheme.secondary
+                Color.Black.copy(alpha = 0.75f)
             },
             contentColor = if (message.isMine) {
-                MaterialTheme.colorScheme.onSurfaceVariant
+                MaterialTheme.colorScheme.onBackground
             } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
+                MaterialTheme.colorScheme.onBackground
             },
         )
 
@@ -435,9 +515,9 @@ private fun MessageBubble(
             }
         ) {
             Surface(
-                //color = bubbleState.bubbleColor,
-                border = BorderStroke(2.dp, bubbleState.bubbleColor),
-                contentColor = bubbleState.bubbleColor, shape = RoundedCornerShape(size = 16.dp)
+                color = bubbleState.bubbleColor,
+                //border = BorderStroke(2.dp, bubbleState.bubbleColor),
+                contentColor = bubbleState.contentColor, shape = RoundedCornerShape(size = 16.dp)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
@@ -713,34 +793,52 @@ private fun MessageInput(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(color = MaterialTheme.colorScheme.primary)
             .windowInsetsPadding(WindowInsets.navigationBars)
             .imePadding()
-            .padding(8.dp),
-
-        verticalAlignment = Alignment.CenterVertically
+            .padding(MaterialTheme.spacing.base),
+        verticalAlignment = Alignment.Bottom
     ) {
-        OutlinedTextField(
+        BasicTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.weight(1f),
-            enabled = enabled,
-            placeholder = {
-                Text(
-                    text = "Message",
-                    style = MaterialTheme.typography.bodyMedium
+            modifier = Modifier
+                .weight(1f)
+                .background(
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    shape = RoundedCornerShape(24.dp)
                 )
-            },
+                .padding(
+                    horizontal = MaterialTheme.spacing.small,
+                    vertical = MaterialTheme.spacing.base
+                ),
+            enabled = enabled,
+            minLines = 1,
+            maxLines = 5,
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onBackground
+            ),
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.secondary),
+            keyboardOptions = KeyboardOptions(
+                imeAction = ImeAction.Default
+            ),
+            decorationBox = { innerTextField ->
+                innerTextField()
+            }
         )
 
         IconButton(
             onClick = onSendClick,
-            enabled = enabled && value.isNotBlank()
+            enabled = enabled && value.isNotBlank(),
+            modifier = Modifier.padding(start = 4.dp)
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Send,
                 contentDescription = "Send message",
-                tint = MaterialTheme.colorScheme.secondary
+                tint = if (enabled && value.isNotBlank()) {
+                    MaterialTheme.colorScheme.secondary
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+                }
             )
         }
     }
@@ -827,6 +925,48 @@ private fun ErrorMessage(
     )
 }
 
+@Stable
+private data class MainBarsState(
+    val topBarAlpha: Float,
+    val bottomBarAlpha: Float
+)
+
+@Composable
+private fun rememberMainBarsState(
+    chatListState: LazyListState
+): MainBarsState {
+    /*
+     * In a reverse-layout chat:
+     * - canScrollForward means older content exists toward the visual top.
+     * - canScrollBackward means content exists toward the visual bottom.
+     */
+    val contentBehindTopBar by remember(chatListState) {
+        derivedStateOf {
+            chatListState.canScrollForward
+        }
+    }
+
+    val contentBehindBottomBar by remember(chatListState) {
+        derivedStateOf {
+            chatListState.canScrollBackward
+        }
+    }
+
+    val topBarAlpha by animateFloatAsState(
+        targetValue = if (contentBehindTopBar) 0.97f else 1f,
+        label = "TopBarAlpha"
+    )
+
+    val bottomBarAlpha by animateFloatAsState(
+        targetValue = if (contentBehindBottomBar) 0.97f else 1f,
+        label = "BottomBarAlpha"
+    )
+
+    return MainBarsState(
+        topBarAlpha = topBarAlpha,
+        bottomBarAlpha = bottomBarAlpha
+    )
+}
 
 @Preview
 @Composable
@@ -835,20 +975,9 @@ fun ChatScreenPreview() {
         ChatScreen(
             uiState = ChatUiState(
                 isLoadingContact = false,
+                contactName = "Alex",
                 contactSecurityState = ContactSecurityState.MUTUAL_KEYS_VERIFIED,
-                messages = listOf(
-                    ChatMessage(
-                        id = "1",
-                        text = "Hello!",
-                        isMine = false,
-                        security = MessageSecurity.INSECURE,
-                        contentStatus = MessageContentStatus.READABLE,
-                        deliveryStatus = MessageDeliveryStatus.SENT,
-                        contactId = "12",
-                        timestamp = System.currentTimeMillis()
-                    )
-                )
-                //errorMessage = "sfsfsf"
+                errorMessage = "sfsfsjljljljljljlf"
             ),
             onMessageTextChanged = {},
             onSendClick = {},

@@ -39,3 +39,9 @@ kotlin {
         }
     }
 }
+
+compose.resources {
+    publicResClass = true
+    generateResClass = always
+    packageOfResClass = "com.cbgm.securechat.resources"
+}

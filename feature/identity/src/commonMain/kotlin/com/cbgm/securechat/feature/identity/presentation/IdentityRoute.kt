@@ -1,11 +1,15 @@
 package com.cbgm.securechat.feature.identity.presentation
 
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cbgm.securechat.feature.identity.phone.PhoneNumberHintLauncher
 import com.cbgm.securechat.feature.identity.phone.PhoneNumberHintResult
@@ -16,10 +20,14 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun IdentityRoute(
+    modifier: Modifier = Modifier,
     onIdentityReady: () -> Unit = {},
     onShareIdentity: () -> Unit,
     onImportContact: () -> Unit,
     onContacts: () -> Unit,
+    identityListState: ScrollState,
+    innerPadding: PaddingValues,
+
     viewModel: IdentityViewModel =
         koinViewModel()
 ) {
@@ -73,6 +81,9 @@ fun IdentityRoute(
         onRetry = viewModel::loadIdentityState,
         onShareIdentity = onShareIdentity,
         onImportContact = onImportContact,
-        onContacts = onContacts
+        onContacts = onContacts,
+        scrollState = identityListState,
+        innerPadding = innerPadding,
+        modifier = modifier
     )
 }

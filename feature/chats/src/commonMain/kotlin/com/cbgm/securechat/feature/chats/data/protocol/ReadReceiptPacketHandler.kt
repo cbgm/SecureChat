@@ -7,8 +7,7 @@ import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
 
 class ReadReceiptPacketHandler(
-    private val messageDeliveryStatusDao:
-    MessageDeliveryStatusDao
+    private val messageDeliveryStatusDao: MessageDeliveryStatusDao
 ) : TypedProtocolPacketHandler {
 
     override fun canHandle(

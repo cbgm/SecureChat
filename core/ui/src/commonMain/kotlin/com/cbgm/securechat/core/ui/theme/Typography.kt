@@ -6,10 +6,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.cbgm.securechat.resources.AppleGaramond
+import com.cbgm.securechat.resources.AppleGaramond_Bold
+import com.cbgm.securechat.resources.Res
 import org.jetbrains.compose.resources.Font
-import securechat.core.ui.generated.resources.AppleGaramond
-import securechat.core.ui.generated.resources.AppleGaramond_Bold
-import securechat.core.ui.generated.resources.Res
 
 val FontNAme @Composable get() = FontFamily(
     Font(

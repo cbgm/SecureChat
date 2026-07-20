@@ -30,9 +30,7 @@ fun VerifyIdentityDialog(
     AlertDialog(
         modifier = modifier,
         onDismissRequest = {
-            if (
-                !isVerifying
-            ) {
+            if (!isVerifying) {
                 onDismiss()
             }
         },
@@ -42,9 +40,7 @@ fun VerifyIdentityDialog(
         },
 
         text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(
                     text = "Compare this safety number with $contactName through a trusted channel, such as a phone call or in person."
                 )

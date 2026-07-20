@@ -1,5 +1,8 @@
 package com.cbgm.securechat.feature.chats.presentation
 
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -13,6 +16,8 @@ fun ChatsRoute(
     onAddChatClick: () -> Unit,
     onChatClick: (contactId: String, contactName: String) -> Unit,
     modifier: Modifier = Modifier,
+    chatListState: LazyListState,
+    innerPadding: PaddingValues,
     viewModel: ChatsViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -27,6 +32,8 @@ fun ChatsRoute(
                 onChatClick(conversation.contactId, conversation.contactName)
             }
         },
+        scrollState = chatListState,
+        innerPadding = innerPadding,
         modifier = modifier
     )
 }

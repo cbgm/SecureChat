@@ -5,8 +5,7 @@ import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 
 class ChatOutboxDeliveryStateListener(
-    private val messageDeliveryStatusDao:
-    MessageDeliveryStatusDao
+    private val messageDeliveryStatusDao: MessageDeliveryStatusDao
 ) : OutboxDeliveryStateListener {
 
     override suspend fun onProcessing(
@@ -14,8 +13,7 @@ class ChatOutboxDeliveryStateListener(
     ): Result<Unit> {
         return updateStatus(
             packetId = packetId,
-            status =
-                MessageDeliveryStatus.SENDING
+            status = MessageDeliveryStatus.SENDING
         )
     }
 
@@ -24,8 +22,7 @@ class ChatOutboxDeliveryStateListener(
     ): Result<Unit> {
         return updateStatus(
             packetId = packetId,
-            status =
-                MessageDeliveryStatus.SENT
+            status = MessageDeliveryStatus.SENT
         )
     }
 
@@ -35,8 +32,7 @@ class ChatOutboxDeliveryStateListener(
     ): Result<Unit> {
         return updateStatus(
             packetId = packetId,
-            status =
-                MessageDeliveryStatus.FAILED
+            status = MessageDeliveryStatus.FAILED
         )
     }
 
@@ -49,13 +45,10 @@ class ChatOutboxDeliveryStateListener(
                 "Packet ID must not be blank"
             }
 
-            val updatedRows =
-                messageDeliveryStatusDao
-                    .updateDeliveryStatus(
-                        packetId = packetId,
-                        deliveryStatus =
-                            status.name
-                    )
+            val updatedRows = messageDeliveryStatusDao.updateDeliveryStatus(
+                packetId = packetId,
+                deliveryStatus = status.name
+            )
 
             /*
              * Not every protocol packet corresponds to a visible chat

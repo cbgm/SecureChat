@@ -8,8 +8,7 @@ import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 
 class DeliveryReceiptPacketHandler(
-    private val messageDeliveryStatusDao:
-    MessageDeliveryStatusDao
+    private val messageDeliveryStatusDao: MessageDeliveryStatusDao
 ) : TypedProtocolPacketHandler {
 
     override fun canHandle(
@@ -23,11 +22,8 @@ class DeliveryReceiptPacketHandler(
         packet: SecureChatPacket
     ): Result<Unit> {
         return runCatching {
-            val receipt =
-                packet as? DeliveryReceiptPacket
-                    ?: error(
-                        "DeliveryReceiptPacketHandler received an incompatible packet"
-                    )
+            val receipt = packet as? DeliveryReceiptPacket
+                ?: error("DeliveryReceiptPacketHandler received an incompatible packet")
 
             /*
              * Updating zero rows is not automatically an error.
@@ -37,15 +33,10 @@ class DeliveryReceiptPacketHandler(
              * - the message was deleted locally;
              * - the message is already DELIVERED or READ.
              */
-            val updatedRows =
-                messageDeliveryStatusDao
-                    .markOutgoingMessageDelivered(
-                        messageId =
-                            receipt.messageId,
-
-                        contactId =
-                            context.contactId,
-                    )
+            val updatedRows = messageDeliveryStatusDao.markOutgoingMessageDelivered(
+                messageId = receipt.messageId,
+                contactId = context.contactId,
+            )
 
             println(
                 "Delivery receipt handled: " +

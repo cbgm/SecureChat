@@ -22,39 +22,29 @@ import org.koin.dsl.module
 val chatsModule =
     module {
 
-        singleOf(
-            ::ChatMessagePacketHandler
-        ) {
+        singleOf(::ChatMessagePacketHandler) {
             bind<TypedProtocolPacketHandler>()
         }
 
-        singleOf(
-            ::ReadReceiptPacketHandler
-        ) {
+        singleOf(::ReadReceiptPacketHandler) {
             bind<TypedProtocolPacketHandler>()
         }
 
-        singleOf(
-            ::DeliveryReceiptPacketHandler
-        ) {
+        singleOf(::DeliveryReceiptPacketHandler) {
             bind<TypedProtocolPacketHandler>()
         }
 
         single<GetContactSafetyNumber> {
             DefaultGetContactSafetyNumber(
-                localPublicIdentityProvider =
-                    get<LocalPublicIdentityProvider>(),
-
-                contactRepository =
-                    get<ContactRepository>()
+                localPublicIdentityProvider = get<LocalPublicIdentityProvider>(),
+                contactRepository = get<ContactRepository>()
             )
         }
 
 
         single<OutboxDeliveryStateListener> {
             ChatOutboxDeliveryStateListener(
-                messageDeliveryStatusDao =
-                    get()
+                messageDeliveryStatusDao = get()
             )
         }
 
@@ -72,33 +62,16 @@ val chatsModule =
         }
 
         viewModel {
-            ChatsViewModel(
-                chatsRepository = get()
-            )
+            ChatsViewModel(chatsRepository = get())
         }
 
         viewModel { parameters ->
             ChatViewModel(
-                contactId =
-                    parameters.get(),
-
-                fallbackContactName =
-                    parameters.get(),
-
-                chatsRepository =
-                    get<
-                            ChatsRepository
-                            >(),
-
-                contactRepository =
-                    get<
-                            ContactRepository
-                            >(),
-
-                getContactSafetyNumber =
-                    get<
-                            GetContactSafetyNumber
-                            >()
+                contactId = parameters.get(),
+                fallbackContactName = parameters.get(),
+                chatsRepository = get<ChatsRepository>(),
+                contactRepository = get<ContactRepository>(),
+                getContactSafetyNumber = get<GetContactSafetyNumber>()
             )
         }
     }

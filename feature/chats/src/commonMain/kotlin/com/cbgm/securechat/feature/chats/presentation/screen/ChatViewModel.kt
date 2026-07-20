@@ -118,7 +118,7 @@ class ChatViewModel(
                 contact = contact,
                 conversation = conversation
             ),
-            messages = conversation?.messages.orEmpty(),
+            messages = conversation?.messages?.reversed().orEmpty(),
             messageText = composer.messageText,
             contactSecurityState = contact.toSecurityState(),
             safetyNumber = verification.safetyNumber,
