@@ -16,12 +16,9 @@ fun ContactsRoute(
     ) -> Unit,
     viewModel: ContactsViewModel = koinViewModel()
 ) {
-    val uiState by viewModel
-        .uiState
-        .collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val requestDeviceContactsPermission =
-        rememberDeviceContactsPermissionRequest(
+    val requestDeviceContactsPermission = rememberDeviceContactsPermissionRequest(
             onPermissionGranted = {
                 viewModel.onImportDeviceContacts()
             },

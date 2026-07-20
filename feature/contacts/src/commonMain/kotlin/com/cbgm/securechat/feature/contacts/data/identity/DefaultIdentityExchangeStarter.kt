@@ -12,17 +12,13 @@ import kotlinx.coroutines.sync.withLock
 
 class DefaultIdentityExchangeStarter(
     private val contactDao: ContactDao,
-    private val localPublicIdentityProvider:
-    LocalPublicIdentityProvider,
-    private val protocolOutbox:
-    ProtocolOutbox
+    private val localPublicIdentityProvider: LocalPublicIdentityProvider,
+    private val protocolOutbox: ProtocolOutbox
 ) : IdentityExchangeStarter {
 
-    private val mutex =
-        Mutex()
+    private val mutex = Mutex()
 
-    private val currentlyStarting =
-        mutableSetOf<String>()
+    private val currentlyStarting = mutableSetOf<String>()
 
     override suspend fun ensureStarted(
         contactId: String
@@ -32,85 +28,46 @@ class DefaultIdentityExchangeStarter(
                 "Contact ID must not be blank"
             }
 
-            val mayStart =
-                mutex.withLock {
-                    currentlyStarting.add(
-                        contactId
-                    )
-                }
+            val mayStart = mutex.withLock {
+                currentlyStarting.add(contactId)
+            }
 
             if (!mayStart) {
                 return@runCatching
             }
 
             try {
-                val contact =
-                    contactDao.findById(
-                        contactId = contactId
-                    )
-                        ?: error(
-                            "Contact was not found: $contactId"
-                        )
+                val contact = contactDao.findById(contactId = contactId)
+                    ?: error("Contact was not found: $contactId")
 
-                val remoteIdentity =
-                    contact.publicIdentity
-                        ?: return@runCatching
+                val remoteIdentity = contact.publicIdentity ?: return@runCatching
 
-                val currentStatus =
-                    KeyExchangeStatus.entries
-                        .firstOrNull {
-                                status ->
-
-                            status.name ==
-                                    remoteIdentity
-                                        .keyExchangeStatus
-                        }
-                        ?: KeyExchangeStatus.ONE_WAY
+                val currentStatus = KeyExchangeStatus.entries.firstOrNull { status ->
+                    status.name == remoteIdentity.keyExchangeStatus
+                } ?: KeyExchangeStatus.ONE_WAY
 
                 /*
                  * MUTUAL is persistent. Once reached, no new identity
                  * packet is needed unless the identity keys change.
                  */
-                if (
-                    currentStatus ==
-                    KeyExchangeStatus.MUTUAL
-                ) {
+                if (currentStatus == KeyExchangeStatus.MUTUAL) {
                     return@runCatching
                 }
 
                 val localIdentity =
-                    localPublicIdentityProvider
-                        .getLocalPublicIdentity()
-                        .getOrThrow()
+                    localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
 
-                val packet =
-                    IdentityPacket(
-                        packetId =
-                            IdGenerator.generate(),
+                val packet = IdentityPacket(
+                    packetId = IdGenerator.generate(),
+                    displayName = null,
+                    encryptionPublicKey = localIdentity.encryptionPublicKey.copyOf(),
+                    signingPublicKey = localIdentity.signingPublicKey.copyOf()
+                )
 
-                        displayName =
-                            null,
-
-                        encryptionPublicKey =
-                            localIdentity
-                                .encryptionPublicKey
-                                .copyOf(),
-
-                        signingPublicKey =
-                            localIdentity
-                                .signingPublicKey
-                                .copyOf()
-                    )
-
-                protocolOutbox
-                    .enqueue(
-                        contactId =
-                            contactId,
-
-                        packet =
-                            packet
-                    )
-                    .getOrThrow()
+                protocolOutbox.enqueue(
+                    contactId = contactId,
+                    packet = packet
+                ).getOrThrow()
 
                 println(
                     "Identity exchange queued: " +
@@ -119,9 +76,7 @@ class DefaultIdentityExchangeStarter(
                 )
             } finally {
                 mutex.withLock {
-                    currentlyStarting.remove(
-                        contactId
-                    )
+                    currentlyStarting.remove(contactId)
                 }
             }
         }

@@ -18,8 +18,7 @@ sealed interface ContactDetailsUiState {
 
         val canVerify: Boolean
             get() {
-                return safetyNumber != null &&
-                        contact.secureChatIdentity != null
+                return safetyNumber != null && contact.secureChatIdentity != null
             }
     }
 

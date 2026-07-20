@@ -17,31 +17,24 @@ class ImportContact(
         request: ImportContactRequest
     ): Result<Contact> {
         return runCatching {
-            require(
-                request.encryptionPublicKey.isNotEmpty()
-            ) {
+            require(request.encryptionPublicKey.isNotEmpty()) {
                 "Encryption public key must not be empty"
             }
 
-            require(
-                request.signingPublicKey.isNotEmpty()
-            ) {
+            require(request.signingPublicKey.isNotEmpty()) {
                 "Signing public key must not be empty"
             }
 
-            repository
-                .importContact(
+            repository.importContact(
                     request = request.copy(
                         displayName = request.displayName
                             ?.trim()
                             ?.takeIf { it.isNotEmpty() },
-
                         phoneNumber = request.phoneNumber
                             ?.trim()
                             ?.takeIf { it.isNotEmpty() }
                     )
-                )
-                .getOrThrow()
+                ).getOrThrow()
         }
     }
 }

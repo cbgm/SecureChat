@@ -41,27 +41,15 @@ data class RemoteIdentityUpdate(
         var result =
             contactId.hashCode()
 
-        result =
-            31 * result +
-                    encryptionPublicKey
-                        .contentHashCode()
+        result = 31 * result + encryptionPublicKey.contentHashCode()
 
-        result =
-            31 * result +
-                    signingPublicKey
-                        .contentHashCode()
+        result = 31 * result + signingPublicKey.contentHashCode()
 
-        result =
-            31 * result +
-                    keyExchangeStatus.hashCode()
+        result = 31 * result + keyExchangeStatus.hashCode()
 
-        result =
-            31 * result +
-                    verificationStatus.hashCode()
+        result = 31 * result + verificationStatus.hashCode()
 
-        result =
-            31 * result +
-                    identityChanged.hashCode()
+        result = 31 * result + identityChanged.hashCode()
 
         return result
     }
@@ -83,6 +71,5 @@ interface ContactKeyExchangeStore {
         ByteArray
     ): Result<Unit>
 
-    suspend fun resetAllAfterLocalIdentityChange():
-            Result<Unit>
+    suspend fun resetAllAfterLocalIdentityChange(): Result<Unit>
 }

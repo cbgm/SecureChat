@@ -2,7 +2,6 @@ package com.cbgm.securechat.feature.identity.presentation
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,7 +24,7 @@ fun IdentityRoute(
     onShareIdentity: () -> Unit,
     onImportContact: () -> Unit,
     onContacts: () -> Unit,
-    identityListState: ScrollState,
+    scrollState: ScrollState,
     innerPadding: PaddingValues,
 
     viewModel: IdentityViewModel =
@@ -82,7 +81,7 @@ fun IdentityRoute(
         onShareIdentity = onShareIdentity,
         onImportContact = onImportContact,
         onContacts = onContacts,
-        scrollState = identityListState,
+        scrollState = scrollState,
         innerPadding = innerPadding,
         modifier = modifier
     )

@@ -13,12 +13,10 @@ class AndroidDeviceContactsDataSource(
     private val contentResolver: ContentResolver
 ) : DeviceContactsDataSource {
 
-    override suspend fun getContacts():
-            Result<List<DeviceContact>> {
+    override suspend fun getContacts(): Result<List<DeviceContact>> {
 
         return runCatching {
-            val contacts =
-                mutableListOf<DeviceContact>()
+            val contacts = mutableListOf<DeviceContact>()
 
             contentResolver.query(
                 ContactsContract.Contacts.CONTENT_URI,
@@ -32,44 +30,24 @@ class AndroidDeviceContactsDataSource(
                 ContactsContract.Contacts.DISPLAY_NAME
             )?.use { cursor ->
 
-                val idColumn =
-                    cursor.getColumnIndexOrThrow(
-                        ContactsContract.Contacts._ID
-                    )
+                val idColumn = cursor.getColumnIndexOrThrow(ContactsContract.Contacts._ID)
 
                 val nameColumn =
-                    cursor.getColumnIndexOrThrow(
-                        ContactsContract.Contacts.DISPLAY_NAME
-                    )
+                    cursor.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME)
 
                 val hasPhoneNumberColumn =
-                    cursor.getColumnIndexOrThrow(
-                        ContactsContract.Contacts.HAS_PHONE_NUMBER
-                    )
+                    cursor.getColumnIndexOrThrow(ContactsContract.Contacts.HAS_PHONE_NUMBER)
 
                 while (cursor.moveToNext()) {
-                    val deviceContactId =
-                        cursor
-                            .getLong(idColumn)
-                            .toString()
+                    val deviceContactId = cursor.getLong(idColumn).toString()
 
                     val displayName =
-                        cursor
-                            .getString(nameColumn)
-                            ?.trim()
-                            ?.takeIf { it.isNotEmpty() }
+                        cursor.getString(nameColumn)?.trim()?.takeIf { it.isNotEmpty() }
 
-                    val hasPhoneNumber =
-                        cursor.getInt(
-                            hasPhoneNumberColumn
-                        ) > 0
+                    val hasPhoneNumber = cursor.getInt(hasPhoneNumberColumn) > 0
 
-                    val phoneNumbers =
-                        if (hasPhoneNumber) {
-                            loadPhoneNumbers(
-                                contactId =
-                                    deviceContactId
-                            )
+                    val phoneNumbers = if (hasPhoneNumber) {
+                            loadPhoneNumbers(contactId = deviceContactId)
                         } else {
                             emptyList()
                         }
@@ -82,8 +60,7 @@ class AndroidDeviceContactsDataSource(
                         continue
                     }
 
-                    contacts +=
-                        DeviceContact(
+                    contacts += DeviceContact(
                             id = deviceContactId,
                             displayName = displayName,
                             phoneNumbers = phoneNumbers
@@ -105,8 +82,7 @@ class AndroidDeviceContactsDataSource(
         contactId: String
     ): List<DevicePhoneNumber> {
 
-        val phoneNumbers =
-            mutableListOf<DevicePhoneNumber>()
+        val phoneNumbers = mutableListOf<DevicePhoneNumber>()
 
         contentResolver.query(
             ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
@@ -122,48 +98,30 @@ class AndroidDeviceContactsDataSource(
             null
         )?.use { cursor ->
 
-            val numberColumn =
-                cursor.getColumnIndexOrThrow(
-                    ContactsContract.CommonDataKinds.Phone.NUMBER
-                )
+            val numberColumn = cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER)
 
-            val typeColumn =
-                cursor.getColumnIndexOrThrow(
-                    ContactsContract.CommonDataKinds.Phone.TYPE
-                )
+            val typeColumn = cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.TYPE)
 
-            val labelColumn =
-                cursor.getColumnIndexOrThrow(
-                    ContactsContract.CommonDataKinds.Phone.LABEL
-                )
+            val labelColumn = cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.LABEL)
 
             while (cursor.moveToNext()) {
-                val number =
-                    cursor
+                val number = cursor
                         .getString(numberColumn)
                         ?.trim()
                         ?.takeIf { it.isNotEmpty() }
                         ?: continue
 
-                val androidType =
-                    cursor.getInt(typeColumn)
+                val androidType = cursor.getInt(typeColumn)
 
-                val customLabel =
-                    cursor
+                val customLabel = cursor
                         .getString(labelColumn)
                         ?.trim()
                         ?.takeIf { it.isNotEmpty() }
 
-                phoneNumbers +=
-                    DevicePhoneNumber(
+                phoneNumbers += DevicePhoneNumber(
                         value = number,
-
-                        type =
-                            androidType
-                                .toDevicePhoneNumberType(),
-
-                        label =
-                            customLabel
+                        type = androidType.toDevicePhoneNumberType(),
+                        label = customLabel
                     )
             }
         }

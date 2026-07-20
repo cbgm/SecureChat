@@ -14,13 +14,9 @@ class ContactsViewModel(
     private val importDeviceContacts: ImportDeviceContacts
 ) : ViewModel() {
 
-    private val _uiState =
-        MutableStateFlow<ContactsUiState>(
-            ContactsUiState.Loading
-        )
+    private val _uiState = MutableStateFlow<ContactsUiState>(ContactsUiState.Loading)
 
-    val uiState: StateFlow<ContactsUiState> =
-        _uiState.asStateFlow()
+    val uiState: StateFlow<ContactsUiState> = _uiState.asStateFlow()
 
     init {
         observe()
@@ -28,42 +24,30 @@ class ContactsViewModel(
 
     fun onImportDeviceContacts() {
         viewModelScope.launch {
-            importDeviceContacts()
-                .onFailure {
-                    // We'll improve error handling later.
-                }
+            importDeviceContacts().onFailure {}
         }
     }
 
     fun onDeviceContactsPermissionDenied() {
         _uiState.value =
-            ContactsUiState.Error(
-                message =
-                    "Contacts permission is required to import device contacts."
-            )
+            ContactsUiState.Error(message = "Contacts permission is required to import device contacts.")
     }
 
     private fun observe() {
         viewModelScope.launch {
             try {
-                observeContacts()
-                    .collect { contacts ->
-                        _uiState.value =
-                            if (contacts.isEmpty()) {
-                                ContactsUiState.Empty
-                            } else {
-                                ContactsUiState.Content(
-                                    contacts = contacts
-                                )
-                            }
+                observeContacts().collect { contacts ->
+                    _uiState.value = if (contacts.isEmpty()) {
+                        ContactsUiState.Empty
+                    } else {
+                        ContactsUiState.Content(
+                            contacts = contacts
+                        )
                     }
+                }
             } catch (error: Throwable) {
                 _uiState.value =
-                    ContactsUiState.Error(
-                        message =
-                            error.message
-                                ?: "Failed to load contacts"
-                    )
+                    ContactsUiState.Error(message = error.message ?: "Failed to load contacts")
             }
         }
     }

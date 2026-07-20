@@ -8,10 +8,8 @@ class ContactLocalIdentityChangeHandler(
     ContactKeyExchangeStore
 ) : LocalIdentityChangeHandler {
 
-    override suspend fun onLocalIdentityChanged():
-            Result<Unit> {
+    override suspend fun onLocalIdentityChanged(): Result<Unit> {
 
-        return contactKeyExchangeStore
-            .resetAllAfterLocalIdentityChange()
+        return contactKeyExchangeStore.resetAllAfterLocalIdentityChange()
     }
 }

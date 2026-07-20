@@ -3,7 +3,6 @@ package com.cbgm.securechat.feature.chats.presentation.screen
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -50,18 +49,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -78,12 +73,8 @@ import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
-import com.cbgm.securechat.feature.chats.presentation.screen.component.ChatPatternBackground
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
-import com.cbgm.securechat.resources.Res
-import com.cbgm.securechat.resources.startup
-import org.jetbrains.compose.resources.DrawableResource
-import org.jetbrains.compose.resources.painterResource
+import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -122,7 +113,7 @@ fun ChatScreen(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        ChatPatternBackground(
+        PatternBackground(
             modifier = Modifier.matchParentSize(),
             backgroundColor = MaterialTheme.colorScheme.background,
             alpha = 0.04f
@@ -857,7 +848,8 @@ private fun EmptyChatContent(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "Start a conversation with $contactName",
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center
             )
 

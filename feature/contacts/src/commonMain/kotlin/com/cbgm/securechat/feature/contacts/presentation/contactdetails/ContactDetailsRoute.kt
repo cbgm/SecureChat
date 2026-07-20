@@ -12,49 +12,29 @@ fun ContactDetailsRoute(
     contactId: String,
     onBack: () -> Unit,
     onShareContact: (Contact) -> Unit,
-    viewModel: ContactDetailsViewModel =
-        koinViewModel(
-            parameters = {
-                parametersOf(contactId)
-            }
-        )
+    viewModel: ContactDetailsViewModel = koinViewModel(
+        parameters = {
+            parametersOf(contactId)
+        }
+    )
 ) {
-    val uiState by
-    viewModel
-        .uiState
-        .collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     ContactDetailsScreen(
         uiState = uiState,
-
         onBack = onBack,
-
-        onRetry =
-            viewModel::loadContact,
-
+        onRetry = viewModel::loadContact,
         onShareContact = {
-            val contentState =
-                uiState as?
-                        ContactDetailsUiState.Content
-
-            val contact =
-                contentState?.contact
+            val contentState = uiState as? ContactDetailsUiState.Content
+            val contact = contentState?.contact
 
             if (contact != null) {
                 onShareContact(contact)
             }
         },
-
-        onVerifyIdentity =
-            viewModel::showVerificationDialog,
-
-        onDismissVerification =
-            viewModel::dismissVerificationDialog,
-
-        onComparisonConfirmedChanged =
-            viewModel::onComparisonConfirmedChanged,
-
-        onConfirmVerification =
-            viewModel::confirmVerification
+        onVerifyIdentity = viewModel::showVerificationDialog,
+        onDismissVerification = viewModel::dismissVerificationDialog,
+        onComparisonConfirmedChanged = viewModel::onComparisonConfirmedChanged,
+        onConfirmVerification = viewModel::confirmVerification
     )
 }

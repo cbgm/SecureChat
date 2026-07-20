@@ -24,8 +24,7 @@ interface ContactRepository {
         signingPublicKey: ByteArray
     ): Result<Contact?>
 
-    fun observeContacts():
-            Flow<List<Contact>>
+    fun observeContacts(): Flow<List<Contact>>
 
     suspend fun updateContactDetails(
         contactId: String,

@@ -21,37 +21,105 @@ actual fun OnboardingPermissionRequester(
     onResult: (PermissionRequestResult) -> Unit
 ) {
     val context = LocalContext.current
+
     val permissions = remember {
         buildList {
+            /*
+             * READ_CONTACTS:
+             * Required for loading contacts and duplicate detection.
+             *
+             * WRITE_CONTACTS:
+             * Required for directly inserting a contact without
+             * opening the system contact editor.
+             */
             add(Manifest.permission.READ_CONTACTS)
+            add(Manifest.permission.WRITE_CONTACTS)
+
             add(Manifest.permission.CAMERA)
-            if (Build.VERSION.SDK_INT >= 26) {
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 add(Manifest.permission.READ_PHONE_NUMBERS)
                 add(Manifest.permission.READ_PHONE_STATE)
             }
-            if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
+            }
         }.toTypedArray()
     }
+
     val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
+        contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { result ->
+
+        val contactsReadGranted =
+            result[Manifest.permission.READ_CONTACTS] == true ||
+                    context.isGranted(Manifest.permission.READ_CONTACTS)
+
+        val contactsWriteGranted =
+            result[Manifest.permission.WRITE_CONTACTS] == true ||
+                    context.isGranted(Manifest.permission.WRITE_CONTACTS)
+
         onResult(
             PermissionRequestResult(
-                contactsGranted = result[Manifest.permission.READ_CONTACTS] == true || context.isGranted(Manifest.permission.READ_CONTACTS),
-                cameraGranted = result[Manifest.permission.CAMERA] == true || context.isGranted(Manifest.permission.CAMERA),
-                notificationsGranted = Build.VERSION.SDK_INT < 33 || result[Manifest.permission.POST_NOTIFICATIONS] == true || context.isGranted(Manifest.permission.POST_NOTIFICATIONS),
-                phoneNumberGranted = Build.VERSION.SDK_INT >= 26 &&
-                    (result[Manifest.permission.READ_PHONE_NUMBERS] == true || context.isGranted(Manifest.permission.READ_PHONE_NUMBERS)) &&
-                    (result[Manifest.permission.READ_PHONE_STATE] == true || context.isGranted(Manifest.permission.READ_PHONE_STATE))
+                /*
+                 * Treat contacts as granted only when the app can
+                 * both check for duplicates and insert contacts.
+                 */
+                contactsGranted =
+                    contactsReadGranted &&
+                            contactsWriteGranted,
+
+                cameraGranted =
+                    result[Manifest.permission.CAMERA] == true ||
+                            context.isGranted(
+                                Manifest.permission.CAMERA
+                            ),
+
+                notificationsGranted =
+                    Build.VERSION.SDK_INT <
+                            Build.VERSION_CODES.TIRAMISU ||
+                            result[
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ] == true ||
+                            context.isGranted(
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ),
+
+                phoneNumberGranted =
+                    Build.VERSION.SDK_INT >=
+                            Build.VERSION_CODES.O &&
+                            (
+                                    result[
+                                        Manifest.permission.READ_PHONE_NUMBERS
+                                    ] == true ||
+                                            context.isGranted(
+                                                Manifest.permission.READ_PHONE_NUMBERS
+                                            )
+                                    ) &&
+                            (
+                                    result[
+                                        Manifest.permission.READ_PHONE_STATE
+                                    ] == true ||
+                                            context.isGranted(
+                                                Manifest.permission.READ_PHONE_STATE
+                                            )
+                                    )
             )
         )
     }
+
     LaunchedEffect(requestId) {
-        if (requestId > 0) launcher.launch(permissions)
+        if (requestId > 0) {
+            launcher.launch(permissions)
+        }
     }
 }
 
-@SuppressLint("MissingPermission", "HardwareIds")
+@SuppressLint(
+    "MissingPermission",
+    "HardwareIds"
+)
 @Composable
 actual fun AutomaticPhoneNumberReader(
     requestId: Int,
@@ -59,37 +127,94 @@ actual fun AutomaticPhoneNumberReader(
     onResult: (AutomaticPhoneNumberResult) -> Unit
 ) {
     val context = LocalContext.current
-    LaunchedEffect(requestId, enabled) {
-        if (!enabled || requestId <= 0) return@LaunchedEffect
-        if (Build.VERSION.SDK_INT < 26 ||
-            !context.isGranted(Manifest.permission.READ_PHONE_NUMBERS) ||
-            !context.isGranted(Manifest.permission.READ_PHONE_STATE)
+
+    LaunchedEffect(
+        requestId,
+        enabled
+    ) {
+        if (!enabled || requestId <= 0) {
+            return@LaunchedEffect
+        }
+
+        if (
+            Build.VERSION.SDK_INT <
+            Build.VERSION_CODES.O ||
+            !context.isGranted(
+                Manifest.permission.READ_PHONE_NUMBERS
+            ) ||
+            !context.isGranted(
+                Manifest.permission.READ_PHONE_STATE
+            )
         ) {
-            onResult(AutomaticPhoneNumberResult.Unavailable)
+            onResult(
+                AutomaticPhoneNumberResult.Unavailable
+            )
             return@LaunchedEffect
         }
+
         val number = runCatching {
-            val manager = context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
-            val subscriptions = manager.activeSubscriptionInfoList.orEmpty()
+            val manager = context.getSystemService(
+                Context.TELEPHONY_SUBSCRIPTION_SERVICE
+            ) as SubscriptionManager
+
+            val subscriptions =
+                manager.activeSubscriptionInfoList.orEmpty()
+
             subscriptions.firstNotNullOfOrNull { info ->
-                val value = if (Build.VERSION.SDK_INT >= 33) {
-                    manager.getPhoneNumber(info.subscriptionId)
-                } else {
-                    @Suppress("DEPRECATION")
-                    (context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager)
-                        .createForSubscriptionId(info.subscriptionId)
-                        .line1Number
-                }
-                value?.trim()?.takeIf { it.isNotBlank() }
+                val value =
+                    if (
+                        Build.VERSION.SDK_INT >=
+                        Build.VERSION_CODES.TIRAMISU
+                    ) {
+                        manager.getPhoneNumber(
+                            info.subscriptionId
+                        )
+                    } else {
+                        @Suppress("DEPRECATION")
+                        (
+                                context.getSystemService(
+                                    Context.TELEPHONY_SERVICE
+                                ) as TelephonyManager
+                                )
+                            .createForSubscriptionId(
+                                info.subscriptionId
+                            )
+                            .line1Number
+                    }
+
+                value
+                    ?.trim()
+                    ?.takeIf { it.isNotBlank() }
             }
-        }.getOrElse {
-            onResult(AutomaticPhoneNumberResult.Failed(it.message ?: "SIM phone number could not be read"))
+        }.getOrElse { throwable ->
+            onResult(
+                AutomaticPhoneNumberResult.Failed(
+                    throwable.message
+                        ?: "SIM phone number could not be read"
+                )
+            )
             return@LaunchedEffect
         }
-        if (number == null) onResult(AutomaticPhoneNumberResult.Unavailable)
-        else onResult(AutomaticPhoneNumberResult.Found(number))
+
+        if (number == null) {
+            onResult(
+                AutomaticPhoneNumberResult.Unavailable
+            )
+        } else {
+            onResult(
+                AutomaticPhoneNumberResult.Found(
+                    number
+                )
+            )
+        }
     }
 }
 
-private fun Context.isGranted(permission: String): Boolean =
-    ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+private fun Context.isGranted(
+    permission: String
+): Boolean {
+    return ContextCompat.checkSelfPermission(
+        this,
+        permission
+    ) == PackageManager.PERMISSION_GRANTED
+}

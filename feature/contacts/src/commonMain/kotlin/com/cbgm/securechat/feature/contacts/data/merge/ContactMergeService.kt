@@ -31,20 +31,14 @@ class DefaultContactMergeService(
             "Signing public key must not be empty"
         }
 
-        val normalizedPhoneNumber =
-            phoneNumber
+        val normalizedPhoneNumber = phoneNumber
                 ?.takeIf { it.isNotBlank() }
                 ?.let { value ->
-                    phoneNumberNormalizer
-                        .normalize(value)
-                        .getOrThrow()
+                    phoneNumberNormalizer.normalize(value).getOrThrow()
                 }
 
         if (normalizedPhoneNumber != null) {
-            val byPhoneNumber =
-                contactDao.findByNormalizedPhoneNumber(
-                    normalizedPhoneNumber = normalizedPhoneNumber
-                )
+            val byPhoneNumber = contactDao.findByNormalizedPhoneNumber(normalizedPhoneNumber = normalizedPhoneNumber)
 
             if (byPhoneNumber != null) {
                 return ContactMergeResult(
@@ -55,21 +49,13 @@ class DefaultContactMergeService(
         }
 
         val bySigningPublicKey =
-            contactDao.findBySigningPublicKey(
-                signingPublicKey = signingPublicKey
-            )
+            contactDao.findBySigningPublicKey(signingPublicKey = signingPublicKey)
 
         if (bySigningPublicKey != null) {
-            return ContactMergeResult(
-                contactId = bySigningPublicKey.contact.id,
-                isNewContact = false
-            )
+            return ContactMergeResult(contactId = bySigningPublicKey.contact.id, isNewContact = false)
         }
 
-        return ContactMergeResult(
-            contactId = IdGenerator.generate(),
-            isNewContact = true
-        )
+        return ContactMergeResult(contactId = IdGenerator.generate(), isNewContact = true)
     }
 
     override suspend fun findOrCreateForDeviceContact(
@@ -80,41 +66,22 @@ class DefaultContactMergeService(
             "Device contact ID must not be blank"
         }
 
-        val byDeviceContact =
-            contactDao.findByDeviceContactId(
-                deviceContactId = deviceContactId
-            )
+        val byDeviceContact = contactDao.findByDeviceContactId(deviceContactId = deviceContactId)
 
         if (byDeviceContact != null) {
-            return ContactMergeResult(
-                contactId = byDeviceContact.contact.id,
-                isNewContact = false
-            )
+            return ContactMergeResult(contactId = byDeviceContact.contact.id, isNewContact = false)
         }
 
         phoneNumbers.forEach { phoneNumber ->
-            val normalized =
-                phoneNumberNormalizer
-                    .normalize(phoneNumber.value)
-                    .getOrNull()
-                    ?: return@forEach
+            val normalized = phoneNumberNormalizer.normalize(phoneNumber.value).getOrNull() ?: return@forEach
 
-            val byPhone =
-                contactDao.findByNormalizedPhoneNumber(
-                    normalizedPhoneNumber = normalized
-                )
+            val byPhone = contactDao.findByNormalizedPhoneNumber(normalizedPhoneNumber = normalized)
 
             if (byPhone != null) {
-                return ContactMergeResult(
-                    contactId = byPhone.contact.id,
-                    isNewContact = false
-                )
+                return ContactMergeResult(contactId = byPhone.contact.id, isNewContact = false)
             }
         }
 
-        return ContactMergeResult(
-            contactId = IdGenerator.generate(),
-            isNewContact = true
-        )
+        return ContactMergeResult(contactId = IdGenerator.generate(), isNewContact = true)
     }
 }

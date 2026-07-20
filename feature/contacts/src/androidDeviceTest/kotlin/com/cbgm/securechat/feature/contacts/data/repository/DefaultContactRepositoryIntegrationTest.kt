@@ -51,10 +51,7 @@ class DefaultContactRepositoryIntegrationTest {
                 )
                 .build()
 
-        repository =
-            DefaultContactRepository(
-                contactDao = database.contactDao()
-            )
+        repository = DefaultContactRepository(contactDao = database.contactDao())
     }
 
     @AfterTest

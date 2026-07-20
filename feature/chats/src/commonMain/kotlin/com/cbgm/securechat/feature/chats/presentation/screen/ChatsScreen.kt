@@ -1,27 +1,19 @@
 package com.cbgm.securechat.feature.chats.presentation.screen
 
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,7 +22,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.cbgm.securechat.core.ui.theme.Colors
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
@@ -50,7 +41,7 @@ fun ChatsScreen(
     chats: List<ChatListItem>,
     onAddChatClick: () -> Unit,
     onChatClick: (contactId: String) -> Unit,
-    scrollState: LazyListState,
+    listState: LazyListState,
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier
 ) {
@@ -60,7 +51,7 @@ fun ChatsScreen(
         LazyColumn(
             modifier = modifier.fillMaxSize(),
             contentPadding = innerPadding,
-            state = scrollState,
+            state = listState,
         ) {
             items(
                 items = chats,
@@ -75,19 +66,6 @@ fun ChatsScreen(
                     }
                 )
             }
-            items(20) { index ->
-                ChatItem(
-                    chat = ChatListItem(
-                        contactId = index.toString(),
-                        contactName = "Alice",
-                        lastMessage = "Hello!",
-                        timestamp = "10:00 AM"
-                    ),
-                    onClick = {
-                        //onChatClick(chat.contactId)
-                    }
-                )
-            }
         }
     }
 }
@@ -98,9 +76,7 @@ private fun ChatItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth()
-    ) {
+    Column(modifier = modifier.fillMaxWidth()) {
         ListItem(
             modifier = Modifier
                 .fillMaxWidth()
@@ -204,7 +180,7 @@ fun ChatsScreenPreview() {
             ),
             onAddChatClick = {},
             onChatClick = {},
-            scrollState = LazyListState(),
+            listState = LazyListState(),
             innerPadding = PaddingValues()
         )
     }

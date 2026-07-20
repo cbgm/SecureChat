@@ -30,7 +30,7 @@ private data class PatternElement(
 
 
 @Composable
-fun ChatPatternBackground(
+fun PatternBackground(
     modifier: Modifier = Modifier,
     backgroundColor: Color,
     alpha: Float = 0.06f

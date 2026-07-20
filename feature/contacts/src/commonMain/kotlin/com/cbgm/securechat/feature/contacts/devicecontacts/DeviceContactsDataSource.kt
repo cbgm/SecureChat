@@ -8,6 +8,5 @@ interface DeviceContactsDataSource {
      * The platform implementation is responsible for
      * permission checks.
      */
-    suspend fun getContacts():
-            Result<List<DeviceContact>>
+    suspend fun getContacts(): Result<List<DeviceContact>>
 }

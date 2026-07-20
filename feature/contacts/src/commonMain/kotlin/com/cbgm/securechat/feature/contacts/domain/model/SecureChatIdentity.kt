@@ -41,24 +41,15 @@ data class SecureChatIdentity(
     }
 
     override fun hashCode(): Int {
-        var result =
-            encryptionPublicKey.contentHashCode()
+        var result = encryptionPublicKey.contentHashCode()
 
-        result =
-            31 * result +
-                    signingPublicKey.contentHashCode()
+        result = 31 * result + signingPublicKey.contentHashCode()
 
-        result =
-            31 * result +
-                    verificationStatus.hashCode()
+        result = 31 * result + verificationStatus.hashCode()
 
-        result =
-            31 * result +
-                    keyExchangeStatus.hashCode()
+        result = 31 * result + keyExchangeStatus.hashCode()
 
-        result =
-            31 * result +
-                    updatedAtEpochMilliseconds.hashCode()
+        result = 31 * result + updatedAtEpochMilliseconds.hashCode()
 
         return result
     }

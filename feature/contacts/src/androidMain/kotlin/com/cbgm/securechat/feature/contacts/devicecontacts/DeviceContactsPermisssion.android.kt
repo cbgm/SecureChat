@@ -19,8 +19,7 @@ actual fun rememberDeviceContactsPermissionRequest(
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
-            contract =
-                ActivityResultContracts.RequestPermission()
+            contract = ActivityResultContracts.RequestPermission()
         ) { granted ->
             if (granted) {
                 onPermissionGranted()
@@ -36,11 +35,10 @@ actual fun rememberDeviceContactsPermissionRequest(
         onPermissionDenied
     ) {
         {
-            val permissionGranted =
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.READ_CONTACTS
-                ) == PackageManager.PERMISSION_GRANTED
+            val permissionGranted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.READ_CONTACTS
+            ) == PackageManager.PERMISSION_GRANTED
 
             if (permissionGranted) {
                 onPermissionGranted()

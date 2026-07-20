@@ -14,73 +14,42 @@ import com.cbgm.securechat.feature.contacts.domain.model.SecureChatIdentity
 fun ContactWithPublicIdentity.toDomain(): Contact {
     return Contact(
         id = contact.id,
-
         displayName = contact.displayName,
-
-        phoneNumbers =
-            phoneNumbers.map { phoneNumber ->
-                phoneNumber.toDomain()
-            },
-
-        preferredPhoneNumberId =
-            contact.preferredPhoneNumberId,
-
+        phoneNumbers = phoneNumbers.map { phoneNumber ->
+            phoneNumber.toDomain()
+        },
+        preferredPhoneNumberId = contact.preferredPhoneNumberId,
         deviceContactId =
             contact.deviceContactId,
-
-        deviceContactLinkStatus =
-            contact
-                .deviceContactLinkStatus
-                .toDeviceContactLinkStatus(),
-
-        secureChatIdentity =
-            publicIdentity?.toDomain(),
-
-        createdAtEpochMilliseconds =
-            contact.createdAtEpochMilliseconds,
-
-        updatedAtEpochMilliseconds =
-            contact.updatedAtEpochMilliseconds
+        deviceContactLinkStatus = contact.deviceContactLinkStatus.toDeviceContactLinkStatus(),
+        secureChatIdentity = publicIdentity?.toDomain(),
+        createdAtEpochMilliseconds = contact.createdAtEpochMilliseconds,
+        updatedAtEpochMilliseconds = contact.updatedAtEpochMilliseconds
     )
 }
 
-private fun ContactPhoneNumberEntity.toDomain():
-        ContactPhoneNumber {
+private fun ContactPhoneNumberEntity.toDomain(): ContactPhoneNumber {
 
     return ContactPhoneNumber(
         id = id,
         value = value,
-        type =
-            type.toContactPhoneNumberType(),
+        type = type.toContactPhoneNumberType(),
         label = label
     )
 }
 
-private fun ContactPublicIdentityEntity.toDomain():
-        SecureChatIdentity {
+private fun ContactPublicIdentityEntity.toDomain(): SecureChatIdentity {
 
     return SecureChatIdentity(
-        encryptionPublicKey =
-            encryptionPublicKey.copyOf(),
-
-        signingPublicKey =
-            signingPublicKey.copyOf(),
-
-        verificationStatus =
-            verificationStatus
-                .toContactVerificationStatus(),
-
-        keyExchangeStatus =
-            keyExchangeStatus
-                .toKeyExchangeStatus(),
-
-        updatedAtEpochMilliseconds =
-            updatedAtEpochMilliseconds
+        encryptionPublicKey = encryptionPublicKey.copyOf(),
+        signingPublicKey = signingPublicKey.copyOf(),
+        verificationStatus = verificationStatus.toContactVerificationStatus(),
+        keyExchangeStatus = keyExchangeStatus.toKeyExchangeStatus(),
+        updatedAtEpochMilliseconds = updatedAtEpochMilliseconds
     )
 }
 
-private fun String.toContactPhoneNumberType():
-        ContactPhoneNumberType {
+private fun String.toContactPhoneNumberType(): ContactPhoneNumberType {
 
     return when (this) {
         ContactPhoneNumberType.MOBILE.name ->
@@ -105,14 +74,11 @@ private fun String.toContactPhoneNumberType():
             ContactPhoneNumberType.OTHER
 
         else ->
-            error(
-                "Unknown contact phone-number type: $this"
-            )
+            error("Unknown contact phone-number type: $this")
     }
 }
 
-private fun String.toDeviceContactLinkStatus():
-        DeviceContactLinkStatus {
+private fun String.toDeviceContactLinkStatus(): DeviceContactLinkStatus {
 
     return when (this) {
         DeviceContactLinkStatus.NOT_LINKED.name ->
@@ -125,14 +91,11 @@ private fun String.toDeviceContactLinkStatus():
             DeviceContactLinkStatus.MISSING
 
         else ->
-            error(
-                "Unknown device-contact link status: $this"
-            )
+            error("Unknown device-contact link status: $this")
     }
 }
 
-private fun String.toContactVerificationStatus():
-        ContactVerificationStatus {
+private fun String.toContactVerificationStatus(): ContactVerificationStatus {
 
     return when (this) {
         ContactVerificationStatus.UNVERIFIED.name ->
@@ -142,14 +105,11 @@ private fun String.toContactVerificationStatus():
             ContactVerificationStatus.VERIFIED
 
         else ->
-            error(
-                "Unknown verification status: $this"
-            )
+            error("Unknown verification status: $this")
     }
 }
 
-private fun String.toKeyExchangeStatus():
-        KeyExchangeStatus {
+private fun String.toKeyExchangeStatus(): KeyExchangeStatus {
 
     return when (this) {
         KeyExchangeStatus.ONE_WAY.name ->
@@ -159,8 +119,6 @@ private fun String.toKeyExchangeStatus():
             KeyExchangeStatus.MUTUAL
 
         else ->
-            error(
-                "Unknown key-exchange status: $this"
-            )
+            error("Unknown key-exchange status: $this")
     }
 }

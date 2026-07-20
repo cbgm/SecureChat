@@ -21,13 +21,11 @@ class ImportSharedIdentity(
         encodedIdentity: String
     ): Result<Contact> {
         return runCatching {
-            val sharedIdentity =
-                identityShareCodec
+            val sharedIdentity = identityShareCodec
                     .decode(encodedIdentity)
                     .getOrThrow()
 
-            val phoneNumber =
-                sharedIdentity
+            val phoneNumber = sharedIdentity
                     .contactDetails
                     .phoneNumber
                     .trim()
@@ -36,23 +34,11 @@ class ImportSharedIdentity(
                         "Shared identity does not contain a phone number"
                     )
 
-            importContact(
-                request =
-                    ImportContactRequest(
-                        encryptionPublicKey =
-                            sharedIdentity
-                                .encryptionPublicKey
-                                .copyOf(),
-                        signingPublicKey =
-                            sharedIdentity
-                                .signingPublicKey
-                                .copyOf(),
-                        displayName =
-                            sharedIdentity
-                                .contactDetails
-                                .displayName,
-                        phoneNumber =
-                            phoneNumber
+            importContact(request = ImportContactRequest(
+                        encryptionPublicKey = sharedIdentity.encryptionPublicKey.copyOf(),
+                        signingPublicKey = sharedIdentity.signingPublicKey.copyOf(),
+                        displayName = sharedIdentity.contactDetails.displayName,
+                        phoneNumber = phoneNumber
                     )
             ).getOrThrow()
         }

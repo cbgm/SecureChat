@@ -194,7 +194,7 @@ private fun Content(
             ChatsRoute(
                 onAddChatClick = onAddChat,
                 onChatClick = onOpenChat,
-                chatListState = chatListState,
+                listState = chatListState,
                 innerPadding = innerPadding,
                 modifier = Modifier.fillMaxSize()
             )
@@ -205,7 +205,7 @@ private fun Content(
                 onShareIdentity = onShareIdentity,
                 onImportContact = onImportContact,
                 onContacts = onContacts,
-                identityListState = identityScrollState, // Pass the scroll state
+                scrollState = identityScrollState, // Pass the scroll state
                 innerPadding = innerPadding,       // Pass the padding layout boundaries
                 modifier = Modifier.fillMaxSize()
             )

@@ -30,104 +30,48 @@ class DefaultContactKeyExchangeStore(
                 "Signing public key must not be empty"
             }
 
-            val existing =
-                contactDao
-                    .findPublicIdentityByContactId(
-                        contactId = contactId
-                    )
+            val existing = contactDao.findPublicIdentityByContactId(contactId = contactId)
 
             val sameEncryptionKey =
-                existing
-                    ?.encryptionPublicKey
-                    ?.contentEquals(
-                        encryptionPublicKey
-                    )
-                    ?: false
+                existing?.encryptionPublicKey?.contentEquals(encryptionPublicKey) ?: false
 
             val sameSigningKey =
-                existing
-                    ?.signingPublicKey
-                    ?.contentEquals(
-                        signingPublicKey
-                    )
-                    ?: false
+                existing?.signingPublicKey?.contentEquals(signingPublicKey) ?: false
 
-            val sameIdentity =
-                existing != null &&
-                        sameEncryptionKey &&
-                        sameSigningKey
+            val sameIdentity = existing != null && sameEncryptionKey && sameSigningKey
 
-            val identityChanged =
-                existing != null &&
-                        !sameIdentity
+            val identityChanged = existing != null && !sameIdentity
 
-            val nextKeyExchangeStatus =
-                if (sameIdentity) {
-                    existing
-                        .keyExchangeStatus
-                        .toKeyExchangeStatus()
-                } else {
-                    KeyExchangeStatus.ONE_WAY
-                }
+            val nextKeyExchangeStatus = if (sameIdentity) {
+                existing.keyExchangeStatus.toKeyExchangeStatus()
+            } else {
+                KeyExchangeStatus.ONE_WAY
+            }
 
-            val nextVerificationStatus =
-                if (sameIdentity) {
-                    existing
-                        .verificationStatus
-                        .toVerificationStatus()
-                } else {
-                    ContactVerificationStatus
-                        .UNVERIFIED
-                }
+            val nextVerificationStatus = if (sameIdentity) {
+                existing.verificationStatus.toVerificationStatus()
+            } else {
+                ContactVerificationStatus.UNVERIFIED
+            }
 
             contactDao.upsertPublicIdentity(
-                identity =
-                    ContactPublicIdentityEntity(
-                        contactId =
-                            contactId,
-
-                        encryptionPublicKey =
-                            encryptionPublicKey
-                                .copyOf(),
-
-                        signingPublicKey =
-                            signingPublicKey
-                                .copyOf(),
-
-                        verificationStatus =
-                            nextVerificationStatus
-                                .name,
-
-                        keyExchangeStatus =
-                            nextKeyExchangeStatus
-                                .name,
-
-                        updatedAtEpochMilliseconds =
-                            SystemClock
-                                .nowEpochMilliseconds()
-                    )
+                identity = ContactPublicIdentityEntity(
+                    contactId = contactId,
+                    encryptionPublicKey = encryptionPublicKey.copyOf(),
+                    signingPublicKey = signingPublicKey.copyOf(),
+                    verificationStatus = nextVerificationStatus.name,
+                    keyExchangeStatus = nextKeyExchangeStatus.name,
+                    updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+                )
             )
 
             RemoteIdentityUpdate(
-                contactId =
-                    contactId,
-
-                encryptionPublicKey =
-                    encryptionPublicKey
-                        .copyOf(),
-
-                signingPublicKey =
-                    signingPublicKey
-                        .copyOf(),
-
-                keyExchangeStatus =
-                    nextKeyExchangeStatus,
-
-                verificationStatus =
-                    nextVerificationStatus,
-
-                identityChanged =
-                    identityChanged
+                contactId = contactId,
+                encryptionPublicKey = encryptionPublicKey.copyOf(),
+                signingPublicKey = signingPublicKey.copyOf(),
+                keyExchangeStatus = nextKeyExchangeStatus,
+                verificationStatus = nextVerificationStatus,
+                identityChanged = identityChanged
             )
         }
     }
@@ -144,41 +88,21 @@ class DefaultContactKeyExchangeStore(
                 "Contact ID must not be blank"
             }
 
-            require(
-                expectedRemoteEncryptionPublicKey
-                    .isNotEmpty()
-            ) {
+            require(expectedRemoteEncryptionPublicKey.isNotEmpty()) {
                 "Expected encryption key must not be empty"
             }
 
-            require(
-                expectedRemoteSigningPublicKey
-                    .isNotEmpty()
-            ) {
+            require(expectedRemoteSigningPublicKey.isNotEmpty()) {
                 "Expected signing key must not be empty"
             }
 
-            val updatedRows =
-                contactDao
-                    .updateKeyExchangeStatusIfKeysMatch(
-                        contactId =
-                            contactId,
-
-                        expectedEncryptionPublicKey =
-                            expectedRemoteEncryptionPublicKey,
-
-                        expectedSigningPublicKey =
-                            expectedRemoteSigningPublicKey,
-
-                        keyExchangeStatus =
-                            KeyExchangeStatus
-                                .MUTUAL
-                                .name,
-
-                        updatedAtEpochMilliseconds =
-                            SystemClock
-                                .nowEpochMilliseconds()
-                    )
+            val updatedRows = contactDao.updateKeyExchangeStatusIfKeysMatch(
+                contactId = contactId,
+                expectedEncryptionPublicKey = expectedRemoteEncryptionPublicKey,
+                expectedSigningPublicKey = expectedRemoteSigningPublicKey,
+                keyExchangeStatus = KeyExchangeStatus.MUTUAL.name,
+                updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+            )
 
             check(updatedRows == 1) {
                 "Contact identity changed before acknowledgement was applied"
@@ -186,49 +110,28 @@ class DefaultContactKeyExchangeStore(
         }
     }
 
-    override suspend fun resetAllAfterLocalIdentityChange():
-            Result<Unit> {
+    override suspend fun resetAllAfterLocalIdentityChange(): Result<Unit> {
 
         return runCatching {
-            contactDao
-                .replaceAllKeyExchangeStatuses(
-                    currentKeyExchangeStatus =
-                        KeyExchangeStatus
-                            .MUTUAL
-                            .name,
-
-                    keyExchangeStatus =
-                        KeyExchangeStatus
-                            .ONE_WAY
-                            .name,
-
-                    updatedAtEpochMilliseconds =
-                        SystemClock
-                            .nowEpochMilliseconds()
-                )
+            contactDao.replaceAllKeyExchangeStatuses(
+                currentKeyExchangeStatus = KeyExchangeStatus.MUTUAL.name,
+                keyExchangeStatus = KeyExchangeStatus.ONE_WAY.name,
+                updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+            )
         }
     }
 
-    private fun String.toKeyExchangeStatus():
-            KeyExchangeStatus {
+    private fun String.toKeyExchangeStatus(): KeyExchangeStatus {
 
-        return KeyExchangeStatus
-            .entries
-            .firstOrNull { status ->
-                status.name == this
-            }
-            ?: KeyExchangeStatus.ONE_WAY
+        return KeyExchangeStatus.entries.firstOrNull { status ->
+            status.name == this
+        } ?: KeyExchangeStatus.ONE_WAY
     }
 
-    private fun String.toVerificationStatus():
-            ContactVerificationStatus {
+    private fun String.toVerificationStatus(): ContactVerificationStatus {
 
-        return ContactVerificationStatus
-            .entries
-            .firstOrNull { status ->
-                status.name == this
-            }
-            ?: ContactVerificationStatus
-                .UNVERIFIED
+        return ContactVerificationStatus.entries.firstOrNull { status ->
+            status.name == this
+        } ?: ContactVerificationStatus.UNVERIFIED
     }
 }

@@ -12,35 +12,23 @@ actual fun rememberContactShareLauncher(
     encodedIdentity: String,
     shareTitle: String
 ): (Contact) -> Unit {
-    val context =
-        LocalContext.current
+    val context = LocalContext.current
 
-    val currentEncodedIdentity =
-        rememberUpdatedState(
-            newValue = encodedIdentity
-        )
+    val currentEncodedIdentity = rememberUpdatedState(newValue = encodedIdentity)
 
-    val currentShareTitle =
-        rememberUpdatedState(
-            newValue = shareTitle
-        )
+    val currentShareTitle =rememberUpdatedState(newValue = shareTitle)
 
     return remember(context) {
         { contact ->
-            val payload =
-                currentEncodedIdentity.value
-                    .trim()
+            val payload = currentEncodedIdentity.value.trim()
 
             if (payload.isNotEmpty()) {
-                val sendIntent =
-                    Intent(Intent.ACTION_SEND).apply {
+                val sendIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
-
                         putExtra(
                             Intent.EXTRA_SUBJECT,
                             "SecureChat: ${contact.displayName ?: "Contact"}"
                         )
-
                         putExtra(
                             Intent.EXTRA_TEXT,
                             buildShareText(
@@ -50,23 +38,15 @@ actual fun rememberContactShareLauncher(
                         )
                     }
 
-                val chooserIntent =
-                    Intent.createChooser(
-                        sendIntent,
-                        currentShareTitle.value
-                    ).apply {
+                val chooserIntent = Intent.createChooser(sendIntent, currentShareTitle.value).apply {
                         /*
                          * LocalContext may theoretically be backed by
                          * a non-Activity Context.
                          */
-                        addFlags(
-                            Intent.FLAG_ACTIVITY_NEW_TASK
-                        )
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
 
-                context.startActivity(
-                    chooserIntent
-                )
+                context.startActivity(chooserIntent)
             }
         }
     }
@@ -78,25 +58,13 @@ private fun buildShareText(
 ): String {
     return buildString {
         if (displayName != null) {
-            appendLine(
-                "SecureChat identity for $displayName."
-            )
+            appendLine("SecureChat identity for $displayName.")
         } else {
-            appendLine(
-                "SecureChat identity."
-            )
+            appendLine("SecureChat identity.")
         }
-
         appendLine()
-
-        appendLine(
-            "Open SecureChat and import this identity:"
-        )
-
+        appendLine("Open SecureChat and import this identity:")
         appendLine()
-
-        append(
-            encodedIdentity
-        )
+        append(encodedIdentity)
     }
 }

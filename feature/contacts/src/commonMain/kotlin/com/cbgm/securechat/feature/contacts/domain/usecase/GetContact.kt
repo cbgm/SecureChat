@@ -10,8 +10,6 @@ class GetContact(
     suspend operator fun invoke(
         contactId: String
     ): Result<Contact?> {
-        return repository.getContact(
-            contactId = contactId
-        )
+        return repository.getContact(contactId = contactId)
     }
 }

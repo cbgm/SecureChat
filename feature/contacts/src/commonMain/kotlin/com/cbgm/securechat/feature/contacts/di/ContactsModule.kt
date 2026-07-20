@@ -1,16 +1,11 @@
 package com.cbgm.securechat.feature.contacts.di
 
-import com.cbgm.securechat.core.crypto.hash.CryptoHash
-import com.cbgm.securechat.core.crypto.hash.DefaultCryptoHash
-import com.cbgm.securechat.core.crypto.safety.SafetyNumberGenerator
 import com.cbgm.securechat.core.protocol.handler.TypedProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.identity.LocalIdentityChangeHandler
-import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentityProvider
-import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
+import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.feature.contacts.data.identity.ContactLocalIdentityChangeHandler
 import com.cbgm.securechat.feature.contacts.data.identity.DefaultIdentityExchangeStarter
-import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.feature.contacts.data.merge.ContactMergeService
 import com.cbgm.securechat.feature.contacts.data.merge.DefaultContactMergeService
 import com.cbgm.securechat.feature.contacts.data.protocol.IdentityAcknowledgementPacketHandler
@@ -42,41 +37,27 @@ val contactsModule =
         }
 
         single<ContactKeyExchangeStore> {
-            DefaultContactKeyExchangeStore(
-                contactDao = get()
-            )
+            DefaultContactKeyExchangeStore(contactDao = get())
         }
 
         single<LocalIdentityChangeHandler> {
-            ContactLocalIdentityChangeHandler(
-                contactKeyExchangeStore = get()
-            )
+            ContactLocalIdentityChangeHandler(contactKeyExchangeStore = get())
         }
 
-        singleOf(
-            ::IdentityPacketHandler
-        ) {
-            bind<
-                    TypedProtocolPacketHandler
-                    >()
+        singleOf(::IdentityPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
         }
 
         single<IdentityExchangeStarter> {
             DefaultIdentityExchangeStarter(
                 contactDao = get(),
-
                 localPublicIdentityProvider = get(),
-
                 protocolOutbox = get()
             )
         }
 
-        singleOf(
-            ::IdentityAcknowledgementPacketHandler
-        ) {
-            bind<
-                    TypedProtocolPacketHandler
-                    >()
+        singleOf(::IdentityAcknowledgementPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
         }
 
         single<ContactRepository> {
@@ -85,34 +66,27 @@ val contactsModule =
                 mergeService = get(),
                 contactKeyExchangeStore = get(),
                 identityExchangeStarter = get(),
-                phoneNumberNormalizer = get<PhoneNumberNormalizer>()
+                phoneNumberNormalizer = get<PhoneNumberNormalizer>(),
+                deviceContactWriter = get()
             )
         }
 
         factory {
-            ImportContact(
-                repository = get()
-            )
+            ImportContact(repository = get())
         }
 
         factory {
-            GetContact(
-                repository = get()
-            )
+            GetContact(repository = get())
         }
 
         factory {
-            ObserveContacts(
-                repository = get()
-            )
+            ObserveContacts(repository = get())
         }
 
         factory {
             ImportDeviceContacts(
-                deviceContactsDataSource =
-                    get(),
-                repository =
-                    get()
+                deviceContactsDataSource = get(),
+                repository = get()
             )
         }
 
@@ -125,16 +99,11 @@ val contactsModule =
 
         viewModel { parameters ->
             ContactDetailsViewModel(
-                contactId =
-                    parameters.get(),
-                getContact =
-                    get(),
-                getPublicIdentity =
-                    get(),
-                contactRepository =
-                    get(),
-                safetyNumberGenerator =
-                    get()
+                contactId = parameters.get(),
+                getContact = get(),
+                getPublicIdentity = get(),
+                contactRepository = get(),
+                safetyNumberGenerator = get()
             )
         }
     }

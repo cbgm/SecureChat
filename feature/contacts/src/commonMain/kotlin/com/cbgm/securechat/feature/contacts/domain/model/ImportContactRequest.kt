@@ -46,24 +46,15 @@ data class ImportContactRequest(
     }
 
     override fun hashCode(): Int {
-        var result =
-            contactId?.hashCode() ?: 0
+        var result = contactId?.hashCode() ?: 0
 
-        result =
-            31 * result +
-                    (displayName?.hashCode() ?: 0)
+        result = 31 * result + (displayName?.hashCode() ?: 0)
 
-        result =
-            31 * result +
-                    (phoneNumber?.hashCode() ?: 0)
+        result = 31 * result + (phoneNumber?.hashCode() ?: 0)
 
-        result =
-            31 * result +
-                    encryptionPublicKey.contentHashCode()
+        result = 31 * result + encryptionPublicKey.contentHashCode()
 
-        result =
-            31 * result +
-                    signingPublicKey.contentHashCode()
+        result = 31 * result + signingPublicKey.contentHashCode()
 
         return result
     }
