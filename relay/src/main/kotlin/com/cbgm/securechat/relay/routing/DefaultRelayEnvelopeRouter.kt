@@ -18,12 +18,6 @@ class DefaultRelayEnvelopeRouter(
         return runCatching {
             pendingEnvelopeStore.enqueue(envelope = envelope)
 
-            runCatching {
-                deliverPending(recipientId = envelope.recipientId)
-            }.onFailure { error ->
-                println("Immediate envelope delivery failed: ${error.message}")
-            }
-
             RelayRoutingResult.Accepted
         }.getOrElse { error ->
             RelayRoutingResult.Failed(message = error.message ?: "Envelope could not be stored")

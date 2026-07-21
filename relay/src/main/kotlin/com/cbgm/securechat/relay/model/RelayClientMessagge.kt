@@ -26,6 +26,20 @@ sealed interface RelayClientMessage {
     ) : RelayClientMessage
 
     @Serializable
+    @SerialName("typing_state")
+    data class TypingState(
+        val recipientId: String,
+        val isTyping: Boolean
+    ) : RelayClientMessage {
+
+        init {
+            require(recipientId.isNotBlank()) {
+                "Recipient relay ID must not be blank"
+            }
+        }
+    }
+
+    @Serializable
     @SerialName("acknowledge_envelope")
     data class AcknowledgeEnvelope(
         val envelopeId: String

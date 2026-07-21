@@ -1,7 +1,6 @@
 package com.cbgm.securechat.feature.chats.presentation.screen
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -49,10 +48,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -65,6 +61,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.ui.scroll.rememberBarsState
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.chats.domain.model.ChatMessage
@@ -93,7 +90,7 @@ fun ChatScreen(
 ) {
     val chatListState = rememberLazyListState()
 
-    val barsState = rememberMainBarsState(chatListState = chatListState)
+    val barsState = rememberBarsState(state = chatListState)
 
     val topBarColor by animateColorAsState(
         targetValue = MaterialTheme.colorScheme.background.copy(alpha = barsState.topBarAlpha),
@@ -170,6 +167,21 @@ fun ChatScreen(
                         .fillMaxWidth()
                         .background(bottomBarColor)
                 ) {
+
+                    Text(
+                        text = "${uiState.contactName} is typing…",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = MaterialTheme.spacing.large,
+                                vertical = MaterialTheme.spacing.base.div(2)
+                            ),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (uiState.isContactTyping) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.background,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
                     MessageInput(
                         value = uiState.messageText,
                         onValueChange = onMessageTextChanged,
@@ -683,7 +695,11 @@ private fun MessageInput(
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.navigationBars)
             .imePadding()
-            .padding(MaterialTheme.spacing.base),
+            .padding(
+                start = MaterialTheme.spacing.base,
+                end = MaterialTheme.spacing.base,
+                bottom = MaterialTheme.spacing.base
+            ),
         verticalAlignment = Alignment.Bottom
     ) {
         BasicTextField(
@@ -812,35 +828,6 @@ private fun ErrorMessage(
     )
 }
 
-@Stable
-private data class MainBarsState(
-    val topBarAlpha: Float,
-    val bottomBarAlpha: Float
-)
-
-@Composable
-private fun rememberMainBarsState(chatListState: LazyListState): MainBarsState {
-    val contentBehindTopBar by remember(chatListState) {
-        derivedStateOf { chatListState.canScrollForward }
-    }
-
-    val contentBehindBottomBar by remember(chatListState) {
-        derivedStateOf { chatListState.canScrollBackward }
-    }
-
-    val topBarAlpha by animateFloatAsState(
-        targetValue = if (contentBehindTopBar) 0.97f else 1f,
-        label = "TopBarAlpha"
-    )
-
-    val bottomBarAlpha by animateFloatAsState(
-        targetValue = if (contentBehindBottomBar) 0.97f else 1f,
-        label = "BottomBarAlpha"
-    )
-
-    return MainBarsState(topBarAlpha = topBarAlpha, bottomBarAlpha = bottomBarAlpha)
-}
-
 @Preview
 @Composable
 fun ChatScreenPreview() {
@@ -872,6 +859,7 @@ fun ChatScreenMessagesPreview() {
                 contactName = "Alex",
                 contactSecurityState = ContactSecurityState.MUTUAL_KEYS_VERIFIED,
                 errorMessage = null,
+                isContactTyping = true,
                 messages = listOf(
                     ChatMessage(
                         id = "1",

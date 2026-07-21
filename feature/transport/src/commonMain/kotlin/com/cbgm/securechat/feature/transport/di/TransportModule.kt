@@ -8,6 +8,7 @@ import com.cbgm.securechat.core.protocol.phone.LocalPhoneNumberProvider
 import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
 import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
+import com.cbgm.securechat.feature.chats.domain.repository.TypingIndicatorGateway
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
 import com.cbgm.securechat.feature.transport.connection.DefaultRelayConnectionManager
@@ -31,6 +32,7 @@ import com.cbgm.securechat.feature.transport.sender.WebSocketOutgoingWireSender
 import com.cbgm.securechat.feature.transport.websocket.DefaultWebSocketTransportClient
 import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
 import com.cbgm.securechat.feature.transport.websocket.createPlatformHttpClient
+import com.cbgm.securechat.feature.transport.typing.RelayTypingIndicatorGateway
 import io.ktor.client.HttpClient
 import kotlinx.serialization.json.Json
 import org.koin.core.qualifier.named
@@ -76,6 +78,13 @@ val transportModule =
             DefaultWebSocketTransportClient(
                 httpClient = get<HttpClient>(),
                 json = get(qualifier = named(RELAY_JSON_QUALIFIER))
+            )
+        }
+
+        single<TypingIndicatorGateway> {
+            RelayTypingIndicatorGateway(
+                webSocketTransportClient = get<WebSocketTransportClient>(),
+                contactRelayIdResolver = get<ContactRelayIdResolver>()
             )
         }
 

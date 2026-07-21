@@ -4,6 +4,7 @@ import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
 import com.cbgm.securechat.feature.transport.relay.model.RelayClientMessage
 import com.cbgm.securechat.feature.transport.relay.model.RelayEnvelope
 import com.cbgm.securechat.feature.transport.relay.model.RelayServerMessage
+import com.cbgm.securechat.feature.transport.relay.model.RelayTypingEvent
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.plugins.websocket.webSocket
@@ -30,6 +31,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration.Companion.milliseconds
 
 class DefaultWebSocketTransportClient(
     private val httpClient: HttpClient,
@@ -48,6 +50,12 @@ class DefaultWebSocketTransportClient(
         MutableSharedFlow<RelayEnvelope>(extraBufferCapacity = INCOMING_BUFFER_CAPACITY)
 
     override val incomingEnvelopes: Flow<RelayEnvelope> = mutableIncomingEnvelopes.asSharedFlow()
+
+    private val mutableIncomingTypingEvents =
+        MutableSharedFlow<RelayTypingEvent>(extraBufferCapacity = INCOMING_BUFFER_CAPACITY)
+
+    override val incomingTypingEvents: Flow<RelayTypingEvent> =
+        mutableIncomingTypingEvents.asSharedFlow()
 
     private val sessionMutex = Mutex()
 
@@ -109,7 +117,7 @@ class DefaultWebSocketTransportClient(
             try {
                 sendEnvelopeFrame(envelope = envelope)
 
-                withTimeout(timeoutMilliseconds) {
+                withTimeout(timeoutMilliseconds.milliseconds) {
                     acknowledgement.await()
                 }
             } finally {
@@ -147,6 +155,42 @@ class DefaultWebSocketTransportClient(
 
                 activeSession.send(
                     Frame.Text(encodedMessage)
+                )
+            }
+        }
+    }
+
+    override suspend fun sendTypingState(
+        recipientId: String,
+        isTyping: Boolean
+    ): Result<Unit> {
+        return runCatching {
+            require(recipientId.isNotBlank()) {
+                "Recipient relay ID must not be blank"
+            }
+
+            check(connectionState.value is TransportConnectionState.Connected) {
+                "WebSocket relay is not connected"
+            }
+
+            sendMutex.withLock {
+                val activeSession = sessionMutex.withLock {
+                    session
+                } ?: error(
+                    "WebSocket session is not available"
+                )
+
+                val clientMessage = RelayClientMessage.TypingState(
+                    recipientId = recipientId,
+                    isTyping = isTyping
+                )
+
+                activeSession.send(
+                    Frame.Text(
+                        json.encodeToString<RelayClientMessage>(
+                            clientMessage
+                        )
+                    )
                 )
             }
         }
@@ -246,11 +290,15 @@ class DefaultWebSocketTransportClient(
             }
 
             mutableConnectionState.value = TransportConnectionState.Disconnected
-        } catch (error: CancellationException) {
+        } catch (
+            error: CancellationException
+        ) {
             mutableConnectionState.value = TransportConnectionState.Disconnected
 
             throw error
-        } catch (error: Throwable) {
+        } catch (
+            error: Throwable
+        ) {
             println("WebSocket connection failed: ${error.message}")
 
             mutableConnectionState.value = TransportConnectionState.Failed(
@@ -334,6 +382,15 @@ class DefaultWebSocketTransportClient(
 
             is RelayServerMessage.IncomingEnvelope -> {
                 mutableIncomingEnvelopes.emit(message.envelope)
+            }
+
+            is RelayServerMessage.TypingState -> {
+                mutableIncomingTypingEvents.emit(
+                    RelayTypingEvent(
+                        senderId = message.senderId,
+                        isTyping = message.isTyping
+                    )
+                )
             }
 
             is RelayServerMessage.EnvelopeAccepted -> {

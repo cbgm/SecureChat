@@ -1,7 +1,6 @@
 package com.cbgm.securechat.feature.contacts.presentation.contactdetails
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -45,10 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -62,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.crypto.safety.SafetyNumber
 import com.cbgm.securechat.core.extensions.toHexString
 import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
+import com.cbgm.securechat.core.ui.scroll.rememberBarsState
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
@@ -95,7 +92,7 @@ fun ContactDetailsScreen(
         }
 
     val scrollState = rememberScrollState()
-    val barsState = rememberMainBarsState(scrollState = scrollState)
+    val barsState = rememberBarsState(state = scrollState)
 
     val topBarColor by animateColorAsState(
         targetValue = MaterialTheme.colorScheme.background.copy(alpha = barsState.topBarAlpha),
@@ -782,23 +779,6 @@ private fun ByteArray.toFingerprint(): String {
         .uppercase()
         .chunked(4)
         .joinToString(separator = "-")
-}
-
-@Stable
-private data class MainBarsState(val topBarAlpha: Float)
-
-@Composable
-private fun rememberMainBarsState(scrollState: ScrollState): MainBarsState {
-    val contentBehindTopBar by remember(scrollState) {
-        derivedStateOf { scrollState.value > 0 }
-    }
-
-    val topBarAlpha by animateFloatAsState(
-        targetValue = if (contentBehindTopBar) 0.97f else 1f,
-        label = "TopBarAlpha"
-    )
-
-    return MainBarsState(topBarAlpha = topBarAlpha)
 }
 
 @Preview

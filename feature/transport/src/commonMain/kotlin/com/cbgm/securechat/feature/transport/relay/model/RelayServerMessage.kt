@@ -18,6 +18,13 @@ sealed interface RelayServerMessage {
         val envelope: RelayEnvelope
     ) : RelayServerMessage
 
+    @Serializable
+    @SerialName("typing_state")
+    data class TypingState(
+        val senderId: String,
+        val isTyping: Boolean
+    ) : RelayServerMessage
+
     /**
      * Confirms that the relay accepted the envelope.
      *

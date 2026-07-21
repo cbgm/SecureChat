@@ -113,6 +113,24 @@ class RelayWebSocketHandler(
                 }
             }
 
+            is RelayClientMessage.TypingState -> {
+                val connection = currentConnection
+
+                if (connection == null) {
+                    sendError(
+                        session = session,
+                        code = "NOT_REGISTERED",
+                        message = "Register before sending typing state"
+                    )
+                } else {
+                    handleTypingState(
+                        sender = connection,
+                        recipientId = message.recipientId,
+                        isTyping = message.isTyping
+                    )
+                }
+            }
+
             is RelayClientMessage.AcknowledgeEnvelope -> {
                 val connection = currentConnection
 
@@ -178,6 +196,32 @@ class RelayWebSocketHandler(
         }
     }
 
+    private suspend fun handleTypingState(
+        sender: RelayClientConnection,
+        recipientId: String,
+        isTyping: Boolean
+    ) {
+        val recipient = connectionRegistry.find(
+            relayId = recipientId
+        ) ?: return
+
+        runCatching {
+            recipient.sendText(
+                json.encodeToString<RelayServerMessage>(
+                    RelayServerMessage.TypingState(
+                        senderId = sender.relayId,
+                        isTyping = isTyping
+                    )
+                )
+            )
+        }.onFailure { error ->
+            println(
+                "Typing state delivery failed from ${sender.relayId} " +
+                        "to $recipientId: ${error.message}"
+            )
+        }
+    }
+
     private suspend fun handleEnvelope(
         session: DefaultWebSocketServerSession,
         connection: RelayClientConnection,
@@ -206,6 +250,17 @@ class RelayWebSocketHandler(
                         )
                     )
                 )
+
+                runCatching {
+                    envelopeRouter.deliverPending(
+                        recipientId = envelope.recipientId
+                    )
+                }.onFailure { error ->
+                    println(
+                        "Immediate envelope delivery failed for " +
+                                "${envelope.recipientId}: ${error.message}"
+                    )
+                }
             }
 
             is RelayRoutingResult.Failed -> {

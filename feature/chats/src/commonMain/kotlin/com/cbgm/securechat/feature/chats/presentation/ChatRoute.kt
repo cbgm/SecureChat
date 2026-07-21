@@ -1,6 +1,7 @@
 package com.cbgm.securechat.feature.chats.presentation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +36,12 @@ fun ChatRoute(
 
     LaunchedEffect(key1 = contactId) {
         viewModel.markConversationRead()
+    }
+
+    DisposableEffect(key1 = contactId) {
+        onDispose {
+            viewModel.stopTyping()
+        }
     }
 
     val incomingMessageIds = uiState.messages
