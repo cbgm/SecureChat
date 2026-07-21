@@ -81,43 +81,56 @@ interface ChatDao {
 
     @Query(
         """
-        SELECT
-            conversations.id AS conversationId,
-            conversations.contactId AS contactId,
-            contacts.displayName AS contactName,
+    SELECT
+        conversations.id AS conversationId,
+        conversations.contactId AS contactId,
+        contacts.displayName AS contactName,
 
-            (
-                SELECT messages.text
-                FROM messages
-                WHERE messages.conversationId =
-                    conversations.id
-                ORDER BY
-                    messages.createdAtEpochMilliseconds DESC,
-                    messages.id DESC
-                LIMIT 1
-            ) AS lastMessageText,
+        (
+            SELECT messages.text
+            FROM messages
+            WHERE messages.conversationId = conversations.id
+            ORDER BY
+                messages.createdAtEpochMilliseconds DESC,
+                messages.id DESC
+            LIMIT 1
+        ) AS lastMessageText,
 
-            (
-                SELECT messages.createdAtEpochMilliseconds
-                FROM messages
-                WHERE messages.conversationId =
-                    conversations.id
-                ORDER BY
-                    messages.createdAtEpochMilliseconds DESC,
-                    messages.id DESC
-                LIMIT 1
-            ) AS lastMessageTimestamp,
+        (
+            SELECT messages.createdAtEpochMilliseconds
+            FROM messages
+            WHERE messages.conversationId = conversations.id
+            ORDER BY
+                messages.createdAtEpochMilliseconds DESC,
+                messages.id DESC
+            LIMIT 1
+        ) AS lastMessageTimestamp,
 
-            conversations.updatedAtEpochMilliseconds
-                AS updatedAtEpochMilliseconds
+        (
+            SELECT COUNT(*)
+            FROM messages
+            WHERE messages.conversationId = conversations.id
+              AND messages.isMine = 0
+              AND messages.readReceiptSent = 0
+              AND messages.contentStatus = 'READABLE'
+        ) AS unreadCount,
 
-        FROM conversations
+        conversations.updatedAtEpochMilliseconds
+            AS updatedAtEpochMilliseconds
 
-        INNER JOIN contacts
-            ON contacts.id = conversations.contactId
+    FROM conversations
 
-        ORDER BY conversations.updatedAtEpochMilliseconds DESC
-        """
+    INNER JOIN contacts
+        ON contacts.id = conversations.contactId
+
+    WHERE EXISTS (
+        SELECT 1
+        FROM messages
+        WHERE messages.conversationId = conversations.id
+    )
+
+    ORDER BY conversations.updatedAtEpochMilliseconds DESC
+    """
     )
     fun observeConversationSummaries(): Flow<List<ConversationSummary>>
 

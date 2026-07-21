@@ -5,6 +5,7 @@ data class ConversationSummary(
     val contactId: String,
     val contactName: String?,
     val lastMessageText: String?,
+    val unreadCount: Int,
     val lastMessageTimestamp: Long?,
     val updatedAtEpochMilliseconds: Long
 )

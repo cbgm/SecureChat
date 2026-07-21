@@ -400,6 +400,11 @@ class DefaultChatsRepository(
             contactName = "",
             messages = messages.sortedBy { it.createdAtEpochMilliseconds }.map { entity ->
                 entity.toDomain(contactId = conversation.contactId)
+            },
+            unreadCount = messages.count { message ->
+                !message.isMine &&
+                        !message.readReceiptSent &&
+                        message.contentStatus == MessageContentStatus.READABLE.name
             }
         )
     }
@@ -442,7 +447,8 @@ class DefaultChatsRepository(
             id = conversationId,
             contactId = contactId,
             contactName = contactName?.takeIf { it.isNotBlank() } ?: "Unknown contact",
-            messages = listOfNotNull(lastMessage)
+            messages = listOfNotNull(lastMessage),
+            unreadCount = unreadCount
         )
     }
 

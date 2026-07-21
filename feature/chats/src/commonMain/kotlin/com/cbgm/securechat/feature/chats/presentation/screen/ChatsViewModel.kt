@@ -23,7 +23,8 @@ class ChatsViewModel(
                         contactId = conversation.contactId,
                         contactName = conversation.contactName,
                         lastMessage = conversation.lastMessage?.text ?: "No messages yet",
-                        timestamp = conversation.lastMessage?.timestamp?.toString().orEmpty()
+                        timestamp = conversation.lastMessage?.timestamp?.toString().orEmpty(),
+                        unreadCount = conversation.unreadCount
                     )
                 }
             )
