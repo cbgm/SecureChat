@@ -4,12 +4,8 @@ import com.cbgm.securechat.relay.model.RelayEnvelope
 
 sealed interface RelayRoutingResult {
 
-    data object Delivered :
+    data object Accepted :
         RelayRoutingResult
-
-    data class RecipientOffline(
-        val recipientId: String
-    ) : RelayRoutingResult
 
     data class Failed(
         val message: String
@@ -18,7 +14,11 @@ sealed interface RelayRoutingResult {
 
 interface RelayEnvelopeRouter {
 
-    suspend fun route(
+    suspend fun accept(
         envelope: RelayEnvelope
     ): RelayRoutingResult
+
+    suspend fun deliverPending(
+        recipientId: String
+    )
 }

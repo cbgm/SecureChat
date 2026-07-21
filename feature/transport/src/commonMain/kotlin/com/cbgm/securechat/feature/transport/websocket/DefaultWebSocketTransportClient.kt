@@ -120,6 +120,38 @@ class DefaultWebSocketTransportClient(
         }
     }
 
+    override suspend fun acknowledgeIncomingEnvelope(
+        envelopeId: String
+    ): Result<Unit> {
+        return runCatching {
+            require(envelopeId.isNotBlank()) {
+                "Envelope ID must not be blank"
+            }
+
+            sendMutex.withLock {
+                val activeSession = sessionMutex.withLock {
+                    session
+                } ?: error(
+                    "WebSocket session is not available"
+                )
+
+                val clientMessage =
+                    RelayClientMessage.AcknowledgeEnvelope(
+                        envelopeId = envelopeId
+                    )
+
+                val encodedMessage =
+                    json.encodeToString<RelayClientMessage>(
+                        clientMessage
+                    )
+
+                activeSession.send(
+                    Frame.Text(encodedMessage)
+                )
+            }
+        }
+    }
+
     override suspend fun disconnect() {
         val activeConnectionJob = connectionJob
 
@@ -214,15 +246,11 @@ class DefaultWebSocketTransportClient(
             }
 
             mutableConnectionState.value = TransportConnectionState.Disconnected
-        } catch (
-            error: CancellationException
-        ) {
+        } catch (error: CancellationException) {
             mutableConnectionState.value = TransportConnectionState.Disconnected
 
             throw error
-        } catch (
-            error: Throwable
-        ) {
+        } catch (error: Throwable) {
             println("WebSocket connection failed: ${error.message}")
 
             mutableConnectionState.value = TransportConnectionState.Failed(

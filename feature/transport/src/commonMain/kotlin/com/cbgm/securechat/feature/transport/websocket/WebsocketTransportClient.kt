@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 interface WebSocketTransportClient {
 
     val connectionState: StateFlow<TransportConnectionState>
+
     val incomingEnvelopes: Flow<RelayEnvelope>
 
     fun connect(
@@ -15,13 +16,13 @@ interface WebSocketTransportClient {
         localRelayId: String
     )
 
-    /**
-     * Sends an envelope and completes only after the relay returns
-     * EnvelopeAccepted for the same envelopeId.
-     */
     suspend fun sendEnvelopeAndAwaitAcceptance(
         envelope: RelayEnvelope,
         timeoutMilliseconds: Long
+    ): Result<Unit>
+
+    suspend fun acknowledgeIncomingEnvelope(
+        envelopeId: String
     ): Result<Unit>
 
     suspend fun disconnect()

@@ -5,6 +5,8 @@ import com.cbgm.securechat.relay.routing.DefaultRelayEnvelopeRouter
 import com.cbgm.securechat.relay.routing.RelayEnvelopeRouter
 import com.cbgm.securechat.relay.session.InMemoryRelayConnectionRegistry
 import com.cbgm.securechat.relay.session.RelayConnectionRegistry
+import com.cbgm.securechat.relay.store.InMemoryPendingEnvelopeStore
+import com.cbgm.securechat.relay.store.PendingEnvelopeStore
 import com.cbgm.securechat.relay.websocket.RelayWebSocketHandler
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -33,14 +35,18 @@ fun Application.relayModule() {
 
     val connectionRegistry: RelayConnectionRegistry = InMemoryRelayConnectionRegistry()
 
+    val pendingEnvelopeStore: PendingEnvelopeStore = InMemoryPendingEnvelopeStore()
+
     val envelopeRouter: RelayEnvelopeRouter = DefaultRelayEnvelopeRouter(
         connectionRegistry = connectionRegistry,
+        pendingEnvelopeStore = pendingEnvelopeStore,
         json = json
     )
 
     val handler = RelayWebSocketHandler(
         connectionRegistry = connectionRegistry,
         envelopeRouter = envelopeRouter,
+        pendingEnvelopeStore = pendingEnvelopeStore,
         json = json
     )
 
@@ -52,11 +58,13 @@ fun Application.relayModule() {
         }
 
         get("/health") {
-            val connectedClients = connectionRegistry.connectedCount()
+            val connectedClients =
+                connectionRegistry.connectedCount()
 
-            call.respondText(
-                "ok connectedClients=$connectedClients"
-            )
+            val pendingEnvelopes =
+                pendingEnvelopeStore.pendingCount()
+
+            call.respondText("ok connectedClients=$connectedClients " + "pendingEnvelopes=$pendingEnvelopes")
         }
 
         webSocket("/relay") {

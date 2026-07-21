@@ -32,8 +32,8 @@ class DefaultIncomingRelayRunner(
                 .incomingEnvelopes
                 .collect { envelope ->
                     processEnvelope(
+                        envelopeId = envelope.envelopeId,
                         senderRelayId = envelope.senderId,
-                        recipientRelayId = envelope.recipientId,
                         encodedTransportPayload = envelope.payload
                     )
                 }
@@ -46,8 +46,8 @@ class DefaultIncomingRelayRunner(
     }
 
     private suspend fun processEnvelope(
+        envelopeId: String,
         senderRelayId: String,
-        recipientRelayId: String,
         encodedTransportPayload: String
     ) {
         try {
@@ -71,7 +71,16 @@ class DefaultIncomingRelayRunner(
                 localEncryptionPrivateKey = keyPair.privateKey
             )
 
-            println("Incoming envelope stored for contact $contactId")
+            webSocketTransportClient
+                .acknowledgeIncomingEnvelope(
+                    envelopeId = envelopeId
+                )
+                .getOrThrow()
+
+            println(
+                "Incoming envelope stored and acknowledged: " +
+                        "envelopeId=$envelopeId, contactId=$contactId"
+            )
         } catch (
             error: CancellationException
         ) {

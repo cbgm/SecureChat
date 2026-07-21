@@ -24,4 +24,17 @@ sealed interface RelayClientMessage {
     data class SendEnvelope(
         val envelope: RelayEnvelope
     ) : RelayClientMessage
+
+    @Serializable
+    @SerialName("acknowledge_envelope")
+    data class AcknowledgeEnvelope(
+        val envelopeId: String
+    ) : RelayClientMessage {
+
+        init {
+            require(envelopeId.isNotBlank()) {
+                "Envelope ID must not be blank"
+            }
+        }
+    }
 }

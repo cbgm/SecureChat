@@ -1,11 +1,13 @@
 package com.cbgm.securechat.relay.websocket
 
 import com.cbgm.securechat.relay.model.RelayClientMessage
+import com.cbgm.securechat.relay.model.RelayEnvelope
 import com.cbgm.securechat.relay.model.RelayServerMessage
 import com.cbgm.securechat.relay.routing.RelayEnvelopeRouter
 import com.cbgm.securechat.relay.routing.RelayRoutingResult
 import com.cbgm.securechat.relay.session.RelayClientConnection
 import com.cbgm.securechat.relay.session.RelayConnectionRegistry
+import com.cbgm.securechat.relay.store.PendingEnvelopeStore
 import io.ktor.server.websocket.DefaultWebSocketServerSession
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
@@ -14,9 +16,8 @@ import kotlinx.serialization.json.Json
 
 class RelayWebSocketHandler(
     private val connectionRegistry: RelayConnectionRegistry,
-
     private val envelopeRouter: RelayEnvelopeRouter,
-
+    private val pendingEnvelopeStore: PendingEnvelopeStore,
     private val json: Json
 ) {
 
@@ -29,7 +30,7 @@ class RelayWebSocketHandler(
             session.incoming.consumeEach { frame ->
                 when (frame) {
                     is Frame.Text -> {
-                        val shouldContinue = handleTextFrame(
+                        handleTextFrame(
                             session = session,
                             encodedMessage = frame.readText(),
                             currentConnection = registeredConnection,
@@ -37,10 +38,6 @@ class RelayWebSocketHandler(
                                 registeredConnection = connection
                             }
                         )
-
-                        if (!shouldContinue) {
-                            return@consumeEach
-                        }
                     }
 
                     is Frame.Close -> {
@@ -73,10 +70,11 @@ class RelayWebSocketHandler(
         encodedMessage: String,
         currentConnection: RelayClientConnection?,
         onRegistered: (RelayClientConnection) -> Unit
-    ): Boolean {
-
+    ) {
         val message = runCatching {
-            json.decodeFromString<RelayClientMessage>(encodedMessage)
+            json.decodeFromString<RelayClientMessage>(
+                encodedMessage
+            )
         }.getOrElse { error ->
             sendError(
                 session = session,
@@ -84,10 +82,10 @@ class RelayWebSocketHandler(
                 message = error.message ?: "Invalid relay message"
             )
 
-            return true
+            return
         }
 
-        return when (message) {
+        when (message) {
             is RelayClientMessage.Register -> {
                 handleRegistration(
                     session = session,
@@ -95,8 +93,6 @@ class RelayWebSocketHandler(
                     currentConnection = currentConnection,
                     onRegistered = onRegistered
                 )
-
-                true
             }
 
             is RelayClientMessage.SendEnvelope -> {
@@ -108,16 +104,29 @@ class RelayWebSocketHandler(
                         code = "NOT_REGISTERED",
                         message = "Register before sending envelopes"
                     )
-
-                    true
                 } else {
                     handleEnvelope(
                         session = session,
                         connection = connection,
                         envelope = message.envelope
                     )
+                }
+            }
 
-                    true
+            is RelayClientMessage.AcknowledgeEnvelope -> {
+                val connection = currentConnection
+
+                if (connection == null) {
+                    sendError(
+                        session = session,
+                        code = "NOT_REGISTERED",
+                        message = "Register before acknowledging envelopes"
+                    )
+                } else {
+                    pendingEnvelopeStore.remove(
+                        recipientId = connection.relayId,
+                        envelopeId = message.envelopeId
+                    )
                 }
             }
         }
@@ -139,13 +148,14 @@ class RelayWebSocketHandler(
             return
         }
 
-        val connection =
-            RelayClientConnection(
-                relayId = relayId,
-                session = session
-            )
+        val connection = RelayClientConnection(
+            relayId = relayId,
+            session = session
+        )
 
-        connectionRegistry.register(connection = connection)
+        connectionRegistry.register(
+            connection = connection
+        )
 
         onRegistered(connection)
 
@@ -156,13 +166,22 @@ class RelayWebSocketHandler(
                 )
             )
         )
+
+        runCatching {
+            envelopeRouter.deliverPending(
+                recipientId = relayId
+            )
+        }.onFailure { error ->
+            println(
+                "Pending envelope delivery failed for $relayId: ${error.message}"
+            )
+        }
     }
 
     private suspend fun handleEnvelope(
         session: DefaultWebSocketServerSession,
         connection: RelayClientConnection,
-        envelope:
-        com.cbgm.securechat.relay.model.RelayEnvelope
+        envelope: RelayEnvelope
     ) {
         if (envelope.senderId != connection.relayId) {
             sendError(
@@ -174,8 +193,12 @@ class RelayWebSocketHandler(
             return
         }
 
-        when (val result = envelopeRouter.route(envelope = envelope)) {
-            RelayRoutingResult.Delivered -> {
+        when (
+            val result = envelopeRouter.accept(
+                envelope = envelope
+            )
+        ) {
+            RelayRoutingResult.Accepted -> {
                 connection.sendText(
                     json.encodeToString<RelayServerMessage>(
                         RelayServerMessage.EnvelopeAccepted(
@@ -185,19 +208,10 @@ class RelayWebSocketHandler(
                 )
             }
 
-            is RelayRoutingResult.RecipientOffline -> {
-
-                sendError(
-                    session = session,
-                    code = "RECIPIENT_OFFLINE",
-                    message = "Recipient is not currently connected"
-                )
-            }
-
             is RelayRoutingResult.Failed -> {
                 sendError(
                     session = session,
-                    code = "DELIVERY_FAILED",
+                    code = "ENVELOPE_REJECTED",
                     message = result.message
                 )
             }
