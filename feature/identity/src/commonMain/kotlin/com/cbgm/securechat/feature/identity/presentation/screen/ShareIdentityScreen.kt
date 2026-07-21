@@ -188,8 +188,6 @@ private fun IdentityOptionsContent(
 ) {
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
-    // Visual anchor — gives the empty state a focal point instead of jumping
-    // straight into two paragraphs of text.
     Box(
         modifier = Modifier
             .size(88.dp)
@@ -276,8 +274,7 @@ private fun GeneratedIdentityContent(
             modifier = Modifier.padding(MaterialTheme.spacing.large),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Framing the QR itself in a light card with a thin accent border
-            // makes it read as the "object" being shared, not just floating art.
+
             Box(
                 modifier = Modifier
                     .background(Color.White, RoundedCornerShape(16.dp))
@@ -292,8 +289,6 @@ private fun GeneratedIdentityContent(
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
-            // Filled accent button instead of outlined — this is the primary
-            // action on this screen and should carry the most visual weight.
             Button(
                 onClick = onShareIdentity,
                 modifier = Modifier.fillMaxWidth(),

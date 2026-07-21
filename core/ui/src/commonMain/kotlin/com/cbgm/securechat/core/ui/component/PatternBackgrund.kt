@@ -35,9 +35,7 @@ fun PatternBackground(
     backgroundColor: Color,
     alpha: Float = 0.06f
 ) {
-    /*
-     * Replace these resources with your own vector drawables.
-     */
+
     val patternElements = remember {
         listOf(
             PatternElement(
@@ -114,10 +112,6 @@ fun PatternBackground(
                     patternElements.forEachIndexed { index, element ->
                         val painter = painters[index]
 
-                        /*
-                         * Convert all Dp values before entering
-                         * the withTransform receiver.
-                         */
                         val elementSizePx = element.size.toPx()
                         val offsetXPx = element.offsetX.toPx()
                         val offsetYPx = element.offsetY.toPx()

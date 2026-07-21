@@ -73,8 +73,6 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
      * securechat_identity_wrapping_key
      */
     private val keyStore: KeyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply {
-
-        // Required before accessing entries in the KeyStore.
         load(null)
     }
 

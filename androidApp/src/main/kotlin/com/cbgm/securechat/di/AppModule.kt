@@ -20,20 +20,12 @@ import org.koin.dsl.module
  */
 val appModule = module {
 
-    /**
-     * Register the Android private-key storage implementation
-     * under the shared PrivateKeyStorage interface.
-     */
     single<PrivateKeyStorage> {
         AndroidPrivateKeyStorage(
             context = androidContext()
         )
     }
 
-    /**
-     * Register the Android public-identity storage implementation
-     * under the shared PublicIdentityStorage interface.
-     */
     single<PublicIdentityStorage> {
         AndroidPublicIdentityStorage(
             context = androidContext()

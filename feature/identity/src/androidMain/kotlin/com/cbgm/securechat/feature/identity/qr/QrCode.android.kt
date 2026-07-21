@@ -31,7 +31,6 @@ actual fun QrCode(
                 color = MaterialTheme.colorScheme.surface,
                 shape = MaterialTheme.shapes.medium
             ),
-           // .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
         Image(

@@ -318,10 +318,6 @@ private fun SecurityBanner(
 
 @Composable
 private fun VerifiedSecurityIndicator(modifier: Modifier = Modifier) {
-    // Uses the same accent cyan as the rest of the app instead of
-    // colorScheme.secondary, so "verified" reads consistently everywhere —
-    // and drops the fully-opaque background in favor of a tinted one so it
-    // doesn't compete visually with the top bar above it.
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f)
@@ -400,19 +396,11 @@ private fun MessageBubble(
         MessageContentStatus.READABLE -> MessageBubbleState(
             text = message.text,
             isContentFailed = false,
-            // "Mine" bubbles use a translucent accent tint instead of an
-            // unrelated one-off hex, so outgoing messages visually tie back
-            // to the same cyan used for primary actions app-wide. Incoming
-            // bubbles use the shared Field-family dark navy instead of flat
-            // black, so they read as part of the same surface language as
-            // every other screen.
             bubbleColor = if (message.isMine) {
                 MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)
             } else {
                 IncomingBubbleColor
             },
-            // contentColor previously branched on isMine but both branches
-            // returned onBackground — removed the dead conditional.
             contentColor = MaterialTheme.colorScheme.onBackground,
         )
 
@@ -607,9 +595,7 @@ private fun OutgoingDeliveryIndicator(
         }
 
         MessageDeliveryStatus.READ -> {
-            // Read receipts now use the accent color instead of the default
-            // onSurfaceVariant — the only delivery state that reads as
-            // "confirmed by the other person" should stand out visually.
+
             DeliveryLabel(
                 text = "Read",
                 textColor = MaterialTheme.colorScheme.secondary,
@@ -706,9 +692,6 @@ private fun MessageInput(
             modifier = Modifier
                 .weight(1f)
                 .background(
-                    // Uses the shared Field navy instead of a translucent
-                    // white overlay — matches the input styling used on the
-                    // identity screen's phone-number field.
                     color = Field,
                     shape = RoundedCornerShape(24.dp)
                 )

@@ -93,9 +93,7 @@ fun ImportIdentityScreen(
                 )
             }
         ) { innerPadding ->
-            // Everything now lives inside one scrollable Column that respects
-            // innerPadding, instead of a stray Button sitting outside it and
-            // overlapping the top bar.
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -193,9 +191,6 @@ fun ImportIdentityScreen(
                     }
                 }
 
-                // Success/error are now banners, matching the treatment used
-                // on the chat screen's error message, instead of plain
-                // colored text easy to miss while scrolling.
                 uiState.importedContactName?.let { name ->
                     StatusBanner(
                         icon = Icons.Default.CheckCircle,

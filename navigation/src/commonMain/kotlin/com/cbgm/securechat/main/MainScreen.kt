@@ -182,8 +182,7 @@ private fun Content(
     identityScrollState: ScrollState,
     settingsScrollState: ScrollState,
 ) {
-    // Notice: Outer Modifier.padding(innerPadding) is completely removed.
-    // Content is injected inside the components via innerPadding calculations.
+
     when (selectedTab) {
         MainTab.Chats -> {
             ChatsRoute(
@@ -197,8 +196,8 @@ private fun Content(
         MainTab.Me -> {
             IdentityRoute(
                 onShareIdentity = onShareIdentity,
-                scrollState = identityScrollState, // Pass the scroll state
-                innerPadding = innerPadding,       // Pass the padding layout boundaries
+                scrollState = identityScrollState,
+                innerPadding = innerPadding,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -207,8 +206,8 @@ private fun Content(
             PlaceholderScreen(
                 title = "Settings",
                 message = "Settings are coming soon.",
-                scrollState = settingsScrollState, // Pass the scroll state
-                innerPadding = innerPadding,       // Pass the padding layout boundaries
+                scrollState = settingsScrollState,
+                innerPadding = innerPadding,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -225,11 +224,9 @@ private fun PlaceholderScreen(
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier
 ) {
-    // For simple static screens like this, use innerPadding directly on the content padding
     Column(
         modifier = modifier
-            .verticalScroll(scrollState) // Makes the column scrollable
-            // Apply innerPadding properties as margins to keep elements visible at endpoints
+            .verticalScroll(scrollState)
             .padding(
                 top = innerPadding.calculateTopPadding() + 32.dp,
                 bottom = innerPadding.calculateBottomPadding() + 32.dp,

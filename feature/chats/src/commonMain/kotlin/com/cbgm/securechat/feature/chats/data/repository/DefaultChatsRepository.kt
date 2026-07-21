@@ -79,7 +79,7 @@ class DefaultChatsRepository(
             getContact(contactId = contactId).getOrThrow() ?: error("Contact was not found")
 
         /*
- * For an existing ONE_WAY contact, make sure our IdentityPacket is
+ * For an existing ONE_WAY contact, make sure IdentityPacket is
  * queued before the chat packet.
  *
  * For phone-book-only contacts, this is a harmless no-op.

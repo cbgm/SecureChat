@@ -16,11 +16,6 @@ val isMacOs = System
 
 kotlin {
 
-    /*
-     * iOS targets are configured only on macOS.
-     *
-     * Windows can still develop and build the Android target.
-     */
     if (isMacOs) {
         listOf(
             iosArm64(),
@@ -44,9 +39,6 @@ kotlin {
             jvmTarget = JvmTarget.JVM_17
         }
 
-        /*
-         * Enable Android instrumented tests later.
-         */
         withDeviceTest {
             instrumentationRunner =
                 "androidx.test.runner.AndroidJUnitRunner"
@@ -114,9 +106,6 @@ kotlin {
     }
 }
 
-/*
- * Run Room's compiler for every configured platform target.
- */
 dependencies {
 
     add(
@@ -138,9 +127,6 @@ dependencies {
     }
 }
 
-/*
- * Export Room schema history.
- */
 room {
     schemaDirectory(
         "$projectDir/schemas"

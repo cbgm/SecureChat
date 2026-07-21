@@ -36,9 +36,6 @@ import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
 
 
-/**
- * UI model for one item in the conversations list.
- */
 data class ChatListItem(
     val contactId: String,
     val contactName: String,
@@ -100,8 +97,6 @@ private fun ChatItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyLarge,
-                    // Unread rows get a bolder headline too, not just the badge —
-                    // gives a second, subtler signal that reinforces the badge.
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -133,8 +133,6 @@ private fun LoadingContent() {
     }
 }
 
-// Shared circular icon badge — used across every state on this screen so the
-// eye always has a focal point at the top before the text starts.
 @Composable
 private fun IconBadge(
     icon: ImageVector,
@@ -372,9 +370,6 @@ private fun PublicKeySection(
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
 
-        // Uses the same `Field` color as the phone input above, instead of
-        // colorScheme.surfaceVariant — keeps every card-content block on
-        // this screen visually consistent.
         Text(
             text = key.toHexString(),
             modifier = Modifier
