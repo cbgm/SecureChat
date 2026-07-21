@@ -24,8 +24,7 @@ fun ImportIdentityRoute(
     viewModel: ImportIdentityViewModel = koinViewModel(),
     identityShareCodec: IdentityShareCodec = koinInject()
 ) {
-    val uiState by
-    viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var scannedIdentityPreview by remember { mutableStateOf<ScannedIdentityPreview?>(null) }
 
@@ -33,10 +32,7 @@ fun ImportIdentityRoute(
      * Avoid showing the same scan repeatedly when this route
      * recomposes.
      */
-    var handledScannedIdentity by
-    remember {
-        mutableStateOf<String?>(null)
-    }
+    var handledScannedIdentity by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(scannedIdentity) {
         val encodedIdentity =
@@ -45,46 +41,21 @@ fun ImportIdentityRoute(
                 ?.takeIf { it.isNotEmpty() }
                 ?: return@LaunchedEffect
 
-        if (
-            encodedIdentity ==
-            handledScannedIdentity
-        ) {
+        if (encodedIdentity == handledScannedIdentity) {
             return@LaunchedEffect
         }
 
-        handledScannedIdentity =
-            encodedIdentity
+        handledScannedIdentity = encodedIdentity
 
-        identityShareCodec
-            .decode(
-                encodedValue =
-                    encodedIdentity
-            )
+        identityShareCodec.decode(encodedValue = encodedIdentity)
             .onSuccess { payload ->
                 scannedIdentityPreview =
                     ScannedIdentityPreview(
-                        encodedIdentity =
-                            encodedIdentity,
-
-                        displayName =
-                            payload
-                                .contactDetails
-                                ?.displayName,
-
-                        phoneNumber =
-                            payload
-                                .contactDetails
-                                ?.phoneNumber,
-
-                        signingKeyFingerprint =
-                            payload
-                                .signingPublicKey
-                                .toFingerprint(),
-
-                        encryptionKeyFingerprint =
-                            payload
-                                .encryptionPublicKey
-                                .toFingerprint()
+                        encodedIdentity = encodedIdentity,
+                        displayName = payload.contactDetails.displayName,
+                        phoneNumber = payload.contactDetails.phoneNumber,
+                        signingKeyFingerprint = payload.signingPublicKey.toFingerprint(),
+                        encryptionKeyFingerprint = payload.encryptionPublicKey.toFingerprint()
                     )
             }
             .onFailure {
@@ -93,39 +64,25 @@ fun ImportIdentityRoute(
                  * the current screen can show its normal validation
                  * error when the user presses Import.
                  */
-                viewModel.onEncodedIdentityChanged(
-                    encodedIdentity
-                )
+                viewModel.onEncodedIdentityChanged(encodedIdentity)
             }
     }
 
     ImportIdentityScreen(
         uiState = uiState,
-
-        onEncodedIdentityChanged =
-            viewModel::onEncodedIdentityChanged,
-
-        onImportClick =
-            viewModel::importIdentity,
-
-        onScanQrCode =
-            onScanQrCode,
-
-        onBack =
-            onBack
+        onEncodedIdentityChanged = viewModel::onEncodedIdentityChanged,
+        onImportClick = viewModel::importIdentity,
+        onScanQrCode = onScanQrCode,
+        onBack = onBack
     )
 
-    scannedIdentityPreview
-        ?.let { preview ->
+    scannedIdentityPreview?.let { preview ->
             ScannedIdentityConfirmationDialog(
                 preview = preview,
-
                 onConfirm = {
                     scannedIdentityPreview = null
 
-                    viewModel.onEncodedIdentityChanged(
-                        preview.encodedIdentity
-                    )
+                    viewModel.onEncodedIdentityChanged(preview.encodedIdentity)
 
                     viewModel.importIdentity()
                 },
@@ -137,8 +94,7 @@ fun ImportIdentityRoute(
         }
 }
 
-private fun ByteArray.toFingerprint():
-        String {
+private fun ByteArray.toFingerprint(): String {
 
     /*
      * Full hexadecimal fingerprint grouped for readability.

@@ -1,23 +1,33 @@
 package com.cbgm.securechat.main
 
-import com.cbgm.securechat.core.ui.resources.SecureChatIcons
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.ic_chat
+import com.cbgm.securechat.resources.ic_chat_outlined
+import com.cbgm.securechat.resources.ic_identity
+import com.cbgm.securechat.resources.ic_identity_outlined
+import com.cbgm.securechat.resources.ic_settings
+import com.cbgm.securechat.resources.ic_settings_outlined
 import org.jetbrains.compose.resources.DrawableResource
 
 
 enum class MainTab(
     val label: String,
-    val res: DrawableResource
+    val res: DrawableResource,
+    val resOutlined: DrawableResource
 ) {
     Chats(
         label = "Chats",
-        res = SecureChatIcons.ic_chats
+        res = Res.drawable.ic_chat,
+        resOutlined = Res.drawable.ic_chat_outlined
     ),
     Me(
         label = "Me",
-        res = SecureChatIcons.ic_identity
+        res = Res.drawable.ic_identity,
+        resOutlined = Res.drawable.ic_identity_outlined
     ),
     Settings(
         label = "Settings",
-        res = SecureChatIcons.ic_settings
+        res = Res.drawable.ic_settings,
+        resOutlined = Res.drawable.ic_settings_outlined
     )
 }

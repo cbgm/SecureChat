@@ -13,13 +13,9 @@ class ImportIdentityViewModel(
     private val importSharedIdentity: ImportSharedIdentity
 ) : ViewModel() {
 
-    private val _uiState =
-        MutableStateFlow(
-            ImportIdentityUiState()
-        )
+    private val _uiState = MutableStateFlow(ImportIdentityUiState())
 
-    val uiState: StateFlow<ImportIdentityUiState> =
-        _uiState.asStateFlow()
+    val uiState: StateFlow<ImportIdentityUiState> = _uiState.asStateFlow()
 
     fun onEncodedIdentityChanged(
         value: String
@@ -34,17 +30,11 @@ class ImportIdentityViewModel(
     }
 
     fun importIdentity() {
-        val encodedIdentity =
-            _uiState.value
-                .encodedIdentity
-                .trim()
+        val encodedIdentity = _uiState.value.encodedIdentity.trim()
 
         if (encodedIdentity.isEmpty()) {
             _uiState.update { current ->
-                current.copy(
-                    errorMessage =
-                        "Paste a shared SecureChat identity first"
-                )
+                current.copy(errorMessage = "Paste a shared SecureChat identity first")
             }
 
             return
@@ -63,16 +53,12 @@ class ImportIdentityViewModel(
         }
 
         viewModelScope.launch {
-            importSharedIdentity(
-                encodedIdentity = encodedIdentity
-            )
+            importSharedIdentity(encodedIdentity = encodedIdentity)
                 .onSuccess { contact ->
                     _uiState.update { current ->
                         current.copy(
                             isImporting = false,
-                            importedContactName =
-                                contact.displayName
-                                    ?: "Unnamed contact",
+                            importedContactName = contact.displayName ?: "Unnamed contact",
                             errorMessage = null
                         )
                     }
@@ -82,9 +68,7 @@ class ImportIdentityViewModel(
                         current.copy(
                             isImporting = false,
                             importedContactName = null,
-                            errorMessage =
-                                error.message
-                                    ?: "Identity import failed"
+                            errorMessage = error.message ?: "Identity import failed"
                         )
                     }
                 }

@@ -32,6 +32,10 @@ kotlin {
             implementation(libs.compose.ui)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.compose.components.resources)
+            implementation(libs.compose.uiToolingPreview)
+            implementation(libs.compose.uiTooling)
+            implementation(compose.materialIconsExtended)
+
         }
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)

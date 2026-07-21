@@ -33,142 +33,90 @@ actual fun QrScanner(
     onQrCodeScanned: (String) -> Unit,
     modifier: Modifier
 ) {
-    val context =
-        LocalContext.current
+    val context = LocalContext.current
 
-    val lifecycleOwner =
-        LocalLifecycleOwner.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    val currentOnQrCodeScanned =
-        rememberUpdatedState(
-            newValue = onQrCodeScanned
-        )
+    val currentOnQrCodeScanned = rememberUpdatedState(newValue = onQrCodeScanned)
 
-    val cameraExecutor =
-        remember {
-            Executors.newSingleThreadExecutor()
+    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+
+    val hasScanned = remember { AtomicBoolean(false) }
+
+    val previewView = remember {
+        PreviewView(context).apply {
+            implementationMode =
+                PreviewView.ImplementationMode.COMPATIBLE
+
+            scaleType =
+                PreviewView.ScaleType.FILL_CENTER
         }
-
-    val hasScanned =
-        remember {
-            AtomicBoolean(false)
-        }
-
-    val previewView =
-        remember {
-            PreviewView(context).apply {
-                implementationMode =
-                    PreviewView.ImplementationMode.COMPATIBLE
-
-                scaleType =
-                    PreviewView.ScaleType.FILL_CENTER
-            }
-        }
+    }
 
     DisposableEffect(
         lifecycleOwner,
         previewView
     ) {
-        val cameraProviderFuture =
-            ProcessCameraProvider.getInstance(
-                context
-            )
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
 
-        val listener =
-            Runnable {
-                val cameraProvider =
-                    cameraProviderFuture.get()
+        val listener = Runnable {
+            val cameraProvider = cameraProviderFuture.get()
 
-                val preview =
-                    Preview.Builder()
-                        .build()
-                        .also { cameraPreview ->
-                            cameraPreview.setSurfaceProvider(
-                                previewView.surfaceProvider
-                            )
-                        }
-
-                val reader =
-                    MultiFormatReader().apply {
-                        setHints(
-                            mapOf(
-                                DecodeHintType.POSSIBLE_FORMATS to
-                                        listOf(
-                                            BarcodeFormat.QR_CODE
-                                        ),
-
-                                DecodeHintType.TRY_HARDER to
-                                        true
-                            )
-                        )
-                    }
-
-                val imageAnalysis =
-                    ImageAnalysis.Builder()
-                        .setBackpressureStrategy(
-                            ImageAnalysis
-                                .STRATEGY_KEEP_ONLY_LATEST
-                        )
-                        .build()
-                        .also { analysis ->
-                            analysis.setAnalyzer(
-                                cameraExecutor
-                            ) { imageProxy ->
-                                analyzeQrImage(
-                                    imageProxy =
-                                        imageProxy,
-
-                                    reader =
-                                        reader,
-
-                                    hasScanned =
-                                        hasScanned,
-
-                                    onQrCodeScanned = {
-                                            decodedValue ->
-
-                                        ContextCompat
-                                            .getMainExecutor(context)
-                                            .execute {
-                                                currentOnQrCodeScanned
-                                                    .value(
-                                                        decodedValue
-                                                    )
-                                            }
-                                    }
-                                )
-                            }
-                        }
-
-                try {
-                    cameraProvider.unbindAll()
-
-                    cameraProvider.bindToLifecycle(
-                        lifecycleOwner,
-                        CameraSelector
-                            .DEFAULT_BACK_CAMERA,
-                        preview,
-                        imageAnalysis
-                    )
-                } catch (error: Exception) {
-                    /*
-                     * The UI remains visible. Camera errors can be
-                     * surfaced through a dedicated callback later.
-                     */
-                }
+            val preview = Preview.Builder().build().also { cameraPreview ->
+                cameraPreview.setSurfaceProvider(previewView.surfaceProvider)
             }
 
-        cameraProviderFuture.addListener(
-            listener,
-            ContextCompat.getMainExecutor(context)
-        )
+            val reader = MultiFormatReader().apply {
+                setHints(
+                    mapOf(
+                        DecodeHintType.POSSIBLE_FORMATS to listOf(BarcodeFormat.QR_CODE),
+                        DecodeHintType.TRY_HARDER to true
+                    )
+                )
+            }
+
+            val imageAnalysis = ImageAnalysis.Builder()
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build()
+                .also { analysis ->
+                    analysis.setAnalyzer(
+                        cameraExecutor
+                    ) { imageProxy ->
+                        analyzeQrImage(
+                            imageProxy = imageProxy,
+                            reader = reader,
+                            hasScanned = hasScanned,
+                            onQrCodeScanned = { decodedValue ->
+
+                                ContextCompat.getMainExecutor(context)
+                                    .execute { currentOnQrCodeScanned.value(decodedValue) }
+                            }
+                        )
+                    }
+                }
+
+            try {
+                cameraProvider.unbindAll()
+
+                cameraProvider.bindToLifecycle(
+                    lifecycleOwner,
+                    CameraSelector.DEFAULT_BACK_CAMERA,
+                    preview,
+                    imageAnalysis
+                )
+            } catch (_: Exception) {
+                /*
+                 * The UI remains visible. Camera errors can be
+                 * surfaced through a dedicated callback later.
+                 */
+            }
+        }
+
+        cameraProviderFuture.addListener(listener, ContextCompat.getMainExecutor(context))
 
         onDispose {
             if (cameraProviderFuture.isDone) {
                 runCatching {
-                    cameraProviderFuture
-                        .get()
-                        .unbindAll()
+                    cameraProviderFuture.get().unbindAll()
                 }
             }
 
@@ -195,66 +143,41 @@ private fun analyzeQrImage(
             return
         }
 
-        if (
-            imageProxy.format !=
-            ImageFormat.YUV_420_888
-        ) {
+        if (imageProxy.format != ImageFormat.YUV_420_888) {
             return
         }
 
-        val luminanceData =
-            imageProxy.copyLuminancePlane()
+        val luminanceData = imageProxy.copyLuminancePlane()
 
-        val rotated =
-            rotateLuminance(
-                source = luminanceData,
-                width = imageProxy.width,
-                height = imageProxy.height,
-                rotationDegrees =
-                    imageProxy
-                        .imageInfo
-                        .rotationDegrees
-            )
+        val rotated = rotateLuminance(
+            source = luminanceData,
+            width = imageProxy.width,
+            height = imageProxy.height,
+            rotationDegrees = imageProxy.imageInfo.rotationDegrees
+        )
 
-        val luminanceSource =
-            PlanarYUVLuminanceSource(
-                rotated.bytes,
-                rotated.width,
-                rotated.height,
-                0,
-                0,
-                rotated.width,
-                rotated.height,
-                false
-            )
+        val luminanceSource = PlanarYUVLuminanceSource(
+            rotated.bytes,
+            rotated.width,
+            rotated.height,
+            0,
+            0,
+            rotated.width,
+            rotated.height,
+            false
+        )
 
-        val bitmap =
-            BinaryBitmap(
-                HybridBinarizer(
-                    luminanceSource
-                )
-            )
+        val bitmap = BinaryBitmap(HybridBinarizer(luminanceSource))
 
-        val result =
-            reader.decodeWithState(
-                bitmap
-            )
+        val result = reader.decodeWithState(bitmap)
 
-        val decodedValue =
-            result.text
-                ?.trim()
-                ?.takeIf { it.isNotEmpty() }
-                ?: return
+        val decodedValue = result.text
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?: return
 
-        if (
-            hasScanned.compareAndSet(
-                false,
-                true
-            )
-        ) {
-            onQrCodeScanned(
-                decodedValue
-            )
+        if (hasScanned.compareAndSet(false, true)) {
+            onQrCodeScanned(decodedValue)
         }
     } catch (_: NotFoundException) {
         /*
@@ -270,47 +193,30 @@ private fun analyzeQrImage(
     }
 }
 
-private fun ImageProxy.copyLuminancePlane():
-        ByteArray {
+private fun ImageProxy.copyLuminancePlane(): ByteArray {
 
-    val plane =
-        planes.first()
+    val plane = planes.first()
 
-    val buffer =
-        plane.buffer
+    val buffer = plane.buffer
 
-    val rowStride =
-        plane.rowStride
+    val rowStride = plane.rowStride
 
-    val pixelStride =
-        plane.pixelStride
+    val pixelStride = plane.pixelStride
 
-    val output =
-        ByteArray(
-            width * height
-        )
+    val output = ByteArray(width * height)
 
     buffer.rewind()
 
     var outputIndex = 0
 
     for (row in 0 until height) {
-        val rowStart =
-            row * rowStride
+        val rowStart = row * rowStride
 
         for (column in 0 until width) {
-            val bufferIndex =
-                rowStart +
-                        column * pixelStride
+            val bufferIndex = rowStart + column * pixelStride
 
-            if (
-                bufferIndex <
-                buffer.limit()
-            ) {
-                output[outputIndex] =
-                    buffer.get(
-                        bufferIndex
-                    )
+            if (bufferIndex < buffer.limit()) {
+                output[outputIndex] = buffer.get(bufferIndex)
             }
 
             outputIndex += 1
@@ -354,72 +260,45 @@ private fun rotateLuminance(
 ): RotatedLuminance {
     return when (rotationDegrees) {
         90 -> {
-            val rotated =
-                ByteArray(source.size)
+            val rotated = ByteArray(source.size)
 
             var destinationIndex = 0
 
             for (x in 0 until width) {
                 for (y in height - 1 downTo 0) {
-                    rotated[destinationIndex++] =
-                        source[
-                            y * width + x
-                        ]
+                    rotated[destinationIndex++] = source[y * width + x]
                 }
             }
 
-            RotatedLuminance(
-                bytes = rotated,
-                width = height,
-                height = width
-            )
+            RotatedLuminance(bytes = rotated, width = height, height = width)
         }
 
         180 -> {
-            val rotated =
-                ByteArray(source.size)
+            val rotated = ByteArray(source.size)
 
             source.indices.forEach { index ->
-                rotated[
-                    source.lastIndex - index
-                ] = source[index]
+                rotated[source.lastIndex - index] = source[index]
             }
 
-            RotatedLuminance(
-                bytes = rotated,
-                width = width,
-                height = height
-            )
+            RotatedLuminance(bytes = rotated, width = width, height = height)
         }
 
         270 -> {
-            val rotated =
-                ByteArray(source.size)
+            val rotated = ByteArray(source.size)
 
             var destinationIndex = 0
 
             for (x in width - 1 downTo 0) {
                 for (y in 0 until height) {
-                    rotated[destinationIndex++] =
-                        source[
-                            y * width + x
-                        ]
+                    rotated[destinationIndex++] = source[y * width + x]
                 }
             }
 
-            RotatedLuminance(
-                bytes = rotated,
-                width = height,
-                height = width
-            )
+            RotatedLuminance(bytes = rotated, width = height, height = width)
         }
 
         else -> {
-            RotatedLuminance(
-                bytes = source,
-                width = width,
-                height = height
-            )
+            RotatedLuminance(bytes = source, width = width, height = height)
         }
     }
 }

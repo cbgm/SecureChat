@@ -4,10 +4,12 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -27,10 +29,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,6 +42,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.feature.chats.presentation.ChatsRoute
+import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
 import com.cbgm.securechat.feature.identity.presentation.IdentityRoute
 import org.jetbrains.compose.resources.painterResource
 
@@ -51,8 +52,6 @@ fun MainScreen(
     onAddChat: () -> Unit,
     onOpenChat: (contactId: String, contactName: String) -> Unit,
     onShareIdentity: () -> Unit,
-    onImportContact: () -> Unit,
-    onContacts: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var selectedTab by rememberSaveable {
@@ -84,115 +83,110 @@ fun MainScreen(
         label = "BottomBarColor"
     )
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = selectedTab.label,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                actions = {
-                    if (selectedTab == MainTab.Chats) {
-                        IconButton(onClick = onAddChat) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Start a new chat"
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = topBarColor,
-                    scrolledContainerColor = topBarColor,
-                    titleContentColor =
-                        MaterialTheme.colorScheme.onBackground,
-                    actionIconContentColor =
-                        MaterialTheme.colorScheme.onBackground
-                )
-            )
-        },
-        bottomBar = {
-            NavigationBar(
-                containerColor = bottomBarColor,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                MainTab.entries.forEach { tab ->
-                    NavigationBarItem(
-                        selected = selectedTab == tab,
-                        onClick = {
-                            selectedTab = tab
-                        },
-                        icon = {
-                            Icon(
-                                painter = painterResource(tab.res),
-                                contentDescription = tab.label
-                            )
-                        },
-                        label = {
-                            Text(
-                                text = tab.label,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor =
-                                MaterialTheme.colorScheme.secondary,
-                            selectedTextColor =
-                                MaterialTheme.colorScheme.secondary,
-                            indicatorColor = Color.Transparent,
-                            unselectedIconColor =
-                                MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor =
-                                MaterialTheme.colorScheme.onSurfaceVariant,
-                            disabledIconColor =
-                                MaterialTheme.colorScheme.onSurfaceVariant,
-                            disabledTextColor =
-                                MaterialTheme.colorScheme.onSurfaceVariant
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        PatternBackground(
+            modifier = Modifier.matchParentSize(),
+            backgroundColor = MaterialTheme.colorScheme.background,
+            alpha = 0.04f
+        )
+        Scaffold(
+            modifier = modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = selectedTab.label,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
                         )
+                    },
+                    actions = {
+                        if (selectedTab == MainTab.Chats) {
+                            IconButton(onClick = onAddChat) {
+                                Icon(
+                                    imageVector = Icons.Filled.Add,
+                                    contentDescription = "Start a new chat"
+                                )
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = topBarColor,
+                        scrolledContainerColor = topBarColor,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground,
+                        actionIconContentColor = MaterialTheme.colorScheme.onBackground
                     )
+                )
+            },
+            bottomBar = {
+                NavigationBar(
+                    containerColor = bottomBarColor,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    MainTab.entries.forEach { tab ->
+                        NavigationBarItem(
+                            selected = selectedTab == tab,
+                            onClick = {
+                                selectedTab = tab
+                            },
+                            icon = {
+                                Icon(
+                                    painter = painterResource(if (selectedTab == tab) tab.res else tab.resOutlined),
+                                    contentDescription = tab.label,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = tab.label,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.secondary,
+                                selectedTextColor = MaterialTheme.colorScheme.secondary,
+                                indicatorColor = Color.Transparent,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                disabledIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                    }
                 }
             }
+        ) { innerPadding ->
+            Content(
+                selectedTab = selectedTab,
+                onOpenChat = onOpenChat,
+                innerPadding = innerPadding,
+                chatListState = chatListState,
+                identityScrollState = identityScrollState,
+                settingsScrollState = settingsScrollState,
+                onShareIdentity = onShareIdentity
+            )
         }
-    ) { innerPadding ->
-        Content(
-            selectedTab = selectedTab,
-            onAddChat = onAddChat,
-            onOpenChat = onOpenChat,
-            innerPadding = innerPadding,
-            chatListState = chatListState,
-            identityScrollState = identityScrollState,
-            settingsScrollState = settingsScrollState,
-            onImportContact = onImportContact,
-            onContacts = onContacts,
-            onShareIdentity = onShareIdentity
-        )
     }
 }
 
 @Composable
 private fun Content(
     selectedTab: MainTab,
-    onAddChat: () -> Unit,
     onShareIdentity: () -> Unit,
     onOpenChat: (String, String) -> Unit,
     innerPadding: PaddingValues,
     chatListState: LazyListState,
     identityScrollState: ScrollState,
     settingsScrollState: ScrollState,
-    onImportContact: () -> Unit,
-    onContacts: () -> Unit
 ) {
     // Notice: Outer Modifier.padding(innerPadding) is completely removed.
     // Content is injected inside the components via innerPadding calculations.
     when (selectedTab) {
         MainTab.Chats -> {
             ChatsRoute(
-                onAddChatClick = onAddChat,
                 onChatClick = onOpenChat,
                 listState = chatListState,
                 innerPadding = innerPadding,
@@ -203,8 +197,6 @@ private fun Content(
         MainTab.Me -> {
             IdentityRoute(
                 onShareIdentity = onShareIdentity,
-                onImportContact = onImportContact,
-                onContacts = onContacts,
                 scrollState = identityScrollState, // Pass the scroll state
                 innerPadding = innerPadding,       // Pass the padding layout boundaries
                 modifier = Modifier.fillMaxSize()
@@ -249,7 +241,8 @@ private fun PlaceholderScreen(
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Text(
@@ -275,32 +268,31 @@ private fun rememberMainBarsState(
     identityScrollState: ScrollState,
     settingsScrollState: ScrollState
 ): MainBarsState {
-    val contentBehindTopBar by remember {
-        derivedStateOf {
-            when (selectedTab) {
-                MainTab.Chats -> {
-                    chatListState.firstVisibleItemIndex > 0 ||
-                            chatListState.firstVisibleItemScrollOffset > 0
-                }
+    val contentBehindTopBar = when (selectedTab) {
+        MainTab.Chats -> {
+            chatListState.firstVisibleItemIndex > 0 || chatListState.firstVisibleItemScrollOffset > 0
+        }
 
-                MainTab.Me -> {
-                    identityScrollState.value > 0
-                }
+        MainTab.Me -> {
+            identityScrollState.value > 0
+        }
 
-                MainTab.Settings -> {
-                    settingsScrollState.value > 0
-                }
-            }
+        MainTab.Settings -> {
+            settingsScrollState.value > 0
         }
     }
 
-    val contentBehindBottomBar by remember {
-        derivedStateOf {
-            when (selectedTab) {
-                MainTab.Chats -> chatListState.canScrollForward
-                MainTab.Me -> identityScrollState.canScrollForward
-                MainTab.Settings -> settingsScrollState.canScrollForward
-            }
+    val contentBehindBottomBar = when (selectedTab) {
+        MainTab.Chats -> {
+            chatListState.canScrollForward
+        }
+
+        MainTab.Me -> {
+            identityScrollState.canScrollForward
+        }
+
+        MainTab.Settings -> {
+            settingsScrollState.canScrollForward
         }
     }
 
@@ -328,8 +320,6 @@ fun MainScreenPreview() {
         MainScreen(
             onAddChat = {},
             onOpenChat = { _, _ -> },
-            onImportContact = {},
-            onContacts = {},
             onShareIdentity = {}
         )
     }

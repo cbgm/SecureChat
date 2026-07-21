@@ -12,7 +12,6 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun ChatsRoute(
-    onAddChatClick: () -> Unit,
     onChatClick: (contactId: String, contactName: String) -> Unit,
     modifier: Modifier = Modifier,
     listState: LazyListState,
@@ -23,7 +22,6 @@ fun ChatsRoute(
 
     ChatsScreen(
         chats = uiState.conversations,
-        onAddChatClick = onAddChatClick,
         onChatClick = { contactId ->
             val conversation = uiState.conversations.firstOrNull { it.contactId == contactId }
 

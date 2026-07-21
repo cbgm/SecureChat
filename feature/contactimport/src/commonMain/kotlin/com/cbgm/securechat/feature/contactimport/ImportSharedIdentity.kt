@@ -21,9 +21,7 @@ class ImportSharedIdentity(
         encodedIdentity: String
     ): Result<Contact> {
         return runCatching {
-            val sharedIdentity = identityShareCodec
-                    .decode(encodedIdentity)
-                    .getOrThrow()
+            val sharedIdentity = identityShareCodec.decode(encodedIdentity).getOrThrow()
 
             val phoneNumber = sharedIdentity
                     .contactDetails

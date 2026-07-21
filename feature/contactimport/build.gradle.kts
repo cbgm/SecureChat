@@ -61,15 +61,18 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(project(":core"))
-            implementation(project(":feature:identity"))
-            implementation(project(":feature:contacts"))
+            implementation(projects.core)
+            implementation(projects.feature.identity)
+            implementation(projects.feature.contacts)
             implementation(projects.core.ui)
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material3)
+            implementation(libs.compose.ui)
+            implementation(libs.compose.uiToolingPreview)
+            implementation(libs.compose.uiTooling)
+            implementation(compose.materialIconsExtended)
 
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.ui)
 
             implementation(
                 libs.androidx.lifecycle.viewmodelCompose

@@ -24,61 +24,44 @@ fun ScannedIdentityConfirmationDialog(
         onDismissRequest = onDismiss,
 
         title = {
-            Text(
-                text = "Import SecureChat contact"
-            )
+            Text(text = "Import SecureChat contact")
         },
 
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement =
-                    Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text =
-                        preview.displayName
-                            ?: "Unnamed SecureChat contact",
-
-                    style =
-                        MaterialTheme.typography.titleMedium
+                    text = preview.displayName ?: "Unnamed SecureChat contact",
+                    style = MaterialTheme.typography.titleMedium
                 )
 
-                preview.phoneNumber
-                    ?.let { phoneNumber ->
+                preview.phoneNumber?.let { phoneNumber ->
                         Text(
                             text = phoneNumber,
-                            style =
-                                MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge
                         )
                     }
 
-                Spacer(
-                    modifier = Modifier.height(8.dp)
-                )
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = "SecureChat identity found",
-                    style =
-                        MaterialTheme.typography.labelLarge,
-                    color =
-                        MaterialTheme.colorScheme.primary
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary
                 )
 
-                Spacer(
-                    modifier = Modifier.height(8.dp)
-                )
+                Spacer(modifier = Modifier.height(8.dp))
 
                 FingerprintSection(
                     title = "Signing key",
-                    fingerprint =
-                        preview.signingKeyFingerprint
+                    fingerprint = preview.signingKeyFingerprint
                 )
 
                 FingerprintSection(
                     title = "Encryption key",
-                    fingerprint =
-                        preview.encryptionKeyFingerprint
+                    fingerprint = preview.encryptionKeyFingerprint
                 )
             }
         },
@@ -109,16 +92,13 @@ private fun FingerprintSection(
     Column {
         Text(
             text = title,
-            style =
-                MaterialTheme.typography.labelMedium,
-            color =
-                MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Text(
             text = fingerprint,
-            style =
-                MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodySmall,
             fontFamily = FontFamily.Monospace
         )
     }

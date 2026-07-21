@@ -57,7 +57,7 @@ fun StartupScreen(
         modifier = modifier
             .fillMaxSize()
             .background(color = MaterialTheme.colorScheme.primary)
-            .padding(MaterialTheme.spacing.screenPadding)
+            .padding(horizontal = MaterialTheme.spacing.screenPadding)
     ) {
         Column(
             modifier = Modifier

@@ -22,29 +22,19 @@ fun ScanIdentityRoute(
     onQrCodeScanned: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    var cameraPermissionGranted by
-    remember {
-        mutableStateOf(false)
-    }
+    var cameraPermissionGranted by remember { mutableStateOf(false) }
 
-    var cameraPermissionDenied by
-    remember {
-        mutableStateOf(false)
-    }
+    var cameraPermissionDenied by remember { mutableStateOf(false) }
 
-    val requestCameraPermission =
-        rememberQrScannerPermissionRequest(
+    val requestCameraPermission = rememberQrScannerPermissionRequest(
             onPermissionGranted = {
-                cameraPermissionGranted =
-                    true
+                cameraPermissionGranted = true
 
-                cameraPermissionDenied =
-                    false
+                cameraPermissionDenied = false
             },
 
             onPermissionDenied = {
-                cameraPermissionDenied =
-                    true
+                cameraPermissionDenied = true
             }
         )
 
@@ -55,42 +45,28 @@ fun ScanIdentityRoute(
     when {
         cameraPermissionGranted -> {
             ScanIdentityScreen(
-                onQrCodeScanned =
-                    onQrCodeScanned,
+                onQrCodeScanned = onQrCodeScanned,
                 onBack = onBack
             )
         }
 
         cameraPermissionDenied -> {
             Column(
-                modifier =
-                    Modifier.fillMaxSize(),
-                horizontalAlignment =
-                    Alignment.CenterHorizontally,
-                verticalArrangement =
-                    Arrangement.Center
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text =
-                        "Camera permission is required to scan a QR code."
-                )
+                Text(text = "Camera permission is required to scan a QR code.")
 
-                Spacer(
-                    modifier =
-                        Modifier.height(16.dp)
-                )
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
-                    onClick =
-                        requestCameraPermission
+                    onClick = requestCameraPermission
                 ) {
                     Text("Grant camera permission")
                 }
 
-                Spacer(
-                    modifier =
-                        Modifier.height(8.dp)
-                )
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Button(
                     onClick = onBack

@@ -2,7 +2,6 @@ package com.cbgm.securechat.feature.chats.presentation.screen
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -76,6 +76,9 @@ import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
 import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
 
+private val Field = Color(0xFF102A46)
+private val IncomingBubbleColor = Color(0xFF17324D)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
@@ -88,31 +91,21 @@ fun ChatScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-
-
     val chatListState = rememberLazyListState()
 
-    val barsState = rememberMainBarsState(
-        chatListState = chatListState,
-    )
+    val barsState = rememberMainBarsState(chatListState = chatListState)
 
     val topBarColor by animateColorAsState(
-        targetValue = MaterialTheme.colorScheme.background.copy(
-            alpha = barsState.topBarAlpha
-        ),
+        targetValue = MaterialTheme.colorScheme.background.copy(alpha = barsState.topBarAlpha),
         label = "TopBarColor"
     )
 
     val bottomBarColor by animateColorAsState(
-        targetValue = MaterialTheme.colorScheme.background.copy(
-            alpha = barsState.bottomBarAlpha
-        ),
+        targetValue = MaterialTheme.colorScheme.background.copy(alpha = barsState.bottomBarAlpha),
         label = "BottomBarColor"
     )
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         PatternBackground(
             modifier = Modifier.matchParentSize(),
             backgroundColor = MaterialTheme.colorScheme.background,
@@ -124,9 +117,7 @@ fun ChatScreen(
             containerColor = Color.Transparent,
 
             topBar = {
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
                     TopAppBar(
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = topBarColor,
@@ -140,10 +131,7 @@ fun ChatScreen(
                                 modifier = Modifier.clickable(onClick = onClickHeader),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                ContactAvatar(
-                                    name = uiState.contactName,
-                                    size = 36.dp
-                                )
+                                ContactAvatar(name = uiState.contactName, size = 36.dp)
 
                                 Spacer(modifier = Modifier.width(12.dp))
 
@@ -169,13 +157,10 @@ fun ChatScreen(
                         securityState = uiState.contactSecurityState,
                         onVerifyIdentity = onVerifyIdentity
                     )
-                    uiState.errorMessage
-                        ?.let { errorMessage ->
-                            ErrorMessage(
-                                message =
-                                    errorMessage
-                            )
-                        }
+
+                    uiState.errorMessage?.let { errorMessage ->
+                        ErrorMessage(message = errorMessage)
+                    }
                 }
             },
 
@@ -219,13 +204,11 @@ fun ChatScreen(
                     }
                 }
 
-
                 else -> {
                     MessageList(
                         messages = uiState.messages,
                         listState = chatListState,
                         onRetryMessage = onRetryMessage,
-                        onVerifyIdentity = onVerifyIdentity,
                         topPadding = innerPadding.calculateTopPadding(),
                         bottomPadding = innerPadding.calculateBottomPadding(),
                         modifier = Modifier.fillMaxSize()
@@ -234,39 +217,6 @@ fun ChatScreen(
             }
         }
     }
-}
-
-@Composable
-private fun SecurityHeaderLabel(
-    securityState: ContactSecurityState,
-    modifier: Modifier = Modifier
-) {
-    val text = when (securityState) {
-        ContactSecurityState.NO_REMOTE_PUBLIC_KEYS -> {
-            "Not encrypted · no public keys"
-        }
-
-        ContactSecurityState.ONE_WAY_KEYS -> {
-            "Not encrypted · one-way keys"
-        }
-
-        ContactSecurityState.MUTUAL_KEYS_UNVERIFIED -> {
-            "Encrypted · identity unverified"
-        }
-
-        ContactSecurityState.MUTUAL_KEYS_VERIFIED -> {
-            "Encrypted · identity verified"
-        }
-    }
-
-    Text(
-        text = text,
-        modifier = modifier,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onBackground,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-    )
 }
 
 @Composable
@@ -292,7 +242,7 @@ private fun SecurityBanner(
         ContactSecurityState.NO_REMOTE_PUBLIC_KEYS -> CombinedState(
             icon = Icons.Default.LockOpen,
             title = "Messages are not end-to-end encrypted",
-            description = "You do not have this contact’s SecureChat public keys.",
+            description = "You do not have this contact's SecureChat public keys.",
             containerColor = MaterialTheme.colorScheme.errorContainer,
             contentColor = MaterialTheme.colorScheme.onErrorContainer,
         )
@@ -313,13 +263,10 @@ private fun SecurityBanner(
             contentColor = MaterialTheme.colorScheme.onErrorContainer,
         )
 
-        /*ContactSecurityState.MUTUAL_KEYS_VERIFIED -> CombinedState(
-            icon = Icons.Default.Lock,
-            title = "End-to-end encrypted",
-            description = "",
-            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
-            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-        )*/
+        // MUTUAL_KEYS_VERIFIED is handled above and returns early — no branch
+        // needed here, so the dead commented-out entry that used to live in
+        // this `when` has been removed.
+        ContactSecurityState.MUTUAL_KEYS_VERIFIED -> error("Unreachable")
     }
 
     Surface(
@@ -344,7 +291,8 @@ private fun SecurityBanner(
             ) {
                 Text(
                     text = combinedState.title,
-                    style = MaterialTheme.typography.labelMedium
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
 
                 Text(
@@ -355,14 +303,11 @@ private fun SecurityBanner(
             }
 
             if (securityState == ContactSecurityState.MUTUAL_KEYS_UNVERIFIED) {
-                TextButton(
-                    onClick = onVerifyIdentity,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface)
-                ) {
+                TextButton(onClick = onVerifyIdentity) {
                     Text(
                         text = "Verify",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = combinedState.contentColor,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -372,15 +317,17 @@ private fun SecurityBanner(
 }
 
 @Composable
-private fun VerifiedSecurityIndicator(
-    modifier: Modifier = Modifier
-) {
+private fun VerifiedSecurityIndicator(modifier: Modifier = Modifier) {
+    // Uses the same accent cyan as the rest of the app instead of
+    // colorScheme.secondary, so "verified" reads consistently everywhere —
+    // and drops the fully-opaque background in favor of a tinted one so it
+    // doesn't compete visually with the top bar above it.
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.secondary//.copy(alpha = 0.4f)
+        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 5.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
@@ -388,15 +335,16 @@ private fun VerifiedSecurityIndicator(
                 imageVector = Icons.Default.Lock,
                 contentDescription = null,
                 modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.secondary
             )
 
-            Spacer(modifier = Modifier.width(5.dp))
+            Spacer(modifier = Modifier.width(6.dp))
 
             Text(
                 text = "Verified end-to-end encrypted",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.secondary
             )
         }
     }
@@ -407,7 +355,6 @@ private fun MessageList(
     messages: List<ChatMessage>,
     listState: LazyListState,
     onRetryMessage: (String) -> Unit,
-    onVerifyIdentity: () -> Unit,
     topPadding: Dp,
     bottomPadding: Dp,
     modifier: Modifier = Modifier
@@ -430,9 +377,7 @@ private fun MessageList(
         ) { message ->
             MessageBubble(
                 message = message,
-                onRetryClick = {
-                    onRetryMessage(message.id)
-                }
+                onRetryClick = { onRetryMessage(message.id) }
             )
         }
     }
@@ -455,16 +400,20 @@ private fun MessageBubble(
         MessageContentStatus.READABLE -> MessageBubbleState(
             text = message.text,
             isContentFailed = false,
+            // "Mine" bubbles use a translucent accent tint instead of an
+            // unrelated one-off hex, so outgoing messages visually tie back
+            // to the same cyan used for primary actions app-wide. Incoming
+            // bubbles use the shared Field-family dark navy instead of flat
+            // black, so they read as part of the same surface language as
+            // every other screen.
             bubbleColor = if (message.isMine) {
-                Color(0x463697B3)
+                MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)
             } else {
-                Color.Black.copy(alpha = 0.75f)
+                IncomingBubbleColor
             },
-            contentColor = if (message.isMine) {
-                MaterialTheme.colorScheme.onBackground
-            } else {
-                MaterialTheme.colorScheme.onBackground
-            },
+            // contentColor previously branched on isMine but both branches
+            // returned onBackground — removed the dead conditional.
+            contentColor = MaterialTheme.colorScheme.onBackground,
         )
 
         MessageContentStatus.INVALID_PACKET -> MessageBubbleState(
@@ -491,35 +440,28 @@ private fun MessageBubble(
 
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = if (message.isMine) {
-            Arrangement.End
-        } else {
-            Arrangement.Start
-        }
+        horizontalArrangement = if (message.isMine) Arrangement.End else Arrangement.Start
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(fraction = 0.78f),
-            horizontalAlignment = if (message.isMine) {
-                Alignment.End
-            } else {
-                Alignment.Start
-            }
+            horizontalAlignment = if (message.isMine) Alignment.End else Alignment.Start
         ) {
             Surface(
                 color = bubbleState.bubbleColor,
-                //border = BorderStroke(2.dp, bubbleState.bubbleColor),
-                contentColor = bubbleState.contentColor, shape = RoundedCornerShape(size = 16.dp)
+                contentColor = bubbleState.contentColor,
+                shape = RoundedCornerShape(
+                    topStart = 16.dp,
+                    topEnd = 16.dp,
+                    bottomStart = if (message.isMine) 16.dp else 4.dp,
+                    bottomEnd = if (message.isMine) 4.dp else 16.dp
+                )
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.Top
                 ) {
                     if (bubbleState.isContentFailed) {
-                        Icon(
-                            imageVector = Icons.Default.ErrorOutline,
-                            contentDescription = null
-                        )
-
+                        Icon(imageVector = Icons.Default.ErrorOutline, contentDescription = null)
                         Spacer(modifier = Modifier.width(MaterialTheme.spacing.base))
                     }
 
@@ -563,47 +505,21 @@ private fun MessageMetadata(
 }
 
 @Composable
-private fun MessageSecurityIndicator(
-    message: ChatMessage
-) {
+private fun MessageSecurityIndicator(message: ChatMessage) {
     val text = when (message.contentStatus) {
-        MessageContentStatus.INVALID_PACKET -> {
-            "Invalid packet"
-        }
-
-        MessageContentStatus.INVALID_PLAINTEXT_PACKET -> {
-            "Invalid plaintext"
-        }
-
-        MessageContentStatus.TRANSPORT_DECRYPTION_FAILED -> {
-            "Decryption failed"
-        }
-
-        MessageContentStatus.READABLE -> {
-            when (message.security) {
-                MessageSecurity.INSECURE -> {
-                    "Not encrypted"
-                }
-
-                MessageSecurity.END_TO_END_ENCRYPTED -> {
-                    "Encrypted"
-                }
-            }
+        MessageContentStatus.INVALID_PACKET -> "Invalid packet"
+        MessageContentStatus.INVALID_PLAINTEXT_PACKET -> "Invalid plaintext"
+        MessageContentStatus.TRANSPORT_DECRYPTION_FAILED -> "Decryption failed"
+        MessageContentStatus.READABLE -> when (message.security) {
+            MessageSecurity.INSECURE -> "Not encrypted"
+            MessageSecurity.END_TO_END_ENCRYPTED -> "Encrypted"
         }
     }
 
     val icon = when {
-        message.contentStatus != MessageContentStatus.READABLE -> {
-            Icons.Default.ErrorOutline
-        }
-
-        message.security == MessageSecurity.END_TO_END_ENCRYPTED -> {
-            Icons.Default.Lock
-        }
-
-        else -> {
-            Icons.Default.LockOpen
-        }
+        message.contentStatus != MessageContentStatus.READABLE -> Icons.Default.ErrorOutline
+        message.security == MessageSecurity.END_TO_END_ENCRYPTED -> Icons.Default.Lock
+        else -> Icons.Default.LockOpen
     }
 
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -630,9 +546,7 @@ private fun OutgoingDeliveryIndicator(
     onRetryClick: () -> Unit
 ) {
     when (deliveryStatus) {
-        MessageDeliveryStatus.NOT_APPLICABLE -> {
-            Unit
-        }
+        MessageDeliveryStatus.NOT_APPLICABLE -> Unit
 
         MessageDeliveryStatus.QUEUED -> {
             DeliveryLabel(
@@ -682,13 +596,10 @@ private fun OutgoingDeliveryIndicator(
                             contentDescription = null,
                             modifier = Modifier.size(14.dp)
                         )
-
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
-                            modifier = Modifier
-                                .size(14.dp)
-                                .padding(start = 1.dp)
+                            modifier = Modifier.size(14.dp).padding(start = 1.dp)
                         )
                     }
                 }
@@ -696,22 +607,25 @@ private fun OutgoingDeliveryIndicator(
         }
 
         MessageDeliveryStatus.READ -> {
+            // Read receipts now use the accent color instead of the default
+            // onSurfaceVariant — the only delivery state that reads as
+            // "confirmed by the other person" should stand out visually.
             DeliveryLabel(
                 text = "Read",
+                textColor = MaterialTheme.colorScheme.secondary,
                 icon = {
                     Row {
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
-                            modifier = Modifier.size(14.dp)
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.secondary
                         )
-
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
-                            modifier = Modifier
-                                .size(14.dp)
-                                .padding(start = 1.dp)
+                            modifier = Modifier.size(14.dp).padding(start = 1.dp),
+                            tint = MaterialTheme.colorScheme.secondary
                         )
                     }
                 }
@@ -719,9 +633,7 @@ private fun OutgoingDeliveryIndicator(
         }
 
         MessageDeliveryStatus.FAILED -> {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.ErrorOutline,
                     contentDescription = null,
@@ -756,11 +668,10 @@ private fun OutgoingDeliveryIndicator(
 @Composable
 private fun DeliveryLabel(
     text: String,
-    icon: @Composable () -> Unit
+    icon: @Composable () -> Unit,
+    textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         icon()
 
         Spacer(modifier = Modifier.width(3.dp))
@@ -768,7 +679,7 @@ private fun DeliveryLabel(
         Text(
             text = text,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = textColor
         )
     }
 }
@@ -795,11 +706,14 @@ private fun MessageInput(
             modifier = Modifier
                 .weight(1f)
                 .background(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    // Uses the shared Field navy instead of a translucent
+                    // white overlay — matches the input styling used on the
+                    // identity screen's phone-number field.
+                    color = Field,
                     shape = RoundedCornerShape(24.dp)
                 )
                 .padding(
-                    horizontal = MaterialTheme.spacing.small,
+                    horizontal = MaterialTheme.spacing.small + 4.dp,
                     vertical = MaterialTheme.spacing.base
                 ),
             enabled = enabled,
@@ -809,12 +723,8 @@ private fun MessageInput(
                 color = MaterialTheme.colorScheme.onBackground
             ),
             cursorBrush = SolidColor(MaterialTheme.colorScheme.secondary),
-            keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Default
-            ),
-            decorationBox = { innerTextField ->
-                innerTextField()
-            }
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
+            decorationBox = { innerTextField -> innerTextField() }
         )
 
         IconButton(
@@ -849,29 +759,25 @@ private fun EmptyChatContent(
             Text(
                 text = "Start a conversation with $contactName",
                 style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center
             )
 
             Text(
                 text = when (securityState) {
-                    ContactSecurityState.NO_REMOTE_PUBLIC_KEYS -> {
+                    ContactSecurityState.NO_REMOTE_PUBLIC_KEYS ->
                         "This contact has no SecureChat public keys. Messages use plaintext transport."
-                    }
 
-                    ContactSecurityState.ONE_WAY_KEYS -> {
-                        "You have this contact’s public keys, but they do not have yours yet. Messages remain plaintext."
-                    }
+                    ContactSecurityState.ONE_WAY_KEYS ->
+                        "You have this contact's public keys, but they do not have yours yet. Messages remain plaintext."
 
-                    ContactSecurityState.MUTUAL_KEYS_UNVERIFIED -> {
+                    ContactSecurityState.MUTUAL_KEYS_UNVERIFIED ->
                         "Messages are encrypted. Compare the safety number through a trusted channel."
-                    }
 
-                    ContactSecurityState.MUTUAL_KEYS_VERIFIED -> {
+                    ContactSecurityState.MUTUAL_KEYS_VERIFIED ->
                         "Messages use the verified SecureChat identity."
-                    }
                 },
-
                 modifier = Modifier.padding(top = MaterialTheme.spacing.base),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -882,16 +788,22 @@ private fun EmptyChatContent(
 }
 
 @Composable
-private fun LoadingChatContent(
-    modifier: Modifier = Modifier
-) {
-    Box(
+private fun LoadingChatContent(modifier: Modifier = Modifier) {
+    // Matches the loading treatment used on the identity screen (spinner +
+    // label) instead of static text with no motion — a lone static string
+    // reads as a stuck/frozen screen while content is actually loading.
+    Column(
         modifier = modifier,
-        contentAlignment = Alignment.Center
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
+
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
+
         Text(
             text = "Loading chat…",
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -924,24 +836,13 @@ private data class MainBarsState(
 )
 
 @Composable
-private fun rememberMainBarsState(
-    chatListState: LazyListState
-): MainBarsState {
-    /*
-     * In a reverse-layout chat:
-     * - canScrollForward means older content exists toward the visual top.
-     * - canScrollBackward means content exists toward the visual bottom.
-     */
+private fun rememberMainBarsState(chatListState: LazyListState): MainBarsState {
     val contentBehindTopBar by remember(chatListState) {
-        derivedStateOf {
-            chatListState.canScrollForward
-        }
+        derivedStateOf { chatListState.canScrollForward }
     }
 
     val contentBehindBottomBar by remember(chatListState) {
-        derivedStateOf {
-            chatListState.canScrollBackward
-        }
+        derivedStateOf { chatListState.canScrollBackward }
     }
 
     val topBarAlpha by animateFloatAsState(
@@ -954,10 +855,7 @@ private fun rememberMainBarsState(
         label = "BottomBarAlpha"
     )
 
-    return MainBarsState(
-        topBarAlpha = topBarAlpha,
-        bottomBarAlpha = bottomBarAlpha
-    )
+    return MainBarsState(topBarAlpha = topBarAlpha, bottomBarAlpha = bottomBarAlpha)
 }
 
 @Preview
@@ -970,6 +868,49 @@ fun ChatScreenPreview() {
                 contactName = "Alex",
                 contactSecurityState = ContactSecurityState.MUTUAL_KEYS_VERIFIED,
                 errorMessage = "sfsfsjljljljljljlf"
+            ),
+            onMessageTextChanged = {},
+            onSendClick = {},
+            onClickHeader = {},
+            onRetryMessage = {},
+            onVerifyIdentity = {},
+            onBack = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+fun ChatScreenMessagesPreview() {
+    SecureChatTheme {
+        ChatScreen(
+            uiState = ChatUiState(
+                isLoadingContact = false,
+                contactName = "Alex",
+                contactSecurityState = ContactSecurityState.MUTUAL_KEYS_VERIFIED,
+                errorMessage = null,
+                messages = listOf(
+                    ChatMessage(
+                        id = "1",
+                        isMine = true,
+                        text = "This is a test goes very long and hopefully brearks right",
+                        security = MessageSecurity.INSECURE,
+                        contentStatus = MessageContentStatus.READABLE,
+                        deliveryStatus = MessageDeliveryStatus.SENDING,
+                        timestamp = System.currentTimeMillis(),
+                        contactId = "2"
+                    ),
+                    ChatMessage(
+                        id = "2",
+                        isMine = false,
+                        text = "This is a test goes very long and hopefully brearks right",
+                        security = MessageSecurity.END_TO_END_ENCRYPTED,
+                        contentStatus = MessageContentStatus.READABLE,
+                        deliveryStatus = MessageDeliveryStatus.QUEUED,
+                        timestamp = System.currentTimeMillis(),
+                        contactId = "1"
+                    )
+                )
             ),
             onMessageTextChanged = {},
             onSendClick = {},

@@ -22,8 +22,6 @@ fun IdentityRoute(
     modifier: Modifier = Modifier,
     onIdentityReady: () -> Unit = {},
     onShareIdentity: () -> Unit,
-    onImportContact: () -> Unit,
-    onContacts: () -> Unit,
     scrollState: ScrollState,
     innerPadding: PaddingValues,
 
@@ -79,8 +77,6 @@ fun IdentityRoute(
         onCreateIdentity = viewModel::createNewIdentity,
         onRetry = viewModel::loadIdentityState,
         onShareIdentity = onShareIdentity,
-        onImportContact = onImportContact,
-        onContacts = onContacts,
         scrollState = scrollState,
         innerPadding = innerPadding,
         modifier = modifier

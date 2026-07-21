@@ -15,48 +15,36 @@ actual fun rememberQrScannerPermissionRequest(
     onPermissionGranted: () -> Unit,
     onPermissionDenied: () -> Unit
 ): () -> Unit {
-    val context =
-        LocalContext.current
+    val context = LocalContext.current
 
-    val currentOnGranted =
-        rememberUpdatedState(
-            newValue = onPermissionGranted
-        )
+    val currentOnGranted = rememberUpdatedState(newValue = onPermissionGranted)
 
-    val currentOnDenied =
-        rememberUpdatedState(
-            newValue = onPermissionDenied
-        )
+    val currentOnDenied = rememberUpdatedState(newValue = onPermissionDenied)
 
-    val permissionLauncher =
-        rememberLauncherForActivityResult(
-            contract =
-                ActivityResultContracts.RequestPermission()
-        ) { granted ->
-            if (granted) {
-                currentOnGranted.value()
-            } else {
-                currentOnDenied.value()
-            }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            currentOnGranted.value()
+        } else {
+            currentOnDenied.value()
         }
+    }
 
     return remember(
         context,
         permissionLauncher
     ) {
         {
-            val granted =
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.CAMERA
-                ) == PackageManager.PERMISSION_GRANTED
+            val granted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
 
             if (granted) {
                 currentOnGranted.value()
             } else {
-                permissionLauncher.launch(
-                    Manifest.permission.CAMERA
-                )
+                permissionLauncher.launch(Manifest.permission.CAMERA)
             }
         }
     }

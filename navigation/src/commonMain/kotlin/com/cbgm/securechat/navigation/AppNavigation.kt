@@ -12,7 +12,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.cbgm.securechat.feature.chats.presentation.ChatRoute
 import com.cbgm.securechat.feature.contactimport.presentation.ImportIdentityRoute
-import com.cbgm.securechat.feature.identity.presentation.IdentityRoute
 import com.cbgm.securechat.feature.identity.presentation.ShareIdentityRoute
 import com.cbgm.securechat.feature.contactimport.scanning.ScanIdentityRoute
 import com.cbgm.securechat.feature.contacts.presentation.contactdetails.ContactDetailsRoute
@@ -122,12 +121,6 @@ fun AppNavigation() {
                             )
                         )
                     },
-                    onImportContact = {
-                        navController.navigate(AppDestination.ImportContact)
-                    },
-                    onContacts = {
-                        navController.navigate(AppDestination.Contacts)
-                    },
                     onShareIdentity = {
                         navController.navigate(AppDestination.ShareIdentity)
                     }
@@ -141,7 +134,7 @@ fun AppNavigation() {
                     contactId = destination.contactId,
                     contactName = destination.contactName,
                     onBack = {
-                        navController.popBackStack()
+                        navController.popBackStack(AppDestination.Main, false)
                     },
                     onClickHeader = {
                         navController.navigate(AppDestination.ContactDetails(destination.contactId))
