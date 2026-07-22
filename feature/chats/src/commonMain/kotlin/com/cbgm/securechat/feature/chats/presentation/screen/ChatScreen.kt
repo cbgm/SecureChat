@@ -48,7 +48,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -72,6 +78,7 @@ import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
 import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
+import kotlinx.coroutines.launch
 
 private val Field = Color(0xFF102A46)
 private val IncomingBubbleColor = Color(0xFF17324D)
@@ -89,6 +96,30 @@ fun ChatScreen(
     modifier: Modifier = Modifier
 ) {
     val chatListState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
+    var localSendPending by remember {
+        mutableStateOf(false)
+    }
+
+    val newestMessage = uiState.messages.firstOrNull()
+
+    LaunchedEffect(newestMessage?.id) {
+        if (
+            localSendPending &&
+            newestMessage?.isMine == true
+        ) {
+            chatListState.animateScrollToItem(0)
+            localSendPending = false
+        }
+    }
+
+    val onLocalSendClick: () -> Unit = {
+        if (uiState.messageText.isNotBlank()) {
+            localSendPending = true
+            onSendClick()
+        }
+    }
 
     val barsState = rememberBarsState(state = chatListState)
 
@@ -185,7 +216,7 @@ fun ChatScreen(
                     MessageInput(
                         value = uiState.messageText,
                         onValueChange = onMessageTextChanged,
-                        onSendClick = onSendClick,
+                        onSendClick = onLocalSendClick,
                         enabled = !uiState.isLoadingContact
                     )
                 }
