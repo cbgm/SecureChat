@@ -1,6 +1,5 @@
 package com.cbgm.securechat.feature.chats.presentation.screen
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +21,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -41,20 +39,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -67,7 +57,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.cbgm.securechat.core.ui.scroll.rememberBarsState
+import com.cbgm.securechat.core.ui.component.SecureChatLazyScaffold
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.chats.domain.model.ChatMessage
@@ -78,7 +68,6 @@ import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
 import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
-import kotlinx.coroutines.launch
 
 private val Field = Color(0xFF102A46)
 private val IncomingBubbleColor = Color(0xFF17324D)
@@ -95,169 +84,188 @@ fun ChatScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val chatListState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
-
-    var localSendPending by remember {
-        mutableStateOf(false)
-    }
-
-    val newestMessage = uiState.messages.firstOrNull()
-
-    LaunchedEffect(newestMessage?.id) {
-        if (
-            localSendPending &&
-            newestMessage?.isMine == true
-        ) {
-            chatListState.animateScrollToItem(0)
-            localSendPending = false
+    SecureChatLazyScaffold(
+        modifier = modifier,
+        barColor = MaterialTheme.colorScheme.background,
+        fadedAlpha = 0.97f,
+        background = {
+            PatternBackground(
+                modifier = Modifier.fillMaxSize(),
+                backgroundColor = MaterialTheme.colorScheme.background,
+                alpha = 0.04f
+            )
+        },
+        topBar = { containerColor ->
+            ChatTopBar(
+                uiState = uiState,
+                containerColor = containerColor,
+                onClickHeader = onClickHeader,
+                onVerifyIdentity = onVerifyIdentity,
+                onBack = onBack
+            )
+        },
+        bottomBar = { containerColor ->
+            ChatBottomBar(
+                uiState = uiState,
+                containerColor = containerColor,
+                onMessageTextChanged = onMessageTextChanged,
+                onSendClick = onSendClick
+            )
         }
-    }
-
-    val onLocalSendClick: () -> Unit = {
-        if (uiState.messageText.isNotBlank()) {
-            localSendPending = true
-            onSendClick()
-        }
-    }
-
-    val barsState = rememberBarsState(state = chatListState)
-
-    val topBarColor by animateColorAsState(
-        targetValue = MaterialTheme.colorScheme.background.copy(alpha = barsState.topBarAlpha),
-        label = "TopBarColor"
-    )
-
-    val bottomBarColor by animateColorAsState(
-        targetValue = MaterialTheme.colorScheme.background.copy(alpha = barsState.bottomBarAlpha),
-        label = "BottomBarColor"
-    )
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        PatternBackground(
-            modifier = Modifier.matchParentSize(),
-            backgroundColor = MaterialTheme.colorScheme.background,
-            alpha = 0.04f
+    ) { innerPadding, listState ->
+        ChatContent(
+            uiState = uiState,
+            listState = listState,
+            innerPadding = innerPadding,
+            onRetryMessage = onRetryMessage
         )
+    }
+}
 
-        Scaffold(
-            modifier = modifier.fillMaxSize(),
-            containerColor = Color.Transparent,
-
-            topBar = {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    TopAppBar(
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = topBarColor,
-                            scrolledContainerColor = topBarColor,
-                            titleContentColor = MaterialTheme.colorScheme.onBackground,
-                            actionIconContentColor = MaterialTheme.colorScheme.onBackground,
-                            navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                        ),
-                        title = {
-                            Row(
-                                modifier = Modifier.clickable(onClick = onClickHeader),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                ContactAvatar(name = uiState.contactName, size = 36.dp)
-
-                                Spacer(modifier = Modifier.width(12.dp))
-
-                                Text(
-                                    text = uiState.contactName,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = onBack) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back"
-                                )
-                            }
-                        }
-                    )
-
-                    SecurityBanner(
-                        securityState = uiState.contactSecurityState,
-                        onVerifyIdentity = onVerifyIdentity
-                    )
-
-                    uiState.errorMessage?.let { errorMessage ->
-                        ErrorMessage(message = errorMessage)
-                    }
-                }
-            },
-
-            bottomBar = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(bottomBarColor)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ChatTopBar(
+    uiState: ChatUiState,
+    containerColor: Color,
+    onClickHeader: () -> Unit,
+    onVerifyIdentity: () -> Unit,
+    onBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        TopAppBar(
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = containerColor,
+                scrolledContainerColor = containerColor,
+                titleContentColor = MaterialTheme.colorScheme.onBackground,
+                navigationIconContentColor =
+                    MaterialTheme.colorScheme.onBackground,
+                actionIconContentColor =
+                    MaterialTheme.colorScheme.onBackground
+            ),
+            title = {
+                Row(
+                    modifier = Modifier.clickable(
+                        onClick = onClickHeader
+                    ),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    ContactAvatar(
+                        name = uiState.contactName,
+                        size = 36.dp
+                    )
+
+                    Spacer(
+                        modifier = Modifier.width(
+                            MaterialTheme.spacing.small
+                        )
+                    )
 
                     Text(
-                        text = "${uiState.contactName} is typing…",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                horizontal = MaterialTheme.spacing.large,
-                                vertical = MaterialTheme.spacing.base.div(2)
-                            ),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (uiState.isContactTyping) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.background,
+                        text = uiState.contactName,
+                        style = MaterialTheme.typography.titleSmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-
-                    MessageInput(
-                        value = uiState.messageText,
-                        onValueChange = onMessageTextChanged,
-                        onSendClick = onLocalSendClick,
-                        enabled = !uiState.isLoadingContact
+                }
+            },
+            navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector =
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back"
                     )
                 }
             }
-        ) { innerPadding ->
-            when {
-                uiState.isLoadingContact -> {
-                    LoadingChatContent(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                    )
-                }
+        )
 
-                uiState.messages.isEmpty() -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                    ) {
-                        EmptyChatContent(
-                            contactName = uiState.contactName,
-                            securityState = uiState.contactSecurityState,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                        )
-                    }
-                }
+        SecurityBanner(
+            securityState = uiState.contactSecurityState,
+            onVerifyIdentity = onVerifyIdentity
+        )
 
-                else -> {
-                    MessageList(
-                        messages = uiState.messages,
-                        listState = chatListState,
-                        onRetryMessage = onRetryMessage,
-                        topPadding = innerPadding.calculateTopPadding(),
-                        bottomPadding = innerPadding.calculateBottomPadding(),
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            }
+        uiState.errorMessage?.let { message ->
+            ErrorMessage(message = message)
+        }
+    }
+}
+
+@Composable
+private fun ChatBottomBar(
+    uiState: ChatUiState,
+    containerColor: Color,
+    onMessageTextChanged: (String) -> Unit,
+    onSendClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(containerColor)
+    ) {
+        Text(
+            text = if (uiState.isContactTyping) {
+                "${uiState.contactName} is typing…"
+            } else {
+                ""
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = MaterialTheme.spacing.large,
+                    vertical = MaterialTheme.spacing.base / 2
+                ),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        MessageInput(
+            value = uiState.messageText,
+            onValueChange = onMessageTextChanged,
+            onSendClick = onSendClick,
+            enabled = !uiState.isLoadingContact
+        )
+    }
+}
+
+@Composable
+private fun ChatContent(
+    uiState: ChatUiState,
+    listState: LazyListState,
+    innerPadding: PaddingValues,
+    onRetryMessage: (String) -> Unit
+) {
+    when {
+        uiState.isLoadingContact -> {
+            LoadingChatContent(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            )
+        }
+
+        uiState.messages.isEmpty() -> {
+            EmptyChatContent(
+                contactName = uiState.contactName,
+                securityState = uiState.contactSecurityState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            )
+        }
+
+        else -> {
+            MessageList(
+                messages = uiState.messages,
+                listState = listState,
+                onRetryMessage = onRetryMessage,
+                topPadding = innerPadding.calculateTopPadding(),
+                bottomPadding = innerPadding.calculateBottomPadding(),
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
 }
@@ -819,9 +827,6 @@ private fun EmptyChatContent(
 
 @Composable
 private fun LoadingChatContent(modifier: Modifier = Modifier) {
-    // Matches the loading treatment used on the identity screen (spinner +
-    // label) instead of static text with no motion — a lone static string
-    // reads as a stuck/frozen screen while content is actually loading.
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,

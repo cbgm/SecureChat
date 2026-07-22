@@ -9,14 +9,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -37,7 +35,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -56,12 +53,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
 import com.cbgm.securechat.core.ui.component.SecureChatCard
+import com.cbgm.securechat.core.ui.component.SecureChatScrollScaffold
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
-import com.cbgm.securechat.feature.identity.presentation.model.ShareIdentityUiState
 import com.cbgm.securechat.feature.identity.platform.QrCode
+import com.cbgm.securechat.feature.identity.presentation.model.ShareIdentityUiState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShareIdentityScreen(
     uiState: ShareIdentityUiState,
@@ -71,88 +68,45 @@ fun ShareIdentityScreen(
     modifier: Modifier = Modifier,
     showBackButton: Boolean = true
 ) {
-    var showOverflowMenu by remember { mutableStateOf(false) }
-    var showRawIdentity by remember { mutableStateOf(false) }
+    var showOverflowMenu by remember {
+        mutableStateOf(false)
+    }
 
-    Scaffold(
+    var showRawIdentity by remember {
+        mutableStateOf(false)
+    }
+
+    SecureChatScrollScaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
-                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
-                ),
-                title = {
-                    Text(
-                        text = "Share identity",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
+        topBar = { containerColor ->
+            ShareIdentityTopBar(
+                uiState = uiState,
+                containerColor = containerColor,
+                showBackButton = showBackButton,
+                showOverflowMenu = showOverflowMenu,
+                showRawIdentity = showRawIdentity,
+                onBack = onBack,
+                onShowOverflowMenuChange = {
+                    showOverflowMenu = it
                 },
-                navigationIcon = {
-                    if (showBackButton) {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back"
-                            )
-                        }
-                    }
-                },
-                actions = {
-                    if (!uiState.encodedIdentity.isNullOrBlank()) {
-                        Box {
-                            IconButton(onClick = { showOverflowMenu = true }) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = "More options"
-                                )
-                            }
-
-                            DropdownMenu(
-                                expanded = showOverflowMenu,
-                                onDismissRequest = { showOverflowMenu = false },
-                                modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer)
-                            ) {
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = if (showRawIdentity) "Hide raw identity" else "Show raw identity",
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = if (showRawIdentity) {
-                                                Icons.Default.VisibilityOff
-                                            } else {
-                                                Icons.Default.Visibility
-                                            },
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    },
-                                    onClick = {
-                                        showOverflowMenu = false
-                                        showRawIdentity = !showRawIdentity
-                                    }
-                                )
-                            }
-                        }
-                    }
+                onShowRawIdentityChange = {
+                    showRawIdentity = it
                 }
             )
         }
-    ) { innerPadding ->
+    ) { innerPadding, scrollState ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 20.dp),
+                .verticalScroll(scrollState)
+                .padding(
+                    top = innerPadding.calculateTopPadding(),
+                    bottom = innerPadding.calculateBottomPadding(),
+                    start = MaterialTheme.spacing.screenPadding,
+                    end = MaterialTheme.spacing.screenPadding
+                )
+                .padding(vertical = MaterialTheme.spacing.medium),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (uiState.encodedIdentity.isNullOrBlank()) {
@@ -169,7 +123,8 @@ fun ShareIdentityScreen(
             }
 
             uiState.errorMessage?.let { message ->
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
+
                 Text(
                     text = message,
                     color = MaterialTheme.colorScheme.error,
@@ -179,6 +134,100 @@ fun ShareIdentityScreen(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ShareIdentityTopBar(
+    uiState: ShareIdentityUiState,
+    containerColor: Color,
+    showBackButton: Boolean,
+    showOverflowMenu: Boolean,
+    showRawIdentity: Boolean,
+    onBack: () -> Unit,
+    onShowOverflowMenuChange: (Boolean) -> Unit,
+    onShowRawIdentityChange: (Boolean) -> Unit
+) {
+    TopAppBar(
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = containerColor,
+            scrolledContainerColor = containerColor,
+            titleContentColor = MaterialTheme.colorScheme.onBackground,
+            navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+            actionIconContentColor = MaterialTheme.colorScheme.onBackground
+        ),
+        title = {
+            Text(
+                text = "Share identity",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
+        navigationIcon = {
+            if (showBackButton) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back"
+                    )
+                }
+            }
+        },
+        actions = {
+            if (!uiState.encodedIdentity.isNullOrBlank()) {
+                Box {
+                    IconButton(
+                        onClick = {
+                            onShowOverflowMenuChange(true)
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "More options"
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showOverflowMenu,
+                        onDismissRequest = {
+                            onShowOverflowMenuChange(false)
+                        },
+                        modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer)
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = if (showRawIdentity) {
+                                        "Hide raw identity"
+                                    } else {
+                                        "Show raw identity"
+                                    },
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = if (showRawIdentity) {
+                                        Icons.Default.VisibilityOff
+                                    } else {
+                                        Icons.Default.Visibility
+                                    },
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            onClick = {
+                                onShowOverflowMenuChange(false)
+                                onShowRawIdentityChange(
+                                    !showRawIdentity
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    )
 }
 
 @Composable
@@ -191,8 +240,15 @@ private fun IdentityOptionsContent(
     Box(
         modifier = Modifier
             .size(88.dp)
-            .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f), CircleShape)
-            .border(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f), CircleShape),
+            .background(
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
+                shape = CircleShape
+            )
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
+                shape = CircleShape
+            ),
         contentAlignment = Alignment.Center
     ) {
         Icon(
@@ -230,7 +286,11 @@ private fun IdentityOptionsContent(
     SecureChatApprovalButton(
         onClick = onGenerateClick,
         enabled = !uiState.isGenerating,
-        text = if (!uiState.isGenerating) "Create QR code" else "",
+        text = if (uiState.isGenerating) {
+            ""
+        } else {
+            "Create QR code"
+        },
         content = {
             if (uiState.isGenerating) {
                 CircularProgressIndicator(
@@ -274,11 +334,17 @@ private fun GeneratedIdentityContent(
             modifier = Modifier.padding(MaterialTheme.spacing.large),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Box(
                 modifier = Modifier
-                    .background(Color.White, RoundedCornerShape(16.dp))
-                    .border(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                    .background(
+                        color = Color.White,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
                     .padding(16.dp)
             ) {
                 QrCode(
@@ -298,9 +364,17 @@ private fun GeneratedIdentityContent(
                     contentColor = MaterialTheme.colorScheme.background
                 )
             ) {
-                Icon(imageVector = Icons.Default.Share, contentDescription = null)
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = null
+                )
+
                 Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
-                Text(text = "Share identity", fontWeight = FontWeight.SemiBold)
+
+                Text(
+                    text = "Share identity",
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }
@@ -313,24 +387,23 @@ private fun GeneratedIdentityContent(
         Column {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
-            Row(
+            Text(
+                text = "RAW IDENTITY",
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "RAW IDENTITY",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                fontWeight = FontWeight.SemiBold
+            )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp))
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(12.dp)
+                    )
                     .padding(MaterialTheme.spacing.medium)
             ) {
                 Text(
@@ -346,7 +419,7 @@ private fun GeneratedIdentityContent(
 
 @Preview
 @Composable
-fun ShareIdentityScreenPreview() {
+private fun ShareIdentityScreenPreview() {
     SecureChatTheme {
         ShareIdentityScreen(
             uiState = ShareIdentityUiState(encodedIdentity = "test identity"),

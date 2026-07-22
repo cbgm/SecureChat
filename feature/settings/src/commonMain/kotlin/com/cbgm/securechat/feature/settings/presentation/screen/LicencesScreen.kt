@@ -8,7 +8,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -17,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import com.cbgm.securechat.core.ui.component.SecureChatStaticScaffold
 import com.cbgm.securechat.feature.settings.presentation.model.LicensesUiState
 import com.mikepenz.aboutlibraries.ui.compose.DefaultChipColors
 import com.mikepenz.aboutlibraries.ui.compose.DefaultLibraryColors
@@ -32,36 +32,13 @@ fun LicensesScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val libraries by produceLibraries {
-        uiState.libraries
-    }
+    val libraries by produceLibraries { uiState.libraries }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor =  MaterialTheme.colorScheme.background,
+    SecureChatStaticScaffold(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                ),
-                title = {
-                    Text(
-                        text = "Open source licenses",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                }
-            )
+            LicensesTopBar(onBack = onBack)
         }
     ) { innerPadding ->
         LibrariesContainer(
@@ -69,35 +46,58 @@ fun LicensesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            colors = DefaultLibraryColors(
-                // Card itself sits one shade lighter than the screen
-                // background, same as every other card in the app, with
-                // white text on top of it instead of white-on-white.
-                libraryBackgroundColor = CardColor,
-                libraryContentColor = MaterialTheme.colorScheme.onBackground,
-
-                // Chips use accent cyan text on a translucent cyan pill —
-                // matches the "Preferred"/"Secure"/status badge pattern
-                // used across contacts and chats screens.
-                versionChipColors = DefaultChipColors(
-                    containerColor =  MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
-                    contentColor =  MaterialTheme.colorScheme.secondary
-                ),
-                licenseChipColors = DefaultChipColors(
-                    containerColor =  MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
-                    contentColor =  MaterialTheme.colorScheme.secondary
-                ),
-                fundingChipColors = DefaultChipColors(
-                    containerColor =  MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
-                    contentColor =  MaterialTheme.colorScheme.secondary
-                ),
-
-                // Detail dialog (tapping a library) matches the app's
-                // navy card color, not a stray white sheet.
-                dialogBackgroundColor = CardColor,
-                dialogContentColor =  MaterialTheme.colorScheme.surface,
-                dialogConfirmButtonColor =  MaterialTheme.colorScheme.secondary
-            )
+            colors = licensesColors()
         )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LicensesTopBar(
+    onBack: () -> Unit
+) {
+    TopAppBar(
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background,
+            scrolledContainerColor = MaterialTheme.colorScheme.background,
+            titleContentColor = MaterialTheme.colorScheme.onBackground,
+            navigationIconContentColor = MaterialTheme.colorScheme.onBackground
+        ),
+        title = {
+            Text(
+                text = "Open source licenses",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back"
+                )
+            }
+        }
+    )
+}
+
+@Composable
+private fun licensesColors(): DefaultLibraryColors {
+    val accentColor = MaterialTheme.colorScheme.secondary
+
+    val chipColors = DefaultChipColors(
+        containerColor = accentColor.copy(alpha = 0.15f),
+        contentColor = accentColor
+    )
+
+    return DefaultLibraryColors(
+        libraryBackgroundColor = CardColor,
+        libraryContentColor = MaterialTheme.colorScheme.onBackground,
+        versionChipColors = chipColors,
+        licenseChipColors = chipColors,
+        fundingChipColors = chipColors,
+        dialogBackgroundColor = CardColor,
+        dialogContentColor = MaterialTheme.colorScheme.onBackground,
+        dialogConfirmButtonColor = accentColor
+    )
 }

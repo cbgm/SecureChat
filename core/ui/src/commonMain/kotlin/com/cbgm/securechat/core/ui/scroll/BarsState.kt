@@ -18,7 +18,7 @@ data class BarsState(
 @Composable
 fun rememberBarsState(
     state: LazyListState,
-    fadedAlpha: Float = 0.50f
+    fadedAlpha: Float = 0.97f
 ): BarsState {
     return rememberBarsState(
         canScrollBackward = {

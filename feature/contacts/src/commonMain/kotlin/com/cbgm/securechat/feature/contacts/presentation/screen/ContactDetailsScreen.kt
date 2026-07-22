@@ -1,6 +1,5 @@
 package com.cbgm.securechat.feature.contacts.presentation.screen
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -38,13 +36,11 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -58,7 +54,7 @@ import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.crypto.safety.SafetyNumber
 import com.cbgm.securechat.core.extensions.toHexString
 import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
-import com.cbgm.securechat.core.ui.scroll.rememberBarsState
+import com.cbgm.securechat.core.ui.component.SecureChatScrollScaffold
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
@@ -72,9 +68,10 @@ import com.cbgm.securechat.feature.contacts.domain.model.SecureChatIdentity
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactDetailsUiState
 import com.cbgm.securechat.feature.contacts.presentation.screen.components.SafetyNumberVerificationDialog
 
+
 private val CardColor = Color(0xFF102A46)
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun ContactDetailsScreen(
     uiState: ContactDetailsUiState,
@@ -87,118 +84,156 @@ fun ContactDetailsScreen(
     onConfirmVerification: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val title =
-        when (uiState) {
-            is ContactDetailsUiState.Content -> uiState.contact.displayName ?: "Contact"
-            else -> "Contact details"
+    val title = when (uiState) {
+        is ContactDetailsUiState.Content ->
+            uiState.contact.displayName ?: "Contact"
+
+        else ->
+            "Contact details"
+    }
+
+    SecureChatScrollScaffold(
+        modifier = modifier,
+        background = {
+            PatternBackground(
+                modifier = Modifier.fillMaxSize(),
+                backgroundColor = MaterialTheme.colorScheme.background,
+                alpha = 0.04f
+            )
+        },
+        topBar = { containerColor ->
+            ContactDetailsTopBar(
+                title = title,
+                containerColor = containerColor,
+                onBack = onBack
+            )
         }
-
-    val scrollState = rememberScrollState()
-    val barsState = rememberBarsState(state = scrollState)
-
-    val topBarColor by animateColorAsState(
-        targetValue = MaterialTheme.colorScheme.background.copy(alpha = barsState.topBarAlpha),
-        label = "TopBarColor"
-    )
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        PatternBackground(
-            modifier = Modifier.matchParentSize(),
-            backgroundColor = MaterialTheme.colorScheme.background,
-            alpha = 0.04f
+    ) { innerPadding, scrollState ->
+        ContactDetailsContent(
+            uiState = uiState,
+            innerPadding = innerPadding,
+            scrollState = scrollState,
+            onBack = onBack,
+            onRetry = onRetry,
+            onShareContact = onShareContact,
+            onVerifyIdentity = onVerifyIdentity
         )
+    }
 
-        Scaffold(
-            modifier = modifier.fillMaxSize(),
-            containerColor = Color.Transparent,
-            topBar = {
-                TopAppBar(
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = topBarColor,
-                        scrolledContainerColor = topBarColor,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground,
-                        actionIconContentColor = MaterialTheme.colorScheme.onBackground,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                    ),
-                    title = {
-                        Text(
-                            text = title,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = MaterialTheme.colorScheme.onBackground
-                            )
-                        }
-                    }
+    if (
+        uiState is ContactDetailsUiState.Content &&
+        uiState.isVerificationDialogVisible &&
+        uiState.safetyNumber != null
+    ) {
+        SafetyNumberVerificationDialog(
+            contactName = uiState.contact.displayName ?: "Contact",
+            safetyNumber = uiState.safetyNumber,
+            hasConfirmedComparison = uiState.hasConfirmedComparison,
+            isSaving = uiState.isSavingVerification,
+            errorMessage = uiState.verificationError,
+            onConfirmedChanged = onComparisonConfirmedChanged,
+            onConfirm = onConfirmVerification,
+            onDismiss = onDismissVerification
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ContactDetailsTopBar(
+    title: String,
+    containerColor: Color,
+    onBack: () -> Unit
+) {
+    TopAppBar(
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = containerColor,
+            scrolledContainerColor = containerColor,
+            titleContentColor = MaterialTheme.colorScheme.onBackground,
+            actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+            navigationIconContentColor = MaterialTheme.colorScheme.onBackground
+        ),
+        title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back"
                 )
             }
-        ) { innerPadding ->
-            when (uiState) {
-                ContactDetailsUiState.Loading -> {
-                    LoadingContent(modifier = Modifier.fillMaxSize().padding(innerPadding))
-                }
+        }
+    )
+}
 
-                ContactDetailsUiState.NotFound -> {
-                    NotFoundContent(
-                        onBack = onBack,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                            .padding(MaterialTheme.spacing.medium)
-                    )
-                }
+@Composable
+private fun ContactDetailsContent(
+    uiState: ContactDetailsUiState,
+    innerPadding: PaddingValues,
+    scrollState: ScrollState,
+    onBack: () -> Unit,
+    onRetry: () -> Unit,
+    onShareContact: () -> Unit,
+    onVerifyIdentity: () -> Unit
+) {
+    when (uiState) {
+        ContactDetailsUiState.Loading -> {
+            LoadingContent(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            )
+        }
 
-                is ContactDetailsUiState.Content -> {
-                    ContactContent(
-                        contact = uiState.contact,
-                        safetyNumber = uiState.safetyNumber,
-                        onShareContact = onShareContact,
-                        onVerifyIdentity = onVerifyIdentity,
-                        modifier = Modifier.fillMaxSize(),
-                        scrollState = scrollState,
-                        innerPadding = innerPadding
-                    )
+        ContactDetailsUiState.NotFound -> {
+            NotFoundContent(
+                onBack = onBack,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(MaterialTheme.spacing.medium)
+            )
+        }
 
-                    if (uiState.isVerificationDialogVisible && uiState.safetyNumber != null) {
-                        SafetyNumberVerificationDialog(
-                            contactName = uiState.contact.displayName ?: "Contact",
-                            safetyNumber = uiState.safetyNumber,
-                            hasConfirmedComparison = uiState.hasConfirmedComparison,
-                            isSaving = uiState.isSavingVerification,
-                            errorMessage = uiState.verificationError,
-                            onConfirmedChanged = onComparisonConfirmedChanged,
-                            onConfirm = onConfirmVerification,
-                            onDismiss = onDismissVerification
-                        )
-                    }
-                }
+        is ContactDetailsUiState.Content -> {
+            ContactContent(
+                contact = uiState.contact,
+                safetyNumber = uiState.safetyNumber,
+                onShareContact = onShareContact,
+                onVerifyIdentity = onVerifyIdentity,
+                scrollState = scrollState,
+                innerPadding = innerPadding,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
-                is ContactDetailsUiState.Error -> {
-                    ErrorContent(
-                        message = uiState.message,
-                        onRetry = onRetry,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                            .padding(24.dp)
-                    )
-                }
-            }
+        is ContactDetailsUiState.Error -> {
+            ErrorContent(
+                message = uiState.message,
+                onRetry = onRetry,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(24.dp)
+            )
         }
     }
 }
 
 @Composable
-private fun LoadingContent(modifier: Modifier = Modifier) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(color = MaterialTheme.colorScheme.onBackground)
+private fun LoadingContent(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
     }
 }
 
@@ -214,13 +249,13 @@ private fun ContactContent(
 ) {
     Column(
         modifier = modifier
-            .fillMaxSize()
             .verticalScroll(scrollState)
             .padding(
                 top = innerPadding.calculateTopPadding(),
-                bottom = innerPadding.calculateBottomPadding()
-            )
-            .padding(horizontal = MaterialTheme.spacing.screenPadding),
+                bottom = innerPadding.calculateBottomPadding(),
+                start = MaterialTheme.spacing.screenPadding,
+                end = MaterialTheme.spacing.screenPadding
+            ),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
     ) {
         ContactHeader(contact = contact)

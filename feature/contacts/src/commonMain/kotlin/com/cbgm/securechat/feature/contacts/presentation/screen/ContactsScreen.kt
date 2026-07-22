@@ -1,6 +1,5 @@
 package com.cbgm.securechat.feature.contacts.presentation.screen
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -36,7 +34,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -54,24 +51,17 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
-import com.cbgm.securechat.core.ui.scroll.rememberBarsState
-import com.cbgm.securechat.core.ui.theme.SecureChatTheme
+import com.cbgm.securechat.core.ui.component.SecureChatLazyScaffold
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
 import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
-import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumber
-import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
-import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
-import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
-import com.cbgm.securechat.feature.contacts.domain.model.SecureChatIdentity
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactsUiState
 
-private val CardColor = Color(0xFF102A46)        // your app PrimaryContainer / Field
+private val SheetColor = Color(0xFF102A46)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,166 +78,193 @@ fun ContactsScreen(
 ) {
     var showImportSheet by remember { mutableStateOf(false) }
 
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    val listState = rememberLazyListState()
-
-    val barsState = rememberBarsState(state = listState)
-
-    val topBarColor by animateColorAsState(
-        targetValue = MaterialTheme.colorScheme.background.copy(alpha = barsState.topBarAlpha),
-        label = "TopBarColor"
-    )
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        PatternBackground(
-            modifier = Modifier.matchParentSize(),
-            backgroundColor = MaterialTheme.colorScheme.background,
-            alpha = 0.04f
-        )
-
-        Scaffold(
-            modifier = modifier.fillMaxSize(),
-            containerColor = Color.Transparent,
-            topBar = {
-                TopAppBar(
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = topBarColor,
-                        scrolledContainerColor = topBarColor,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground,
-                        actionIconContentColor = MaterialTheme.colorScheme.onBackground,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                    ),
-                    title = {
-                        Text(
-                            text = "Contacts",
-                            color = MaterialTheme.colorScheme.onBackground,
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = MaterialTheme.colorScheme.onBackground
-                            )
-                        }
-                    }
-                )
-            },
-            floatingActionButton = {
-                if (uiState is ContactsUiState.Empty || uiState is ContactsUiState.Content) {
-                    // FAB now uses the app-wide accent cyan + dark navy content
-                    // color, matching the documented FAB spec instead of the
-                    // generic colorScheme.secondary/onSurface pairing.
-                    FloatingActionButton(
-                        onClick = { showImportSheet = true },
-                        containerColor = MaterialTheme.colorScheme.secondary,
-                        contentColor = MaterialTheme.colorScheme.background
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Add,
-                            contentDescription = "Add contact",
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                }
-            }
-        ) { innerPadding ->
-            when (uiState) {
-                ContactsUiState.Loading -> {
-                    LoadingContent(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                    )
-                }
-
-                ContactsUiState.Empty -> {
-                    EmptyContactsContent(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                            .padding(MaterialTheme.spacing.medium)
-                    )
-                }
-
-                is ContactsUiState.Content -> {
-                    ContactsContent(
-                        contacts = uiState.contacts,
-                        onContactClick = onContactClick,
-                        modifier = Modifier.fillMaxSize(),
-                        listState = listState,
-                        innerPadding = innerPadding
-                    )
-                }
-
-                is ContactsUiState.Error -> {
-                    ErrorContent(
-                        message = uiState.message,
-                        onImportContact = onImportContact,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                            .padding(MaterialTheme.spacing.medium)
-                    )
-                }
-            }
-        }
-
-        if (showImportSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showImportSheet = false },
-                sheetState = sheetState,
-                containerColor = CardColor,
-                contentColor = Color.White,
-                dragHandle = null // handled manually inside ImportContactSheet
+    SecureChatLazyScaffold(
+        modifier = modifier,
+        background = {
+            PatternBackground(
+                modifier = Modifier.fillMaxSize(),
+                backgroundColor = MaterialTheme.colorScheme.background,
+                alpha = 0.04f
+            )
+        },
+        topBar = { containerColor ->
+            ContactsTopBar(
+                containerColor = containerColor,
+                onBack = onBack
+            )
+        },
+        floatingActionButton = {
+            if (
+                uiState is ContactsUiState.Empty ||
+                uiState is ContactsUiState.Content
             ) {
-                ImportContactSheet(
-                    onClose = { showImportSheet = false },
-                    onImportContact = {
-                        showImportSheet = false
-                        onImportContact()
-                    },
-                    onImportDeviceContacts = {
-                        showImportSheet = false
-                        onImportDeviceContacts()
+                ContactsFloatingActionButton(
+                    onClick = {
+                        showImportSheet = true
                     }
                 )
             }
+        }
+    ) { innerPadding, listState ->
+        ContactsScreenContent(
+            uiState = uiState,
+            innerPadding = innerPadding,
+            listState = listState,
+            onContactClick = onContactClick,
+            onImportContact = onImportContact
+        )
+    }
+
+    if (showImportSheet) {
+        ImportContactBottomSheet(
+            onDismiss = {
+                showImportSheet = false
+            },
+            onImportContact = {
+                showImportSheet = false
+                onImportContact()
+            },
+            onImportDeviceContacts = {
+                showImportSheet = false
+                onImportDeviceContacts()
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ContactsTopBar(
+    containerColor: Color,
+    onBack: () -> Unit
+) {
+    TopAppBar(
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = containerColor,
+            scrolledContainerColor = containerColor,
+            titleContentColor = MaterialTheme.colorScheme.onBackground,
+            actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+            navigationIconContentColor = MaterialTheme.colorScheme.onBackground
+        ),
+        title = {
+            Text(
+                text = "Contacts",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back"
+                )
+            }
+        }
+    )
+}
+
+@Composable
+private fun ContactsFloatingActionButton(
+    onClick: () -> Unit
+) {
+    FloatingActionButton(
+        onClick = onClick,
+        containerColor = MaterialTheme.colorScheme.secondary,
+        contentColor = MaterialTheme.colorScheme.background
+    ) {
+        Icon(
+            imageVector = Icons.Default.Add,
+            contentDescription = "Add contact",
+            modifier = Modifier.size(28.dp)
+        )
+    }
+}
+
+@Composable
+private fun ContactsScreenContent(
+    uiState: ContactsUiState,
+    innerPadding: PaddingValues,
+    listState: LazyListState,
+    onContactClick: (
+        contactId: String,
+        contactName: String
+    ) -> Unit,
+    onImportContact: () -> Unit
+) {
+    when (uiState) {
+        ContactsUiState.Loading -> {
+            LoadingContent(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            )
+        }
+
+        ContactsUiState.Empty -> {
+            EmptyContactsContent(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(
+                        MaterialTheme.spacing.medium
+                    )
+            )
+        }
+
+        is ContactsUiState.Content -> {
+            ContactsList(
+                contacts = uiState.contacts,
+                innerPadding = innerPadding,
+                listState = listState,
+                onContactClick = onContactClick,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        is ContactsUiState.Error -> {
+            ErrorContent(
+                message = uiState.message,
+                onImportContact = onImportContact,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(
+                        MaterialTheme.spacing.medium
+                    )
+            )
         }
     }
 }
 
 @Composable
-private fun LoadingContent(modifier: Modifier = Modifier) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
-    }
-}
-
-@Composable
-private fun ContactsContent(
+private fun ContactsList(
     contacts: List<Contact>,
     innerPadding: PaddingValues,
     listState: LazyListState,
-    onContactClick: (String, String) -> Unit,
+    onContactClick: (
+        contactId: String,
+        contactName: String
+    ) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
         modifier = modifier,
-        contentPadding = innerPadding,
-        state = listState
+        state = listState,
+        contentPadding = innerPadding
     ) {
         items(
             items = contacts,
-            key = { contact -> contact.id }
+            key = Contact::id
         ) { contact ->
             ContactListItem(
                 contact = contact,
-                onClick = { onContactClick(contact.id, contact.displayName ?: "") }
+                onClick = {
+                    onContactClick(
+                        contact.id,
+                        contact.displayName.orEmpty()
+                    )
+                }
             )
         }
     }
@@ -258,14 +275,13 @@ private fun ContactListItem(
     contact: Contact,
     onClick: () -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
         ListItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick),
-            // Every other list screen in the app (chats, contact details)
-            // leads with an avatar — this row had none, so contacts were
-            // just two lines of text with nothing for the eye to anchor on.
             leadingContent = {
                 ContactAvatar(name = contact.displayName ?: "?")
             },
@@ -290,45 +306,48 @@ private fun ContactListItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .74f)
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.74f)
                 )
             },
             trailingContent = {
-                when {
-                    contact.deviceContactLinkStatus == DeviceContactLinkStatus.MISSING -> {
-                        StatusBadge(
-                            text = "Missing",
-                            icon = Icons.Default.Warning,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-
-                    contact.secureChatIdentity != null -> {
-                        StatusBadge(
-                            text = "Secure",
-                            icon = Icons.Default.Verified,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                    }
-                }
+                ContactStatus(contact = contact)
             },
-            colors = ListItemDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.background
-            )
+            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background)
         )
 
         HorizontalDivider(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 80.dp),
-            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .05f)
+            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.05f)
         )
     }
 }
 
-// Small pill badge instead of bare colored text — same treatment as the
-// "Preferred" chip on the contact-details screen, so status labels across
-// the app look like the same design language.
+@Composable
+private fun ContactStatus(
+    contact: Contact
+) {
+    when {
+        contact.deviceContactLinkStatus ==
+                DeviceContactLinkStatus.MISSING -> {
+            StatusBadge(
+                text = "Missing",
+                icon = Icons.Default.Warning,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+
+        contact.secureChatIdentity != null -> {
+            StatusBadge(
+                text = "Secure",
+                icon = Icons.Default.Verified,
+                color = MaterialTheme.colorScheme.secondary
+            )
+        }
+    }
+}
+
 @Composable
 private fun StatusBadge(
     text: String,
@@ -340,7 +359,10 @@ private fun StatusBadge(
         color = color.copy(alpha = 0.15f)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.padding(
+                horizontal = 8.dp,
+                vertical = 4.dp
+            ),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -350,31 +372,48 @@ private fun StatusBadge(
                 modifier = Modifier.size(12.dp)
             )
 
-            Row(modifier = Modifier.padding(start = 4.dp)) {
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = color,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+            Text(
+                text = text,
+                modifier = Modifier.padding(start = 4.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = color,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
 
 @Composable
-private fun EmptyContactsContent(modifier: Modifier = Modifier) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+private fun LoadingContent(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
+    }
+}
+
+@Composable
+private fun EmptyContactsContent(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
         ) {
-            // Same circular icon-badge treatment used on the identity and
-            // chats empty states, instead of a bare unstyled icon.
             Box(
                 modifier = Modifier
                     .size(80.dp)
-                    .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f), CircleShape),
+                    .background(
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
+                        shape = CircleShape
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -409,7 +448,10 @@ private fun ErrorContent(
     onImportContact: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
@@ -435,6 +477,30 @@ private fun ErrorContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ImportContactBottomSheet(
+    onDismiss: () -> Unit,
+    onImportContact: () -> Unit,
+    onImportDeviceContacts: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = SheetColor,
+        contentColor = Color.White,
+        dragHandle = null
+    ) {
+        ImportContactSheet(
+            onClose = onDismiss,
+            onImportContact = onImportContact,
+            onImportDeviceContacts = onImportDeviceContacts
+        )
+    }
+}
+
 @Composable
 private fun ImportContactSheet(
     onClose: () -> Unit,
@@ -444,14 +510,22 @@ private fun ImportContactSheet(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = MaterialTheme.spacing.medium)
+            .padding(
+                bottom = MaterialTheme.spacing.medium
+            )
     ) {
         Box(
             modifier = Modifier
                 .padding(top = 10.dp)
                 .align(Alignment.CenterHorizontally)
-                .size(width = 36.dp, height = 4.dp)
-                .background(Color.White.copy(alpha = 0.25f), RoundedCornerShape(2.dp))
+                .size(
+                    width = 36.dp,
+                    height = 4.dp
+                )
+                .background(
+                    color = Color.White.copy(alpha = 0.25f),
+                    shape = RoundedCornerShape(2.dp)
+                )
         )
 
         Row(
@@ -462,10 +536,10 @@ private fun ImportContactSheet(
         ) {
             Text(
                 text = "Add contact",
+                modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
-                modifier = Modifier.weight(1f)
+                color = Color.White
             )
 
             IconButton(onClick = onClose) {
@@ -480,7 +554,8 @@ private fun ImportContactSheet(
         ImportOptionRow(
             icon = Icons.Default.PersonAdd,
             title = "Import SecureChat contact",
-            description = "Scan a QR code or paste a SecureChat identity",
+            description =
+                "Scan a QR code or paste a SecureChat identity",
             onClick = onImportContact
         )
 
@@ -529,73 +604,4 @@ private fun ImportOptionRow(
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
     )
-}
-
-@Preview
-@Composable
-fun ContactsScreenContentPreview() {
-    SecureChatTheme {
-        ContactsScreen(
-            uiState = ContactsUiState.Content(
-                contacts = listOf(
-                    Contact(
-                        id = "",
-                        displayName = "Alex",
-                        preferredPhoneNumberId = "1",
-                        secureChatIdentity = SecureChatIdentity(
-                            encryptionPublicKey = ByteArray(0),
-                            signingPublicKey = ByteArray(0),
-                            verificationStatus = ContactVerificationStatus.VERIFIED,
-                            keyExchangeStatus = KeyExchangeStatus.MUTUAL,
-                            updatedAtEpochMilliseconds = System.currentTimeMillis()
-                        ),
-                        deviceContactLinkStatus = DeviceContactLinkStatus.NOT_LINKED,
-                        createdAtEpochMilliseconds = System.currentTimeMillis(),
-                        updatedAtEpochMilliseconds = System.currentTimeMillis(),
-                        phoneNumbers = listOf(
-                            ContactPhoneNumber(
-                                "1",
-                                "+1 123 456 7890",
-                                ContactPhoneNumberType.MOBILE,
-                                "Mobile"
-                            )
-                        ),
-                        deviceContactId = ""
-                    )
-                )
-            ),
-            onBack = {},
-            onImportContact = {},
-            onContactClick = { _, _ -> },
-            onImportDeviceContacts = {}
-        )
-    }
-}
-
-@Preview
-@Composable
-fun ContactsScreenEmptyPreview() {
-    SecureChatTheme {
-        ContactsScreen(
-            uiState = ContactsUiState.Empty,
-            onBack = {},
-            onImportContact = {},
-            onContactClick = { _, _ -> },
-            onImportDeviceContacts = {}
-        )
-    }
-}
-
-@Preview
-@Composable
-fun ContactsScreenErrorPreview() {
-    SecureChatTheme {
-        ContactsScreen(
-            uiState = ContactsUiState.Error("meeasdasddad"),
-            onBack = {},
-            onImportContact = {},
-            onContactClick = { _, _ -> },
-            onImportDeviceContacts = {}
-        )
-    }
 }

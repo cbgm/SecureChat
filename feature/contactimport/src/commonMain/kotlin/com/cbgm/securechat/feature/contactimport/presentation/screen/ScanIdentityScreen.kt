@@ -2,7 +2,6 @@ package com.cbgm.securechat.feature.contactimport.presentation.screen
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,7 +11,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -31,6 +29,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.ui.component.SecureChatStaticScaffold
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.contactimport.platform.QrScanner
 
@@ -41,13 +40,13 @@ fun ScanIdentityScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
+    SecureChatStaticScaffold(
+        modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
+                    containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.onBackground,
                     navigationIconContentColor = MaterialTheme.colorScheme.onBackground
                 ),
@@ -79,26 +78,24 @@ fun ScanIdentityScreen(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // Dark scrim above and below the viewfinder cutout, so the eye
-            // is drawn to the frame instead of the whole screen looking like
-            // an undifferentiated camera preview.
-            ScannerOverlay(modifier = Modifier.fillMaxSize())
+            ScannerOverlay(
+                modifier = Modifier.fillMaxSize()
+            )
 
-            Column(
+            Text(
+                text = "Point the camera at another person's SecureChat QR code.",
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(vertical = MaterialTheme.spacing.times(5)),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Point the camera at another person's SecureChat QR code.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+                    .padding(
+                        horizontal = MaterialTheme.spacing.screenPadding,
+                        vertical = MaterialTheme.spacing.times(5)
+                    ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
