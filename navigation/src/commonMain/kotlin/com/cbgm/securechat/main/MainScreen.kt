@@ -1,19 +1,14 @@
 package com.cbgm.securechat.main
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,28 +23,31 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.ui.scroll.rememberBarsState
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.feature.chats.presentation.ChatsRoute
 import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
 import com.cbgm.securechat.feature.identity.presentation.IdentityRoute
+import com.cbgm.securechat.feature.settings.presentation.SettingsRoute
 import org.jetbrains.compose.resources.painterResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     onAddChat: () -> Unit,
+    onNavigateToPrivacyPolicy: () -> Unit,
+    onNavigateToDataDisclaimer: () -> Unit,
+    onNavigateToLicenses: () -> Unit,
+    onNavigateToDeveloperMenu: () -> Unit,
     onOpenChat: (contactId: String, contactName: String) -> Unit,
     onShareIdentity: () -> Unit,
     modifier: Modifier = Modifier
@@ -62,12 +60,28 @@ fun MainScreen(
     val identityScrollState = rememberScrollState()
     val settingsScrollState = rememberScrollState()
 
-    val barsState = rememberMainBarsState(
-        selectedTab = selectedTab,
-        chatListState = chatListState,
-        identityScrollState = identityScrollState,
-        settingsScrollState = settingsScrollState
-    )
+    val barsState = when (selectedTab) {
+        MainTab.Chats -> {
+            rememberBarsState(
+                state = chatListState,
+                fadedAlpha = 0.97f
+            )
+        }
+
+        MainTab.Me -> {
+            rememberBarsState(
+                state = identityScrollState,
+                fadedAlpha = 0.97f
+            )
+        }
+
+        MainTab.Settings -> {
+            rememberBarsState(
+                state = settingsScrollState,
+                fadedAlpha = 0.97f
+            )
+        }
+    }
 
     val topBarColor by animateColorAsState(
         targetValue = MaterialTheme.colorScheme.background.copy(
@@ -162,6 +176,10 @@ fun MainScreen(
             Content(
                 selectedTab = selectedTab,
                 onOpenChat = onOpenChat,
+                onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
+                onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,
+                onNavigateToLicenses = onNavigateToLicenses,
+                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu,
                 innerPadding = innerPadding,
                 chatListState = chatListState,
                 identityScrollState = identityScrollState,
@@ -177,6 +195,10 @@ private fun Content(
     selectedTab: MainTab,
     onShareIdentity: () -> Unit,
     onOpenChat: (String, String) -> Unit,
+    onNavigateToPrivacyPolicy: () -> Unit,
+    onNavigateToDataDisclaimer: () -> Unit,
+    onNavigateToLicenses: () -> Unit,
+    onNavigateToDeveloperMenu: () -> Unit,
     innerPadding: PaddingValues,
     chatListState: LazyListState,
     identityScrollState: ScrollState,
@@ -203,112 +225,17 @@ private fun Content(
         }
 
         MainTab.Settings -> {
-            PlaceholderScreen(
-                title = "Settings",
-                message = "Settings are coming soon.",
-                scrollState = settingsScrollState,
+            SettingsRoute(
+                scrollState = settingsScrollState, // whatever your tab host already threads through
                 innerPadding = innerPadding,
-                modifier = Modifier.fillMaxSize()
+                onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
+                onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,
+                onNavigateToLicenses = onNavigateToLicenses,
+                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu
             )
         }
     }
 }
-
-
-
-@Composable
-private fun PlaceholderScreen(
-    title: String,
-    message: String,
-    scrollState: ScrollState,
-    innerPadding: PaddingValues,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .verticalScroll(scrollState)
-            .padding(
-                top = innerPadding.calculateTopPadding() + 32.dp,
-                bottom = innerPadding.calculateBottomPadding() + 32.dp,
-                start = 32.dp,
-                end = 32.dp
-            ),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-
-        Text(
-            text = message,
-            modifier = Modifier.padding(top = 12.dp),
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Stable
-private data class MainBarsState(
-    val topBarAlpha: Float,
-    val bottomBarAlpha: Float
-)
-
-@Composable
-private fun rememberMainBarsState(
-    selectedTab: MainTab,
-    chatListState: LazyListState,
-    identityScrollState: ScrollState,
-    settingsScrollState: ScrollState
-): MainBarsState {
-    val contentBehindTopBar = when (selectedTab) {
-        MainTab.Chats -> {
-            chatListState.firstVisibleItemIndex > 0 || chatListState.firstVisibleItemScrollOffset > 0
-        }
-
-        MainTab.Me -> {
-            identityScrollState.value > 0
-        }
-
-        MainTab.Settings -> {
-            settingsScrollState.value > 0
-        }
-    }
-
-    val contentBehindBottomBar = when (selectedTab) {
-        MainTab.Chats -> {
-            chatListState.canScrollForward
-        }
-
-        MainTab.Me -> {
-            identityScrollState.canScrollForward
-        }
-
-        MainTab.Settings -> {
-            settingsScrollState.canScrollForward
-        }
-    }
-
-    val topBarAlpha by animateFloatAsState(
-        targetValue = if (contentBehindTopBar) 0.97f else 1f,
-        label = "TopBarAlpha"
-    )
-
-    val bottomBarAlpha by animateFloatAsState(
-        targetValue = if (contentBehindBottomBar) 0.97f else 1f,
-        label = "BottomBarAlpha"
-    )
-
-    return MainBarsState(
-        topBarAlpha = topBarAlpha,
-        bottomBarAlpha = bottomBarAlpha
-    )
-}
-
 
 @Preview
 @Composable
@@ -317,7 +244,12 @@ fun MainScreenPreview() {
         MainScreen(
             onAddChat = {},
             onOpenChat = { _, _ -> },
-            onShareIdentity = {}
+            onShareIdentity = {},
+            onNavigateToPrivacyPolicy = {},
+            onNavigateToDataDisclaimer = {},
+            onNavigateToLicenses = {},
+            onNavigateToDeveloperMenu = {},
+            modifier = Modifier.fillMaxSize()
         )
     }
 }

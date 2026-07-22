@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import androidx.core.content.ContextCompat
+import com.cbgm.securechat.feature.settings.di.settingsModule
 import com.cbgm.securechat.startup.di.startupModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -66,7 +67,8 @@ class SecureChatApplication :
                 sharedModule,
                 contactImportModule,
                 startupModule,
-                chatsModule
+                chatsModule,
+                settingsModule
             )
         }
 

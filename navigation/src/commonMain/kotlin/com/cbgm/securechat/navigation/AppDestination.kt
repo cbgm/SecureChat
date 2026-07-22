@@ -5,9 +5,6 @@ import kotlinx.serialization.Serializable
 sealed interface AppDestination {
 
     @Serializable
-    data object Identity : AppDestination
-
-    @Serializable
     data object Contacts : AppDestination
 
     @Serializable
@@ -23,6 +20,18 @@ sealed interface AppDestination {
         val contactId: String,
         val contactName: String
     ) : AppDestination
+
+    @Serializable
+    data class Disclaimer(
+        val type: String
+    ) : AppDestination
+
+
+    @Serializable
+    data object Licences : AppDestination
+
+    @Serializable
+    data object DeveloperMenu : AppDestination
 
     @Serializable
     data object Main : AppDestination

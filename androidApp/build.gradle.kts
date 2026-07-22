@@ -24,6 +24,7 @@ dependencies {
     implementation(projects.feature.identity)
     implementation(projects.feature.onboarding)
     implementation(projects.feature.contactimport)
+    implementation(projects.feature.settings)
 
     implementation(libs.androidx.activity.compose)
 
@@ -49,6 +50,10 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    buildFeatures {
+        buildConfig = true
+    }
+
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false

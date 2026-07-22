@@ -32,6 +32,9 @@ ktor = "3.5.1"
 okio = "3.16.4"
 logback = "1.5.18"
 play-services-auth = "21.1.1"
+about-libs-compose = "15.0.4"
+about-libs-render = "0.43.0"
+about-libs-plugin = "15.0.4"
 
 
 
@@ -87,7 +90,8 @@ ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "kto
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "play-services-auth" }
-
+about-libs-compose = { module = "com.mikepenz:aboutlibraries-compose-m3", version.ref = "about-libs-compose" }
+about-libs-render = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "about-libs-render" }
 
 
 ##Server
@@ -115,3 +119,4 @@ androidLint = { id = "com.android.lint", version.ref = "agp" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+about-libs= {id = "com.mikepenz.aboutlibraries.plugin", version.ref = "about-libs-plugin"}

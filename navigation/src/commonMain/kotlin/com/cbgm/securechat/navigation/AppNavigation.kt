@@ -20,6 +20,10 @@ import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
 import com.cbgm.securechat.feature.identity.domain.model.SharedContactDetails
 import com.cbgm.securechat.feature.identity.domain.model.SharedIdentityPayload
 import com.cbgm.securechat.feature.identity.sharing.rememberIdentityShareLauncher
+import com.cbgm.securechat.feature.settings.presentation.DeveloperMenuRoute
+import com.cbgm.securechat.feature.settings.presentation.DisclaimerRoute
+import com.cbgm.securechat.feature.settings.presentation.LicensesRoute
+import com.cbgm.securechat.feature.settings.presentation.model.DisclaimerType
 import com.cbgm.securechat.main.MainScreen
 import com.cbgm.securechat.startup.presentation.StartupRoute
 import com.cbgm.securechat.startup.presentation.screen.component.SecureChatAppBackground
@@ -34,28 +38,29 @@ fun AppNavigation() {
             navController = navController,
             startDestination = AppDestination.Startup
         ) {
-            composable<AppDestination.Identity> {
-                /*IdentityRoute(
-                    onIdentityReady = {
-                        navController.navigate(AppDestination.Main) {
-                            popUpTo(AppDestination.Identity) {
-                                inclusive = true
-                            }
-                        }
-                    },
 
-                    onShareIdentity = {
-                        navController.navigate(AppDestination.ShareIdentity)
-                    },
+            composable<AppDestination.Licences> {
+                LicensesRoute(onBack = { navController.popBackStack() })
+            }
 
-                    onImportContact = {
-                        navController.navigate(AppDestination.ImportContact)
-                    },
+            composable<AppDestination.DeveloperMenu> {
+                DeveloperMenuRoute(onBack = { navController.popBackStack() })
+            }
 
-                    onContacts = {
-                        navController.navigate(AppDestination.Contacts)
-                    }
-                )*/
+            composable<AppDestination.Disclaimer> {
+                val type =
+                    navController
+                        .currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.get<String>(
+                            "type"
+                        )
+
+                DisclaimerRoute(
+                    type = type?.let { DisclaimerType.valueOf(it) }
+                        ?: DisclaimerType.DATA_DISCLAIMER,
+                    onBack = { navController.popBackStack() }
+                )
             }
 
             composable<AppDestination.ShareIdentity> {
@@ -123,6 +128,26 @@ fun AppNavigation() {
                     },
                     onShareIdentity = {
                         navController.navigate(AppDestination.ShareIdentity)
+                    },
+                    onNavigateToPrivacyPolicy = {
+                        navController.navigate(
+                            AppDestination.Disclaimer(
+                                type = DisclaimerType.PRIVACY_POLICY.name
+                            )
+                        )
+                    },
+                    onNavigateToDataDisclaimer = {
+                        navController.navigate(
+                            AppDestination.Disclaimer(
+                                type = DisclaimerType.DATA_DISCLAIMER.name
+                            )
+                        )
+                    },
+                    onNavigateToLicenses = {
+                        navController.navigate(AppDestination.Licences)
+                    },
+                    onNavigateToDeveloperMenu = {
+                        navController.navigate(AppDestination.DeveloperMenu)
                     }
                 )
             }
