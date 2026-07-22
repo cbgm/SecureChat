@@ -59,7 +59,7 @@ import com.cbgm.securechat.core.ui.component.SecureChatCard
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.identity.presentation.model.ShareIdentityUiState
-import com.cbgm.securechat.feature.identity.qr.QrCode
+import com.cbgm.securechat.feature.identity.platform.QrCode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

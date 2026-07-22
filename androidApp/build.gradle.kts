@@ -11,28 +11,6 @@ kotlin {
         jvmTarget = JvmTarget.JVM_17
     }
 }
-dependencies {
-    implementation(projects.shared)
-    implementation(projects.startup)
-    implementation(projects.core)
-    implementation(projects.core.crypto)
-    implementation(projects.core.protocol)
-    implementation(projects.feature.chats)
-    implementation(projects.data.database)
-    implementation(projects.feature.transport)
-    implementation(projects.feature.contacts)
-    implementation(projects.feature.identity)
-    implementation(projects.feature.onboarding)
-    implementation(projects.feature.contactimport)
-    implementation(projects.feature.settings)
-
-    implementation(libs.androidx.activity.compose)
-
-    implementation(libs.compose.uiToolingPreview)
-    debugImplementation(libs.compose.uiTooling)
-    implementation(libs.koin.android)
-    implementation(libs.androidx.core.splashscreen)
-}
 
 android {
     namespace = "com.cbgm.securechat"
@@ -45,22 +23,51 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        buildConfig = true
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-    buildFeatures {
-        buildConfig = true
-    }
 
     buildTypes {
-        getByName("release") {
+        release {
             isMinifyEnabled = false
         }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
+}
+
+dependencies {
+    implementation(projects.shared)
+    implementation(projects.startup)
+
+    implementation(projects.core)
+    implementation(projects.core.crypto)
+    implementation(projects.core.protocol)
+
+    implementation(projects.data.database)
+
+    implementation(projects.feature.chats)
+    implementation(projects.feature.contactimport)
+    implementation(projects.feature.contacts)
+    implementation(projects.feature.identity)
+    implementation(projects.feature.onboarding)
+    implementation(projects.feature.settings)
+    implementation(projects.feature.transport)
+
+    implementation(libs.bundles.compose)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.core.splashscreen)
+    implementation(libs.koin.android)
+
+    debugImplementation(libs.compose.uiTooling)
 }

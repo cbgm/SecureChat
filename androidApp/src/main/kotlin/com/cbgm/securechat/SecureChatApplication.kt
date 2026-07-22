@@ -13,7 +13,6 @@ import com.cbgm.securechat.di.sharedModule
 import com.cbgm.securechat.feature.chats.di.chatsModule
 import com.cbgm.securechat.feature.contactimport.di.contactImportModule
 import com.cbgm.securechat.feature.contacts.di.contactsModule
-import com.cbgm.securechat.feature.contacts.devicecontacts.ImportDeviceContacts
 import com.cbgm.securechat.feature.identity.core.LocalPhoneNameStorage
 import com.cbgm.securechat.feature.identity.di.androidIdentityStorageModule
 import com.cbgm.securechat.feature.identity.di.identityModule
@@ -32,6 +31,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import androidx.core.content.ContextCompat
+import com.cbgm.securechat.feature.contacts.domain.usecase.ImportDeviceContacts
 import com.cbgm.securechat.feature.settings.di.settingsModule
 import com.cbgm.securechat.startup.di.startupModule
 import org.koin.android.ext.koin.androidContext

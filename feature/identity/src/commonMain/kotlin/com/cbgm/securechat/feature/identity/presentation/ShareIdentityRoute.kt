@@ -6,7 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cbgm.securechat.feature.identity.presentation.screen.ShareIdentityScreen
 import com.cbgm.securechat.feature.identity.presentation.screen.ShareIdentityViewModel
-import com.cbgm.securechat.feature.identity.sharing.rememberIdentityShareLauncher
+import com.cbgm.securechat.feature.identity.platform.rememberIdentityShareLauncher
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable

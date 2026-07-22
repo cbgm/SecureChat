@@ -5,13 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.cbgm.securechat.feature.chats.domain.model.ContactSecurityState
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
 import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
-import com.cbgm.securechat.feature.chats.domain.usecase.GetContactSafetyNumber
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
 import com.cbgm.securechat.feature.chats.domain.repository.TypingIndicatorGateway
+import com.cbgm.securechat.feature.chats.domain.usecase.GetContactSafetyNumber
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -301,7 +301,7 @@ class ChatViewModel(
 
         viewModelScope.launch {
             try {
-                safetyNumber.value = getContactSafetyNumber(contactId = contactId).getOrThrow()
+                safetyNumber.value = getContactSafetyNumber.invoke(contactId = contactId).getOrThrow()
             } catch (
                 error: Throwable
             ) {

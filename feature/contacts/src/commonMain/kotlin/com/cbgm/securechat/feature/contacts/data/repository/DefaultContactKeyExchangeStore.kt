@@ -5,8 +5,8 @@ import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.data.database.entity.ContactPublicIdentityEntity
 import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
+import com.cbgm.securechat.feature.contacts.domain.model.RemoteIdentityUpdate
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactKeyExchangeStore
-import com.cbgm.securechat.feature.contacts.domain.repository.RemoteIdentityUpdate
 
 class DefaultContactKeyExchangeStore(
     private val contactDao: ContactDao

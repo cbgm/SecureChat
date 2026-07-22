@@ -1,106 +1,29 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidMultiplatformLibrary)
+    alias(libs.plugins.securechat.kmp.library)
+    alias(libs.plugins.securechat.kmp.testing)
 }
 
-val isMacOs =
-    System.getProperty("os.name")
-        .startsWith(
-            prefix = "Mac",
-            ignoreCase = true
-        )
-
 kotlin {
-    if (isMacOs) {
-        listOf(
-            iosArm64(),
-            iosSimulatorArm64()
-        ).forEach { target ->
-            target.binaries.framework {
-                baseName =
-                    "SecureChatCrypto"
-
-                isStatic = true
-            }
-        }
-    }
-
     android {
-        namespace =
-            "com.cbgm.securechat.core.crypto"
-
-        compileSdk =
-            libs.versions.android.compileSdk
-                .get()
-                .toInt()
-
-        minSdk =
-            libs.versions.android.minSdk
-                .get()
-                .toInt()
-
-        compilerOptions {
-            jvmTarget =
-                JvmTarget.JVM_17
-        }
-
-        withHostTest {}
-
-        withDeviceTest {
-            instrumentationRunner =
-                "androidx.test.runner.AndroidJUnitRunner"
-
-            execution =
-                "HOST"
-        }
+        namespace = "com.cbgm.securechat.core.crypto"
     }
 
     sourceSets {
         commonMain.dependencies {
-            implementation(
-                libs.kotlinx.coroutines.core
-            )
+            implementation(libs.bundles.coroutines)
+            implementation(libs.bundles.koin.core)
 
-            implementation(
-                libs.libsodium
-            )
-
-            implementation(
-                libs.kotlincrypto.sha2
-            )
-            implementation(libs.koin.core)
+            implementation(libs.libsodium)
+            implementation(libs.kotlincrypto.sha2)
         }
 
         commonTest.dependencies {
-            implementation(
-                libs.kotlin.test
-            )
-
-            implementation(
-                libs.kotlinx.coroutines.test
-            )
+            implementation(libs.bundles.kmp.testing)
         }
 
-        getByName(
-            "androidDeviceTest"
-        ).dependencies {
-            implementation(
-                libs.kotlin.test
-            )
-
-            implementation(
-                libs.androidx.test.runner
-            )
-
-            implementation(
-                libs.androidx.test.core
-            )
-
-            implementation(
-                libs.kotlinx.coroutines.test
-            )
+        androidDeviceTest.dependencies {
+            implementation(libs.bundles.android.device.testing)
+            implementation(libs.bundles.coroutines.test)
         }
     }
 }

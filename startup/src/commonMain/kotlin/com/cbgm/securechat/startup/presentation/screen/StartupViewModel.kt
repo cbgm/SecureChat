@@ -10,8 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class StartupViewModel(
-    private val appInitializer:
-    AppInitializer
+    private val appInitializer: AppInitializer
 ) : ViewModel() {
 
     private val mutableUiState = MutableStateFlow<StartupUiState>(StartupUiState.Loading)

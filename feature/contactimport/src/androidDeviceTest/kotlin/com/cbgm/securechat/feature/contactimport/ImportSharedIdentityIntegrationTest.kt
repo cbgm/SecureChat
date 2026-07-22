@@ -7,7 +7,8 @@ import androidx.test.core.app.ApplicationProvider
 import com.cbgm.securechat.data.database.SecureChatDatabase
 import com.cbgm.securechat.data.database.entity.ContactEntity
 import com.cbgm.securechat.data.database.entity.ContactPhoneNumberEntity
-import com.cbgm.securechat.feature.contacts.data.merge.ContactMergeService
+import com.cbgm.securechat.feature.contactimport.domain.usecase.ImportSharedIdentity
+import com.cbgm.securechat.feature.contacts.data.merge.DefaultContactMergeService
 import com.cbgm.securechat.feature.contacts.data.repository.DefaultContactRepository
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
 import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
@@ -75,7 +76,7 @@ class ImportSharedIdentityIntegrationTest {
             database.contactDao()
 
         val mergeService =
-            ContactMergeService(
+            DefaultContactMergeService(
                 contactDao = contactDao
             )
 

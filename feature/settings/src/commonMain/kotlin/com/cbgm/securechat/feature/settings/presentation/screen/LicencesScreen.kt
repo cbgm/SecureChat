@@ -17,7 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import com.cbgm.securechat.feature.settings.resources.Res
+import com.cbgm.securechat.feature.settings.presentation.model.LicensesUiState
 import com.mikepenz.aboutlibraries.ui.compose.DefaultChipColors
 import com.mikepenz.aboutlibraries.ui.compose.DefaultLibraryColors
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
@@ -28,11 +28,12 @@ private val CardColor = Color(0xFF102A46)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LicensesScreen(
+    uiState: LicensesUiState,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val libraries by produceLibraries {
-        Res.readBytes(path = "files/aboutlibraries.json").decodeToString()
+        uiState.libraries
     }
 
     Scaffold(

@@ -1,51 +1,24 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
-
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidMultiplatformLibrary)
+    alias(libs.plugins.securechat.kmp.library)
+    alias(libs.plugins.securechat.kmp.testing)
 }
 
-val isMacOs = System
-    .getProperty("os.name")
-    .startsWith(
-        prefix = "Mac",
-        ignoreCase = true
-    )
-
 kotlin {
-
-    if (isMacOs) {
-        listOf(
-            iosArm64(),
-            iosSimulatorArm64()
-        ).forEach { iosTarget ->
-
-            iosTarget.binaries.framework {
-                baseName = "SecureChatCore"
-                isStatic = true
-            }
-        }
-    }
-
     android {
         namespace = "com.cbgm.securechat.core"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
-        minSdk = libs.versions.android.minSdk.get().toInt()
-
-        compilerOptions {
-            jvmTarget = JvmTarget.JVM_17
-        }
     }
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.kotlinx.coroutines.core)
-
+            implementation(libs.bundles.coroutines)
         }
 
         commonTest.dependencies {
-            implementation(libs.kotlin.test)
+            implementation(libs.bundles.kmp.testing)
+        }
+
+        androidDeviceTest.dependencies {
+            implementation(libs.bundles.android.device.testing)
         }
     }
 }

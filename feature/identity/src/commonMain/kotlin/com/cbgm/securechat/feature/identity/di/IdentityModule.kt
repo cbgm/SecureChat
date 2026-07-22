@@ -23,7 +23,6 @@ import com.cbgm.securechat.feature.identity.domain.usecase.GetIdentityStatus
 import com.cbgm.securechat.feature.identity.domain.usecase.GetPublicIdentity
 import com.cbgm.securechat.feature.identity.presentation.screen.IdentityViewModel
 import com.cbgm.securechat.feature.identity.presentation.screen.ShareIdentityViewModel
-import com.cbgm.securechat.feature.identity.startup.DefaultIdentityStartupManager
 import com.cbgm.securechat.feature.identity.startup.IdentityStartupManager
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -78,8 +77,8 @@ val identityModule =
             DefaultIdentityShareCodec()
         }
 
-        single<IdentityStartupManager> {
-            DefaultIdentityStartupManager(identityExists = { get<PublicIdentityStorage>().exists() })
+        single {
+            IdentityStartupManager(identityExists = { get<PublicIdentityStorage>().exists() })
         }
 
         factory {

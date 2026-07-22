@@ -8,7 +8,6 @@ import com.cbgm.securechat.feature.chats.data.protocol.ChatMessagePacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.DeliveryReceiptPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.ReadReceiptPacketHandler
 import com.cbgm.securechat.feature.chats.data.repository.DefaultChatsRepository
-import com.cbgm.securechat.feature.chats.data.security.DefaultGetContactSafetyNumber
 import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
 import com.cbgm.securechat.feature.chats.domain.usecase.GetContactSafetyNumber
 import com.cbgm.securechat.feature.chats.presentation.screen.ChatViewModel
@@ -33,8 +32,8 @@ val chatsModule = module {
         bind<TypedProtocolPacketHandler>()
     }
 
-    single<GetContactSafetyNumber> {
-        DefaultGetContactSafetyNumber(
+    single {
+        GetContactSafetyNumber(
             localPublicIdentityProvider = get<LocalPublicIdentityProvider>(),
             contactRepository = get<ContactRepository>()
         )

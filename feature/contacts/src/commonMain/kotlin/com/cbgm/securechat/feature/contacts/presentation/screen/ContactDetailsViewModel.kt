@@ -1,0 +1,191 @@
+package com.cbgm.securechat.feature.contacts.presentation.screen
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.cbgm.securechat.core.crypto.model.PublicIdentityKeySet
+import com.cbgm.securechat.core.crypto.safety.SafetyNumberGenerator
+import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
+import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
+import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
+import com.cbgm.securechat.feature.contacts.presentation.model.ContactDetailsUiState
+import com.cbgm.securechat.feature.identity.domain.usecase.GetPublicIdentity
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+class ContactDetailsViewModel(
+    private val contactId: String,
+    private val getContact: GetContact,
+    private val getPublicIdentity: GetPublicIdentity,
+    private val contactRepository: ContactRepository,
+    private val safetyNumberGenerator: SafetyNumberGenerator
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow<ContactDetailsUiState>(ContactDetailsUiState.Loading)
+
+    val uiState: StateFlow<ContactDetailsUiState> = _uiState.asStateFlow()
+
+    init {
+        loadContact()
+    }
+
+    fun loadContact() {
+        viewModelScope.launch {
+            _uiState.value = ContactDetailsUiState.Loading
+
+            val contactResult = getContact(contactId = contactId)
+
+            val contact = contactResult.getOrElse { error ->
+                _uiState.value =
+                    ContactDetailsUiState.Error(message = error.message ?: "Failed to load contact")
+
+                return@launch
+            }
+
+            if (contact == null) {
+                _uiState.value = ContactDetailsUiState.NotFound
+
+                return@launch
+            }
+
+            val remoteIdentity = contact.secureChatIdentity
+
+            if (remoteIdentity == null) {
+                _uiState.value = ContactDetailsUiState.Content(
+                    contact = contact,
+                    safetyNumber = null
+                )
+
+                return@launch
+            }
+
+            val localIdentity = getPublicIdentity().getOrElse { error ->
+                _uiState.value = ContactDetailsUiState.Error(
+                    message = error.message ?: "Failed to load your SecureChat identity"
+                )
+
+                return@launch
+            }
+
+            if (localIdentity == null) {
+                _uiState.value =
+                    ContactDetailsUiState.Error(message = "Your SecureChat identity is missing")
+
+                return@launch
+            }
+
+            val safetyNumber = safetyNumberGenerator.generate(
+                firstIdentity = PublicIdentityKeySet(
+                    signingPublicKey = localIdentity.signingPublicKey,
+                    encryptionPublicKey = localIdentity.encryptionPublicKey
+                ),
+
+                secondIdentity = PublicIdentityKeySet(
+                    signingPublicKey = remoteIdentity.signingPublicKey,
+                    encryptionPublicKey = remoteIdentity.encryptionPublicKey
+                )
+            )
+                .getOrElse { error ->
+                    _uiState.value = ContactDetailsUiState.Error(
+                        message = error.message ?: "Failed to generate safety number"
+                    )
+
+                    return@launch
+                }
+
+            _uiState.value = ContactDetailsUiState.Content(
+                contact = contact,
+                safetyNumber = safetyNumber
+            )
+        }
+    }
+
+    fun showVerificationDialog() {
+        updateContent { current ->
+            if (!current.canVerify) {
+                current
+            } else {
+                current.copy(
+                    isVerificationDialogVisible = true,
+                    hasConfirmedComparison = false,
+                    verificationError = null
+                )
+            }
+        }
+    }
+
+    fun dismissVerificationDialog() {
+        updateContent { current ->
+            if (current.isSavingVerification) {
+                current
+            } else {
+                current.copy(
+                    isVerificationDialogVisible = false,
+                    hasConfirmedComparison = false,
+                    verificationError = null
+                )
+            }
+        }
+    }
+
+    fun onComparisonConfirmedChanged(
+        confirmed: Boolean
+    ) {
+        updateContent { current ->
+            current.copy(
+                hasConfirmedComparison = confirmed,
+                verificationError = null
+            )
+        }
+    }
+
+    fun confirmVerification() {
+        val current = _uiState.value as? ContactDetailsUiState.Content ?: return
+
+        if (current.contact.secureChatIdentity?.verificationStatus == ContactVerificationStatus.VERIFIED) {
+            return
+        }
+
+        if (!current.canVerify || !current.hasConfirmedComparison || current.isSavingVerification) {
+            return
+        }
+
+        _uiState.value = current.copy(isSavingVerification = true, verificationError = null)
+
+        viewModelScope.launch {
+            contactRepository.markVerified(contactId = contactId)
+                .onSuccess { verifiedContact ->
+                    val latest = _uiState.value as? ContactDetailsUiState.Content
+
+                    if (latest != null) {
+                        _uiState.value = latest.copy(
+                            contact = verifiedContact,
+                            isVerificationDialogVisible = false,
+                            hasConfirmedComparison = false,
+                            isSavingVerification = false,
+                            verificationError = null
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    val latest = _uiState.value as? ContactDetailsUiState.Content
+
+                    if (latest != null) {
+                        _uiState.value = latest.copy(
+                            isSavingVerification = false,
+                            verificationError = error.message ?: "Failed to verify identity"
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun updateContent(
+        transform: (ContactDetailsUiState.Content) -> ContactDetailsUiState.Content
+    ) {
+        val current = _uiState.value as? ContactDetailsUiState.Content ?: return
+
+        _uiState.value = transform(current)
+    }
+}

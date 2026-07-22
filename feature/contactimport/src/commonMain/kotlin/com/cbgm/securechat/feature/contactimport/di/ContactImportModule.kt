@@ -1,7 +1,7 @@
 package com.cbgm.securechat.feature.contactimport.di
 
-import com.cbgm.securechat.feature.contactimport.ImportSharedIdentity
-import com.cbgm.securechat.feature.contactimport.presentation.importing.ImportIdentityViewModel
+import com.cbgm.securechat.feature.contactimport.domain.usecase.ImportSharedIdentity
+import com.cbgm.securechat.feature.contactimport.presentation.screen.ImportIdentityViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 

@@ -2,6 +2,8 @@ rootProject.name = "SecureChat"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
+    includeBuild("build-logic")
+
     repositories {
         google {
             mavenContent {
@@ -33,7 +35,6 @@ include(":shared")
 include(":core")
 include(":feature:identity")
 include(":feature:contacts")
-include(":core:database")
 include(":data:database")
 include(":feature:contactimport")
 include(":feature:chats")

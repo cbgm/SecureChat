@@ -3,6 +3,7 @@ package com.cbgm.securechat.feature.contacts.data.merge
 import com.cbgm.securechat.core.id.IdGenerator
 import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.data.database.dao.ContactDao
+import com.cbgm.securechat.feature.contacts.data.model.ContactMergeResult
 import com.cbgm.securechat.feature.contacts.domain.model.ImportDevicePhoneNumber
 
 interface ContactMergeService {
