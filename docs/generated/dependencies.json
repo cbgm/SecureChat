@@ -54,6 +54,7 @@
   {"source": ":navigation", "target": ":startup"},
   {"source": ":shared", "target": ":core"},
   {"source": ":shared", "target": ":core:ui"},
+  {"source": ":shared", "target": ":feature:settings"},
   {"source": ":shared", "target": ":navigation"},
   {"source": ":startup", "target": ":core:ui"},
   {"source": ":startup", "target": ":feature:identity"},

@@ -23,5 +23,5 @@ A check mark means the row module directly depends on the column module.
 | `:quality` |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | `:quality:detekt-rules` |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | `:relay` |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| `:shared` |  | ✓ |  |  | ✓ |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |  |
+| `:shared` |  | ✓ |  |  | ✓ |  |  |  |  |  |  |  |  | ✓ |  | ✓ |  |  |  |  |  |
 | `:startup` |  |  |  |  | ✓ |  |  |  |  |  |  | ✓ | ✓ |  |  |  |  |  |  |  |  |
