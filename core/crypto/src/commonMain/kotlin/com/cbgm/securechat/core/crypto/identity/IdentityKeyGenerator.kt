@@ -1,7 +1,6 @@
 package com.cbgm.securechat.core.crypto.identity
 
 interface IdentityKeyGenerator {
-
     /**
      * Generates:
      *

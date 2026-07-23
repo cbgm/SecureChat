@@ -1,0 +1,37 @@
+# `:startup`
+
+Generated automatically by `./gradlew architectureReport`.
+
+## Module information
+
+| Property | Value |
+|---|---|
+| Name | `startup` |
+| Group | `startup` |
+| Directory | `startup` |
+| Build file | `startup/build.gradle.kts` |
+| Kotlin files | 8 |
+| Production Kotlin files | 8 |
+| Test Kotlin files | 0 |
+| Resource files | 1 |
+| Direct dependencies | 3 |
+| Direct dependents | 2 |
+
+## Source sets
+
+- `androidDeviceTest`
+- `androidHostTest`
+- `androidMain`
+- `commonMain`
+- `iosMain`
+
+## Dependencies
+
+- [`:core:ui`](../modules/core-ui.md)
+- [`:feature:identity`](../modules/feature-identity.md)
+- [`:feature:onboarding`](../modules/feature-onboarding.md)
+
+## Dependents
+
+- [`:androidApp`](../modules/androidApp.md)
+- [`:navigation`](../modules/navigation.md)

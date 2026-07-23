@@ -8,4 +8,6 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.androidLint) apply false
     alias(libs.plugins.about.libs) apply false
+    alias(libs.plugins.securechat.architecture)
+    alias(libs.plugins.securechat.quality)
 }

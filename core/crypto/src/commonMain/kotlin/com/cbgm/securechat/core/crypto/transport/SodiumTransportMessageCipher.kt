@@ -8,15 +8,13 @@ import com.cbgm.securechat.core.crypto.error.MessageEncryptionException
 import com.cbgm.securechat.core.crypto.error.UnsupportedCryptoVersionException
 import com.ionspin.kotlin.crypto.box.Box
 
-class SodiumTransportMessageCipher :
-    TransportMessageCipher {
-
+class SodiumTransportMessageCipher : TransportMessageCipher {
     @OptIn(ExperimentalUnsignedTypes::class)
     override suspend fun encryptForRecipient(
         plaintext: ByteArray,
-        recipientPublicKey: ByteArray
-    ): Result<EncryptedTransportPayload> {
-        return runCatching {
+        recipientPublicKey: ByteArray,
+    ): Result<EncryptedTransportPayload> =
+        runCatching {
             require(plaintext.isNotEmpty()) {
                 "Plaintext must not be empty"
             }
@@ -25,15 +23,16 @@ class SodiumTransportMessageCipher :
 
             SodiumRuntime.initialize().getOrThrow()
 
-            val ciphertext: UByteArray = Box.seal(
-                message = plaintext.toUByteArray(),
-                recipientsPublicKey = recipientPublicKey.toUByteArray()
-            )
+            val ciphertext: UByteArray =
+                Box.seal(
+                    message = plaintext.toUByteArray(),
+                    recipientsPublicKey = recipientPublicKey.toUByteArray(),
+                )
 
             EncryptedTransportPayload(
                 version = CURRENT_VERSION,
                 mode = TransportEncryptionMode.SEALED_BOX,
-                payload = ciphertext.toByteArray()
+                payload = ciphertext.toByteArray(),
             )
         }.recoverCatching { error ->
             when (error) {
@@ -43,24 +42,23 @@ class SodiumTransportMessageCipher :
 
                 else -> {
                     throw MessageEncryptionException(
-                        cause = error
+                        cause = error,
                     )
                 }
             }
         }
-    }
 
     @OptIn(ExperimentalUnsignedTypes::class)
     override suspend fun decryptFromSender(
         encryptedPayload: EncryptedTransportPayload,
         localPublicKey: ByteArray,
-        localPrivateKey: ByteArray
-    ): Result<ByteArray> {
-        return runCatching {
+        localPrivateKey: ByteArray,
+    ): Result<ByteArray> =
+        runCatching {
             if (encryptedPayload.version != CURRENT_VERSION) {
                 throw UnsupportedCryptoVersionException(
                     version =
-                        encryptedPayload.version
+                        encryptedPayload.version,
                 )
             }
 
@@ -74,43 +72,44 @@ class SodiumTransportMessageCipher :
 
             SodiumRuntime.initialize().getOrThrow()
 
-            val plaintext: UByteArray = Box.sealOpen(
-                ciphertext = encryptedPayload.payload.toUByteArray(),
-                recipientsPublicKey = localPublicKey.toUByteArray(),
-                recipientsSecretKey = localPrivateKey.toUByteArray()
-            )
+            val plaintext: UByteArray =
+                Box.sealOpen(
+                    ciphertext = encryptedPayload.payload.toUByteArray(),
+                    recipientsPublicKey = localPublicKey.toUByteArray(),
+                    recipientsSecretKey = localPrivateKey.toUByteArray(),
+                )
 
             plaintext.toByteArray()
         }.recoverCatching { error ->
             when (error) {
                 is InvalidPublicKeyException,
                 is InvalidPrivateKeyException,
-                is UnsupportedCryptoVersionException -> {
+                is UnsupportedCryptoVersionException,
+                -> {
                     throw error
                 }
 
                 else -> {
                     throw MessageDecryptionException(
-                        cause = error
+                        cause = error,
                     )
                 }
             }
         }
-    }
 
-    private fun validatePublicKey(
-        publicKey: ByteArray
-    ) {
+    private fun validatePublicKey(publicKey: ByteArray) {
         if (publicKey.size != BOX_PUBLIC_KEY_SIZE) {
-            throw InvalidPublicKeyException(message = "Expected a $BOX_PUBLIC_KEY_SIZE-byte public key, but received ${publicKey.size}")
+            throw InvalidPublicKeyException(
+                message = "Expected a $BOX_PUBLIC_KEY_SIZE-byte public key, but received ${publicKey.size}",
+            )
         }
     }
 
-    private fun validatePrivateKey(
-        privateKey: ByteArray
-    ) {
+    private fun validatePrivateKey(privateKey: ByteArray) {
         if (privateKey.size != BOX_PRIVATE_KEY_SIZE) {
-            throw InvalidPrivateKeyException(message = "Expected a $BOX_PRIVATE_KEY_SIZE-byte private key, but received ${privateKey.size}")
+            throw InvalidPrivateKeyException(
+                message = "Expected a $BOX_PRIVATE_KEY_SIZE-byte private key, but received ${privateKey.size}",
+            )
         }
     }
 

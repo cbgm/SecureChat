@@ -5,19 +5,17 @@ import com.cbgm.securechat.core.protocol.identity.LocalEncryptionKeyPairProvider
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
 
 class IdentityLocalEncryptionKeyPairProvider(
-    private val identityRepository:
-    IdentityRepository
+    private val identityRepository: IdentityRepository,
 ) : LocalEncryptionKeyPairProvider {
-
-    override suspend fun getEncryptionKeyPair(): Result<LocalEncryptionKeyPair> {
-
-        return runCatching {
-            val identity = identityRepository
-                .getIdentity()
-                .getOrThrow()
-                ?: error(
-                    "Local SecureChat identity does not exist"
-                )
+    override suspend fun getEncryptionKeyPair(): Result<LocalEncryptionKeyPair> =
+        runCatching {
+            val identity =
+                identityRepository
+                    .getIdentity()
+                    .getOrThrow()
+                    ?: error(
+                        "Local SecureChat identity does not exist",
+                    )
 
             val privateKey = identityRepository.getEncryptionPrivateKey().getOrThrow()
 
@@ -31,8 +29,7 @@ class IdentityLocalEncryptionKeyPairProvider(
 
             LocalEncryptionKeyPair(
                 publicKey = identity.encryptionPublicKey.copyOf(),
-                privateKey = privateKey.copyOf()
+                privateKey = privateKey.copyOf(),
             )
         }
-    }
 }

@@ -12,11 +12,9 @@ data class ImportDeviceContactRequest(
      * Stable identifier supplied by the operating system.
      */
     val deviceContactId: String,
-
     val displayName: String?,
-
     /**
      * Every usable phone number exposed by the device contact.
      */
-    val phoneNumbers: List<ImportDevicePhoneNumber>
+    val phoneNumbers: List<ImportDevicePhoneNumber>,
 )

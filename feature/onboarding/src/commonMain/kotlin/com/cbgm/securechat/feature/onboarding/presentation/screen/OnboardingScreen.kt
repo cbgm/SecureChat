@@ -48,18 +48,19 @@ fun OnboardingScreen(
     onRetryAutomaticNumber: () -> Unit,
     onPhoneNumberChanged: (String) -> Unit,
     onApproveAndCreate: () -> Unit,
-    onNameChanged: (String) -> Unit
+    onNameChanged: (String) -> Unit,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.primary)
-            .padding(MaterialTheme.spacing.screenPadding),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.primary)
+                .padding(MaterialTheme.spacing.screenPadding),
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             PulsingLogo(modifier = Modifier.size(200.dp))
             Spacer(Modifier.height(MaterialTheme.spacing.small))
@@ -67,12 +68,12 @@ fun OnboardingScreen(
                 text = "SecureChat",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onPrimary,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
             Text(
                 text = "Private. Encrypted. Yours.",
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .72f),
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyLarge,
             )
             Spacer(Modifier.height(MaterialTheme.spacing.medium))
 
@@ -80,26 +81,28 @@ fun OnboardingScreen(
                 AnimatedContent(
                     targetState = state.page,
                     transitionSpec = { fadeIn() togetherWith fadeOut() },
-                    label = "onboardingPage"
+                    label = "onboardingPage",
                 ) { page ->
 
                     when (page) {
                         OnboardingPage.WELCOME -> WelcomePage(onNext)
                         OnboardingPage.PRIVACY -> PrivacyPage(onNext)
-                        OnboardingPage.PERMISSIONS -> PermissionsPage(
-                            onRequestPermissions
-                        )
+                        OnboardingPage.PERMISSIONS ->
+                            PermissionsPage(
+                                onRequestPermissions,
+                            )
 
-                        OnboardingPage.PHONE -> PhonePage(
-                            identityState = identityState,
-                            isCreating = state.isCreatingIdentity,
-                            canRetryAutomatic = state.phonePermissionGranted,
-                            onChooseAnotherNumber = onChooseAnotherNumber,
-                            onRetryAutomaticNumber = onRetryAutomaticNumber,
-                            onPhoneNumberChanged = onPhoneNumberChanged,
-                            onApproveAndCreate = onApproveAndCreate,
-                            onNameChanged = onNameChanged
-                        )
+                        OnboardingPage.PHONE ->
+                            PhonePage(
+                                identityState = identityState,
+                                isCreating = state.isCreatingIdentity,
+                                canRetryAutomatic = state.phonePermissionGranted,
+                                onChooseAnotherNumber = onChooseAnotherNumber,
+                                onRetryAutomaticNumber = onRetryAutomaticNumber,
+                                onPhoneNumberChanged = onPhoneNumberChanged,
+                                onApproveAndCreate = onApproveAndCreate,
+                                onNameChanged = onNameChanged,
+                            )
                     }
                 }
             }
@@ -109,29 +112,33 @@ fun OnboardingScreen(
 
 @Preview
 @Composable
-fun OnboardingScreenPreview() {
+private fun OnboardingScreenPreview() {
     SecureChatTheme {
         OnboardingScreen(
             state = OnboardingUiState(page = OnboardingPage.PERMISSIONS),
-            identityState = IdentityUiState.Ready(
-                localPhoneNumber = "445446", publicIdentity = PublicIdentity(
-                    ByteArray(size = 0), ByteArray(size = 0)
-                )
-            ),
+            identityState =
+                IdentityUiState.Ready(
+                    localPhoneNumber = "445446",
+                    publicIdentity =
+                        PublicIdentity(
+                            ByteArray(size = 0),
+                            ByteArray(size = 0),
+                        ),
+                ),
             onNext = {},
             onRequestPermissions = {},
             onChooseAnotherNumber = {},
             onRetryAutomaticNumber = {},
             onPhoneNumberChanged = {},
             onApproveAndCreate = {},
-            onNameChanged = {}
+            onNameChanged = {},
         )
     }
 }
 
 @Preview
 @Composable
-fun OnboardingScreen2Preview() {
+private fun OnboardingScreen2Preview() {
     SecureChatTheme {
         OnboardingScreen(
             state = OnboardingUiState(page = OnboardingPage.PHONE),
@@ -142,7 +149,7 @@ fun OnboardingScreen2Preview() {
             onRetryAutomaticNumber = {},
             onPhoneNumberChanged = {},
             onApproveAndCreate = {},
-            onNameChanged = {}
+            onNameChanged = {},
         )
     }
 }

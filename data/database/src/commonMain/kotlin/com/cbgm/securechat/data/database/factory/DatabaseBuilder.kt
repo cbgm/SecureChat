@@ -8,15 +8,9 @@ import kotlinx.coroutines.Dispatchers
 /**
  * Applies database configuration shared by all platforms.
  */
-fun buildSecureChatDatabase(
-    builder: RoomDatabase.Builder<SecureChatDatabase>
-): SecureChatDatabase {
-
-    return builder
-        .addMigrations(
-
-        )
+fun buildSecureChatDatabase(builder: RoomDatabase.Builder<SecureChatDatabase>): SecureChatDatabase =
+    builder
+        .addMigrations()
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
         .build()
-}

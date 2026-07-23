@@ -9,15 +9,13 @@ import kotlinx.serialization.Serializable
 data class DeliveryReceiptPacket(
     override val packetId: String,
     override val version: Int = ProtocolVersion.CURRENT,
-
     /**
      * ID of the ChatMessagePacket.messageId that was successfully
      * stored by the recipient.
      */
     val messageId: String,
-    val deliveredAtEpochMilliseconds: Long
+    val deliveredAtEpochMilliseconds: Long,
 ) : SecureChatPacket {
-
     init {
         require(packetId.isNotBlank()) {
             "Packet ID must not be blank"

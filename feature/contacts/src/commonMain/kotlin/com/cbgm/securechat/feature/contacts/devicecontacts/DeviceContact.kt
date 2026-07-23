@@ -6,7 +6,6 @@ package com.cbgm.securechat.feature.contacts.devicecontacts
  * This is not a SecureChat contact.
  */
 data class DeviceContact(
-
     /**
      * Stable platform identifier.
      *
@@ -17,8 +16,6 @@ data class DeviceContact(
      * CNContact identifier.
      */
     val id: String,
-
     val displayName: String?,
-
-    val phoneNumbers: List<DevicePhoneNumber>
+    val phoneNumbers: List<DevicePhoneNumber>,
 )

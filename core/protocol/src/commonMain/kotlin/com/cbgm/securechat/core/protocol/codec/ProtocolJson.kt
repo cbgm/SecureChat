@@ -2,9 +2,8 @@ package com.cbgm.securechat.core.protocol.codec
 
 import kotlinx.serialization.json.Json
 
-fun createProtocolJson(): Json {
-
-    return Json {
+fun createProtocolJson(): Json =
+    Json {
         /**
          * Produces:
          *
@@ -26,4 +25,3 @@ fun createProtocolJson(): Json {
 
         prettyPrint = false
     }
-}

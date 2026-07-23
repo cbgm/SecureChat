@@ -20,49 +20,52 @@ import com.google.zxing.qrcode.QRCodeWriter
 @Composable
 actual fun QrCode(
     content: String,
-    modifier: Modifier
+    modifier: Modifier,
 ) {
-    val bitmap = remember(content) {
-        createQrBitmap(content)
-    }
+    val bitmap =
+        remember(content) {
+            createQrBitmap(content)
+        }
 
     Box(
-        modifier = modifier
-            .background(
-                color = MaterialTheme.colorScheme.surface,
-                shape = MaterialTheme.shapes.medium
-            ),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .background(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = MaterialTheme.shapes.medium,
+                ),
+        contentAlignment = Alignment.Center,
     ) {
         Image(
             bitmap = bitmap.asImageBitmap(),
-            contentDescription = "SecureChat QR Code"
+            contentDescription = "SecureChat QR Code",
         )
     }
 }
 
 private fun createQrBitmap(
     content: String,
-    size: Int = 800
+    size: Int = 800,
 ): Bitmap {
-
-    val matrix = QRCodeWriter().encode(
-        content,
-        BarcodeFormat.QR_CODE,
-        size,
-        size,
-        mapOf(EncodeHintType.MARGIN to 1)
-    )
+    val matrix =
+        QRCodeWriter().encode(
+            content,
+            BarcodeFormat.QR_CODE,
+            size,
+            size,
+            mapOf(EncodeHintType.MARGIN to 1),
+        )
 
     val bitmap = createBitmap(size, size)
 
     for (x in 0 until size) {
         for (y in 0 until size) {
-            bitmap[x, y] = if (matrix[x, y]) {
-                Color.BLACK
-            } else {
-                Color.WHITE
-            }
+            bitmap[x, y] =
+                if (matrix[x, y]) {
+                    Color.BLACK
+                } else {
+                    Color.WHITE
+                }
         }
     }
 

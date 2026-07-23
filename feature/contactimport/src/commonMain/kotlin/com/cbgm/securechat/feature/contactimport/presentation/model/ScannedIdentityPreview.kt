@@ -5,5 +5,5 @@ data class ScannedIdentityPreview(
     val displayName: String?,
     val phoneNumber: String?,
     val signingKeyFingerprint: String,
-    val encryptionKeyFingerprint: String
+    val encryptionKeyFingerprint: String,
 )

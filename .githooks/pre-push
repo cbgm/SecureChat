@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+
+set -e
+
+echo ""
+echo "Running SecureChat quality checks before push..."
+echo ""
+
+if [ -f "./gradlew" ]; then
+    ./gradlew qualityCheck --console=plain
+elif [ -f "./gradlew.bat" ]; then
+    ./gradlew.bat qualityCheck --console=plain
+else
+    echo "Gradle Wrapper was not found."
+    exit 1
+fi
+
+echo ""
+echo "SecureChat quality checks passed."
+echo ""

@@ -9,9 +9,8 @@ data class RelayEnvelope(
     val senderId: String,
     val recipientId: String,
     val payload: String,
-    val createdAtEpochMilliseconds: Long
+    val createdAtEpochMilliseconds: Long,
 ) {
-
     init {
         require(version > 0) {
             "Relay-envelope version must be positive"

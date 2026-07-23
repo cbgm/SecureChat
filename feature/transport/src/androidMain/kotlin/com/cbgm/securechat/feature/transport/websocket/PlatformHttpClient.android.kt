@@ -5,27 +5,24 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.websocket.WebSockets
 import java.util.concurrent.TimeUnit
 
-actual fun createPlatformHttpClient():
-        HttpClient {
-
-    return HttpClient(
-        OkHttp
+actual fun createPlatformHttpClient(): HttpClient =
+    HttpClient(
+        OkHttp,
     ) {
         install(
-            WebSockets
+            WebSockets,
         )
 
         engine {
             config {
                 retryOnConnectionFailure(
-                    true
+                    true,
                 )
 
                 pingInterval(
                     20L,
-                    TimeUnit.SECONDS
+                    TimeUnit.SECONDS,
                 )
             }
         }
     }
-}

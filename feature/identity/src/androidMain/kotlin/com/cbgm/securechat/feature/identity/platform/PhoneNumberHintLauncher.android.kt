@@ -17,7 +17,7 @@ import com.google.android.gms.auth.api.identity.Identity
 actual fun PhoneNumberHintLauncher(
     requestId: Int,
     enabled: Boolean,
-    onResult: (PhoneNumberHintResult) -> Unit
+    onResult: (PhoneNumberHintResult) -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -25,64 +25,65 @@ actual fun PhoneNumberHintLauncher(
 
     val signInClient = remember(activity) { activity?.let { Identity.getSignInClient(it) } }
 
-    val resultLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartIntentSenderForResult()
-    ) { result ->
+    val resultLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartIntentSenderForResult(),
+        ) { result ->
 
-        if (result.resultCode != Activity.RESULT_OK) {
-            onResult(PhoneNumberHintResult.Cancelled)
+            if (result.resultCode != Activity.RESULT_OK) {
+                onResult(PhoneNumberHintResult.Cancelled)
 
-            return@rememberLauncherForActivityResult
+                return@rememberLauncherForActivityResult
+            }
+
+            val selectedPhoneNumber =
+                runCatching {
+                    signInClient?.getPhoneNumberFromIntent(result.data)
+                }.getOrNull()
+                    ?.trim()
+                    .orEmpty()
+
+            if (selectedPhoneNumber.isBlank()) {
+                onResult(PhoneNumberHintResult.Unavailable)
+            } else {
+                onResult(PhoneNumberHintResult.Selected(phoneNumber = selectedPhoneNumber))
+            }
         }
-
-        val selectedPhoneNumber = runCatching {
-            signInClient?.getPhoneNumberFromIntent(result.data)
-        }
-            .getOrNull()
-            ?.trim()
-            .orEmpty()
-
-        if (selectedPhoneNumber.isBlank()) {
-            onResult(PhoneNumberHintResult.Unavailable)
-        } else {
-            onResult(PhoneNumberHintResult.Selected(phoneNumber = selectedPhoneNumber))
-        }
-    }
 
     LaunchedEffect(
         requestId,
         enabled,
-        signInClient
+        signInClient,
     ) {
         if (!enabled || requestId <= 0) return@LaunchedEffect
 
-        val client = signInClient ?: run {
-            onResult(PhoneNumberHintResult.Failed(message = "Phone number picker requires an Android activity"))
+        val client =
+            signInClient ?: run {
+                onResult(PhoneNumberHintResult.Failed(message = "Phone number picker requires an Android activity"))
 
-            return@LaunchedEffect
-        }
+                return@LaunchedEffect
+            }
 
         val request = GetPhoneNumberHintIntentRequest.builder().build()
 
-        client.getPhoneNumberHintIntent(request)
+        client
+            .getPhoneNumberHintIntent(request)
             .addOnSuccessListener { pendingIntent ->
                 resultLauncher.launch(
-                    IntentSenderRequest.Builder(pendingIntent.intentSender).build()
+                    IntentSenderRequest.Builder(pendingIntent.intentSender).build(),
                 )
-            }
-            .addOnFailureListener { error ->
+            }.addOnFailureListener { error ->
                 onResult(
                     PhoneNumberHintResult.Failed(
-                        message = error.message ?: "Phone number picker is unavailable"
-                    )
+                        message = error.message ?: "Phone number picker is unavailable",
+                    ),
                 )
             }
     }
 }
 
-private tailrec fun Context.findActivity(): Activity? {
-
-    return when (this) {
+private tailrec fun Context.findActivity(): Activity? =
+    when (this) {
         is Activity -> {
             this
         }
@@ -95,4 +96,3 @@ private tailrec fun Context.findActivity(): Activity? {
             null
         }
     }
-}

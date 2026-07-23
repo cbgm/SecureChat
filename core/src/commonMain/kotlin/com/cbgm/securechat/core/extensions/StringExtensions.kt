@@ -12,9 +12,8 @@ package com.cbgm.securechat.core.extensions
  * +     -> %2b%
  * |     -> %7c%
  */
-fun String.escapeShareValue(): String {
-    return buildString {
-
+fun String.escapeShareValue(): String =
+    buildString {
         this@escapeShareValue.forEach { character ->
 
             if (
@@ -29,22 +28,20 @@ fun String.escapeShareValue(): String {
 
                 append(
                     character.code.toString(
-                        radix = 16
-                    )
+                        radix = 16,
+                    ),
                 )
 
                 append('%')
             }
         }
     }
-}
 
 /**
  * Reverses [escapeShareValue].
  */
-fun String.unescapeShareValue(): String {
-    return buildString {
-
+fun String.unescapeShareValue(): String =
+    buildString {
         var index = 0
 
         while (
@@ -62,11 +59,11 @@ fun String.unescapeShareValue(): String {
             val closingIndex =
                 this@unescapeShareValue.indexOf(
                     char = '%',
-                    startIndex = index + 1
+                    startIndex = index + 1,
                 )
 
             require(
-                closingIndex > index + 1
+                closingIndex > index + 1,
             ) {
                 "Malformed escaped share value"
             }
@@ -74,17 +71,16 @@ fun String.unescapeShareValue(): String {
             val hexadecimalCode =
                 this@unescapeShareValue.substring(
                     startIndex = index + 1,
-                    endIndex = closingIndex
+                    endIndex = closingIndex,
                 )
 
             append(
                 hexadecimalCode
                     .toInt(radix = 16)
-                    .toChar()
+                    .toChar(),
             )
 
             index =
                 closingIndex + 1
         }
     }
-}

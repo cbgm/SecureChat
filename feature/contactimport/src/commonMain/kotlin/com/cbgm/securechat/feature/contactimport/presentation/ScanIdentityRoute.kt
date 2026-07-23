@@ -16,29 +16,29 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.cbgm.securechat.feature.contactimport.presentation.screen.ScanIdentityScreen
 import com.cbgm.securechat.feature.contactimport.platform.rememberQrScannerPermissionRequest
+import com.cbgm.securechat.feature.contactimport.presentation.screen.ScanIdentityScreen
 
 @Composable
 fun ScanIdentityRoute(
     onQrCodeScanned: (String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     var cameraPermissionGranted by remember { mutableStateOf(false) }
 
     var cameraPermissionDenied by remember { mutableStateOf(false) }
 
-    val requestCameraPermission = rememberQrScannerPermissionRequest(
-        onPermissionGranted = {
-            cameraPermissionGranted = true
+    val requestCameraPermission =
+        rememberQrScannerPermissionRequest(
+            onPermissionGranted = {
+                cameraPermissionGranted = true
 
-            cameraPermissionDenied = false
-        },
-
-        onPermissionDenied = {
-            cameraPermissionDenied = true
-        }
-    )
+                cameraPermissionDenied = false
+            },
+            onPermissionDenied = {
+                cameraPermissionDenied = true
+            },
+        )
 
     LaunchedEffect(Unit) {
         requestCameraPermission()
@@ -48,7 +48,7 @@ fun ScanIdentityRoute(
         cameraPermissionGranted -> {
             ScanIdentityScreen(
                 onQrCodeScanned = onQrCodeScanned,
-                onBack = onBack
+                onBack = onBack,
             )
         }
 
@@ -56,14 +56,14 @@ fun ScanIdentityRoute(
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
             ) {
                 Text(text = "Camera permission is required to scan a QR code.")
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
-                    onClick = requestCameraPermission
+                    onClick = requestCameraPermission,
                 ) {
                     Text("Grant camera permission")
                 }
@@ -71,7 +71,7 @@ fun ScanIdentityRoute(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Button(
-                    onClick = onBack
+                    onClick = onBack,
                 ) {
                     Text("Back")
                 }

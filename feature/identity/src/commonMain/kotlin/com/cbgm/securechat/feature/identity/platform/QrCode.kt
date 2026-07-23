@@ -11,5 +11,5 @@ import androidx.compose.ui.Modifier
 @Composable
 expect fun QrCode(
     content: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 )

@@ -16,9 +16,8 @@ import kotlinx.coroutines.sync.withLock
 
 class DefaultOutboxRunner(
     private val protocolOutbox: ProtocolOutbox,
-    private val outboxProcessor: OutboxProcessor
+    private val outboxProcessor: OutboxProcessor,
 ) : OutboxRunner {
-
     private val runnerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val processingMutex = Mutex()
@@ -30,17 +29,18 @@ class DefaultOutboxRunner(
             return
         }
 
-        observationJob = runnerScope.launch {
-            protocolOutbox
-                .observePending()
-                .collect { pendingItems ->
-                    if (
-                        pendingItems.isNotEmpty()
-                    ) {
-                        processAvailableItems()
+        observationJob =
+            runnerScope.launch {
+                protocolOutbox
+                    .observePending()
+                    .collect { pendingItems ->
+                        if (
+                            pendingItems.isNotEmpty()
+                        ) {
+                            processAvailableItems()
+                        }
                     }
-                }
-        }
+            }
     }
 
     override fun stop() {

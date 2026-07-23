@@ -39,7 +39,7 @@ fun SafetyNumberVerificationDialog(
     errorMessage: String?,
     onConfirmedChanged: (Boolean) -> Unit,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = {
@@ -50,7 +50,7 @@ fun SafetyNumberVerificationDialog(
         icon = {
             Icon(
                 imageVector = Icons.Default.Security,
-                contentDescription = null
+                contentDescription = null,
             )
         },
         title = {
@@ -64,13 +64,13 @@ fun SafetyNumberVerificationDialog(
                 hasConfirmedComparison = hasConfirmedComparison,
                 isSaving = isSaving,
                 errorMessage = errorMessage,
-                onConfirmedChanged = onConfirmedChanged
+                onConfirmedChanged = onConfirmedChanged,
             )
         },
         confirmButton = {
             Button(
                 onClick = onConfirm,
-                enabled = hasConfirmedComparison && !isSaving
+                enabled = hasConfirmedComparison && !isSaving,
             ) {
                 if (isSaving) {
                     CircularProgressIndicator()
@@ -82,11 +82,11 @@ fun SafetyNumberVerificationDialog(
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
-                enabled = !isSaving
+                enabled = !isSaving,
             ) {
                 Text(text = "Cancel")
             }
-        }
+        },
     )
 }
 
@@ -99,19 +99,19 @@ fun SafetyNumberVerificationContent(
     isSaving: Boolean,
     errorMessage: String?,
     onConfirmedChanged: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
         Text(
             text = "Compare the complete safety number with $contactName through a trusted phone or video call.",
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = "Both devices must display exactly the same number.",
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -119,42 +119,42 @@ fun SafetyNumberVerificationContent(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceVariant
+            color = MaterialTheme.colorScheme.surfaceVariant,
         ) {
             Text(
                 text = safetyNumber.formatted,
                 modifier = Modifier.padding(16.dp),
                 style = MaterialTheme.typography.titleMedium,
                 fontFamily = FontFamily.Monospace,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
         }
 
         Spacer(modifier = Modifier.height(20.dp))
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .toggleable(
-                    value = hasConfirmedComparison,
-                    enabled = !isSaving,
-                    role = Role.Checkbox,
-                    onValueChange = onConfirmedChanged
-                )
-                .padding(vertical = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .toggleable(
+                        value = hasConfirmedComparison,
+                        enabled = !isSaving,
+                        role = Role.Checkbox,
+                        onValueChange = onConfirmedChanged,
+                    ).padding(vertical = 8.dp),
             verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Checkbox(
                 checked = hasConfirmedComparison,
                 onCheckedChange = null,
-                enabled = !isSaving
+                enabled = !isSaving,
             )
 
             Text(
                 text = "We compared the entire safety number through a trusted channel, and it matched.",
                 modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
 
@@ -164,7 +164,7 @@ fun SafetyNumberVerificationContent(
             Text(
                 text = errorMessage,
                 color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
             )
         }
     }
@@ -172,24 +172,38 @@ fun SafetyNumberVerificationContent(
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewSafetyNumberVerificationDialog() {
+private fun PreviewSafetyNumberVerificationDialog() {
     SecureChatTheme {
         Surface(modifier = Modifier.padding(16.dp)) {
             // WICHTIG: Wir previewen hier nur den Content, nicht den Dialog selbst
             SafetyNumberVerificationContent(
                 contactName = "Alex",
-                safetyNumber = SafetyNumber(
-                    groups = listOf(
-                        "11111", "11111", "11111", "11111",
-                        "11111", "11111", "11111", "11111",
-                        "11111", "11111", "11111", "11111",
-                        "11111", "11111", "11111", "11111"
-                    )
-                ),
+                safetyNumber =
+                    SafetyNumber(
+                        groups =
+                            listOf(
+                                "11111",
+                                "11111",
+                                "11111",
+                                "11111",
+                                "11111",
+                                "11111",
+                                "11111",
+                                "11111",
+                                "11111",
+                                "11111",
+                                "11111",
+                                "11111",
+                                "11111",
+                                "11111",
+                                "11111",
+                                "11111",
+                            ),
+                    ),
                 isSaving = false,
                 errorMessage = null,
                 hasConfirmedComparison = true,
-                onConfirmedChanged = {}
+                onConfirmedChanged = {},
             )
         }
     }

@@ -27,7 +27,7 @@ private val CardColor = Color(0xFF102A46)
 fun LanguagePickerDialog(
     currentLanguage: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -36,7 +36,7 @@ fun LanguagePickerDialog(
             Text(
                 text = "Language",
                 color = Color.White,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         },
         text = {
@@ -45,25 +45,26 @@ fun LanguagePickerDialog(
                     val isSelected = language == currentLanguage
 
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onLanguageSelected(language) }
-                            .padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { onLanguageSelected(language) }
+                                .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = language.nativeName,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) AccentColor else Color.White
+                                color = if (isSelected) AccentColor else Color.White,
                             )
 
                             if (language.nativeName != language.displayName) {
                                 Text(
                                     text = language.displayName,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White.copy(alpha = 0.5f)
+                                    color = Color.White.copy(alpha = 0.5f),
                                 )
                             }
                         }
@@ -73,7 +74,7 @@ fun LanguagePickerDialog(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
                                 tint = AccentColor,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(20.dp),
                             )
                         }
                     }
@@ -85,6 +86,6 @@ fun LanguagePickerDialog(
             androidx.compose.material3.TextButton(onClick = onDismiss) {
                 Text(text = "Cancel", color = Color.White.copy(alpha = 0.7f))
             }
-        }
+        },
     )
 }

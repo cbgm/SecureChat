@@ -18,12 +18,9 @@ class RelayWebSocketHandler(
     private val connectionRegistry: RelayConnectionRegistry,
     private val envelopeRouter: RelayEnvelopeRouter,
     private val pendingEnvelopeStore: PendingEnvelopeStore,
-    private val json: Json
+    private val json: Json,
 ) {
-
-    suspend fun handle(
-        session: DefaultWebSocketServerSession
-    ) {
+    suspend fun handle(session: DefaultWebSocketServerSession) {
         var registeredConnection: RelayClientConnection? = null
 
         try {
@@ -36,7 +33,7 @@ class RelayWebSocketHandler(
                             currentConnection = registeredConnection,
                             onRegistered = { connection ->
                                 registeredConnection = connection
-                            }
+                            },
                         )
                     }
 
@@ -48,7 +45,7 @@ class RelayWebSocketHandler(
                         sendError(
                             session = session,
                             code = "UNSUPPORTED_FRAME",
-                            message = "Relay protocol requires text frames"
+                            message = "Relay protocol requires text frames",
                         )
                     }
                 }
@@ -59,7 +56,7 @@ class RelayWebSocketHandler(
             if (connection != null) {
                 connectionRegistry.unregister(
                     relayId = connection.relayId,
-                    connection = connection
+                    connection = connection,
                 )
             }
         }
@@ -69,21 +66,22 @@ class RelayWebSocketHandler(
         session: DefaultWebSocketServerSession,
         encodedMessage: String,
         currentConnection: RelayClientConnection?,
-        onRegistered: (RelayClientConnection) -> Unit
+        onRegistered: (RelayClientConnection) -> Unit,
     ) {
-        val message = runCatching {
-            json.decodeFromString<RelayClientMessage>(
-                encodedMessage
-            )
-        }.getOrElse { error ->
-            sendError(
-                session = session,
-                code = "INVALID_MESSAGE",
-                message = error.message ?: "Invalid relay message"
-            )
+        val message =
+            runCatching {
+                json.decodeFromString<RelayClientMessage>(
+                    encodedMessage,
+                )
+            }.getOrElse { error ->
+                sendError(
+                    session = session,
+                    code = "INVALID_MESSAGE",
+                    message = error.message ?: "Invalid relay message",
+                )
 
-            return
-        }
+                return
+            }
 
         when (message) {
             is RelayClientMessage.Register -> {
@@ -91,7 +89,7 @@ class RelayWebSocketHandler(
                     session = session,
                     relayId = message.relayId,
                     currentConnection = currentConnection,
-                    onRegistered = onRegistered
+                    onRegistered = onRegistered,
                 )
             }
 
@@ -102,13 +100,13 @@ class RelayWebSocketHandler(
                     sendError(
                         session = session,
                         code = "NOT_REGISTERED",
-                        message = "Register before sending envelopes"
+                        message = "Register before sending envelopes",
                     )
                 } else {
                     handleEnvelope(
                         session = session,
                         connection = connection,
-                        envelope = message.envelope
+                        envelope = message.envelope,
                     )
                 }
             }
@@ -120,13 +118,13 @@ class RelayWebSocketHandler(
                     sendError(
                         session = session,
                         code = "NOT_REGISTERED",
-                        message = "Register before sending typing state"
+                        message = "Register before sending typing state",
                     )
                 } else {
                     handleTypingState(
                         sender = connection,
                         recipientId = message.recipientId,
-                        isTyping = message.isTyping
+                        isTyping = message.isTyping,
                     )
                 }
             }
@@ -138,12 +136,12 @@ class RelayWebSocketHandler(
                     sendError(
                         session = session,
                         code = "NOT_REGISTERED",
-                        message = "Register before acknowledging envelopes"
+                        message = "Register before acknowledging envelopes",
                     )
                 } else {
                     pendingEnvelopeStore.remove(
                         recipientId = connection.relayId,
-                        envelopeId = message.envelopeId
+                        envelopeId = message.envelopeId,
                     )
                 }
             }
@@ -154,25 +152,26 @@ class RelayWebSocketHandler(
         session: DefaultWebSocketServerSession,
         relayId: String,
         currentConnection: RelayClientConnection?,
-        onRegistered: (RelayClientConnection) -> Unit
+        onRegistered: (RelayClientConnection) -> Unit,
     ) {
         if (currentConnection != null) {
             sendError(
                 session = session,
                 code = "ALREADY_REGISTERED",
-                message = "This WebSocket is already registered"
+                message = "This WebSocket is already registered",
             )
 
             return
         }
 
-        val connection = RelayClientConnection(
-            relayId = relayId,
-            session = session
-        )
+        val connection =
+            RelayClientConnection(
+                relayId = relayId,
+                session = session,
+            )
 
         connectionRegistry.register(
-            connection = connection
+            connection = connection,
         )
 
         onRegistered(connection)
@@ -180,18 +179,18 @@ class RelayWebSocketHandler(
         connection.sendText(
             json.encodeToString<RelayServerMessage>(
                 RelayServerMessage.Registered(
-                    relayId = relayId
-                )
-            )
+                    relayId = relayId,
+                ),
+            ),
         )
 
         runCatching {
             envelopeRouter.deliverPending(
-                recipientId = relayId
+                recipientId = relayId,
             )
         }.onFailure { error ->
             println(
-                "Pending envelope delivery failed for $relayId: ${error.message}"
+                "Pending envelope delivery failed for $relayId: ${error.message}",
             )
         }
     }
@@ -199,25 +198,26 @@ class RelayWebSocketHandler(
     private suspend fun handleTypingState(
         sender: RelayClientConnection,
         recipientId: String,
-        isTyping: Boolean
+        isTyping: Boolean,
     ) {
-        val recipient = connectionRegistry.find(
-            relayId = recipientId
-        ) ?: return
+        val recipient =
+            connectionRegistry.find(
+                relayId = recipientId,
+            ) ?: return
 
         runCatching {
             recipient.sendText(
                 json.encodeToString<RelayServerMessage>(
                     RelayServerMessage.TypingState(
                         senderId = sender.relayId,
-                        isTyping = isTyping
-                    )
-                )
+                        isTyping = isTyping,
+                    ),
+                ),
             )
         }.onFailure { error ->
             println(
                 "Typing state delivery failed from ${sender.relayId} " +
-                        "to $recipientId: ${error.message}"
+                    "to $recipientId: ${error.message}",
             )
         }
     }
@@ -225,40 +225,41 @@ class RelayWebSocketHandler(
     private suspend fun handleEnvelope(
         session: DefaultWebSocketServerSession,
         connection: RelayClientConnection,
-        envelope: RelayEnvelope
+        envelope: RelayEnvelope,
     ) {
         if (envelope.senderId != connection.relayId) {
             sendError(
                 session = session,
                 code = "SENDER_MISMATCH",
-                message = "Envelope sender does not match the registered relay ID"
+                message = "Envelope sender does not match the registered relay ID",
             )
 
             return
         }
 
         when (
-            val result = envelopeRouter.accept(
-                envelope = envelope
-            )
+            val result =
+                envelopeRouter.accept(
+                    envelope = envelope,
+                )
         ) {
             RelayRoutingResult.Accepted -> {
                 connection.sendText(
                     json.encodeToString<RelayServerMessage>(
                         RelayServerMessage.EnvelopeAccepted(
-                            envelopeId = envelope.envelopeId
-                        )
-                    )
+                            envelopeId = envelope.envelopeId,
+                        ),
+                    ),
                 )
 
                 runCatching {
                     envelopeRouter.deliverPending(
-                        recipientId = envelope.recipientId
+                        recipientId = envelope.recipientId,
                     )
                 }.onFailure { error ->
                     println(
                         "Immediate envelope delivery failed for " +
-                                "${envelope.recipientId}: ${error.message}"
+                            "${envelope.recipientId}: ${error.message}",
                     )
                 }
             }
@@ -267,7 +268,7 @@ class RelayWebSocketHandler(
                 sendError(
                     session = session,
                     code = "ENVELOPE_REJECTED",
-                    message = result.message
+                    message = result.message,
                 )
             }
         }
@@ -276,7 +277,7 @@ class RelayWebSocketHandler(
     private suspend fun sendError(
         session: DefaultWebSocketServerSession,
         code: String,
-        message: String
+        message: String,
     ) {
         runCatching {
             session.send(
@@ -284,10 +285,10 @@ class RelayWebSocketHandler(
                     json.encodeToString<RelayServerMessage>(
                         RelayServerMessage.Error(
                             code = code,
-                            message = message
-                        )
-                    )
-                )
+                            message = message,
+                        ),
+                    ),
+                ),
             )
         }
     }

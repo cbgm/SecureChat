@@ -8,7 +8,6 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalUnsignedTypes::class)
 class SodiumTransportMessageCipherTest {
-
     private val identityKeyGenerator =
         SodiumIdentityKeyGenerator()
 
@@ -34,37 +33,33 @@ class SodiumTransportMessageCipherTest {
                         recipientPublicKey =
                             recipient
                                 .encryptionPublicKey
-                                .toByteArray()
-                    )
-                    .getOrThrow()
+                                .toByteArray(),
+                    ).getOrThrow()
 
             assertTrue(
                 encrypted.mode ==
-                        TransportEncryptionMode
-                            .SEALED_BOX
+                    TransportEncryptionMode
+                        .SEALED_BOX,
             )
 
             val decrypted =
                 cipher
                     .decryptFromSender(
                         encryptedPayload =
-                            encrypted,
-
+                        encrypted,
                         localPublicKey =
                             recipient
                                 .encryptionPublicKey
                                 .toByteArray(),
-
                         localPrivateKey =
                             recipient
                                 .encryptionPrivateKey
-                                .toByteArray()
-                    )
-                    .getOrThrow()
+                                .toByteArray(),
+                    ).getOrThrow()
 
             assertContentEquals(
                 expected = plaintext,
-                actual = decrypted
+                actual = decrypted,
             )
         }
 
@@ -87,32 +82,28 @@ class SodiumTransportMessageCipherTest {
                         plaintext =
                             "Private message"
                                 .encodeToByteArray(),
-
                         recipientPublicKey =
                             recipient
                                 .encryptionPublicKey
-                                .toByteArray()
-                    )
-                    .getOrThrow()
+                                .toByteArray(),
+                    ).getOrThrow()
 
             val result =
                 cipher.decryptFromSender(
                     encryptedPayload =
-                        encrypted,
-
+                    encrypted,
                     localPublicKey =
                         attacker
                             .encryptionPublicKey
                             .toByteArray(),
-
                     localPrivateKey =
                         attacker
                             .encryptionPrivateKey
-                            .toByteArray()
+                            .toByteArray(),
                 )
 
             assertTrue(
-                result.isFailure
+                result.isFailure,
             )
         }
 }

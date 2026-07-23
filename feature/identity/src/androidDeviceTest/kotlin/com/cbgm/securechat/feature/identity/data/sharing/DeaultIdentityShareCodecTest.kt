@@ -9,122 +9,134 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DefaultIdentityShareCodecTest {
-
     private val codec =
         DefaultIdentityShareCodec()
 
     @Test
     fun keysOnlyPayloadCanBeEncodedAndDecoded() {
-        val original = SharedIdentityPayload(
-            version = 1,
-            encryptionPublicKey = byteArrayOf(
-                1,
-                2,
-                3,
-                4
-            ),
-            signingPublicKey = byteArrayOf(
-                10,
-                11,
-                12,
-                13
-            ),
-            contactDetails = null
-        )
+        val original =
+            SharedIdentityPayload(
+                version = 1,
+                encryptionPublicKey =
+                    byteArrayOf(
+                        1,
+                        2,
+                        3,
+                        4,
+                    ),
+                signingPublicKey =
+                    byteArrayOf(
+                        10,
+                        11,
+                        12,
+                        13,
+                    ),
+                contactDetails = null,
+            )
 
-        val encoded = codec
-            .encode(original)
-            .getOrThrow()
+        val encoded =
+            codec
+                .encode(original)
+                .getOrThrow()
 
         assertTrue(
-            encoded.startsWith("sc1|")
+            encoded.startsWith("sc1|"),
         )
 
-        val decoded = codec
-            .decode(encoded)
-            .getOrThrow()
+        val decoded =
+            codec
+                .decode(encoded)
+                .getOrThrow()
 
         assertEquals(
             original.version,
-            decoded.version
+            decoded.version,
         )
 
         assertContentEquals(
             original.encryptionPublicKey,
-            decoded.encryptionPublicKey
+            decoded.encryptionPublicKey,
         )
 
         assertContentEquals(
             original.signingPublicKey,
-            decoded.signingPublicKey
+            decoded.signingPublicKey,
         )
 
         assertNull(
-            decoded.contactDetails
+            decoded.contactDetails,
         )
     }
 
     @Test
     fun fullContactPayloadCanBeEncodedAndDecoded() {
-        val original = SharedIdentityPayload(
-            version = 1,
-            encryptionPublicKey = byteArrayOf(
-                21,
-                22,
-                23,
-                24
-            ),
-            signingPublicKey = byteArrayOf(
-                31,
-                32,
-                33,
-                34
-            ),
-            contactDetails = SharedContactDetails(
-                displayName = "Alice Example",
-                phoneNumber = "+49 170 123|456"
+        val original =
+            SharedIdentityPayload(
+                version = 1,
+                encryptionPublicKey =
+                    byteArrayOf(
+                        21,
+                        22,
+                        23,
+                        24,
+                    ),
+                signingPublicKey =
+                    byteArrayOf(
+                        31,
+                        32,
+                        33,
+                        34,
+                    ),
+                contactDetails =
+                    SharedContactDetails(
+                        displayName = "Alice Example",
+                        phoneNumber = "+49 170 123|456",
+                    ),
             )
-        )
 
-        val encoded = codec
-            .encode(original)
-            .getOrThrow()
+        val encoded =
+            codec
+                .encode(original)
+                .getOrThrow()
 
-        val decoded = codec
-            .decode(encoded)
-            .getOrThrow()
+        val decoded =
+            codec
+                .decode(encoded)
+                .getOrThrow()
 
         assertContentEquals(
             original.encryptionPublicKey,
-            decoded.encryptionPublicKey
+            decoded.encryptionPublicKey,
         )
 
         assertContentEquals(
             original.signingPublicKey,
-            decoded.signingPublicKey
+            decoded.signingPublicKey,
         )
 
         assertEquals(
             original.contactDetails,
-            decoded.contactDetails
+            decoded.contactDetails,
         )
     }
 
     @Test
     fun payloadWithoutRequiredKeysFails() {
-        val invalidPayload = SharedIdentityPayload(
-            version = 1,
-            encryptionPublicKey = byteArrayOf(),
-            signingPublicKey = byteArrayOf(1),
-            contactDetails = null
-        )
+        val invalidPayload =
+            SharedIdentityPayload(
+                version = 1,
+                encryptionPublicKey = byteArrayOf(),
+                signingPublicKey = byteArrayOf(1),
+                contactDetails = null,
+            )
 
-        val result = codec.encode(
-            invalidPayload
-        )
+        val result =
+            codec.encode(
+                invalidPayload,
+            )
 
         assertTrue(
-            result.isFailure
+            result.isFailure,
         )
     }
 }

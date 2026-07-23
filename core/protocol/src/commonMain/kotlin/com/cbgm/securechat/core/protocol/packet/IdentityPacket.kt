@@ -11,14 +11,11 @@ data class IdentityPacket(
     override val packetId: String,
     override val version: Int = ProtocolVersion.CURRENT,
     val displayName: String?,
-
     @Serializable(with = ByteArrayAsBase64Serializer::class)
     val encryptionPublicKey: ByteArray,
-
     @Serializable(with = ByteArrayAsBase64Serializer::class)
-    val signingPublicKey: ByteArray
+    val signingPublicKey: ByteArray,
 ) : SecureChatPacket {
-
     init {
         require(packetId.isNotBlank()) {
             "Packet ID must not be blank"
@@ -37,18 +34,16 @@ data class IdentityPacket(
         }
     }
 
-    override fun equals(
-        other: Any?
-    ): Boolean {
+    override fun equals(other: Any?): Boolean {
         if (this === other) return true
 
         if (other !is IdentityPacket) return false
 
         return packetId == other.packetId &&
-                version == other.version &&
-                displayName == other.displayName &&
-                encryptionPublicKey.contentEquals(other.encryptionPublicKey) &&
-                signingPublicKey.contentEquals(other.signingPublicKey)
+            version == other.version &&
+            displayName == other.displayName &&
+            encryptionPublicKey.contentEquals(other.encryptionPublicKey) &&
+            signingPublicKey.contentEquals(other.signingPublicKey)
     }
 
     override fun hashCode(): Int {

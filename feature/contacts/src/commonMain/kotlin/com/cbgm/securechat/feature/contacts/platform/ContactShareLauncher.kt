@@ -10,5 +10,5 @@ import com.cbgm.securechat.feature.contacts.domain.model.Contact
 @Composable
 expect fun rememberContactShareLauncher(
     encodedIdentity: String,
-    shareTitle: String = "Share SecureChat identity"
+    shareTitle: String = "Share SecureChat identity",
 ): (Contact) -> Unit

@@ -1,0 +1,12 @@
+:root {
+  --md-text-font: "Roboto";
+  --md-code-font: "Roboto Mono";
+}
+
+.md-typeset h1 {
+  font-weight: 700;
+}
+
+.md-typeset table:not([class]) {
+  font-size: 0.72rem;
+}

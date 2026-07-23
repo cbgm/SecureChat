@@ -4,7 +4,6 @@ import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import kotlinx.coroutines.flow.Flow
 
 interface ProtocolOutbox {
-
     /**
      * Adds a protocol packet to the persistent outgoing queue.
      *
@@ -12,7 +11,7 @@ interface ProtocolOutbox {
      */
     suspend fun enqueue(
         contactId: String,
-        packet: SecureChatPacket
+        packet: SecureChatPacket,
     ): Result<ProtocolOutboxItem>
 
     fun observePending(): Flow<List<ProtocolOutboxItem>>
@@ -25,7 +24,7 @@ interface ProtocolOutbox {
 
     suspend fun markFailed(
         itemId: String,
-        errorMessage: String
+        errorMessage: String,
     ): Result<Unit>
 
     suspend fun retry(itemId: String): Result<Unit>

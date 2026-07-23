@@ -38,36 +38,27 @@ class DefaultChatsRepository(
     private val protocolOutbox: ProtocolOutbox,
     private val incomingTransportMessageDecoder: IncomingTransportMessageDecoder,
     private val packetCodec: PacketCodec,
-    private val protocolPacketHandler: ProtocolPacketHandler
+    private val protocolPacketHandler: ProtocolPacketHandler,
 ) : ChatsRepository {
-
-    override fun observeConversations(): Flow<List<Conversation>> {
-
-        return chatDao.observeConversationSummaries().map { summaries ->
+    override fun observeConversations(): Flow<List<Conversation>> =
+        chatDao.observeConversationSummaries().map { summaries ->
             summaries.map { summary ->
                 summary.toDomain()
             }
         }
-    }
 
-    override fun observeConversation(
-        contactId: String
-    ): Flow<Conversation?> {
-
-        return chatDao.observeConversationByContactId(contactId = contactId).map { result ->
+    override fun observeConversation(contactId: String): Flow<Conversation?> =
+        chatDao.observeConversationByContactId(contactId = contactId).map { result ->
             result?.toDomain()
         }
-    }
 
-    override suspend fun createConversation(
-        contactId: String
-    ) {
+    override suspend fun createConversation(contactId: String) {
         getOrCreateConversation(contactId = contactId)
     }
 
     override suspend fun sendMessage(
         contactId: String,
-        text: String
+        text: String,
     ) {
         val normalizedText = text.trim()
 
@@ -79,13 +70,13 @@ class DefaultChatsRepository(
             getContact(contactId = contactId).getOrThrow() ?: error("Contact was not found")
 
         /*
- * For an existing ONE_WAY contact, make sure IdentityPacket is
- * queued before the chat packet.
- *
- * For phone-book-only contacts, this is a harmless no-op.
- *
- * For MUTUAL contacts, this is also a no-op.
- */
+         * For an existing ONE_WAY contact, make sure IdentityPacket is
+         * queued before the chat packet.
+         *
+         * For phone-book-only contacts, this is a harmless no-op.
+         *
+         * For MUTUAL contacts, this is also a no-op.
+         */
         identityExchangeStarter.ensureStarted(contactId = contactId).getOrThrow()
 
         val conversation = getOrCreateConversation(contactId = contactId)
@@ -94,17 +85,19 @@ class DefaultChatsRepository(
 
         val messageId = createId(prefix = "message")
 
-        val packet = ChatMessagePacket(
-            packetId = createId(prefix = "packet"),
-            messageId = messageId,
-            sentAtEpochMilliseconds = now,
-            text = normalizedText
-        )
+        val packet =
+            ChatMessagePacket(
+                packetId = createId(prefix = "packet"),
+                messageId = messageId,
+                sentAtEpochMilliseconds = now,
+                text = normalizedText,
+            )
 
-        protocolOutbox.enqueue(
-            contactId = contactId,
-            packet = packet
-        ).getOrThrow()
+        protocolOutbox
+            .enqueue(
+                contactId = contactId,
+                packet = packet,
+            ).getOrThrow()
 
         val plannedTransportMode = contact.plannedTransportMode()
 
@@ -119,20 +112,18 @@ class DefaultChatsRepository(
                 contentStatus = MessageContentStatus.READABLE.name,
                 deliveryStatus = MessageDeliveryStatus.QUEUED.name,
                 isMine = true,
-                createdAtEpochMilliseconds = now
-            )
+                createdAtEpochMilliseconds = now,
+            ),
         )
 
         chatDao.updateConversationTimestamp(
             conversationId = conversation.id,
-            timestamp = now
+            timestamp = now,
         )
     }
 
-    override suspend fun retryMessage(
-        messageId: String
-    ): Result<Unit> {
-        return runCatching {
+    override suspend fun retryMessage(messageId: String): Result<Unit> =
+        runCatching {
             require(messageId.isNotBlank()) {
                 "Message ID must not be blank"
             }
@@ -148,29 +139,29 @@ class DefaultChatsRepository(
                 "Only failed messages can be retried"
             }
 
-            val packetId = message.packetId?.takeIf { it.isNotBlank() }
-                ?: error("Message has no linked protocol packet")
+            val packetId =
+                message.packetId?.takeIf { it.isNotBlank() }
+                    ?: error("Message has no linked protocol packet")
 
-            val outboxItem = protocolOutbox.findByPacketId(packetId = packetId).getOrThrow()
-                ?: error("Linked outbox item was not found")
+            val outboxItem =
+                protocolOutbox.findByPacketId(packetId = packetId).getOrThrow()
+                    ?: error("Linked outbox item was not found")
 
             protocolOutbox.retry(itemId = outboxItem.id).getOrThrow()
 
-            val updatedRows = messageDeliveryStatusDao.updateDeliveryStatusByMessageId(
-                messageId = messageId,
-                deliveryStatus = MessageDeliveryStatus.QUEUED.name
-            )
+            val updatedRows =
+                messageDeliveryStatusDao.updateDeliveryStatusByMessageId(
+                    messageId = messageId,
+                    deliveryStatus = MessageDeliveryStatus.QUEUED.name,
+                )
 
             check(updatedRows == 1) {
                 "Message delivery status could not be updated"
             }
         }
-    }
 
-    override suspend fun markConversationRead(
-        contactId: String
-    ): Result<Unit> {
-        return runCatching {
+    override suspend fun markConversationRead(contactId: String): Result<Unit> =
+        runCatching {
             require(contactId.isNotBlank()) {
                 "Contact ID must not be blank"
             }
@@ -185,16 +176,18 @@ class DefaultChatsRepository(
                  * readReceiptSent, the same packet ID is used next time,
                  * and ProtocolOutbox returns the existing item.
                  */
-                val receipt = ReadReceiptPacket(
-                    packetId = createReadReceiptPacketId(messageId = message.messageId),
-                    messageId = message.messageId,
-                    readAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
-                )
+                val receipt =
+                    ReadReceiptPacket(
+                        packetId = createReadReceiptPacketId(messageId = message.messageId),
+                        messageId = message.messageId,
+                        readAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
+                    )
 
-                protocolOutbox.enqueue(
-                    contactId = contactId,
-                    packet = receipt
-                ).getOrThrow()
+                protocolOutbox
+                    .enqueue(
+                        contactId = contactId,
+                        packet = receipt,
+                    ).getOrThrow()
 
                 val updatedRows = chatDao.markReadReceiptSent(messageId = message.messageId)
 
@@ -205,22 +198,17 @@ class DefaultChatsRepository(
                 println("Read receipt queued: " + "messageId=${message.messageId}, " + "contactId=$contactId")
             }
         }
-    }
 
-    private fun createReadReceiptPacketId(
-        messageId: String
-    ): String {
-        return "read-receipt-$messageId"
-    }
+    private fun createReadReceiptPacketId(messageId: String): String = "read-receipt-$messageId"
 
     override suspend fun receiveMessage(
         contactId: String,
         encodedTransportPayload: String,
         localEncryptionPublicKey: ByteArray,
-        localEncryptionPrivateKey: ByteArray
+        localEncryptionPrivateKey: ByteArray,
     ) {
         require(
-            encodedTransportPayload.isNotBlank()
+            encodedTransportPayload.isNotBlank(),
         ) {
             "Incoming transport payload must not be blank"
         }
@@ -229,11 +217,12 @@ class DefaultChatsRepository(
 
         val receivedAt = SystemClock.nowEpochMilliseconds()
 
-        val decodedTransport = incomingTransportMessageDecoder.decode(
-            encodedPayload = encodedTransportPayload,
-            localPublicKey = localEncryptionPublicKey,
-            localPrivateKey = localEncryptionPrivateKey
-        )
+        val decodedTransport =
+            incomingTransportMessageDecoder.decode(
+                encodedPayload = encodedTransportPayload,
+                localPublicKey = localEncryptionPublicKey,
+                localPrivateKey = localEncryptionPrivateKey,
+            )
 
         when (decodedTransport) {
             is DecodedTransportMessage.Readable -> {
@@ -242,7 +231,7 @@ class DefaultChatsRepository(
                     conversation = conversation,
                     encodedTransportPayload = encodedTransportPayload,
                     decodedTransport = decodedTransport,
-                    receivedAt = receivedAt
+                    receivedAt = receivedAt,
                 )
             }
 
@@ -253,7 +242,7 @@ class DefaultChatsRepository(
                     text = "Invalid transport packet",
                     transportMode = UNKNOWN_TRANSPORT_MODE,
                     contentStatus = MessageContentStatus.INVALID_PACKET,
-                    receivedAt = receivedAt
+                    receivedAt = receivedAt,
                 )
             }
 
@@ -264,7 +253,7 @@ class DefaultChatsRepository(
                     text = "Unable to read plaintext message",
                     transportMode = TransportEncryptionMode.PLAINTEXT.name,
                     contentStatus = MessageContentStatus.INVALID_PLAINTEXT_PACKET,
-                    receivedAt = receivedAt
+                    receivedAt = receivedAt,
                 )
             }
 
@@ -275,7 +264,7 @@ class DefaultChatsRepository(
                     text = "Unable to decrypt secure message",
                     transportMode = TransportEncryptionMode.SEALED_BOX.name,
                     contentStatus = MessageContentStatus.TRANSPORT_DECRYPTION_FAILED,
-                    receivedAt = receivedAt
+                    receivedAt = receivedAt,
                 )
             }
         }
@@ -285,42 +274,44 @@ class DefaultChatsRepository(
         contactId: String,
         conversation: ConversationEntity,
         encodedTransportPayload: String,
-        decodedTransport:
-        DecodedTransportMessage.Readable,
-        receivedAt: Long
+        decodedTransport: DecodedTransportMessage.Readable,
+        receivedAt: Long,
     ) {
-        val packet = packetCodec.decode(encodedPacket = decodedTransport.plaintext).getOrElse {
-            storeFailedIncomingMessage(
-                conversation = conversation,
-                encodedTransportPayload = encodedTransportPayload,
-                text = "Invalid protocol packet",
-                transportMode = decodedTransport.mode.name,
-                contentStatus = MessageContentStatus.INVALID_PACKET,
-                receivedAt = receivedAt
-            )
+        val packet =
+            packetCodec.decode(encodedPacket = decodedTransport.plaintext).getOrElse {
+                storeFailedIncomingMessage(
+                    conversation = conversation,
+                    encodedTransportPayload = encodedTransportPayload,
+                    text = "Invalid protocol packet",
+                    transportMode = decodedTransport.mode.name,
+                    contentStatus = MessageContentStatus.INVALID_PACKET,
+                    receivedAt = receivedAt,
+                )
 
-            return
-        }
+                return
+            }
 
-        protocolPacketHandler.handle(
-            context = IncomingPacketContext(
-                contactId = contactId,
-                conversationId = conversation.id,
-                encodedTransportPayload = encodedTransportPayload,
-                transportMode = decodedTransport.mode.name,
-                receivedAtEpochMilliseconds = receivedAt
-            ),
-            packet = packet
-        ).onFailure {
-            storeFailedIncomingMessage(
-                conversation = conversation,
-                encodedTransportPayload = encodedTransportPayload,
-                text = "Unsupported or invalid protocol packet",
-                transportMode = decodedTransport.mode.name,
-                contentStatus = MessageContentStatus.INVALID_PACKET,
-                receivedAt = receivedAt
-            )
-        }
+        protocolPacketHandler
+            .handle(
+                context =
+                    IncomingPacketContext(
+                        contactId = contactId,
+                        conversationId = conversation.id,
+                        encodedTransportPayload = encodedTransportPayload,
+                        transportMode = decodedTransport.mode.name,
+                        receivedAtEpochMilliseconds = receivedAt,
+                    ),
+                packet = packet,
+            ).onFailure {
+                storeFailedIncomingMessage(
+                    conversation = conversation,
+                    encodedTransportPayload = encodedTransportPayload,
+                    text = "Unsupported or invalid protocol packet",
+                    transportMode = decodedTransport.mode.name,
+                    contentStatus = MessageContentStatus.INVALID_PACKET,
+                    receivedAt = receivedAt,
+                )
+            }
     }
 
     private suspend fun storeFailedIncomingMessage(
@@ -329,7 +320,7 @@ class DefaultChatsRepository(
         text: String,
         transportMode: String,
         contentStatus: MessageContentStatus,
-        receivedAt: Long
+        receivedAt: Long,
     ) {
         chatDao.upsertMessage(
             MessageEntity(
@@ -342,20 +333,17 @@ class DefaultChatsRepository(
                 contentStatus = contentStatus.name,
                 deliveryStatus = MessageDeliveryStatus.NOT_APPLICABLE.name,
                 isMine = false,
-                createdAtEpochMilliseconds = receivedAt
-            )
+                createdAtEpochMilliseconds = receivedAt,
+            ),
         )
 
         chatDao.updateConversationTimestamp(
             conversationId = conversation.id,
-            timestamp = receivedAt
+            timestamp = receivedAt,
         )
     }
 
-    private suspend fun getOrCreateConversation(
-        contactId: String
-    ): ConversationEntity {
-
+    private suspend fun getOrCreateConversation(contactId: String): ConversationEntity {
         val existing = chatDao.findConversationByContactId(contactId = contactId)
 
         if (existing != null) {
@@ -364,12 +352,13 @@ class DefaultChatsRepository(
 
         val now = SystemClock.nowEpochMilliseconds()
 
-        val conversation = ConversationEntity(
-            id = createId(prefix = "conversation"),
-            contactId = contactId,
-            createdAtEpochMilliseconds = now,
-            updatedAtEpochMilliseconds = now
-        )
+        val conversation =
+            ConversationEntity(
+                id = createId(prefix = "conversation"),
+                contactId = contactId,
+                createdAtEpochMilliseconds = now,
+                updatedAtEpochMilliseconds = now,
+            )
 
         chatDao.upsertConversation(conversation)
 
@@ -378,10 +367,10 @@ class DefaultChatsRepository(
     }
 
     private fun Contact.plannedTransportMode(): TransportEncryptionMode {
-
         val identity = secureChatIdentity
 
-        val canEncrypt = identity != null &&
+        val canEncrypt =
+            identity != null &&
                 identity.encryptionPublicKey.isNotEmpty() &&
                 identity.keyExchangeStatus == KeyExchangeStatus.MUTUAL
 
@@ -392,27 +381,25 @@ class DefaultChatsRepository(
         }
     }
 
-    private fun ConversationWithMessages.toDomain(): Conversation {
-
-        return Conversation(
+    private fun ConversationWithMessages.toDomain(): Conversation =
+        Conversation(
             id = conversation.id,
             contactId = conversation.contactId,
             contactName = "",
-            messages = messages.sortedBy { it.createdAtEpochMilliseconds }.map { entity ->
-                entity.toDomain(contactId = conversation.contactId)
-            },
-            unreadCount = messages.count { message ->
-                !message.isMine &&
+            messages =
+                messages.sortedBy { it.createdAtEpochMilliseconds }.map { entity ->
+                    entity.toDomain(contactId = conversation.contactId)
+                },
+            unreadCount =
+                messages.count { message ->
+                    !message.isMine &&
                         !message.readReceiptSent &&
                         message.contentStatus == MessageContentStatus.READABLE.name
-            }
+                },
         )
-    }
 
-    private fun MessageEntity.toDomain(
-        contactId: String
-    ): ChatMessage {
-        return ChatMessage(
+    private fun MessageEntity.toDomain(contactId: String): ChatMessage =
+        ChatMessage(
             id = id,
             contactId = contactId,
             text = text,
@@ -420,62 +407,58 @@ class DefaultChatsRepository(
             timestamp = createdAtEpochMilliseconds,
             security = transportMode.toMessageSecurity(),
             contentStatus = contentStatus.toMessageContentStatus(),
-            deliveryStatus = if (isMine) {
-                deliveryStatus.toMessageDeliveryStatus()
-            } else {
-                MessageDeliveryStatus.NOT_APPLICABLE
-            }
+            deliveryStatus =
+                if (isMine) {
+                    deliveryStatus.toMessageDeliveryStatus()
+                } else {
+                    MessageDeliveryStatus.NOT_APPLICABLE
+                },
         )
-    }
 
     private fun ConversationSummary.toDomain(): Conversation {
-
-        val lastMessage = lastMessageText?.let { text ->
-            ChatMessage(
-                id = "summary-$conversationId",
-                contactId = contactId,
-                text = text,
-                isMine = true,
-                timestamp = lastMessageTimestamp ?: updatedAtEpochMilliseconds,
-                security = MessageSecurity.INSECURE,
-                contentStatus = MessageContentStatus.READABLE,
-                deliveryStatus = MessageDeliveryStatus.NOT_APPLICABLE
-            )
-        }
+        val lastMessage =
+            lastMessageText?.let { text ->
+                ChatMessage(
+                    id = "summary-$conversationId",
+                    contactId = contactId,
+                    text = text,
+                    isMine = true,
+                    timestamp = lastMessageTimestamp ?: updatedAtEpochMilliseconds,
+                    security = MessageSecurity.INSECURE,
+                    contentStatus = MessageContentStatus.READABLE,
+                    deliveryStatus = MessageDeliveryStatus.NOT_APPLICABLE,
+                )
+            }
 
         return Conversation(
             id = conversationId,
             contactId = contactId,
             contactName = contactName?.takeIf { it.isNotBlank() } ?: "Unknown contact",
             messages = listOfNotNull(lastMessage),
-            unreadCount = unreadCount
+            unreadCount = unreadCount,
         )
     }
 
-    private fun String.toMessageSecurity(): MessageSecurity {
-
-        return if (this == TransportEncryptionMode.SEALED_BOX.name) {
+    private fun String.toMessageSecurity(): MessageSecurity =
+        if (this == TransportEncryptionMode.SEALED_BOX.name) {
             MessageSecurity.END_TO_END_ENCRYPTED
         } else {
             MessageSecurity.INSECURE
         }
-    }
 
-    private fun String.toMessageContentStatus(): MessageContentStatus {
-
-        return MessageContentStatus.entries.firstOrNull { it.name == this }
+    private fun String.toMessageContentStatus(): MessageContentStatus =
+        MessageContentStatus.entries.firstOrNull {
+            it.name == this
+        }
             ?: MessageContentStatus.INVALID_PACKET
-    }
 
-    private fun String.toMessageDeliveryStatus(): MessageDeliveryStatus {
-
-        return MessageDeliveryStatus.entries.firstOrNull { it.name == this }
+    private fun String.toMessageDeliveryStatus(): MessageDeliveryStatus =
+        MessageDeliveryStatus.entries.firstOrNull {
+            it.name == this
+        }
             ?: MessageDeliveryStatus.NOT_APPLICABLE
-    }
 
-    private fun createId(
-        prefix: String
-    ): String {
+    private fun createId(prefix: String): String {
         val timestamp = SystemClock.nowEpochMilliseconds()
 
         val random = Random.nextLong().toString().replace(oldValue = "-", newValue = "")

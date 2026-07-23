@@ -3,9 +3,8 @@ package com.cbgm.securechat.feature.identity.platform
 import androidx.compose.runtime.Composable
 
 sealed interface PhoneNumberHintResult {
-
     data class Selected(
-        val phoneNumber: String
+        val phoneNumber: String,
     ) : PhoneNumberHintResult
 
     data object Unavailable :
@@ -15,7 +14,7 @@ sealed interface PhoneNumberHintResult {
         PhoneNumberHintResult
 
     data class Failed(
-        val message: String
+        val message: String,
     ) : PhoneNumberHintResult
 }
 
@@ -31,5 +30,5 @@ sealed interface PhoneNumberHintResult {
 expect fun PhoneNumberHintLauncher(
     requestId: Int,
     enabled: Boolean,
-    onResult: (PhoneNumberHintResult) -> Unit
+    onResult: (PhoneNumberHintResult) -> Unit,
 )

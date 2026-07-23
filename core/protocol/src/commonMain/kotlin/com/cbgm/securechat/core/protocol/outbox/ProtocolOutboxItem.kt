@@ -9,9 +9,8 @@ data class ProtocolOutboxItem(
     val attemptCount: Int,
     val lastError: String?,
     val createdAtEpochMilliseconds: Long,
-    val updatedAtEpochMilliseconds: Long
+    val updatedAtEpochMilliseconds: Long,
 ) {
-
     init {
         require(id.isNotBlank()) {
             "Outbox item ID must not be blank"
@@ -34,9 +33,7 @@ data class ProtocolOutboxItem(
         }
     }
 
-    override fun equals(
-        other: Any?
-    ): Boolean {
+    override fun equals(other: Any?): Boolean {
         if (this === other) {
             return true
         }
@@ -44,18 +41,18 @@ data class ProtocolOutboxItem(
         if (other !is ProtocolOutboxItem) return false
 
         return id == other.id &&
-                contactId == other.contactId &&
-                packetId == other.packetId &&
-                encodedPacket.contentEquals(
-                    other.encodedPacket
-                ) &&
-                status == other.status &&
-                attemptCount == other.attemptCount &&
-                lastError == other.lastError &&
-                createdAtEpochMilliseconds ==
-                other.createdAtEpochMilliseconds &&
-                updatedAtEpochMilliseconds ==
-                other.updatedAtEpochMilliseconds
+            contactId == other.contactId &&
+            packetId == other.packetId &&
+            encodedPacket.contentEquals(
+                other.encodedPacket,
+            ) &&
+            status == other.status &&
+            attemptCount == other.attemptCount &&
+            lastError == other.lastError &&
+            createdAtEpochMilliseconds ==
+            other.createdAtEpochMilliseconds &&
+            updatedAtEpochMilliseconds ==
+            other.updatedAtEpochMilliseconds
     }
 
     override fun hashCode(): Int {

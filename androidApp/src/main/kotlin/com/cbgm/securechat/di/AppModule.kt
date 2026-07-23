@@ -20,43 +20,44 @@ import org.koin.dsl.module
  *
  * These classes require Android Context and cannot live in commonMain.
  */
-val appModule = module {
+val appModule =
+    module {
 
-    single<PrivateKeyStorage> {
-        AndroidPrivateKeyStorage(
-            context = androidContext()
-        )
-    }
+        single<PrivateKeyStorage> {
+            AndroidPrivateKeyStorage(
+                context = androidContext(),
+            )
+        }
 
-    single<PublicIdentityStorage> {
-        AndroidPublicIdentityStorage(
-            context = androidContext()
-        )
-    }
+        single<PublicIdentityStorage> {
+            AndroidPublicIdentityStorage(
+                context = androidContext(),
+            )
+        }
 
-    single<BuildInfoProvider> {
-        AndroidBuildInfoProvider()
-    }
+        single<BuildInfoProvider> {
+            AndroidBuildInfoProvider()
+        }
 
-    single<ContentResolver> {
-        androidContext().contentResolver
-    }
+        single<ContentResolver> {
+            androidContext().contentResolver
+        }
 
-    single<DeviceContactsDataSource> {
-        AndroidDeviceContactsDataSource(
-            contentResolver = get()
-        )
-    }
+        single<DeviceContactsDataSource> {
+            AndroidDeviceContactsDataSource(
+                contentResolver = get(),
+            )
+        }
 
-    single<DeviceContactWriter> {
-        AndroidDeviceContactWriter(
-            context = androidContext()
-        )
-    }
+        single<DeviceContactWriter> {
+            AndroidDeviceContactWriter(
+                context = androidContext(),
+            )
+        }
 
-    single {
-        RelayTransportConfig(
-            serverUrl = "ws://10.0.2.2:8080/relay"
-        )
+        single {
+            RelayTransportConfig(
+                serverUrl = "ws://10.0.2.2:8080/relay",
+            )
+        }
     }
-}

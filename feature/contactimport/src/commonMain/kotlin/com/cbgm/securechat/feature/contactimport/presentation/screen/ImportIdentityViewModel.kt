@@ -11,21 +11,18 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ImportIdentityViewModel(
-    private val importSharedIdentity: ImportSharedIdentity
+    private val importSharedIdentity: ImportSharedIdentity,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(ImportIdentityUiState())
 
     val uiState: StateFlow<ImportIdentityUiState> = _uiState.asStateFlow()
 
-    fun onEncodedIdentityChanged(
-        value: String
-    ) {
+    fun onEncodedIdentityChanged(value: String) {
         _uiState.update { current ->
             current.copy(
                 encodedIdentity = value,
                 importedContactName = null,
-                errorMessage = null
+                errorMessage = null,
             )
         }
     }
@@ -49,7 +46,7 @@ class ImportIdentityViewModel(
             current.copy(
                 isImporting = true,
                 importedContactName = null,
-                errorMessage = null
+                errorMessage = null,
             )
         }
 
@@ -60,16 +57,15 @@ class ImportIdentityViewModel(
                         current.copy(
                             isImporting = false,
                             importedContactName = contact.displayName ?: "Unnamed contact",
-                            errorMessage = null
+                            errorMessage = null,
                         )
                     }
-                }
-                .onFailure { error ->
+                }.onFailure { error ->
                     _uiState.update { current ->
                         current.copy(
                             isImporting = false,
                             importedContactName = null,
-                            errorMessage = error.message ?: "Identity import failed"
+                            errorMessage = error.message ?: "Identity import failed",
                         )
                     }
                 }

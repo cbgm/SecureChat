@@ -5,14 +5,11 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 class InMemoryPendingEnvelopeStore : PendingEnvelopeStore {
-
     private val mutex = Mutex()
 
     private val envelopesById = linkedMapOf<String, RelayEnvelope>()
 
-    override suspend fun enqueue(
-        envelope: RelayEnvelope
-    ) {
+    override suspend fun enqueue(envelope: RelayEnvelope) {
         mutex.withLock {
             /*
              * Idempotent insertion. A sender may resend an envelope
@@ -20,32 +17,28 @@ class InMemoryPendingEnvelopeStore : PendingEnvelopeStore {
              */
             envelopesById.putIfAbsent(
                 envelope.envelopeId,
-                envelope
+                envelope,
             )
         }
     }
 
-    override suspend fun getPendingForRecipient(
-        recipientId: String
-    ): List<RelayEnvelope> {
-        return mutex.withLock {
+    override suspend fun getPendingForRecipient(recipientId: String): List<RelayEnvelope> =
+        mutex.withLock {
             envelopesById.values
                 .filter { envelope ->
                     envelope.recipientId == recipientId
-                }
-                .sortedWith(
+                }.sortedWith(
                     compareBy<RelayEnvelope> {
                         it.createdAtEpochMilliseconds
                     }.thenBy {
                         it.envelopeId
-                    }
+                    },
                 )
         }
-    }
 
     override suspend fun remove(
         recipientId: String,
-        envelopeId: String
+        envelopeId: String,
     ) {
         mutex.withLock {
             val envelope = envelopesById[envelopeId]
@@ -56,17 +49,13 @@ class InMemoryPendingEnvelopeStore : PendingEnvelopeStore {
         }
     }
 
-    override suspend fun contains(
-        envelopeId: String
-    ): Boolean {
-        return mutex.withLock {
+    override suspend fun contains(envelopeId: String): Boolean =
+        mutex.withLock {
             envelopeId in envelopesById
         }
-    }
 
-    override suspend fun pendingCount(): Int {
-        return mutex.withLock {
+    override suspend fun pendingCount(): Int =
+        mutex.withLock {
             envelopesById.size
         }
-    }
 }

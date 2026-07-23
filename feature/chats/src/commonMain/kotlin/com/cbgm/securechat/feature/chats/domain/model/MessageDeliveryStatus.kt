@@ -1,7 +1,6 @@
 package com.cbgm.securechat.feature.chats.domain.model
 
 enum class MessageDeliveryStatus {
-
     /**
      * Incoming messages do not use an outgoing delivery state.
      */
@@ -37,5 +36,5 @@ enum class MessageDeliveryStatus {
     /**
      * The latest outgoing transport attempt failed.
      */
-    FAILED
+    FAILED,
 }

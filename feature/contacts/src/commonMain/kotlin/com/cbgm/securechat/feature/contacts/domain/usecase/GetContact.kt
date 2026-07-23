@@ -4,12 +4,7 @@ import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
 
 class GetContact(
-    private val repository: ContactRepository
+    private val repository: ContactRepository,
 ) {
-
-    suspend operator fun invoke(
-        contactId: String
-    ): Result<Contact?> {
-        return repository.getContact(contactId = contactId)
-    }
+    suspend operator fun invoke(contactId: String): Result<Contact?> = repository.getContact(contactId = contactId)
 }

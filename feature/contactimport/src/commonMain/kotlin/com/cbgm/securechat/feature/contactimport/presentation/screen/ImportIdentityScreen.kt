@@ -50,7 +50,7 @@ fun ImportIdentityScreen(
     onImportClick: () -> Unit,
     onBack: () -> Unit,
     onScanQrCode: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     SecureChatScrollScaffold(
         modifier = modifier,
@@ -58,50 +58,51 @@ fun ImportIdentityScreen(
             PatternBackground(
                 modifier = Modifier.fillMaxSize(),
                 backgroundColor = MaterialTheme.colorScheme.background,
-                alpha = 0.04f
+                alpha = 0.04f,
             )
         },
         topBar = { containerColor ->
             ImportIdentityTopBar(
                 containerColor = containerColor,
-                onBack = onBack
+                onBack = onBack,
             )
-        }
+        },
     ) { innerPadding, scrollState ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(
-                    top = innerPadding.calculateTopPadding(),
-                    bottom = innerPadding.calculateBottomPadding(),
-                    start = MaterialTheme.spacing.screenPadding,
-                    end = MaterialTheme.spacing.screenPadding
-                ),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(
+                        top = innerPadding.calculateTopPadding(),
+                        bottom = innerPadding.calculateBottomPadding(),
+                        start = MaterialTheme.spacing.screenPadding,
+                        end = MaterialTheme.spacing.screenPadding,
+                    ),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         ) {
             Text(
                 text = "Import contact",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
             )
 
             Text(
                 text = "Paste a shared SecureChat identity. Both public keys will be stored. Name and phone number are optional.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
             )
 
             OutlinedButton(
                 onClick = onScanQrCode,
                 enabled = !uiState.isImporting,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(
                     imageVector = Icons.Default.QrCodeScanner,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
 
                 Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
@@ -120,33 +121,35 @@ fun ImportIdentityScreen(
                 },
                 minLines = 4,
                 enabled = !uiState.isImporting,
-                textStyle = MaterialTheme.typography.bodySmall.copy(
-                    color = MaterialTheme.colorScheme.onBackground
-                ),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
-                    focusedContainerColor = Field,
-                    unfocusedContainerColor = Field,
-                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.18f),
-                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                    cursorColor = MaterialTheme.colorScheme.secondary
-                )
+                textStyle =
+                    MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onBackground,
+                    ),
+                colors =
+                    OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                        focusedContainerColor = Field,
+                        unfocusedContainerColor = Field,
+                        focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.18f),
+                        focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                        cursorColor = MaterialTheme.colorScheme.secondary,
+                    ),
             )
 
             ImportButton(
                 isImporting = uiState.isImporting,
                 enabled = uiState.encodedIdentity.isNotBlank(),
-                onClick = onImportClick
+                onClick = onImportClick,
             )
 
             uiState.importedContactName?.let { name ->
                 StatusBanner(
                     icon = Icons.Default.CheckCircle,
                     text = "Imported: $name",
-                    color = MaterialTheme.colorScheme.secondary
+                    color = MaterialTheme.colorScheme.secondary,
                 )
             }
 
@@ -154,7 +157,7 @@ fun ImportIdentityScreen(
                 StatusBanner(
                     icon = Icons.Default.ErrorOutline,
                     text = message,
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
         }
@@ -164,56 +167,58 @@ fun ImportIdentityScreen(
 @Composable
 private fun ImportIdentityTopBar(
     containerColor: Color,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     TopAppBar(
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = containerColor,
-            scrolledContainerColor = containerColor,
-            titleContentColor = MaterialTheme.colorScheme.onBackground,
-            actionIconContentColor = MaterialTheme.colorScheme.onBackground,
-            navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-        ),
+        colors =
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = containerColor,
+                scrolledContainerColor = containerColor,
+                titleContentColor = MaterialTheme.colorScheme.onBackground,
+                actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+                navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+            ),
         title = {
             Text(
                 text = "Import identity",
                 fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleSmall
+                style = MaterialTheme.typography.titleSmall,
             )
         },
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = "Back",
                 )
             }
-        }
+        },
     )
 }
 
 @Composable
 private fun ManualInputDivider() {
     Row(
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         HorizontalDivider(
             modifier = Modifier.weight(1f),
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f)
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f),
         )
 
         Text(
             text = "OR PASTE MANUALLY",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f),
-            modifier = Modifier.padding(
-                horizontal = MaterialTheme.spacing.base
-            )
+            modifier =
+                Modifier.padding(
+                    horizontal = MaterialTheme.spacing.base,
+                ),
         )
 
         HorizontalDivider(
             modifier = Modifier.weight(1f),
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f)
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f),
         )
     }
 }
@@ -222,30 +227,31 @@ private fun ManualInputDivider() {
 private fun ImportButton(
     isImporting: Boolean,
     enabled: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Button(
         onClick = onClick,
         enabled = !isImporting && enabled,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.secondary,
-            contentColor = MaterialTheme.colorScheme.background,
-            disabledContainerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
-            disabledContentColor = MaterialTheme.colorScheme.background.copy(alpha = 0.5f)
-        )
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.background,
+                disabledContainerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
+                disabledContentColor = MaterialTheme.colorScheme.background.copy(alpha = 0.5f),
+            ),
     ) {
         if (isImporting) {
             CircularProgressIndicator(
                 modifier = Modifier.size(20.dp),
                 strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.background
+                color = MaterialTheme.colorScheme.background,
             )
         } else {
             Text(
                 text = "Import",
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
         }
     }
@@ -255,25 +261,26 @@ private fun ImportButton(
 private fun StatusBanner(
     icon: ImageVector,
     text: String,
-    color: Color
+    color: Color,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = color.copy(alpha = 0.15f)
+        color = color.copy(alpha = 0.15f),
     ) {
         Row(
-            modifier = Modifier.padding(
-                horizontal = 16.dp,
-                vertical = 12.dp
-            ),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier.padding(
+                    horizontal = 16.dp,
+                    vertical = 12.dp,
+                ),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = color,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(18.dp),
             )
 
             Spacer(modifier = Modifier.size(10.dp))
@@ -282,7 +289,7 @@ private fun StatusBanner(
                 text = text,
                 style = MaterialTheme.typography.bodyMedium,
                 color = color,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
         }
     }

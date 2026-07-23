@@ -4,5 +4,5 @@ data class ImportIdentityUiState(
     val encodedIdentity: String = "",
     val isImporting: Boolean = false,
     val importedContactName: String? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
 )

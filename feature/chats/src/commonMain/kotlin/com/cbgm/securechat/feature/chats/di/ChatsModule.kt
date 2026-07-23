@@ -18,59 +18,59 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
-val chatsModule = module {
+val chatsModule =
+    module {
 
-    singleOf(::ChatMessagePacketHandler) {
-        bind<TypedProtocolPacketHandler>()
+        singleOf(::ChatMessagePacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
+        singleOf(::ReadReceiptPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
+        singleOf(::DeliveryReceiptPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
+        single {
+            GetContactSafetyNumber(
+                localPublicIdentityProvider = get<LocalPublicIdentityProvider>(),
+                contactRepository = get<ContactRepository>(),
+            )
+        }
+
+        single<OutboxDeliveryStateListener> {
+            ChatOutboxDeliveryStateListener(
+                messageDeliveryStatusDao = get(),
+            )
+        }
+
+        single<ChatsRepository> {
+            DefaultChatsRepository(
+                chatDao = get(),
+                messageDeliveryStatusDao = get(),
+                getContact = get(),
+                protocolOutbox = get(),
+                incomingTransportMessageDecoder = get(),
+                packetCodec = get(),
+                protocolPacketHandler = get(),
+                identityExchangeStarter = get(),
+            )
+        }
+
+        viewModel {
+            ChatsViewModel(chatsRepository = get())
+        }
+
+        viewModel { parameters ->
+            ChatViewModel(
+                contactId = parameters.get(),
+                fallbackContactName = parameters.get(),
+                chatsRepository = get<ChatsRepository>(),
+                contactRepository = get<ContactRepository>(),
+                getContactSafetyNumber = get<GetContactSafetyNumber>(),
+                typingIndicatorGateway = get(),
+            )
+        }
     }
-
-    singleOf(::ReadReceiptPacketHandler) {
-        bind<TypedProtocolPacketHandler>()
-    }
-
-    singleOf(::DeliveryReceiptPacketHandler) {
-        bind<TypedProtocolPacketHandler>()
-    }
-
-    single {
-        GetContactSafetyNumber(
-            localPublicIdentityProvider = get<LocalPublicIdentityProvider>(),
-            contactRepository = get<ContactRepository>()
-        )
-    }
-
-
-    single<OutboxDeliveryStateListener> {
-        ChatOutboxDeliveryStateListener(
-            messageDeliveryStatusDao = get()
-        )
-    }
-
-    single<ChatsRepository> {
-        DefaultChatsRepository(
-            chatDao = get(),
-            messageDeliveryStatusDao = get(),
-            getContact = get(),
-            protocolOutbox = get(),
-            incomingTransportMessageDecoder = get(),
-            packetCodec = get(),
-            protocolPacketHandler = get(),
-            identityExchangeStarter = get()
-        )
-    }
-
-    viewModel {
-        ChatsViewModel(chatsRepository = get())
-    }
-
-    viewModel { parameters ->
-        ChatViewModel(
-            contactId = parameters.get(),
-            fallbackContactName = parameters.get(),
-            chatsRepository = get<ChatsRepository>(),
-            contactRepository = get<ContactRepository>(),
-            getContactSafetyNumber = get<GetContactSafetyNumber>(),
-            typingIndicatorGateway = get()
-        )
-    }
-}

@@ -7,28 +7,25 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 interface WebSocketTransportClient {
-
     val connectionState: StateFlow<TransportConnectionState>
     val incomingEnvelopes: Flow<RelayEnvelope>
     val incomingTypingEvents: Flow<RelayTypingEvent>
 
     fun connect(
         serverUrl: String,
-        localRelayId: String
+        localRelayId: String,
     )
 
     suspend fun sendEnvelopeAndAwaitAcceptance(
         envelope: RelayEnvelope,
-        timeoutMilliseconds: Long
+        timeoutMilliseconds: Long,
     ): Result<Unit>
 
-    suspend fun acknowledgeIncomingEnvelope(
-        envelopeId: String
-    ): Result<Unit>
+    suspend fun acknowledgeIncomingEnvelope(envelopeId: String): Result<Unit>
 
     suspend fun sendTypingState(
         recipientId: String,
-        isTyping: Boolean
+        isTyping: Boolean,
     ): Result<Unit>
 
     suspend fun disconnect()

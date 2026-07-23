@@ -19,88 +19,84 @@ import com.cbgm.securechat.feature.contactimport.presentation.model.ScannedIdent
 fun ScannedIdentityConfirmationDialog(
     preview: ScannedIdentityPreview,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-
         title = {
             Text(text = "Import SecureChat contact")
         },
-
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
                     text = preview.displayName ?: "Unnamed SecureChat contact",
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
                 )
 
                 preview.phoneNumber?.let { phoneNumber ->
-                        Text(
-                            text = phoneNumber,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
+                    Text(
+                        text = phoneNumber,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = "SecureChat identity found",
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 FingerprintSection(
                     title = "Signing key",
-                    fingerprint = preview.signingKeyFingerprint
+                    fingerprint = preview.signingKeyFingerprint,
                 )
 
                 FingerprintSection(
                     title = "Encryption key",
-                    fingerprint = preview.encryptionKeyFingerprint
+                    fingerprint = preview.encryptionKeyFingerprint,
                 )
             }
         },
-
         confirmButton = {
             TextButton(
-                onClick = onConfirm
+                onClick = onConfirm,
             ) {
                 Text("Import")
             }
         },
-
         dismissButton = {
             TextButton(
-                onClick = onDismiss
+                onClick = onDismiss,
             ) {
                 Text("Cancel")
             }
-        }
+        },
     )
 }
 
 @Composable
 private fun FingerprintSection(
     title: String,
-    fingerprint: String
+    fingerprint: String,
 ) {
     Column {
         Text(
             text = title,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Text(
             text = fingerprint,
             style = MaterialTheme.typography.bodySmall,
-            fontFamily = FontFamily.Monospace
+            fontFamily = FontFamily.Monospace,
         )
     }
 }

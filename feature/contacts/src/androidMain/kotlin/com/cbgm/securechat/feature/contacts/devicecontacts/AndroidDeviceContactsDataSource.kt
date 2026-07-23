@@ -10,67 +10,67 @@ import android.provider.ContactsContract
  * of how many phone numbers belong to that person.
  */
 class AndroidDeviceContactsDataSource(
-    private val contentResolver: ContentResolver
+    private val contentResolver: ContentResolver,
 ) : DeviceContactsDataSource {
-
-    override suspend fun getContacts(): Result<List<DeviceContact>> {
-
-        return runCatching {
+    override suspend fun getContacts(): Result<List<DeviceContact>> =
+        runCatching {
             val contacts = mutableListOf<DeviceContact>()
 
-            contentResolver.query(
-                ContactsContract.Contacts.CONTENT_URI,
-                arrayOf(
-                    ContactsContract.Contacts._ID,
+            contentResolver
+                .query(
+                    ContactsContract.Contacts.CONTENT_URI,
+                    arrayOf(
+                        ContactsContract.Contacts._ID,
+                        ContactsContract.Contacts.DISPLAY_NAME,
+                        ContactsContract.Contacts.HAS_PHONE_NUMBER,
+                    ),
+                    null,
+                    null,
                     ContactsContract.Contacts.DISPLAY_NAME,
-                    ContactsContract.Contacts.HAS_PHONE_NUMBER
-                ),
-                null,
-                null,
-                ContactsContract.Contacts.DISPLAY_NAME
-            )?.use { cursor ->
+                )?.use { cursor ->
 
-                val idColumn = cursor.getColumnIndexOrThrow(ContactsContract.Contacts._ID)
+                    val idColumn = cursor.getColumnIndexOrThrow(ContactsContract.Contacts._ID)
 
-                val nameColumn =
-                    cursor.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME)
+                    val nameColumn =
+                        cursor.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME)
 
-                val hasPhoneNumberColumn =
-                    cursor.getColumnIndexOrThrow(ContactsContract.Contacts.HAS_PHONE_NUMBER)
+                    val hasPhoneNumberColumn =
+                        cursor.getColumnIndexOrThrow(ContactsContract.Contacts.HAS_PHONE_NUMBER)
 
-                while (cursor.moveToNext()) {
-                    val deviceContactId = cursor.getLong(idColumn).toString()
+                    while (cursor.moveToNext()) {
+                        val deviceContactId = cursor.getLong(idColumn).toString()
 
-                    val displayName =
-                        cursor.getString(nameColumn)?.trim()?.takeIf { it.isNotEmpty() }
+                        val displayName =
+                            cursor.getString(nameColumn)?.trim()?.takeIf { it.isNotEmpty() }
 
-                    val hasPhoneNumber = cursor.getInt(hasPhoneNumberColumn) > 0
+                        val hasPhoneNumber = cursor.getInt(hasPhoneNumberColumn) > 0
 
-                    val phoneNumbers = if (hasPhoneNumber) {
-                            loadPhoneNumbers(contactId = deviceContactId)
-                        } else {
-                            emptyList()
-                        }
+                        val phoneNumbers =
+                            if (hasPhoneNumber) {
+                                loadPhoneNumbers(contactId = deviceContactId)
+                            } else {
+                                emptyList()
+                            }
 
                     /*
                      * Contacts without any usable phone number are
                      * irrelevant to the current SecureChat/SMS flow.
                      */
-                    if (phoneNumbers.isEmpty()) {
-                        continue
-                    }
+                        if (phoneNumbers.isEmpty()) {
+                            continue
+                        }
 
-                    contacts += DeviceContact(
-                            id = deviceContactId,
-                            displayName = displayName,
-                            phoneNumbers = phoneNumbers
-                        )
+                        contacts +=
+                            DeviceContact(
+                                id = deviceContactId,
+                                displayName = displayName,
+                                phoneNumbers = phoneNumbers,
+                            )
+                    }
                 }
-            }
 
             contacts
         }
-    }
 
     /**
      * Loads all usable phone numbers for one Android contact.
@@ -78,53 +78,54 @@ class AndroidDeviceContactsDataSource(
      * Android's Phone table exposes the entered number, its type,
      * and an optional custom label.
      */
-    private fun loadPhoneNumbers(
-        contactId: String
-    ): List<DevicePhoneNumber> {
-
+    private fun loadPhoneNumbers(contactId: String): List<DevicePhoneNumber> {
         val phoneNumbers = mutableListOf<DevicePhoneNumber>()
 
-        contentResolver.query(
-            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-            arrayOf(
-                ContactsContract.CommonDataKinds.Phone.NUMBER,
-                ContactsContract.CommonDataKinds.Phone.TYPE,
-                ContactsContract.CommonDataKinds.Phone.LABEL
-            ),
-            """
-            ${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?
-            """.trimIndent(),
-            arrayOf(contactId),
-            null
-        )?.use { cursor ->
+        contentResolver
+            .query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                arrayOf(
+                    ContactsContract.CommonDataKinds.Phone.NUMBER,
+                    ContactsContract.CommonDataKinds.Phone.TYPE,
+                    ContactsContract.CommonDataKinds.Phone.LABEL,
+                ),
+                """
+                ${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?
+                """.trimIndent(),
+                arrayOf(contactId),
+                null,
+            )?.use { cursor ->
 
-            val numberColumn = cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                val numberColumn = cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER)
 
-            val typeColumn = cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.TYPE)
+                val typeColumn = cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.TYPE)
 
-            val labelColumn = cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.LABEL)
+                val labelColumn = cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.LABEL)
 
-            while (cursor.moveToNext()) {
-                val number = cursor
-                        .getString(numberColumn)
-                        ?.trim()
-                        ?.takeIf { it.isNotEmpty() }
-                        ?: continue
+                while (cursor.moveToNext()) {
+                    val number =
+                        cursor
+                            .getString(numberColumn)
+                            ?.trim()
+                            ?.takeIf { it.isNotEmpty() }
+                            ?: continue
 
-                val androidType = cursor.getInt(typeColumn)
+                    val androidType = cursor.getInt(typeColumn)
 
-                val customLabel = cursor
-                        .getString(labelColumn)
-                        ?.trim()
-                        ?.takeIf { it.isNotEmpty() }
+                    val customLabel =
+                        cursor
+                            .getString(labelColumn)
+                            ?.trim()
+                            ?.takeIf { it.isNotEmpty() }
 
-                phoneNumbers += DevicePhoneNumber(
-                        value = number,
-                        type = androidType.toDevicePhoneNumberType(),
-                        label = customLabel
-                    )
+                    phoneNumbers +=
+                        DevicePhoneNumber(
+                            value = number,
+                            type = androidType.toDevicePhoneNumberType(),
+                            label = customLabel,
+                        )
+                }
             }
-        }
 
         /*
          * Some providers may expose duplicate rows. Deduplicate by
@@ -135,10 +136,8 @@ class AndroidDeviceContactsDataSource(
         }
     }
 
-    private fun Int.toDevicePhoneNumberType():
-            DevicePhoneNumberType {
-
-        return when (this) {
+    private fun Int.toDevicePhoneNumberType(): DevicePhoneNumberType =
+        when (this) {
             ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE -> {
                 DevicePhoneNumberType.MOBILE
             }
@@ -156,7 +155,8 @@ class AndroidDeviceContactsDataSource(
             }
 
             ContactsContract.CommonDataKinds.Phone.TYPE_MAIN,
-            ContactsContract.CommonDataKinds.Phone.TYPE_COMPANY_MAIN -> {
+            ContactsContract.CommonDataKinds.Phone.TYPE_COMPANY_MAIN,
+            -> {
                 DevicePhoneNumberType.MAIN
             }
 
@@ -168,5 +168,4 @@ class AndroidDeviceContactsDataSource(
                 DevicePhoneNumberType.OTHER
             }
         }
-    }
 }

@@ -46,8 +46,9 @@ import javax.crypto.spec.GCMParameterSpec
  * assume that X25519 and Ed25519 private keys can themselves be
  * stored directly in Android Keystore on every supported device.
  */
-class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
-
+class AndroidPrivateKeyStorage(
+    context: Context,
+) : PrivateKeyStorage {
     /**
      * App-private SharedPreferences storage.
      *
@@ -58,10 +59,11 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
      *
      * We never store plaintext private keys here.
      */
-    private val preferences = context.getSharedPreferences(
-        PREFERENCES_NAME,
-        Context.MODE_PRIVATE
-    )
+    private val preferences =
+        context.getSharedPreferences(
+            PREFERENCES_NAME,
+            Context.MODE_PRIVATE,
+        )
 
     /**
      * Access to Android's special cryptographic keystore.
@@ -72,9 +74,10 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
      *
      * securechat_identity_wrapping_key
      */
-    private val keyStore: KeyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply {
-        load(null)
-    }
+    private val keyStore: KeyStore =
+        KeyStore.getInstance(ANDROID_KEYSTORE).apply {
+            load(null)
+        }
 
     /**
      * Encrypts and stores both identity private keys.
@@ -91,11 +94,9 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
     @OptIn(ExperimentalUnsignedTypes::class)
     override suspend fun saveIdentityPrivateKeys(
         encryptionPrivateKey: UByteArray,
-        signingPrivateKey: UByteArray
-    ): Result<Unit> {
-
-        return runCatching {
-
+        signingPrivateKey: UByteArray,
+    ): Result<Unit> =
+        runCatching {
             /**
              * Get the AES wrapping key from Android Keystore.
              *
@@ -109,10 +110,11 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
              * UByteArray is converted to ByteArray because
              * Java/Android Cipher APIs operate on ByteArray.
              */
-            val encryptedEncryptionKey = encrypt(
-                plainData = encryptionPrivateKey.toByteArray(),
-                wrappingKey = wrappingKey
-            )
+            val encryptedEncryptionKey =
+                encrypt(
+                    plainData = encryptionPrivateKey.toByteArray(),
+                    wrappingKey = wrappingKey,
+                )
 
             /**
              * Encrypt the Ed25519 private key separately.
@@ -120,10 +122,11 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
              * This results in a separate AES-GCM encryption
              * operation with its own IV.
              */
-            val encryptedSigningKey = encrypt(
-                plainData = signingPrivateKey.toByteArray(),
-                wrappingKey = wrappingKey
-            )
+            val encryptedSigningKey =
+                encrypt(
+                    plainData = signingPrivateKey.toByteArray(),
+                    wrappingKey = wrappingKey,
+                )
 
             /**
              * Store only encrypted data.
@@ -139,36 +142,30 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
              * Binary data is Base64 encoded because
              * SharedPreferences stores strings.
              */
-            val saved = preferences.edit()
-
-                .putString(
-                    ENCRYPTION_PRIVATE_KEY_CIPHERTEXT,
-                    encryptedEncryptionKey.cipherText.toBase64()
-                )
-
-                .putString(
-                    ENCRYPTION_PRIVATE_KEY_IV,
-                    encryptedEncryptionKey.iv.toBase64()
-                )
-
-                .putString(
-                    SIGNING_PRIVATE_KEY_CIPHERTEXT,
-                    encryptedSigningKey.cipherText.toBase64()
-                )
-
-                .putString(
-                    SIGNING_PRIVATE_KEY_IV,
-                    encryptedSigningKey.iv.toBase64()
-                )
-
-                /**
-                 * commit() is synchronous.
-                 *
-                 * We intentionally use commit() instead of apply()
-                 * because identity creation should know whether
-                 * persistence actually succeeded.
-                 */
-                .commit()
+            val saved =
+                preferences
+                    .edit()
+                    .putString(
+                        ENCRYPTION_PRIVATE_KEY_CIPHERTEXT,
+                        encryptedEncryptionKey.cipherText.toBase64(),
+                    ).putString(
+                        ENCRYPTION_PRIVATE_KEY_IV,
+                        encryptedEncryptionKey.iv.toBase64(),
+                    ).putString(
+                        SIGNING_PRIVATE_KEY_CIPHERTEXT,
+                        encryptedSigningKey.cipherText.toBase64(),
+                    ).putString(
+                        SIGNING_PRIVATE_KEY_IV,
+                        encryptedSigningKey.iv.toBase64(),
+                    )
+                    /**
+                     * commit() is synchronous.
+                     *
+                     * We intentionally use commit() instead of apply()
+                     * because identity creation should know whether
+                     * persistence actually succeeded.
+                     */
+                    .commit()
 
             /**
              * If SharedPreferences failed to persist the encrypted
@@ -180,7 +177,6 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
                 "Failed to persist encrypted identity private keys"
             }
         }
-    }
 
     /**
      * Checks whether both encrypted private keys appear to exist.
@@ -194,16 +190,13 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
      *
      * If any part is missing, we return false.
      */
-    override suspend fun hasIdentityPrivateKeys(): Result<Boolean> {
-
-        return runCatching {
-
+    override suspend fun hasIdentityPrivateKeys(): Result<Boolean> =
+        runCatching {
             preferences.contains(ENCRYPTION_PRIVATE_KEY_CIPHERTEXT) &&
-                    preferences.contains(ENCRYPTION_PRIVATE_KEY_IV) &&
-                    preferences.contains(SIGNING_PRIVATE_KEY_CIPHERTEXT) &&
-                    preferences.contains(SIGNING_PRIVATE_KEY_IV)
+                preferences.contains(ENCRYPTION_PRIVATE_KEY_IV) &&
+                preferences.contains(SIGNING_PRIVATE_KEY_CIPHERTEXT) &&
+                preferences.contains(SIGNING_PRIVATE_KEY_IV)
         }
-    }
 
     /**
      * Loads and decrypts the X25519 private key.
@@ -228,27 +221,27 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
      */
     @OptIn(ExperimentalUnsignedTypes::class)
     override suspend fun loadEncryptionPrivateKey(): Result<UByteArray?> {
-
         return runCatching {
-
             /**
              * Load encrypted X25519 key ciphertext.
              *
              * If missing, there is no stored key.
              */
-            val cipherTextBase64 = preferences.getString(
-                ENCRYPTION_PRIVATE_KEY_CIPHERTEXT,
-                null
-            ) ?: return@runCatching null
+            val cipherTextBase64 =
+                preferences.getString(
+                    ENCRYPTION_PRIVATE_KEY_CIPHERTEXT,
+                    null,
+                ) ?: return@runCatching null
 
             /**
              * Load the IV that was generated when the
              * X25519 private key was encrypted.
              */
-            val ivBase64 = preferences.getString(
-                ENCRYPTION_PRIVATE_KEY_IV,
-                null
-            ) ?: return@runCatching null
+            val ivBase64 =
+                preferences.getString(
+                    ENCRYPTION_PRIVATE_KEY_IV,
+                    null,
+                ) ?: return@runCatching null
 
             /**
              * Load the AES wrapping key from Android Keystore.
@@ -259,8 +252,9 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
              * A newly generated AES key could never decrypt
              * ciphertext created with the old key.
              */
-            val wrappingKey = getExistingWrappingKey()
-                ?: return@runCatching null
+            val wrappingKey =
+                getExistingWrappingKey()
+                    ?: return@runCatching null
 
             /**
              * Decode Base64 strings back to binary data,
@@ -269,7 +263,7 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
             decrypt(
                 cipherText = cipherTextBase64.fromBase64(),
                 iv = ivBase64.fromBase64(),
-                wrappingKey = wrappingKey
+                wrappingKey = wrappingKey,
             )
                 /**
                  * Convert back to UByteArray because our
@@ -287,34 +281,35 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
      */
     @OptIn(ExperimentalUnsignedTypes::class)
     override suspend fun loadSigningPrivateKey(): Result<UByteArray?> {
-
         return runCatching {
-
             // Load encrypted Ed25519 private-key ciphertext.
-            val cipherTextBase64 = preferences.getString(
-                SIGNING_PRIVATE_KEY_CIPHERTEXT,
-                null
-            ) ?: return@runCatching null
+            val cipherTextBase64 =
+                preferences.getString(
+                    SIGNING_PRIVATE_KEY_CIPHERTEXT,
+                    null,
+                ) ?: return@runCatching null
 
             // Load the IV used during Ed25519 key encryption.
-            val ivBase64 = preferences.getString(
-                SIGNING_PRIVATE_KEY_IV,
-                null
-            ) ?: return@runCatching null
+            val ivBase64 =
+                preferences.getString(
+                    SIGNING_PRIVATE_KEY_IV,
+                    null,
+                ) ?: return@runCatching null
 
             /**
              * Retrieve the existing AES wrapping key.
              *
              * Again, never generate a replacement during loading.
              */
-            val wrappingKey = getExistingWrappingKey()
-                ?: return@runCatching null
+            val wrappingKey =
+                getExistingWrappingKey()
+                    ?: return@runCatching null
 
             // Decrypt and return the original Ed25519 private key.
             decrypt(
                 cipherText = cipherTextBase64.fromBase64(),
                 iv = ivBase64.fromBase64(),
-                wrappingKey = wrappingKey
+                wrappingKey = wrappingKey,
             ).toUByteArray()
         }
     }
@@ -326,7 +321,6 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
      * This should normally happen once during first identity creation.
      */
     private fun getOrCreateWrappingKey(): SecretKey {
-
         /**
          * First check whether the key already exists.
          *
@@ -341,51 +335,48 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
          * The generated key is managed by Android Keystore rather
          * than being returned as ordinary exportable key bytes.
          */
-        val keyGenerator = KeyGenerator.getInstance(
-            KeyProperties.KEY_ALGORITHM_AES,
-            ANDROID_KEYSTORE
-        )
+        val keyGenerator =
+            KeyGenerator.getInstance(
+                KeyProperties.KEY_ALGORITHM_AES,
+                ANDROID_KEYSTORE,
+            )
 
         /**
          * Define exactly what the key may be used for.
          */
-        val keySpec = KeyGenParameterSpec.Builder(
-
-            // Name used to retrieve the key later.
-            WRAPPING_KEY_ALIAS,
-
-            /**
-             * Allow this key to:
-             *
-             * - encrypt
-             * - decrypt
-             */
-            KeyProperties.PURPOSE_ENCRYPT or
-                    KeyProperties.PURPOSE_DECRYPT
-        )
-
-            /**
-             * Use GCM mode.
-             *
-             * GCM provides authenticated encryption.
-             */
-            .setBlockModes(
-                KeyProperties.BLOCK_MODE_GCM
-            )
-
-            /**
-             * GCM does not use traditional block padding.
-             */
-            .setEncryptionPaddings(
-                KeyProperties.ENCRYPTION_PADDING_NONE
-            )
-
-            /**
-             * Request a 256-bit AES key.
-             */
-            .setKeySize(256)
-
-            .build()
+        val keySpec =
+            KeyGenParameterSpec
+                .Builder(
+                    // Name used to retrieve the key later.
+                    WRAPPING_KEY_ALIAS,
+                    /**
+                     * Allow this key to:
+                     *
+                     * - encrypt
+                     * - decrypt
+                     */
+                    KeyProperties.PURPOSE_ENCRYPT or
+                        KeyProperties.PURPOSE_DECRYPT,
+                )
+                /**
+                 * Use GCM mode.
+                 *
+                 * GCM provides authenticated encryption.
+                 */
+                .setBlockModes(
+                    KeyProperties.BLOCK_MODE_GCM,
+                )
+                /**
+                 * GCM does not use traditional block padding.
+                 */
+                .setEncryptionPaddings(
+                    KeyProperties.ENCRYPTION_PADDING_NONE,
+                )
+                /**
+                 * Request a 256-bit AES key.
+                 */
+                .setKeySize(256)
+                .build()
 
         /**
          * Configure the generator with our security requirements.
@@ -404,11 +395,11 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
      * Returns null if no key exists for the configured alias.
      */
     private fun getExistingWrappingKey(): SecretKey? {
-
-        val key = keyStore.getKey(
-            WRAPPING_KEY_ALIAS,
-            null
-        )
+        val key =
+            keyStore.getKey(
+                WRAPPING_KEY_ALIAS,
+                null,
+            )
 
         return key as? SecretKey
     }
@@ -420,9 +411,8 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
      */
     private fun encrypt(
         plainData: ByteArray,
-        wrappingKey: SecretKey
+        wrappingKey: SecretKey,
     ): EncryptedBlob {
-
         /**
          * Request AES encryption using:
          *
@@ -432,9 +422,10 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
          * +
          * no padding
          */
-        val cipher = Cipher.getInstance(
-            AES_GCM_TRANSFORMATION
-        )
+        val cipher =
+            Cipher.getInstance(
+                AES_GCM_TRANSFORMATION,
+            )
 
         /**
          * Initialize encryption.
@@ -443,7 +434,7 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
          */
         cipher.init(
             Cipher.ENCRYPT_MODE,
-            wrappingKey
+            wrappingKey,
         )
 
         /**
@@ -452,9 +443,10 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
          * AES-GCM also produces an authentication tag,
          * included in the resulting ciphertext representation.
          */
-        val cipherText = cipher.doFinal(
-            plainData
-        )
+        val cipherText =
+            cipher.doFinal(
+                plainData,
+            )
 
         /**
          * Return:
@@ -464,7 +456,7 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
          */
         return EncryptedBlob(
             cipherText = cipherText,
-            iv = cipher.iv
+            iv = cipher.iv,
         )
     }
 
@@ -474,22 +466,23 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
     private fun decrypt(
         cipherText: ByteArray,
         iv: ByteArray,
-        wrappingKey: SecretKey
+        wrappingKey: SecretKey,
     ): ByteArray {
-
-        val cipher = Cipher.getInstance(
-            AES_GCM_TRANSFORMATION
-        )
+        val cipher =
+            Cipher.getInstance(
+                AES_GCM_TRANSFORMATION,
+            )
 
         /**
          * Recreate the GCM parameters used for decryption.
          *
          * 128 = authentication tag length in bits.
          */
-        val parameterSpec = GCMParameterSpec(
-            GCM_TAG_LENGTH_BITS,
-            iv
-        )
+        val parameterSpec =
+            GCMParameterSpec(
+                GCM_TAG_LENGTH_BITS,
+                iv,
+            )
 
         /**
          * Initialize the cipher for decryption using:
@@ -500,7 +493,7 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
         cipher.init(
             Cipher.DECRYPT_MODE,
             wrappingKey,
-            parameterSpec
+            parameterSpec,
         )
 
         /**
@@ -511,7 +504,7 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
          * silently corrupted plaintext.
          */
         return cipher.doFinal(
-            cipherText
+            cipherText,
         )
     }
 
@@ -522,24 +515,20 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
      *
      * NO_WRAP avoids unnecessary line breaks.
      */
-    private fun ByteArray.toBase64(): String {
-
-        return Base64.encodeToString(
+    private fun ByteArray.toBase64(): String =
+        Base64.encodeToString(
             this,
-            Base64.NO_WRAP
+            Base64.NO_WRAP,
         )
-    }
 
     /**
      * Converts Base64 text back into its original binary bytes.
      */
-    private fun String.fromBase64(): ByteArray {
-
-        return Base64.decode(
+    private fun String.fromBase64(): ByteArray =
+        Base64.decode(
             this,
-            Base64.NO_WRAP
+            Base64.NO_WRAP,
         )
-    }
 
     /**
      * Small internal container for one AES-GCM encryption result.
@@ -554,7 +543,7 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
      */
     private data class EncryptedBlob(
         val cipherText: ByteArray,
-        val iv: ByteArray
+        val iv: ByteArray,
     ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -580,7 +569,6 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
      * security-sensitive strings throughout the class.
      */
     private companion object {
-
         /**
          * Name of Android's special KeyStore provider.
          */
@@ -629,9 +617,8 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
         const val SIGNING_PRIVATE_KEY_IV = "signing_private_key_iv"
     }
 
-    override suspend fun deleteIdentityPrivateKeys(): Result<Unit> {
-        return runCatching {
-
+    override suspend fun deleteIdentityPrivateKeys(): Result<Unit> =
+        runCatching {
             /**
              * Remove every encrypted private-key component.
              *
@@ -643,12 +630,14 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
              *
              * No plaintext private key is stored here.
              */
-            val deleted = preferences.edit()
-                .remove(ENCRYPTION_PRIVATE_KEY_CIPHERTEXT)
-                .remove(ENCRYPTION_PRIVATE_KEY_IV)
-                .remove(SIGNING_PRIVATE_KEY_CIPHERTEXT)
-                .remove(SIGNING_PRIVATE_KEY_IV)
-                .commit()
+            val deleted =
+                preferences
+                    .edit()
+                    .remove(ENCRYPTION_PRIVATE_KEY_CIPHERTEXT)
+                    .remove(ENCRYPTION_PRIVATE_KEY_IV)
+                    .remove(SIGNING_PRIVATE_KEY_CIPHERTEXT)
+                    .remove(SIGNING_PRIVATE_KEY_IV)
+                    .commit()
 
             /**
              * commit() returns false when persistence fails.
@@ -660,5 +649,4 @@ class AndroidPrivateKeyStorage(context: Context) : PrivateKeyStorage {
                 "Failed to delete encrypted identity private keys"
             }
         }
-    }
 }

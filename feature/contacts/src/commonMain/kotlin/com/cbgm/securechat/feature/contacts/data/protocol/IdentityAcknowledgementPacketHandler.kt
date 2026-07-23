@@ -13,24 +13,22 @@ class IdentityAcknowledgementPacketHandler(
     private val contactRepository: ContactRepository,
     private val contactKeyExchangeStore: ContactKeyExchangeStore,
     private val localPublicIdentityProvider: LocalPublicIdentityProvider,
-    private val identityAcknowledgementCrypto: IdentityAcknowledgementCrypto
+    private val identityAcknowledgementCrypto: IdentityAcknowledgementCrypto,
 ) : TypedProtocolPacketHandler {
-
-    override fun canHandle(packet: SecureChatPacket): Boolean {
-        return packet is IdentityAcknowledgementPacket
-    }
+    override fun canHandle(packet: SecureChatPacket): Boolean = packet is IdentityAcknowledgementPacket
 
     override suspend fun handle(
         context: IncomingPacketContext,
-        packet: SecureChatPacket
-    ): Result<Unit> {
+        packet: SecureChatPacket,
+    ): Result<Unit> =
+        runCatching {
+            val acknowledgement =
+                packet as? IdentityAcknowledgementPacket
+                    ?: error("IdentityAcknowledgementPacketHandler received an incompatible packet")
 
-        return runCatching {
-            val acknowledgement = packet as? IdentityAcknowledgementPacket
-                ?: error("IdentityAcknowledgementPacketHandler received an incompatible packet")
-
-            val contact = contactRepository.getContact(contactId = context.contactId).getOrThrow()
-                ?: error("Acknowledgement contact was not found")
+            val contact =
+                contactRepository.getContact(contactId = context.contactId).getOrThrow()
+                    ?: error("Acknowledgement contact was not found")
 
             val remoteIdentity =
                 contact.secureChatIdentity ?: error("Contact has no stored SecureChat identity")
@@ -66,28 +64,28 @@ class IdentityAcknowledgementPacketHandler(
              * Verify the signature using the contact's previously
              * stored signing key.
              */
-            identityAcknowledgementCrypto.verify(
-                acknowledgedEncryptionPublicKey = acknowledgement.acknowledgedEncryptionPublicKey,
-                acknowledgedSigningPublicKey = acknowledgement.acknowledgedSigningPublicKey,
-                senderSigningPublicKey = remoteIdentity.signingPublicKey,
-                signature = acknowledgement.signature
-            ).getOrThrow()
+            identityAcknowledgementCrypto
+                .verify(
+                    acknowledgedEncryptionPublicKey = acknowledgement.acknowledgedEncryptionPublicKey,
+                    acknowledgedSigningPublicKey = acknowledgement.acknowledgedSigningPublicKey,
+                    senderSigningPublicKey = remoteIdentity.signingPublicKey,
+                    signature = acknowledgement.signature,
+                ).getOrThrow()
 
             println("Identity acknowledgement verified: contactId=${context.contactId}")
-
 
             /*
              * The conditional DAO update additionally ensures that the
              * remote identity did not change while verification was in
              * progress.
              */
-            contactKeyExchangeStore.markMutual(
-                contactId = context.contactId,
-                expectedRemoteEncryptionPublicKey = remoteIdentity.encryptionPublicKey,
-                expectedRemoteSigningPublicKey = remoteIdentity.signingPublicKey
-            ).getOrThrow()
+            contactKeyExchangeStore
+                .markMutual(
+                    contactId = context.contactId,
+                    expectedRemoteEncryptionPublicKey = remoteIdentity.encryptionPublicKey,
+                    expectedRemoteSigningPublicKey = remoteIdentity.signingPublicKey,
+                ).getOrThrow()
 
             println("Contact marked MUTUAL: " + "contactId=${context.contactId}")
         }
-    }
 }

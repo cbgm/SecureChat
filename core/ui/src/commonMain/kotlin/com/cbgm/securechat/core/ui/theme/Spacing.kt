@@ -8,9 +8,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 data class Spacing(
-    val base: Dp = 8.dp
+    val base: Dp = 8.dp,
 ) {
     operator fun times(multiplier: Int): Dp = base * multiplier
+
     operator fun times(multiplier: Float): Dp = base * multiplier.toInt()
 
     val small = 16.dp
@@ -25,4 +26,3 @@ val MaterialTheme.spacing: Spacing
     @Composable
     @ReadOnlyComposable
     get() = LocalSpacing.current
-

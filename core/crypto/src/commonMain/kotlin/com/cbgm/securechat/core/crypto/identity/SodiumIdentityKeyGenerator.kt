@@ -5,11 +5,9 @@ import com.ionspin.kotlin.crypto.box.Box
 import com.ionspin.kotlin.crypto.signature.Signature
 
 class SodiumIdentityKeyGenerator : IdentityKeyGenerator {
-
     @OptIn(ExperimentalUnsignedTypes::class)
-    override suspend fun generate(): Result<IdentityKeyPair> {
-
-        return runCatching {
+    override suspend fun generate(): Result<IdentityKeyPair> =
+        runCatching {
             SodiumRuntime.initialize().getOrThrow()
 
             val encryptionKeyPair = Box.keypair()
@@ -20,8 +18,7 @@ class SodiumIdentityKeyGenerator : IdentityKeyGenerator {
                 encryptionPublicKey = encryptionKeyPair.publicKey,
                 encryptionPrivateKey = encryptionKeyPair.secretKey,
                 signingPublicKey = signingKeyPair.publicKey,
-                signingPrivateKey = signingKeyPair.secretKey
+                signingPrivateKey = signingKeyPair.secretKey,
             )
         }
-    }
 }

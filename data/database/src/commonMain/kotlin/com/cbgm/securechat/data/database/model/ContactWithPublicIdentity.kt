@@ -9,16 +9,14 @@ import com.cbgm.securechat.data.database.entity.ContactPublicIdentityEntity
 data class ContactWithPublicIdentity(
     @Embedded
     val contact: ContactEntity,
-
     @Relation(
         parentColumn = "id",
-        entityColumn = "contactId"
+        entityColumn = "contactId",
     )
     val publicIdentity: ContactPublicIdentityEntity?,
-
     @Relation(
         parentColumn = "id",
-        entityColumn = "contactId"
+        entityColumn = "contactId",
     )
-    val phoneNumbers: List<ContactPhoneNumberEntity>
+    val phoneNumbers: List<ContactPhoneNumberEntity>,
 )

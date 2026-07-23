@@ -1,13 +1,11 @@
 package com.cbgm.securechat.core.crypto.identity
 
 class IdentityAcknowledgementPayloadEncoder {
-
     fun encode(
         acknowledgedEncryptionPublicKey: ByteArray,
         acknowledgedSigningPublicKey: ByteArray,
-        senderSigningPublicKey: ByteArray
+        senderSigningPublicKey: ByteArray,
     ): ByteArray {
-
         require(acknowledgedEncryptionPublicKey.isNotEmpty()) {
             "Acknowledged encryption key must not be empty"
         }
@@ -33,17 +31,13 @@ class IdentityAcknowledgementPayloadEncoder {
         }.toByteArray()
     }
 
-    private fun MutableList<Byte>.addBytes(
-        value: ByteArray
-    ) {
+    private fun MutableList<Byte>.addBytes(value: ByteArray) {
         addInt(value.size)
 
         addAll(value.asList())
     }
 
-    private fun MutableList<Byte>.addInt(
-        value: Int
-    ) {
+    private fun MutableList<Byte>.addInt(value: Int) {
         add(((value ushr 24) and 0xFF).toByte())
 
         add(((value ushr 16) and 0xFF).toByte())

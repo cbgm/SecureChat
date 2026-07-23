@@ -36,24 +36,25 @@ fun SecureChatLazyScaffold(
     floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (
         innerPadding: PaddingValues,
-        listState: LazyListState
-    ) -> Unit
+        listState: LazyListState,
+    ) -> Unit,
 ) {
     val listState = rememberLazyListState()
 
-    val barsState = rememberBarsState(
-        state = listState,
-        fadedAlpha = fadedAlpha
-    )
+    val barsState =
+        rememberBarsState(
+            state = listState,
+            fadedAlpha = fadedAlpha,
+        )
 
     val topBarColor by animateColorAsState(
         targetValue = barColor.copy(alpha = barsState.topBarAlpha),
-        label = "SecureChatTopBarColor"
+        label = "SecureChatTopBarColor",
     )
 
     val bottomBarColor by animateColorAsState(
         targetValue = barColor.copy(alpha = barsState.bottomBarAlpha),
-        label = "SecureChatBottomBarColor"
+        label = "SecureChatBottomBarColor",
     )
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -74,16 +75,15 @@ fun SecureChatLazyScaffold(
                 snackbarHostState?.let { state ->
                     SnackbarHost(hostState = state)
                 }
-            }
+            },
         ) { innerPadding ->
             content(
                 innerPadding,
-                listState
+                listState,
             )
         }
     }
 }
-
 
 @Composable
 fun SecureChatScrollScaffold(
@@ -96,28 +96,28 @@ fun SecureChatScrollScaffold(
     bottomBar: @Composable (Color) -> Unit = {},
     content: @Composable (
         innerPadding: PaddingValues,
-        scrollState: ScrollState
-    ) -> Unit
+        scrollState: ScrollState,
+    ) -> Unit,
 ) {
     val scrollState = rememberScrollState()
 
-    val barsState = rememberBarsState(
-        state = scrollState,
-        fadedAlpha = fadedAlpha
-    )
+    val barsState =
+        rememberBarsState(
+            state = scrollState,
+            fadedAlpha = fadedAlpha,
+        )
 
     val topBarColor by animateColorAsState(
         targetValue = barColor.copy(alpha = barsState.topBarAlpha),
-        label = "SecureChatTopBarColor"
+        label = "SecureChatTopBarColor",
     )
 
     val bottomBarColor by animateColorAsState(
         targetValue = barColor.copy(alpha = barsState.bottomBarAlpha),
-        label = "SecureChatBottomBarColor"
+        label = "SecureChatBottomBarColor",
     )
 
     Box(modifier = modifier.fillMaxSize()) {
-
         background()
 
         Scaffold(
@@ -128,11 +128,11 @@ fun SecureChatScrollScaffold(
             },
             bottomBar = {
                 bottomBar(bottomBarColor)
-            }
+            },
         ) { innerPadding ->
             content(
                 innerPadding,
-                scrollState
+                scrollState,
             )
         }
     }
@@ -145,10 +145,9 @@ fun SecureChatStaticScaffold(
     background: @Composable () -> Unit = {},
     topBar: @Composable () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
-    content: @Composable (PaddingValues) -> Unit
+    content: @Composable (PaddingValues) -> Unit,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-
         background()
 
         Scaffold(
@@ -156,23 +155,22 @@ fun SecureChatStaticScaffold(
             containerColor = containerColor,
             topBar = topBar,
             bottomBar = bottomBar,
-            content = content
+            content = content,
         )
     }
 }
-
 
 @Stable
 data class SecureChatMainScrollStates(
     val chats: LazyListState,
     val identity: ScrollState,
-    val settings: ScrollState
+    val settings: ScrollState,
 )
 
 enum class SecureChatMainScrollTarget {
     Chats,
     Identity,
-    Settings
+    Settings,
 }
 
 @Composable
@@ -189,37 +187,39 @@ fun SecureChatTabbedScaffold(
     floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (
         innerPadding: PaddingValues,
-        scrollStates: SecureChatMainScrollStates
-    ) -> Unit
+        scrollStates: SecureChatMainScrollStates,
+    ) -> Unit,
 ) {
-    val scrollStates = SecureChatMainScrollStates(
-        chats = rememberLazyListState(),
-        identity = rememberScrollState(),
-        settings = rememberScrollState()
-    )
+    val scrollStates =
+        SecureChatMainScrollStates(
+            chats = rememberLazyListState(),
+            identity = rememberScrollState(),
+            settings = rememberScrollState(),
+        )
 
-    val barsState = when (selectedScrollTarget) {
-        SecureChatMainScrollTarget.Chats -> {
-            rememberBarsState(
-                state = scrollStates.chats,
-                fadedAlpha = fadedAlpha
-            )
-        }
+    val barsState =
+        when (selectedScrollTarget) {
+            SecureChatMainScrollTarget.Chats -> {
+                rememberBarsState(
+                    state = scrollStates.chats,
+                    fadedAlpha = fadedAlpha,
+                )
+            }
 
-        SecureChatMainScrollTarget.Identity -> {
-            rememberBarsState(
-                state = scrollStates.identity,
-                fadedAlpha = fadedAlpha
-            )
-        }
+            SecureChatMainScrollTarget.Identity -> {
+                rememberBarsState(
+                    state = scrollStates.identity,
+                    fadedAlpha = fadedAlpha,
+                )
+            }
 
-        SecureChatMainScrollTarget.Settings -> {
-            rememberBarsState(
-                state = scrollStates.settings,
-                fadedAlpha = fadedAlpha
-            )
+            SecureChatMainScrollTarget.Settings -> {
+                rememberBarsState(
+                    state = scrollStates.settings,
+                    fadedAlpha = fadedAlpha,
+                )
+            }
         }
-    }
 
     SecureChatTabbedScaffoldContent(
         barsState = barsState,
@@ -230,11 +230,11 @@ fun SecureChatTabbedScaffold(
         background = background,
         topBar = topBar,
         bottomBar = bottomBar,
-        floatingActionButton = floatingActionButton
+        floatingActionButton = floatingActionButton,
     ) { innerPadding ->
         content(
             innerPadding,
-            scrollStates
+            scrollStates,
         )
     }
 }
@@ -244,26 +244,26 @@ private fun SecureChatTabbedScaffoldContent(
     barsState: BarsState,
     barColor: Color,
     containerColor: Color,
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
     floatingActionButtonPosition: FabPosition,
     background: @Composable BoxScope.() -> Unit,
     topBar: @Composable (containerColor: Color) -> Unit,
     bottomBar: @Composable (containerColor: Color) -> Unit,
     floatingActionButton: @Composable () -> Unit,
-    content: @Composable (PaddingValues) -> Unit
+    content: @Composable (PaddingValues) -> Unit,
 ) {
     val topBarColor by animateColorAsState(
         targetValue = barColor.copy(alpha = barsState.topBarAlpha),
-        label = "SecureChatTabbedTopBarColor"
+        label = "SecureChatTabbedTopBarColor",
     )
 
     val bottomBarColor by animateColorAsState(
         targetValue = barColor.copy(alpha = barsState.bottomBarAlpha),
-        label = "SecureChatTabbedBottomBarColor"
+        label = "SecureChatTabbedBottomBarColor",
     )
 
     Box(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
     ) {
         background()
 
@@ -278,7 +278,7 @@ private fun SecureChatTabbedScaffoldContent(
             },
             floatingActionButton = floatingActionButton,
             floatingActionButtonPosition = floatingActionButtonPosition,
-            content = content
+            content = content,
         )
     }
 }

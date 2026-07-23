@@ -9,12 +9,7 @@ import com.cbgm.securechat.feature.identity.domain.model.SharedIdentityPayload
  * - portable text suitable for QR codes and SMS
  */
 interface IdentityShareCodec {
+    fun encode(payload: SharedIdentityPayload): Result<String>
 
-    fun encode(
-        payload: SharedIdentityPayload
-    ): Result<String>
-
-    fun decode(
-        encodedValue: String
-    ): Result<SharedIdentityPayload>
+    fun decode(encodedValue: String): Result<SharedIdentityPayload>
 }

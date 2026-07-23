@@ -9,14 +9,12 @@ import kotlinx.serialization.Serializable
 data class ReadReceiptPacket(
     override val packetId: String,
     override val version: Int = ProtocolVersion.CURRENT,
-
     /**
      * ChatMessagePacket.messageId that was read.
      */
     val messageId: String,
-    val readAtEpochMilliseconds: Long
+    val readAtEpochMilliseconds: Long,
 ) : SecureChatPacket {
-
     init {
         require(packetId.isNotBlank()) {
             "Packet ID must not be blank"

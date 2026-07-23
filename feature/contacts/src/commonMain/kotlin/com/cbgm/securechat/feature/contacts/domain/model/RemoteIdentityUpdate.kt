@@ -6,11 +6,9 @@ data class RemoteIdentityUpdate(
     val signingPublicKey: ByteArray,
     val keyExchangeStatus: KeyExchangeStatus,
     val verificationStatus: ContactVerificationStatus,
-    val identityChanged: Boolean
+    val identityChanged: Boolean,
 ) {
-    override fun equals(
-        other: Any?
-    ): Boolean {
+    override fun equals(other: Any?): Boolean {
         if (this === other) {
             return true
         }
@@ -20,18 +18,18 @@ data class RemoteIdentityUpdate(
         }
 
         return contactId == other.contactId &&
-                encryptionPublicKey.contentEquals(
-                    other.encryptionPublicKey
-                ) &&
-                signingPublicKey.contentEquals(
-                    other.signingPublicKey
-                ) &&
-                keyExchangeStatus ==
-                other.keyExchangeStatus &&
-                verificationStatus ==
-                other.verificationStatus &&
-                identityChanged ==
-                other.identityChanged
+            encryptionPublicKey.contentEquals(
+                other.encryptionPublicKey,
+            ) &&
+            signingPublicKey.contentEquals(
+                other.signingPublicKey,
+            ) &&
+            keyExchangeStatus ==
+            other.keyExchangeStatus &&
+            verificationStatus ==
+            other.verificationStatus &&
+            identityChanged ==
+            other.identityChanged
     }
 
     override fun hashCode(): Int {

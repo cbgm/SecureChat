@@ -4,5 +4,5 @@ data class ContactPhoneNumber(
     val id: String,
     val value: String,
     val type: ContactPhoneNumberType,
-    val label: String?
+    val label: String?,
 )

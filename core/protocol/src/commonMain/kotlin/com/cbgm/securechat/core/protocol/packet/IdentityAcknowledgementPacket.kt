@@ -10,20 +10,15 @@ import kotlinx.serialization.Serializable
 data class IdentityAcknowledgementPacket(
     override val packetId: String,
     override val version: Int = ProtocolVersion.CURRENT,
-
     @Serializable(with = ByteArrayAsBase64Serializer::class)
     val senderSigningPublicKey: ByteArray,
-
     @Serializable(with = ByteArrayAsBase64Serializer::class)
     val acknowledgedEncryptionPublicKey: ByteArray,
-
     @Serializable(with = ByteArrayAsBase64Serializer::class)
     val acknowledgedSigningPublicKey: ByteArray,
-
     @Serializable(with = ByteArrayAsBase64Serializer::class)
-    val signature: ByteArray
+    val signature: ByteArray,
 ) : SecureChatPacket {
-
     init {
         require(packetId.isNotBlank()) {
             "Packet ID must not be blank"
@@ -50,20 +45,18 @@ data class IdentityAcknowledgementPacket(
         }
     }
 
-    override fun equals(
-        other: Any?
-    ): Boolean {
+    override fun equals(other: Any?): Boolean {
         if (this === other) return true
 
         if (other !is IdentityAcknowledgementPacket) return false
 
         return packetId ==
-                other.packetId &&
-                version == other.version &&
-                senderSigningPublicKey.contentEquals(other.senderSigningPublicKey) &&
-                acknowledgedEncryptionPublicKey.contentEquals(other.acknowledgedEncryptionPublicKey) &&
-                acknowledgedSigningPublicKey.contentEquals(other.acknowledgedSigningPublicKey) &&
-                signature.contentEquals(other.signature)
+            other.packetId &&
+            version == other.version &&
+            senderSigningPublicKey.contentEquals(other.senderSigningPublicKey) &&
+            acknowledgedEncryptionPublicKey.contentEquals(other.acknowledgedEncryptionPublicKey) &&
+            acknowledgedSigningPublicKey.contentEquals(other.acknowledgedSigningPublicKey) &&
+            signature.contentEquals(other.signature)
     }
 
     override fun hashCode(): Int {

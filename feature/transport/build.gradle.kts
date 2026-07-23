@@ -1,9 +1,10 @@
-val isMacOs = System
-    .getProperty("os.name")
-    .startsWith(
-        prefix = "Mac",
-        ignoreCase = true
-    )
+val isMacOs =
+    System
+        .getProperty("os.name")
+        .startsWith(
+            prefix = "Mac",
+            ignoreCase = true,
+        )
 
 plugins {
     alias(libs.plugins.securechat.kmp.serialization)

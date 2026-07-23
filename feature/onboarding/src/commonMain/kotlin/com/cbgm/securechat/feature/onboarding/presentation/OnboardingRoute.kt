@@ -23,7 +23,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun OnboardingRoute(
     onComplete: () -> Unit,
     viewModel: OnboardingViewModel = koinViewModel(),
-    identityViewModel: IdentityViewModel = koinViewModel()
+    identityViewModel: IdentityViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val identityState by identityViewModel.uiState.collectAsStateWithLifecycle()
@@ -31,7 +31,7 @@ fun OnboardingRoute(
 
     OnboardingPermissionRequester(
         requestId = state.permissionRequestId,
-        onResult = viewModel::onPermissionsResult
+        onResult = viewModel::onPermissionsResult,
     )
 
     AutomaticPhoneNumberReader(
@@ -45,7 +45,7 @@ fun OnboardingRoute(
                 is AutomaticPhoneNumberResult.Failed ->
                     identityViewModel.onPhoneNumberHintFailed(result.message)
             }
-        }
+        },
     )
 
     PhoneNumberHintLauncher(
@@ -61,7 +61,7 @@ fun OnboardingRoute(
                 is PhoneNumberHintResult.Failed ->
                     identityViewModel.onPhoneNumberHintFailed(result.message)
             }
-        }
+        },
     )
 
     LaunchedEffect(identityState) {
@@ -81,6 +81,6 @@ fun OnboardingRoute(
         onRetryAutomaticNumber = viewModel::retryAutomaticPhoneNumber,
         onPhoneNumberChanged = identityViewModel::onPhoneNumberChanged,
         onApproveAndCreate = identityViewModel::createNewIdentity,
-        onNameChanged = identityViewModel::onNameChanged
+        onNameChanged = identityViewModel::onNameChanged,
     )
 }

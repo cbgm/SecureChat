@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm")
-    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.serialization.classpath)
+    alias(libs.plugins.securechat.lint)
     application
 }
 
@@ -10,7 +11,7 @@ kotlin {
 
 application {
     mainClass.set(
-        "com.cbgm.securechat.relay.ApplicationKt"
+        "com.cbgm.securechat.relay.ApplicationKt",
     )
 }
 

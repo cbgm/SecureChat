@@ -66,7 +66,7 @@ fun ShareIdentityScreen(
     onBack: () -> Unit,
     onShareIdentity: () -> Unit,
     modifier: Modifier = Modifier,
-    showBackButton: Boolean = true
+    showBackButton: Boolean = true,
 ) {
     var showOverflowMenu by remember {
         mutableStateOf(false)
@@ -92,33 +92,33 @@ fun ShareIdentityScreen(
                 },
                 onShowRawIdentityChange = {
                     showRawIdentity = it
-                }
+                },
             )
-        }
+        },
     ) { innerPadding, scrollState ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(
-                    top = innerPadding.calculateTopPadding(),
-                    bottom = innerPadding.calculateBottomPadding(),
-                    start = MaterialTheme.spacing.screenPadding,
-                    end = MaterialTheme.spacing.screenPadding
-                )
-                .padding(vertical = MaterialTheme.spacing.medium),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(
+                        top = innerPadding.calculateTopPadding(),
+                        bottom = innerPadding.calculateBottomPadding(),
+                        start = MaterialTheme.spacing.screenPadding,
+                        end = MaterialTheme.spacing.screenPadding,
+                    ).padding(vertical = MaterialTheme.spacing.medium),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (uiState.encodedIdentity.isNullOrBlank()) {
                 IdentityOptionsContent(
                     uiState = uiState,
-                    onGenerateClick = onGenerateClick
+                    onGenerateClick = onGenerateClick,
                 )
             } else {
                 GeneratedIdentityContent(
                     encodedIdentity = uiState.encodedIdentity,
                     showRawIdentity = showRawIdentity,
-                    onShareIdentity = onShareIdentity
+                    onShareIdentity = onShareIdentity,
                 )
             }
 
@@ -129,7 +129,7 @@ fun ShareIdentityScreen(
                     text = message,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
             }
         }
@@ -146,21 +146,22 @@ private fun ShareIdentityTopBar(
     showRawIdentity: Boolean,
     onBack: () -> Unit,
     onShowOverflowMenuChange: (Boolean) -> Unit,
-    onShowRawIdentityChange: (Boolean) -> Unit
+    onShowRawIdentityChange: (Boolean) -> Unit,
 ) {
     TopAppBar(
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = containerColor,
-            scrolledContainerColor = containerColor,
-            titleContentColor = MaterialTheme.colorScheme.onBackground,
-            navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
-            actionIconContentColor = MaterialTheme.colorScheme.onBackground
-        ),
+        colors =
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = containerColor,
+                scrolledContainerColor = containerColor,
+                titleContentColor = MaterialTheme.colorScheme.onBackground,
+                navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+            ),
         title = {
             Text(
                 text = "Share identity",
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
         },
         navigationIcon = {
@@ -168,7 +169,7 @@ private fun ShareIdentityTopBar(
                 IconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
+                        contentDescription = "Back",
                     )
                 }
             }
@@ -179,11 +180,11 @@ private fun ShareIdentityTopBar(
                     IconButton(
                         onClick = {
                             onShowOverflowMenuChange(true)
-                        }
+                        },
                     ) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
-                            contentDescription = "More options"
+                            contentDescription = "More options",
                         )
                     }
 
@@ -192,70 +193,72 @@ private fun ShareIdentityTopBar(
                         onDismissRequest = {
                             onShowOverflowMenuChange(false)
                         },
-                        modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer)
+                        modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer),
                     ) {
                         DropdownMenuItem(
                             text = {
                                 Text(
-                                    text = if (showRawIdentity) {
-                                        "Hide raw identity"
-                                    } else {
-                                        "Show raw identity"
-                                    },
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    text =
+                                        if (showRawIdentity) {
+                                            "Hide raw identity"
+                                        } else {
+                                            "Show raw identity"
+                                        },
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             },
                             leadingIcon = {
                                 Icon(
-                                    imageVector = if (showRawIdentity) {
-                                        Icons.Default.VisibilityOff
-                                    } else {
-                                        Icons.Default.Visibility
-                                    },
+                                    imageVector =
+                                        if (showRawIdentity) {
+                                            Icons.Default.VisibilityOff
+                                        } else {
+                                            Icons.Default.Visibility
+                                        },
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             },
                             onClick = {
                                 onShowOverflowMenuChange(false)
                                 onShowRawIdentityChange(
-                                    !showRawIdentity
+                                    !showRawIdentity,
                                 )
-                            }
+                            },
                         )
                     }
                 }
             }
-        }
+        },
     )
 }
 
 @Composable
 private fun IdentityOptionsContent(
     uiState: ShareIdentityUiState,
-    onGenerateClick: () -> Unit
+    onGenerateClick: () -> Unit,
 ) {
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
     Box(
-        modifier = Modifier
-            .size(88.dp)
-            .background(
-                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
-                shape = CircleShape
-            )
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
-                shape = CircleShape
-            ),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .size(88.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
+                    shape = CircleShape,
+                ).border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
+                    shape = CircleShape,
+                ),
+        contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = Icons.Default.QrCode2,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier.size(40.dp),
         )
     }
 
@@ -265,7 +268,7 @@ private fun IdentityOptionsContent(
         text = "Create a QR code containing your SecureChat public identity.",
         style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.SemiBold,
-        textAlign = TextAlign.Center
+        textAlign = TextAlign.Center,
     )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
@@ -274,7 +277,7 @@ private fun IdentityOptionsContent(
         text = "Your public encryption and signing keys are always included. Your private keys never leave this device.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-        textAlign = TextAlign.Center
+        textAlign = TextAlign.Center,
     )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
@@ -286,20 +289,21 @@ private fun IdentityOptionsContent(
     SecureChatApprovalButton(
         onClick = onGenerateClick,
         enabled = !uiState.isGenerating,
-        text = if (uiState.isGenerating) {
-            ""
-        } else {
-            "Create QR code"
-        },
+        text =
+            if (uiState.isGenerating) {
+                ""
+            } else {
+                "Create QR code"
+            },
         content = {
             if (uiState.isGenerating) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.background
+                    color = MaterialTheme.colorScheme.background,
                 )
             }
-        }
+        },
     )
 }
 
@@ -307,7 +311,7 @@ private fun IdentityOptionsContent(
 private fun GeneratedIdentityContent(
     encodedIdentity: String,
     showRawIdentity: Boolean,
-    onShareIdentity: () -> Unit
+    onShareIdentity: () -> Unit,
 ) {
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
@@ -315,7 +319,7 @@ private fun GeneratedIdentityContent(
         text = "Your SecureChat identity",
         style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.SemiBold,
-        textAlign = TextAlign.Center
+        textAlign = TextAlign.Center,
     )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
@@ -324,7 +328,7 @@ private fun GeneratedIdentityContent(
         text = "Another SecureChat user can scan this QR code to add you.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-        textAlign = TextAlign.Center
+        textAlign = TextAlign.Center,
     )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.large))
@@ -332,24 +336,23 @@ private fun GeneratedIdentityContent(
     SecureChatCard {
         Column(
             modifier = Modifier.padding(MaterialTheme.spacing.large),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(
-                modifier = Modifier
-                    .background(
-                        color = Color.White,
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                    .padding(16.dp)
+                modifier =
+                    Modifier
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(16.dp),
+                        ).border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(16.dp),
+                        ).padding(16.dp),
             ) {
                 QrCode(
                     content = encodedIdentity,
-                    modifier = Modifier.size(240.dp)
+                    modifier = Modifier.size(240.dp),
                 )
             }
 
@@ -359,21 +362,22 @@ private fun GeneratedIdentityContent(
                 onClick = onShareIdentity,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = MaterialTheme.colorScheme.background
-                )
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.background,
+                    ),
             ) {
                 Icon(
                     imageVector = Icons.Default.Share,
-                    contentDescription = null
+                    contentDescription = null,
                 )
 
                 Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
 
                 Text(
                     text = "Share identity",
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
         }
@@ -382,7 +386,7 @@ private fun GeneratedIdentityContent(
     AnimatedVisibility(
         visible = showRawIdentity,
         enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()
+        exit = fadeOut() + shrinkVertically(),
     ) {
         Column {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
@@ -392,25 +396,25 @@ private fun GeneratedIdentityContent(
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    .padding(MaterialTheme.spacing.medium)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(12.dp),
+                        ).padding(MaterialTheme.spacing.medium),
             ) {
                 Text(
                     text = encodedIdentity,
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f)
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
                 )
             }
         }
@@ -425,7 +429,7 @@ private fun ShareIdentityScreenPreview() {
             uiState = ShareIdentityUiState(encodedIdentity = "test identity"),
             onGenerateClick = {},
             onBack = {},
-            onShareIdentity = {}
+            onShareIdentity = {},
         )
     }
 }

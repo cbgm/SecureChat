@@ -21,16 +21,13 @@ import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.startup
 import org.jetbrains.compose.resources.painterResource
 
-
 @Composable
-fun StartupArtwork(
-    modifier: Modifier = Modifier
-) {
+fun StartupArtwork(modifier: Modifier = Modifier) {
     Image(
         painter = painterResource(resource = Res.drawable.startup),
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
@@ -43,42 +40,56 @@ fun PulsingLogo(modifier: Modifier = Modifier) {
     }
 
     val entranceScale by animateFloatAsState(
-        targetValue = if (animationStarted) { 1f } else { 0.88f },
-        animationSpec = tween(
-            durationMillis = 700,
-            easing = FastOutSlowInEasing
-        ),
-        label = "startupEntranceScale"
+        targetValue =
+            if (animationStarted) {
+                1f
+            } else {
+                0.88f
+            },
+        animationSpec =
+            tween(
+                durationMillis = 700,
+                easing = FastOutSlowInEasing,
+            ),
+        label = "startupEntranceScale",
     )
 
     val entranceAlpha by animateFloatAsState(
-        targetValue = if (animationStarted) { 1f } else { 0f },
+        targetValue =
+            if (animationStarted) {
+                1f
+            } else {
+                0f
+            },
         animationSpec = tween(durationMillis = 600),
-        label = "startupEntranceAlpha"
+        label = "startupEntranceAlpha",
     )
 
     val infiniteTransition = rememberInfiniteTransition(label = "startupPulse")
 
     val pulseScale by
-    infiniteTransition.animateFloat(
-        initialValue = 0.992f,
-        targetValue = 1.012f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 2_300,
-                easing = FastOutSlowInEasing
-            ),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "startupPulseScale"
-    )
+        infiniteTransition.animateFloat(
+            initialValue = 0.992f,
+            targetValue = 1.012f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation =
+                        tween(
+                            durationMillis = 2_300,
+                            easing = FastOutSlowInEasing,
+                        ),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "startupPulseScale",
+        )
 
     StartupArtwork(
-        modifier = modifier
-            .graphicsLayer {
-                alpha = entranceAlpha
-                scaleX = entranceScale * pulseScale
-                scaleY = entranceScale * pulseScale
-            }
+        modifier =
+            modifier
+                .graphicsLayer {
+                    alpha = entranceAlpha
+                    scaleX = entranceScale * pulseScale
+                    scaleY = entranceScale * pulseScale
+                },
     )
 }

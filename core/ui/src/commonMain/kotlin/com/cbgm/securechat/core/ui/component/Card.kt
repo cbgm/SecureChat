@@ -21,9 +21,8 @@ import androidx.compose.ui.unit.dp
 fun SecureChatCard(
     modifier: Modifier = Modifier,
     isFadingEnabled: Boolean = false,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
-
     var animationStarted by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -31,45 +30,47 @@ fun SecureChatCard(
     }
 
     val cardAlpha by animateFloatAsState(
-        targetValue = if (animationStarted) {
-            1f
-        } else {
-            0f
-        },
+        targetValue =
+            if (animationStarted) {
+                1f
+            } else {
+                0f
+            },
         animationSpec = tween(durationMillis = 500, delayMillis = 260),
-        label = "startupCardAlpha"
+        label = "startupCardAlpha",
     )
 
     val cardTranslation by animateFloatAsState(
-        targetValue = if (animationStarted) {
-            0f
-        } else {
-            42f
-        },
-        animationSpec = tween(
-            durationMillis = 650,
-            delayMillis = 180,
-            easing = FastOutSlowInEasing
-        ),
-        label = "startupCardTranslation"
+        targetValue =
+            if (animationStarted) {
+                0f
+            } else {
+                42f
+            },
+        animationSpec =
+            tween(
+                durationMillis = 650,
+                delayMillis = 180,
+                easing = FastOutSlowInEasing,
+            ),
+        label = "startupCardTranslation",
     )
 
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(bottom = 30.dp)//FOR SHADOW!!
-            .graphicsLayer {
-                if (isFadingEnabled) {
-                    alpha = cardAlpha
-                    translationY = cardTranslation
-                }
-            },
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(bottom = 30.dp) // FOR SHADOW!!
+                .graphicsLayer {
+                    if (isFadingEnabled) {
+                        alpha = cardAlpha
+                        translationY = cardTranslation
+                    }
+                },
         color = MaterialTheme.colorScheme.primaryContainer,
         shape = MaterialTheme.shapes.extraLarge,
         tonalElevation = 8.dp,
         shadowElevation = 12.dp,
-        content = content
+        content = content,
     )
 }
-
-

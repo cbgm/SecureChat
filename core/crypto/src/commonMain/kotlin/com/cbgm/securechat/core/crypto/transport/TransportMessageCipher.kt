@@ -1,7 +1,6 @@
 package com.cbgm.securechat.core.crypto.transport
 
 interface TransportMessageCipher {
-
     /**
      * Encrypts a message for the owner of recipientPublicKey.
      *
@@ -9,7 +8,7 @@ interface TransportMessageCipher {
      */
     suspend fun encryptForRecipient(
         plaintext: ByteArray,
-        recipientPublicKey: ByteArray
+        recipientPublicKey: ByteArray,
     ): Result<EncryptedTransportPayload>
 
     /**
@@ -18,6 +17,6 @@ interface TransportMessageCipher {
     suspend fun decryptFromSender(
         encryptedPayload: EncryptedTransportPayload,
         localPublicKey: ByteArray,
-        localPrivateKey: ByteArray
+        localPrivateKey: ByteArray,
     ): Result<ByteArray>
 }

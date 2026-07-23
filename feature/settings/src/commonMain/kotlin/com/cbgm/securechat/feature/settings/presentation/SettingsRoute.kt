@@ -22,7 +22,7 @@ fun SettingsRoute(
     onNavigateToDataDisclaimer: () -> Unit,
     onNavigateToLicenses: () -> Unit,
     onNavigateToDeveloperMenu: () -> Unit,
-    viewModel: SettingsViewModel = koinViewModel()
+    viewModel: SettingsViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -48,6 +48,6 @@ fun SettingsRoute(
         onVersionRowTapped = viewModel::onVersionRowTapped,
         scrollState = scrollState,
         innerPadding = innerPadding,
-        modifier = modifier
+        modifier = modifier,
     )
 }

@@ -11,47 +11,42 @@ import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.model.SecureChatIdentity
 
-fun ContactWithPublicIdentity.toDomain(): Contact {
-    return Contact(
+fun ContactWithPublicIdentity.toDomain(): Contact =
+    Contact(
         id = contact.id,
         displayName = contact.displayName,
-        phoneNumbers = phoneNumbers.map { phoneNumber ->
-            phoneNumber.toDomain()
-        },
+        phoneNumbers =
+            phoneNumbers.map { phoneNumber ->
+                phoneNumber.toDomain()
+            },
         preferredPhoneNumberId = contact.preferredPhoneNumberId,
         deviceContactId =
             contact.deviceContactId,
         deviceContactLinkStatus = contact.deviceContactLinkStatus.toDeviceContactLinkStatus(),
         secureChatIdentity = publicIdentity?.toDomain(),
         createdAtEpochMilliseconds = contact.createdAtEpochMilliseconds,
-        updatedAtEpochMilliseconds = contact.updatedAtEpochMilliseconds
+        updatedAtEpochMilliseconds = contact.updatedAtEpochMilliseconds,
     )
-}
 
-private fun ContactPhoneNumberEntity.toDomain(): ContactPhoneNumber {
-
-    return ContactPhoneNumber(
+private fun ContactPhoneNumberEntity.toDomain(): ContactPhoneNumber =
+    ContactPhoneNumber(
         id = id,
         value = value,
         type = type.toContactPhoneNumberType(),
-        label = label
+        label = label,
     )
-}
 
-private fun ContactPublicIdentityEntity.toDomain(): SecureChatIdentity {
-
-    return SecureChatIdentity(
+private fun ContactPublicIdentityEntity.toDomain(): SecureChatIdentity =
+    SecureChatIdentity(
         encryptionPublicKey = encryptionPublicKey.copyOf(),
         signingPublicKey = signingPublicKey.copyOf(),
         verificationStatus = verificationStatus.toContactVerificationStatus(),
         keyExchangeStatus = keyExchangeStatus.toKeyExchangeStatus(),
-        updatedAtEpochMilliseconds = updatedAtEpochMilliseconds
+        updatedAtEpochMilliseconds = updatedAtEpochMilliseconds,
     )
-}
 
-private fun String.toContactPhoneNumberType(): ContactPhoneNumberType {
-
-    return when (this) {
+private fun String.toContactPhoneNumberType(): ContactPhoneNumberType =
+    when (this) {
         ContactPhoneNumberType.MOBILE.name ->
             ContactPhoneNumberType.MOBILE
 
@@ -76,11 +71,9 @@ private fun String.toContactPhoneNumberType(): ContactPhoneNumberType {
         else ->
             error("Unknown contact phone-number type: $this")
     }
-}
 
-private fun String.toDeviceContactLinkStatus(): DeviceContactLinkStatus {
-
-    return when (this) {
+private fun String.toDeviceContactLinkStatus(): DeviceContactLinkStatus =
+    when (this) {
         DeviceContactLinkStatus.NOT_LINKED.name ->
             DeviceContactLinkStatus.NOT_LINKED
 
@@ -93,11 +86,9 @@ private fun String.toDeviceContactLinkStatus(): DeviceContactLinkStatus {
         else ->
             error("Unknown device-contact link status: $this")
     }
-}
 
-private fun String.toContactVerificationStatus(): ContactVerificationStatus {
-
-    return when (this) {
+private fun String.toContactVerificationStatus(): ContactVerificationStatus =
+    when (this) {
         ContactVerificationStatus.UNVERIFIED.name ->
             ContactVerificationStatus.UNVERIFIED
 
@@ -107,11 +98,9 @@ private fun String.toContactVerificationStatus(): ContactVerificationStatus {
         else ->
             error("Unknown verification status: $this")
     }
-}
 
-private fun String.toKeyExchangeStatus(): KeyExchangeStatus {
-
-    return when (this) {
+private fun String.toKeyExchangeStatus(): KeyExchangeStatus =
+    when (this) {
         KeyExchangeStatus.ONE_WAY.name ->
             KeyExchangeStatus.ONE_WAY
 
@@ -121,4 +110,3 @@ private fun String.toKeyExchangeStatus(): KeyExchangeStatus {
         else ->
             error("Unknown key-exchange status: $this")
     }
-}

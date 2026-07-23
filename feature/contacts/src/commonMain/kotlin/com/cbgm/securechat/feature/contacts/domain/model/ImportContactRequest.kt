@@ -1,7 +1,6 @@
 package com.cbgm.securechat.feature.contacts.domain.model
 
 data class ImportContactRequest(
-
     /**
      * Existing contact to update.
      *
@@ -13,19 +12,12 @@ data class ImportContactRequest(
      * replace/update the SecureChat identity of exactly this contact.
      */
     val contactId: String? = null,
-
     val displayName: String?,
-
     val phoneNumber: String?,
-
     val encryptionPublicKey: ByteArray,
-
-    val signingPublicKey: ByteArray
+    val signingPublicKey: ByteArray,
 ) {
-
-    override fun equals(
-        other: Any?
-    ): Boolean {
+    override fun equals(other: Any?): Boolean {
         if (this === other) {
             return true
         }
@@ -35,14 +27,14 @@ data class ImportContactRequest(
         }
 
         return contactId == other.contactId &&
-                displayName == other.displayName &&
-                phoneNumber == other.phoneNumber &&
-                encryptionPublicKey.contentEquals(
-                    other.encryptionPublicKey
-                ) &&
-                signingPublicKey.contentEquals(
-                    other.signingPublicKey
-                )
+            displayName == other.displayName &&
+            phoneNumber == other.phoneNumber &&
+            encryptionPublicKey.contentEquals(
+                other.encryptionPublicKey,
+            ) &&
+            signingPublicKey.contentEquals(
+                other.signingPublicKey,
+            )
     }
 
     override fun hashCode(): Int {

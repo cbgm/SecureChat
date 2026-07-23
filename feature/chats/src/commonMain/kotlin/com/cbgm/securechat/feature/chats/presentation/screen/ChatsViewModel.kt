@@ -10,28 +10,32 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 class ChatsViewModel(
-    chatsRepository: ChatsRepository
+    chatsRepository: ChatsRepository,
 ) : ViewModel() {
+    val uiState: StateFlow<ChatsUiState> =
+        chatsRepository
+            .observeConversations()
+            .map { conversations ->
+                ChatsUiState(
+                    conversations =
+                        conversations.map { conversation ->
 
-    val uiState: StateFlow<ChatsUiState> = chatsRepository
-        .observeConversations()
-        .map { conversations ->
-            ChatsUiState(
-                conversations = conversations.map { conversation ->
-
-                    ChatListItem(
-                        contactId = conversation.contactId,
-                        contactName = conversation.contactName,
-                        lastMessage = conversation.lastMessage?.text ?: "No messages yet",
-                        timestamp = conversation.lastMessage?.timestamp?.toString().orEmpty(),
-                        unreadCount = conversation.unreadCount
-                    )
-                }
+                            ChatListItem(
+                                contactId = conversation.contactId,
+                                contactName = conversation.contactName,
+                                lastMessage = conversation.lastMessage?.text ?: "No messages yet",
+                                timestamp =
+                                    conversation.lastMessage
+                                        ?.timestamp
+                                        ?.toString()
+                                        .orEmpty(),
+                                unreadCount = conversation.unreadCount,
+                            )
+                        },
+                )
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = ChatsUiState(),
             )
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-            initialValue = ChatsUiState()
-        )
 }

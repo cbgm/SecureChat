@@ -16,11 +16,8 @@ import com.cbgm.securechat.feature.identity.domain.model.SharedIdentityPayload
  * The phone field is mandatory. The name field is optional.
  */
 class DefaultIdentityShareCodec : IdentityShareCodec {
-
-    override fun encode(
-        payload: SharedIdentityPayload
-    ): Result<String> {
-        return runCatching {
+    override fun encode(payload: SharedIdentityPayload): Result<String> =
+        runCatching {
             require(payload.version == SUPPORTED_VERSION) {
                 "Unsupported identity payload version: ${payload.version}"
             }
@@ -33,10 +30,11 @@ class DefaultIdentityShareCodec : IdentityShareCodec {
                 "Signing public key must not be empty"
             }
 
-            val phoneNumber = payload.contactDetails.phoneNumber
-                .trim()
-                .takeIf { it.isNotEmpty() }
-                ?: error("Shared identity phone number is missing")
+            val phoneNumber =
+                payload.contactDetails.phoneNumber
+                    .trim()
+                    .takeIf { it.isNotEmpty() }
+                    ?: error("Shared identity phone number is missing")
 
             buildList {
                 add(FORMAT_PREFIX)
@@ -51,12 +49,9 @@ class DefaultIdentityShareCodec : IdentityShareCodec {
                     }
             }.joinToString(separator = FIELD_SEPARATOR)
         }
-    }
 
-    override fun decode(
-        encodedValue: String
-    ): Result<SharedIdentityPayload> {
-        return runCatching {
+    override fun decode(encodedValue: String): Result<SharedIdentityPayload> =
+        runCatching {
             require(encodedValue.isNotBlank()) {
                 "Shared identity payload is empty"
             }
@@ -67,28 +62,32 @@ class DefaultIdentityShareCodec : IdentityShareCodec {
                 "This is not a supported SecureChat identity payload"
             }
 
-            val values = parts
-                .drop(1)
-                .associate { part ->
-                    val separatorIndex = part.indexOf(KEY_VALUE_SEPARATOR)
+            val values =
+                parts
+                    .drop(1)
+                    .associate { part ->
+                        val separatorIndex = part.indexOf(KEY_VALUE_SEPARATOR)
 
-                    require(separatorIndex > 0) {
-                        "Malformed identity payload field"
+                        require(separatorIndex > 0) {
+                            "Malformed identity payload field"
+                        }
+
+                        part.substring(
+                            startIndex = 0,
+                            endIndex = separatorIndex,
+                        ) to
+                            part.substring(
+                                startIndex = separatorIndex + 1,
+                            )
                     }
 
-                    part.substring(
-                        startIndex = 0,
-                        endIndex = separatorIndex
-                    ) to part.substring(
-                        startIndex = separatorIndex + 1
-                    )
-                }
+            val encryptionPublicKey =
+                values[ENCRYPTION_KEY_FIELD]?.hexToByteArray()
+                    ?: error("Encryption public key is missing")
 
-            val encryptionPublicKey = values[ENCRYPTION_KEY_FIELD]?.hexToByteArray()
-                ?: error("Encryption public key is missing")
-
-            val signingPublicKey = values[SIGNING_KEY_FIELD]?.hexToByteArray()
-                ?: error("Signing public key is missing")
+            val signingPublicKey =
+                values[SIGNING_KEY_FIELD]?.hexToByteArray()
+                    ?: error("Signing public key is missing")
 
             val phoneNumber =
                 values[PHONE_NUMBER_FIELD]?.unescapeShareValue()?.trim()?.takeIf { it.isNotEmpty() }
@@ -101,13 +100,13 @@ class DefaultIdentityShareCodec : IdentityShareCodec {
                 version = SUPPORTED_VERSION,
                 encryptionPublicKey = encryptionPublicKey,
                 signingPublicKey = signingPublicKey,
-                contactDetails = SharedContactDetails(
+                contactDetails =
+                    SharedContactDetails(
                         displayName = displayName,
-                        phoneNumber = phoneNumber
-                    )
+                        phoneNumber = phoneNumber,
+                    ),
             )
         }
-    }
 
     private companion object {
         const val SUPPORTED_VERSION = 1

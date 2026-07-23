@@ -4,6 +4,7 @@ import com.cbgm.securechat.feature.onboarding.presentation.screen.OnboardingView
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
-val onboardingModule = module {
-    viewModel { OnboardingViewModel() }
-}
+val onboardingModule =
+    module {
+        viewModel { OnboardingViewModel() }
+    }

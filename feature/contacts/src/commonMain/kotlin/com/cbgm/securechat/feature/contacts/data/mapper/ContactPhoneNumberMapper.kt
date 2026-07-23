@@ -3,28 +3,27 @@ package com.cbgm.securechat.feature.contacts.data.mapper
 import com.cbgm.securechat.core.id.IdGenerator
 import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.data.database.entity.ContactPhoneNumberEntity
-import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
 import com.cbgm.securechat.feature.contacts.devicecontacts.DevicePhoneNumber
 import com.cbgm.securechat.feature.contacts.devicecontacts.DevicePhoneNumberType
+import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
 
 internal fun DevicePhoneNumber.toEntity(
     contactId: String,
     updatedAt: Long,
-    phoneNumberNormalizer: PhoneNumberNormalizer
-): ContactPhoneNumberEntity {
-    return ContactPhoneNumberEntity(
+    phoneNumberNormalizer: PhoneNumberNormalizer,
+): ContactPhoneNumberEntity =
+    ContactPhoneNumberEntity(
         id = IdGenerator.generate(),
         contactId = contactId,
         value = value,
         normalizedValue = phoneNumberNormalizer.normalize(value).getOrThrow(),
         type = type.toDomain().name,
         label = label,
-        updatedAtEpochMilliseconds = updatedAt
+        updatedAtEpochMilliseconds = updatedAt,
     )
-}
 
-private fun DevicePhoneNumberType.toDomain(): ContactPhoneNumberType {
-    return when (this) {
+private fun DevicePhoneNumberType.toDomain(): ContactPhoneNumberType =
+    when (this) {
         DevicePhoneNumberType.MOBILE -> ContactPhoneNumberType.MOBILE
         DevicePhoneNumberType.WORK_MOBILE -> ContactPhoneNumberType.WORK_MOBILE
         DevicePhoneNumberType.HOME -> ContactPhoneNumberType.HOME
@@ -33,4 +32,3 @@ private fun DevicePhoneNumberType.toDomain(): ContactPhoneNumberType {
         DevicePhoneNumberType.CUSTOM -> ContactPhoneNumberType.CUSTOM
         DevicePhoneNumberType.OTHER -> ContactPhoneNumberType.OTHER
     }
-}

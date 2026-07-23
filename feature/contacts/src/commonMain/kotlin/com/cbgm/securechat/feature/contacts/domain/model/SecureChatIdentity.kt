@@ -12,12 +12,9 @@ data class SecureChatIdentity(
     val signingPublicKey: ByteArray,
     val verificationStatus: ContactVerificationStatus,
     val keyExchangeStatus: KeyExchangeStatus,
-    val updatedAtEpochMilliseconds: Long
+    val updatedAtEpochMilliseconds: Long,
 ) {
-
-    override fun equals(
-        other: Any?
-    ): Boolean {
+    override fun equals(other: Any?): Boolean {
         if (this === other) {
             return true
         }
@@ -27,17 +24,17 @@ data class SecureChatIdentity(
         }
 
         return encryptionPublicKey.contentEquals(
-            other.encryptionPublicKey
+            other.encryptionPublicKey,
         ) &&
-                signingPublicKey.contentEquals(
-                    other.signingPublicKey
-                ) &&
-                verificationStatus ==
-                other.verificationStatus &&
-                keyExchangeStatus ==
-                other.keyExchangeStatus &&
-                updatedAtEpochMilliseconds ==
-                other.updatedAtEpochMilliseconds
+            signingPublicKey.contentEquals(
+                other.signingPublicKey,
+            ) &&
+            verificationStatus ==
+            other.verificationStatus &&
+            keyExchangeStatus ==
+            other.keyExchangeStatus &&
+            updatedAtEpochMilliseconds ==
+            other.updatedAtEpochMilliseconds
     }
 
     override fun hashCode(): Int {

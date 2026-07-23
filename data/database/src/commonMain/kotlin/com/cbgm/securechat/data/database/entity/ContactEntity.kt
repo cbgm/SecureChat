@@ -14,25 +14,21 @@ import androidx.room.PrimaryKey
     indices = [
         Index(
             value = ["deviceContactId"],
-            unique = false
+            unique = false,
         ),
 
         Index(
             value = ["preferredPhoneNumberId"],
-            unique = false
-        )
-    ]
+            unique = false,
+        ),
+    ],
 )
 data class ContactEntity(
     @PrimaryKey
     val id: String,
-
     val displayName: String?,
-
     val deviceContactId: String?,
-
     val deviceContactLinkStatus: String,
-
     /**
      * ID of the phone number currently preferred for actions such
      * as SMS.
@@ -44,8 +40,6 @@ data class ContactEntity(
      * would create a circular database relationship.
      */
     val preferredPhoneNumberId: String?,
-
     val createdAtEpochMilliseconds: Long,
-
-    val updatedAtEpochMilliseconds: Long
+    val updatedAtEpochMilliseconds: Long,
 )

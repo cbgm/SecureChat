@@ -9,5 +9,5 @@ import androidx.compose.runtime.Composable
 @Composable
 expect fun rememberIdentityShareLauncher(
     encodedIdentity: String,
-    shareTitle: String = "Share SecureChat identity"
+    shareTitle: String = "Share SecureChat identity",
 ): () -> Unit

@@ -11,21 +11,22 @@ import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
-val protocolModule = module {
+val protocolModule =
+    module {
 
-    single<Json> {
-        createProtocolJson()
-    }
+        single<Json> {
+            createProtocolJson()
+        }
 
-    single<PacketCodec> {
-        KotlinxPacketCodec(json = get())
-    }
+        single<PacketCodec> {
+            KotlinxPacketCodec(json = get())
+        }
 
-    single<ProtocolPacketHandler> {
-        DefaultProtocolPacketHandler(handlers = getAll<TypedProtocolPacketHandler>())
-    }
+        single<ProtocolPacketHandler> {
+            DefaultProtocolPacketHandler(handlers = getAll<TypedProtocolPacketHandler>())
+        }
 
-    single<PhoneNumberNormalizer> {
-        DefaultPhoneNumberNormalizer()
+        single<PhoneNumberNormalizer> {
+            DefaultPhoneNumberNormalizer()
+        }
     }
-}

@@ -18,8 +18,10 @@ import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
 import io.ktor.server.websocket.webSocket
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration.Companion.seconds
+
+private const val MAX_FRAME_SIZE = 1_048_576L
 
 fun Application.relayModule() {
     install(CallLogging)
@@ -27,7 +29,7 @@ fun Application.relayModule() {
     install(WebSockets) {
         pingPeriod = 20.seconds
         timeout = 60.seconds
-        maxFrameSize = 1_048_576L
+        maxFrameSize = MAX_FRAME_SIZE
         masking = false
     }
 
@@ -37,23 +39,25 @@ fun Application.relayModule() {
 
     val pendingEnvelopeStore: PendingEnvelopeStore = InMemoryPendingEnvelopeStore()
 
-    val envelopeRouter: RelayEnvelopeRouter = DefaultRelayEnvelopeRouter(
-        connectionRegistry = connectionRegistry,
-        pendingEnvelopeStore = pendingEnvelopeStore,
-        json = json
-    )
+    val envelopeRouter: RelayEnvelopeRouter =
+        DefaultRelayEnvelopeRouter(
+            connectionRegistry = connectionRegistry,
+            pendingEnvelopeStore = pendingEnvelopeStore,
+            json = json,
+        )
 
-    val handler = RelayWebSocketHandler(
-        connectionRegistry = connectionRegistry,
-        envelopeRouter = envelopeRouter,
-        pendingEnvelopeStore = pendingEnvelopeStore,
-        json = json
-    )
+    val handler =
+        RelayWebSocketHandler(
+            connectionRegistry = connectionRegistry,
+            envelopeRouter = envelopeRouter,
+            pendingEnvelopeStore = pendingEnvelopeStore,
+            json = json,
+        )
 
     routing {
         get("/") {
             call.respondText(
-                "SecureChat relay is running"
+                "SecureChat relay is running",
             )
         }
 

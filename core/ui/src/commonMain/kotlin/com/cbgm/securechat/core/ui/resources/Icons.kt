@@ -5,7 +5,6 @@ import com.cbgm.securechat.resources.ic_chat
 import com.cbgm.securechat.resources.ic_identity
 import com.cbgm.securechat.resources.ic_settings
 
-
 object SecureChatIcons {
     val ic_chats = Res.drawable.ic_chat
     val ic_identity = Res.drawable.ic_identity

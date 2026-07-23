@@ -10,5 +10,5 @@ enum class DevicePhoneNumberType {
     WORK,
     MAIN,
     CUSTOM,
-    OTHER
+    OTHER,
 }

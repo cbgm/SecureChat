@@ -1,9 +1,10 @@
-val isMacOs = System
-    .getProperty("os.name")
-    .startsWith(
-        prefix = "Mac",
-        ignoreCase = true
-    )
+val isMacOs =
+    System
+        .getProperty("os.name")
+        .startsWith(
+            prefix = "Mac",
+            ignoreCase = true,
+        )
 
 plugins {
     alias(libs.plugins.securechat.kmp.compose.feature)
@@ -14,7 +15,7 @@ kotlin {
     if (isMacOs) {
         listOf(
             iosArm64(),
-            iosSimulatorArm64()
+            iosSimulatorArm64(),
         ).forEach { target ->
             target.binaries.framework {
                 baseName = "SecureChat"

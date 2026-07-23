@@ -26,8 +26,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.component.SecureChatMainScrollStates
-import com.cbgm.securechat.core.ui.component.SecureChatTabbedScaffold
 import com.cbgm.securechat.core.ui.component.SecureChatMainScrollTarget
+import com.cbgm.securechat.core.ui.component.SecureChatTabbedScaffold
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.feature.chats.presentation.ChatsRoute
 import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
@@ -46,10 +46,10 @@ fun MainScreen(
     onNavigateToDeveloperMenu: () -> Unit,
     onOpenChat: (
         contactId: String,
-        contactName: String
+        contactName: String,
     ) -> Unit,
     onShareIdentity: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.Chats) }
 
@@ -60,14 +60,14 @@ fun MainScreen(
             PatternBackground(
                 modifier = Modifier.fillMaxSize(),
                 backgroundColor = MaterialTheme.colorScheme.background,
-                alpha = 0.04f
+                alpha = 0.04f,
             )
         },
         topBar = { containerColor ->
             MainTopBar(
                 selectedTab = selectedTab,
                 containerColor = containerColor,
-                onAddChat = onAddChat
+                onAddChat = onAddChat,
             )
         },
         bottomBar = { containerColor ->
@@ -76,9 +76,9 @@ fun MainScreen(
                 containerColor = containerColor,
                 onTabSelected = { tab ->
                     selectedTab = tab
-                }
+                },
             )
-        }
+        },
     ) { innerPadding, scrollStates ->
         MainContent(
             selectedTab = selectedTab,
@@ -89,34 +89,33 @@ fun MainScreen(
             onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
             onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,
             onNavigateToLicenses = onNavigateToLicenses,
-            onNavigateToDeveloperMenu = onNavigateToDeveloperMenu
+            onNavigateToDeveloperMenu = onNavigateToDeveloperMenu,
         )
     }
 }
 
-private fun MainTab.toScrollTarget(): SecureChatMainScrollTarget {
-    return when (this) {
+private fun MainTab.toScrollTarget(): SecureChatMainScrollTarget =
+    when (this) {
         MainTab.Chats -> SecureChatMainScrollTarget.Chats
 
         MainTab.Me -> SecureChatMainScrollTarget.Identity
 
         MainTab.Settings -> SecureChatMainScrollTarget.Settings
     }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainTopBar(
     selectedTab: MainTab,
     containerColor: Color,
-    onAddChat: () -> Unit
+    onAddChat: () -> Unit,
 ) {
     TopAppBar(
         title = {
             Text(
                 text = selectedTab.label,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         },
         actions = {
@@ -124,17 +123,18 @@ private fun MainTopBar(
                 IconButton(onClick = onAddChat) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Start a new chat"
+                        contentDescription = "Start a new chat",
                     )
                 }
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = containerColor,
-            scrolledContainerColor = containerColor,
-            titleContentColor = MaterialTheme.colorScheme.onBackground,
-            actionIconContentColor = MaterialTheme.colorScheme.onBackground
-        )
+        colors =
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = containerColor,
+                scrolledContainerColor = containerColor,
+                titleContentColor = MaterialTheme.colorScheme.onBackground,
+                actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+            ),
     )
 }
 
@@ -142,11 +142,11 @@ private fun MainTopBar(
 private fun MainBottomBar(
     selectedTab: MainTab,
     containerColor: Color,
-    onTabSelected: (MainTab) -> Unit
+    onTabSelected: (MainTab) -> Unit,
 ) {
     NavigationBar(
         containerColor = containerColor,
-        contentColor = MaterialTheme.colorScheme.onPrimary
+        contentColor = MaterialTheme.colorScheme.onPrimary,
     ) {
         MainTab.entries.forEach { tab ->
             val isSelected = selectedTab == tab
@@ -158,32 +158,34 @@ private fun MainBottomBar(
                 },
                 icon = {
                     Icon(
-                        painter = painterResource(
-                            if (isSelected) {
-                                tab.res
-                            } else {
-                                tab.resOutlined
-                            }
-                        ),
+                        painter =
+                            painterResource(
+                                if (isSelected) {
+                                    tab.res
+                                } else {
+                                    tab.resOutlined
+                                },
+                            ),
                         contentDescription = tab.label,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(28.dp),
                     )
                 },
                 label = {
                     Text(
                         text = tab.label,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                 },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.secondary,
-                    selectedTextColor = MaterialTheme.colorScheme.secondary,
-                    indicatorColor = Color.Transparent,
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                colors =
+                    NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.secondary,
+                        selectedTextColor = MaterialTheme.colorScheme.secondary,
+                        indicatorColor = Color.Transparent,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
             )
         }
     }
@@ -199,7 +201,7 @@ private fun MainContent(
     onNavigateToPrivacyPolicy: () -> Unit,
     onNavigateToDataDisclaimer: () -> Unit,
     onNavigateToLicenses: () -> Unit,
-    onNavigateToDeveloperMenu: () -> Unit
+    onNavigateToDeveloperMenu: () -> Unit,
 ) {
     when (selectedTab) {
         MainTab.Chats -> {
@@ -207,7 +209,7 @@ private fun MainContent(
                 onChatClick = onOpenChat,
                 listState = scrollStates.chats,
                 innerPadding = innerPadding,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
         }
 
@@ -216,7 +218,7 @@ private fun MainContent(
                 onShareIdentity = onShareIdentity,
                 scrollState = scrollStates.identity,
                 innerPadding = innerPadding,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
         }
 
@@ -227,7 +229,7 @@ private fun MainContent(
                 onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
                 onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,
                 onNavigateToLicenses = onNavigateToLicenses,
-                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu
+                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu,
             )
         }
     }
@@ -245,7 +247,7 @@ private fun MainScreenPreview() {
             onNavigateToDataDisclaimer = {},
             onNavigateToLicenses = {},
             onNavigateToDeveloperMenu = {},
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         )
     }
 }

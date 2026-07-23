@@ -20,9 +20,8 @@ import kotlin.time.Duration.Companion.milliseconds
 class DefaultRelayConnectionManager(
     private val webSocketTransportClient: WebSocketTransportClient,
     private val localRelayIdProvider: LocalRelayIdProvider,
-    private val relayTransportConfig: RelayTransportConfig
+    private val relayTransportConfig: RelayTransportConfig,
 ) : RelayConnectionManager {
-
     private val connectionScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private var connectionLoopJob: Job? = null
@@ -59,21 +58,21 @@ class DefaultRelayConnectionManager(
 
                 webSocketTransportClient.connect(
                     serverUrl = relayTransportConfig.serverUrl,
-                    localRelayId = relayId
+                    localRelayId = relayId,
                 )
 
-                val connectionResult = withTimeout(CONNECTION_TIMEOUT_MILLISECONDS.milliseconds) {
-                    webSocketTransportClient
-                        .connectionState
-                        .first { state ->
-                            state is TransportConnectionState.Connected ||
+                val connectionResult =
+                    withTimeout(CONNECTION_TIMEOUT_MILLISECONDS.milliseconds) {
+                        webSocketTransportClient
+                            .connectionState
+                            .first { state ->
+                                state is TransportConnectionState.Connected ||
                                     state is TransportConnectionState.Failed
-                        }
-                }
+                            }
+                    }
 
                 when (connectionResult) {
                     is TransportConnectionState.Connected -> {
-
                         println("Relay connected as ${connectionResult.relayId}")
 
                         reconnectDelay = INITIAL_RECONNECT_DELAY_MILLISECONDS
@@ -83,12 +82,11 @@ class DefaultRelayConnectionManager(
                          */
                         webSocketTransportClient.connectionState.first { state ->
                             state is TransportConnectionState.Disconnected ||
-                                    state is TransportConnectionState.Failed
+                                state is TransportConnectionState.Failed
                         }
                     }
 
                     is TransportConnectionState.Failed -> {
-
                         println("Relay connection failed: ${connectionResult.message}")
                     }
 
@@ -97,11 +95,11 @@ class DefaultRelayConnectionManager(
                     }
                 }
             } catch (
-                error: CancellationException
+                error: CancellationException,
             ) {
                 throw error
             } catch (
-                error: Throwable
+                error: Throwable,
             ) {
                 println("Relay connection error: ${error.message}")
             }

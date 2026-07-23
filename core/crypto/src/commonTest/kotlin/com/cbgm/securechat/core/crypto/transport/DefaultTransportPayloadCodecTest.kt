@@ -5,7 +5,6 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
 class DefaultTransportPayloadCodecTest {
-
     private val codec =
         DefaultTransportPayloadCodec()
 
@@ -22,33 +21,34 @@ class DefaultTransportPayloadCodecTest {
                         1,
                         2,
                         3,
-                        4
-                    )
+                        4,
+                    ),
             )
 
         val encoded =
             codec.encode(
-                payload = original
+                payload = original,
             )
 
         val decoded =
-            codec.decode(
-                encoded = encoded
-            ).getOrThrow()
+            codec
+                .decode(
+                    encoded = encoded,
+                ).getOrThrow()
 
         assertEquals(
             expected = original.version,
-            actual = decoded.version
+            actual = decoded.version,
         )
 
         assertEquals(
             expected = original.mode,
-            actual = decoded.mode
+            actual = decoded.mode,
         )
 
         assertContentEquals(
             expected = original.payload,
-            actual = decoded.payload
+            actual = decoded.payload,
         )
     }
 }

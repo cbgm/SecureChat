@@ -3,10 +3,7 @@ package com.cbgm.securechat.feature.identity.core
 import com.cbgm.securechat.feature.identity.domain.model.PublicIdentity
 
 interface PublicIdentityStorage {
-
-    suspend fun save(
-        identity: PublicIdentity
-    ): Result<Unit>
+    suspend fun save(identity: PublicIdentity): Result<Unit>
 
     suspend fun load(): Result<PublicIdentity?>
 

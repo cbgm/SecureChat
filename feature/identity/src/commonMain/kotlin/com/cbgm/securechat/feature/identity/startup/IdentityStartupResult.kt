@@ -1,7 +1,6 @@
 package com.cbgm.securechat.feature.identity.startup
 
 enum class IdentityStartupResult {
-
     /**
      * A complete local identity was already stored.
      */
@@ -13,5 +12,5 @@ enum class IdentityStartupResult {
      * Identity creation must be performed through onboarding after
      * the local phone number has been entered and saved.
      */
-    NOT_CREATED
+    NOT_CREATED,
 }

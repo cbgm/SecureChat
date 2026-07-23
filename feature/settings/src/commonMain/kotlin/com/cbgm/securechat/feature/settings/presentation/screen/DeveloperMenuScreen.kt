@@ -44,7 +44,7 @@ fun DeveloperMenuScreen(
     onBack: () -> Unit,
     onClearLocalData: () -> Unit,
     onDisableDeveloperMode: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     SecureChatScrollScaffold(
         modifier = modifier,
@@ -52,28 +52,29 @@ fun DeveloperMenuScreen(
         topBar = { containerColor ->
             DeveloperMenuTopBar(
                 containerColor = containerColor,
-                onBack = onBack
+                onBack = onBack,
             )
-        }
+        },
     ) { innerPadding, scrollState ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(
-                    top = innerPadding.calculateTopPadding(),
-                    bottom = innerPadding.calculateBottomPadding(),
-                    start = MaterialTheme.spacing.medium,
-                    end = MaterialTheme.spacing.medium
-                ),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(
+                        top = innerPadding.calculateTopPadding(),
+                        bottom = innerPadding.calculateBottomPadding(),
+                        start = MaterialTheme.spacing.medium,
+                        end = MaterialTheme.spacing.medium,
+                    ),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         ) {
             BuildInfoCard(buildInfo = buildInfo)
 
             DangerZoneCard(
                 isClearingLocalData = isClearingLocalData,
                 onClearLocalData = onClearLocalData,
-                onDisableDeveloperMode = onDisableDeveloperMode
+                onDisableDeveloperMode = onDisableDeveloperMode,
             )
         }
     }
@@ -83,72 +84,72 @@ fun DeveloperMenuScreen(
 @Composable
 private fun DeveloperMenuTopBar(
     containerColor: Color,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     TopAppBar(
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = containerColor,
-            scrolledContainerColor = containerColor,
-            titleContentColor = MaterialTheme.colorScheme.onBackground,
-            navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-        ),
+        colors =
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = containerColor,
+                scrolledContainerColor = containerColor,
+                titleContentColor = MaterialTheme.colorScheme.onBackground,
+                navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+            ),
         title = {
             Text(
                 text = "Developer menu",
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
         },
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = "Back",
                 )
             }
-        }
+        },
     )
 }
 
 @Composable
-private fun BuildInfoCard(
-    buildInfo: BuildInfo
-) {
+private fun BuildInfoCard(buildInfo: BuildInfo) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(
-            MaterialTheme.spacing.small
-        ),
-        color = CardColor
+        shape =
+            RoundedCornerShape(
+                MaterialTheme.spacing.small,
+            ),
+        color = CardColor,
     ) {
         Column(modifier = Modifier.padding(MaterialTheme.spacing.small)) {
             Text(
                 text = "Build info",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
             )
 
             Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
 
             BuildInfoRow(
                 label = "Version name",
-                value = buildInfo.versionName
+                value = buildInfo.versionName,
             )
 
             BuildInfoRow(
                 label = "Version code",
-                value = buildInfo.versionCode.toString()
+                value = buildInfo.versionCode.toString(),
             )
 
             BuildInfoRow(
                 label = "Build type",
-                value = buildInfo.buildType
+                value = buildInfo.buildType,
             )
 
             BuildInfoRow(
                 label = "Git SHA",
-                value = buildInfo.gitSha ?: "unknown"
+                value = buildInfo.gitSha ?: "unknown",
             )
         }
     }
@@ -158,33 +159,35 @@ private fun BuildInfoCard(
 private fun DangerZoneCard(
     isClearingLocalData: Boolean,
     onClearLocalData: () -> Unit,
-    onDisableDeveloperMode: () -> Unit
+    onDisableDeveloperMode: () -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(
-            MaterialTheme.spacing.small
-        ),
-        color = CardColor
+        shape =
+            RoundedCornerShape(
+                MaterialTheme.spacing.small,
+            ),
+        color = CardColor,
     ) {
         Column(
-            modifier = Modifier.padding(MaterialTheme.spacing.small)
+            modifier = Modifier.padding(MaterialTheme.spacing.small),
         ) {
             Text(
                 text = "Danger zone",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.error
+                color = MaterialTheme.colorScheme.error,
             )
 
             Text(
                 text = "These actions are destructive and only intended for local debugging.",
-                modifier = Modifier.padding(
-                    top = MaterialTheme.spacing.base.div(2),
-                    bottom = MaterialTheme.spacing.small
-                ),
+                modifier =
+                    Modifier.padding(
+                        top = MaterialTheme.spacing.base.div(2),
+                        bottom = MaterialTheme.spacing.small,
+                    ),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
 
             Button(
@@ -192,21 +195,22 @@ private fun DangerZoneCard(
                 enabled = !isClearingLocalData,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
             ) {
                 if (isClearingLocalData) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(18.dp),
                         strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 } else {
                     Text(
                         text = "Clear local data",
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
                     )
                 }
             }
@@ -215,7 +219,7 @@ private fun DangerZoneCard(
 
             OutlinedButton(
                 onClick = onDisableDeveloperMode,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(text = "Disable developer mode")
             }
@@ -226,26 +230,27 @@ private fun DangerZoneCard(
 @Composable
 private fun BuildInfoRow(
     label: String,
-    value: String
+    value: String,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = MaterialTheme.spacing.base / 2),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = MaterialTheme.spacing.base / 2),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
         )
 
         Text(
             text = value,
             style = MaterialTheme.typography.bodySmall,
             fontFamily = FontFamily.Monospace,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.onBackground,
         )
     }
 }

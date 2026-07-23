@@ -11,34 +11,33 @@ import org.koin.dsl.module
 /**
  * Android database dependency graph.
  */
-val androidDatabaseModule = module {
+val androidDatabaseModule =
+    module {
 
-    single<SecureChatDatabase> {
-        buildSecureChatDatabase(builder = createAndroidDatabaseBuilder(context = androidContext()))
+        single<SecureChatDatabase> {
+            buildSecureChatDatabase(builder = createAndroidDatabaseBuilder(context = androidContext()))
+        }
+
+        single {
+            get<SecureChatDatabase>().contactDao()
+        }
+
+        single {
+            get<SecureChatDatabase>().chatDao()
+        }
+
+        single {
+            get<SecureChatDatabase>().protocolOutboxDao()
+        }
+
+        single {
+            get<SecureChatDatabase>().messageDeliveryStatusDao()
+        }
+
+        single<ProtocolOutbox> {
+            DefaultProtocolOutbox(
+                outboxDao = get(),
+                packetCodec = get(),
+            )
+        }
     }
-
-    single {
-        get<SecureChatDatabase>().contactDao()
-    }
-
-    single {
-        get<SecureChatDatabase>().chatDao()
-    }
-
-
-    single {
-        get<SecureChatDatabase>().protocolOutboxDao()
-    }
-
-    single {
-        get<SecureChatDatabase>().messageDeliveryStatusDao()
-    }
-
-    single<ProtocolOutbox> {
-        DefaultProtocolOutbox(
-            outboxDao = get(),
-            packetCodec = get()
-        )
-    }
-
-}

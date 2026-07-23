@@ -7,34 +7,23 @@ import com.cbgm.securechat.feature.contacts.domain.model.ImportDeviceContactRequ
 import kotlinx.coroutines.flow.Flow
 
 interface ContactRepository {
+    suspend fun importDeviceContact(request: ImportDeviceContactRequest): Result<Contact>
 
-    suspend fun importDeviceContact(
-        request: ImportDeviceContactRequest
-    ): Result<Contact>
+    suspend fun importContact(request: ImportContactRequest): Result<Contact>
 
-    suspend fun importContact(
-        request: ImportContactRequest
-    ): Result<Contact>
+    suspend fun getContact(contactId: String): Result<Contact?>
 
-    suspend fun getContact(
-        contactId: String
-    ): Result<Contact?>
-
-    suspend fun findBySigningPublicKey(
-        signingPublicKey: ByteArray
-    ): Result<Contact?>
+    suspend fun findBySigningPublicKey(signingPublicKey: ByteArray): Result<Contact?>
 
     fun observeContacts(): Flow<List<Contact>>
 
     suspend fun updateContactDetails(
         contactId: String,
         displayName: String?,
-        phoneNumber: String?
+        phoneNumber: String?,
     ): Result<Contact>
 
-    suspend fun markVerified(
-        contactId: String
-    ): Result<Contact>
+    suspend fun markVerified(contactId: String): Result<Contact>
 
     /**
      * Marks that both parties possess each other's current keys.
@@ -43,19 +32,15 @@ interface ContactRepository {
      * It should only be called after an authenticated acknowledgement
      * from the remote device.
      */
-    suspend fun markKeyExchangeMutual(
-        contactId: String
-    ): Result<Contact>
+    suspend fun markKeyExchangeMutual(contactId: String): Result<Contact>
 
     /**
      * Resets the exchange to one-way and removes verification.
      */
-    suspend fun resetKeyExchange(
-        contactId: String
-    ): Result<Contact>
+    suspend fun resetKeyExchange(contactId: String): Result<Contact>
 
     suspend fun updateDeviceContactLinkStatus(
         deviceContactId: String,
-        status: DeviceContactLinkStatus
+        status: DeviceContactLinkStatus,
     ): Result<Contact?>
 }

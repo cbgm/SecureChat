@@ -63,20 +63,19 @@ fun IdentityScreen(
     onShareIdentity: () -> Unit,
     scrollState: ScrollState,
     innerPadding: PaddingValues,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier.fillMaxSize()
+        modifier
+            .fillMaxSize()
             .verticalScroll(scrollState)
             .padding(
                 top = innerPadding.calculateTopPadding(),
                 bottom = innerPadding.calculateBottomPadding(),
                 start = MaterialTheme.spacing.screenPadding,
-                end = MaterialTheme.spacing.screenPadding
-            )
+                end = MaterialTheme.spacing.screenPadding,
+            ),
     ) {
-
-
         when (uiState) {
             IdentityUiState.Loading -> {
                 LoadingContent()
@@ -88,7 +87,7 @@ fun IdentityScreen(
                     phoneNumberError = uiState.phoneNumberError,
                     onRequestPhoneNumberHint = onRequestPhoneNumberHint,
                     onPhoneNumberChanged = onPhoneNumberChanged,
-                    onCreateIdentity = onCreateIdentity
+                    onCreateIdentity = onCreateIdentity,
                 )
             }
 
@@ -111,15 +110,15 @@ fun IdentityScreen(
     }
 }
 
-
 @Composable
 private fun LoadingContent() {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 80.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 80.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
 
@@ -128,7 +127,7 @@ private fun LoadingContent() {
         Text(
             text = "Checking secure identity…",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
         )
     }
 }
@@ -136,20 +135,21 @@ private fun LoadingContent() {
 @Composable
 private fun IconBadge(
     icon: ImageVector,
-    tint: Color = MaterialTheme.colorScheme.secondary
+    tint: Color = MaterialTheme.colorScheme.secondary,
 ) {
     Box(
-        modifier = Modifier
-            .size(80.dp)
-            .background(tint.copy(alpha = 0.12f), CircleShape)
-            .border(1.dp, tint.copy(alpha = 0.3f), CircleShape),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .size(80.dp)
+                .background(tint.copy(alpha = 0.12f), CircleShape)
+                .border(1.dp, tint.copy(alpha = 0.3f), CircleShape),
+        contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = tint,
-            modifier = Modifier.size(36.dp)
+            modifier = Modifier.size(36.dp),
         )
     }
 }
@@ -160,11 +160,11 @@ private fun NoIdentityContent(
     phoneNumberError: String?,
     onRequestPhoneNumberHint: () -> Unit,
     onPhoneNumberChanged: (String) -> Unit,
-    onCreateIdentity: () -> Unit
+    onCreateIdentity: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
@@ -176,7 +176,7 @@ private fun NoIdentityContent(
             text = "SecureChat",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.onBackground,
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -185,7 +185,7 @@ private fun NoIdentityContent(
             text = "Enter your phone number and create your cryptographic identity.",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f)
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f),
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.large))
@@ -194,7 +194,7 @@ private fun NoIdentityContent(
             Column(modifier = Modifier.padding(MaterialTheme.spacing.medium)) {
                 OutlinedButton(
                     onClick = onRequestPhoneNumberHint,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(text = "Choose phone number from device")
                 }
@@ -209,32 +209,35 @@ private fun NoIdentityContent(
                     placeholder = { Text(text = "+491701234567") },
                     supportingText = {
                         Text(
-                            text = phoneNumberError
-                                ?: "This number becomes your stable SecureChat relay address.",
-                            style = MaterialTheme.typography.labelLarge
+                            text =
+                                phoneNumberError
+                                    ?: "This number becomes your stable SecureChat relay address.",
+                            style = MaterialTheme.typography.labelLarge,
                         )
                     },
                     isError = phoneNumberError != null,
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    textStyle = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        focusedContainerColor = Field,
-                        unfocusedContainerColor = Field,
-                        focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.18f),
-                        focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
-                        cursorColor = MaterialTheme.colorScheme.secondary,
-                        errorBorderColor = MaterialTheme.colorScheme.error,
-                        errorLabelColor = MaterialTheme.colorScheme.error,
-                        errorCursorColor = MaterialTheme.colorScheme.error
-                    )
+                    textStyle =
+                        MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            focusedContainerColor = Field,
+                            unfocusedContainerColor = Field,
+                            focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.18f),
+                            focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                            cursorColor = MaterialTheme.colorScheme.secondary,
+                            errorBorderColor = MaterialTheme.colorScheme.error,
+                            errorLabelColor = MaterialTheme.colorScheme.error,
+                            errorCursorColor = MaterialTheme.colorScheme.error,
+                        ),
                 )
 
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
@@ -242,7 +245,7 @@ private fun NoIdentityContent(
                 SecureChatApprovalButton(
                     onClick = onCreateIdentity,
                     enabled = phoneNumber.isNotBlank(),
-                    text = "Approve number and create identity"
+                    text = "Approve number and create identity",
                 )
             }
         }
@@ -257,7 +260,7 @@ private fun ReadyIdentityContent(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
@@ -269,7 +272,7 @@ private fun ReadyIdentityContent(
             text = "Identity ready",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -278,21 +281,21 @@ private fun ReadyIdentityContent(
             text = "Your private keys are protected locally",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f)
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f),
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
         Surface(
             shape = RoundedCornerShape(8.dp),
-            color = Field
+            color = Field,
         ) {
             Text(
                 text = localPhoneNumber,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             )
         }
 
@@ -304,7 +307,7 @@ private fun ReadyIdentityContent(
                     icon = Icons.Default.Lock,
                     title = "Encryption public key",
                     description = "Used for encrypted conversations.",
-                    key = publicIdentity.encryptionPublicKey
+                    key = publicIdentity.encryptionPublicKey,
                 )
 
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
@@ -313,7 +316,7 @@ private fun ReadyIdentityContent(
                     icon = Icons.Default.Key,
                     title = "Signing public key",
                     description = "Used to verify identity information.",
-                    key = publicIdentity.signingPublicKey
+                    key = publicIdentity.signingPublicKey,
                 )
 
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
@@ -322,10 +325,11 @@ private fun ReadyIdentityContent(
                     onClick = onShareIdentity,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary,
-                        contentColor = Color(0xFF071A2E)
-                    )
+                    colors =
+                        androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = Color(0xFF071A2E),
+                        ),
                 ) {
                     Text(text = "Share my identity", fontWeight = FontWeight.SemiBold)
                 }
@@ -339,7 +343,7 @@ private fun PublicKeySection(
     icon: ImageVector,
     title: String,
     description: String,
-    key: ByteArray
+    key: ByteArray,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
@@ -347,7 +351,7 @@ private fun PublicKeySection(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(16.dp),
             )
 
             Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
@@ -356,7 +360,7 @@ private fun PublicKeySection(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
         }
 
@@ -365,20 +369,21 @@ private fun PublicKeySection(
         Text(
             text = description,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
 
         Text(
             text = key.toHexString(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(color = Field, shape = MaterialTheme.shapes.medium)
-                .padding(MaterialTheme.spacing.base),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(color = Field, shape = MaterialTheme.shapes.medium)
+                    .padding(MaterialTheme.spacing.base),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
-            fontFamily = FontFamily.Monospace
+            fontFamily = FontFamily.Monospace,
         )
     }
 }
@@ -387,7 +392,7 @@ private fun PublicKeySection(
 private fun IncompleteIdentityContent(onRetry: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
@@ -399,7 +404,7 @@ private fun IncompleteIdentityContent(onRetry: () -> Unit) {
             text = "Incomplete identity",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.onBackground,
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
@@ -408,7 +413,7 @@ private fun IncompleteIdentityContent(onRetry: () -> Unit) {
             text = "Only part of your identity is available. Replacement keys will not be generated automatically.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
@@ -418,10 +423,13 @@ private fun IncompleteIdentityContent(onRetry: () -> Unit) {
 }
 
 @Composable
-private fun ErrorContent(message: String, onRetry: () -> Unit) {
+private fun ErrorContent(
+    message: String,
+    onRetry: () -> Unit,
+) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
@@ -433,7 +441,7 @@ private fun ErrorContent(message: String, onRetry: () -> Unit) {
             text = "Something went wrong",
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
@@ -442,7 +450,7 @@ private fun ErrorContent(message: String, onRetry: () -> Unit) {
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
@@ -463,7 +471,7 @@ private fun NoIdentityPreview() {
             onRetry = {},
             onShareIdentity = {},
             scrollState = ScrollState(0),
-            innerPadding = PaddingValues(0.dp)
+            innerPadding = PaddingValues(0.dp),
         )
     }
 }
@@ -473,20 +481,22 @@ private fun NoIdentityPreview() {
 private fun ReadyIdentityPreview() {
     SecureChatTheme {
         IdentityScreen(
-            uiState = IdentityUiState.Ready(
-                publicIdentity = PublicIdentity(
-                    encryptionPublicKey = byteArrayOf(1, 2, 3),
-                    signingPublicKey = byteArrayOf(4, 5, 6)
+            uiState =
+                IdentityUiState.Ready(
+                    publicIdentity =
+                        PublicIdentity(
+                            encryptionPublicKey = byteArrayOf(1, 2, 3),
+                            signingPublicKey = byteArrayOf(4, 5, 6),
+                        ),
+                    localPhoneNumber = "+491701111111",
                 ),
-                localPhoneNumber = "+491701111111"
-            ),
             onRequestPhoneNumberHint = {},
             onPhoneNumberChanged = {},
             onCreateIdentity = {},
             onRetry = {},
             onShareIdentity = {},
             scrollState = ScrollState(0),
-            innerPadding = PaddingValues(0.dp)
+            innerPadding = PaddingValues(0.dp),
         )
     }
 }
@@ -503,7 +513,7 @@ private fun IncompleteIdentityPreview() {
             onRetry = {},
             onShareIdentity = {},
             scrollState = ScrollState(0),
-            innerPadding = PaddingValues(0.dp)
+            innerPadding = PaddingValues(0.dp),
         )
     }
 }
@@ -520,7 +530,7 @@ private fun LoadingIdentityPreview() {
             onRetry = {},
             onShareIdentity = {},
             scrollState = ScrollState(0),
-            innerPadding = PaddingValues(0.dp)
+            innerPadding = PaddingValues(0.dp),
         )
     }
 }

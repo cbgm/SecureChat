@@ -1,7 +1,6 @@
 package com.cbgm.securechat.feature.contacts.devicecontacts
 
 interface DeviceContactsDataSource {
-
     /**
      * Returns all contacts visible to SecureChat.
      *

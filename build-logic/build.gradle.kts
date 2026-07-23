@@ -46,6 +46,18 @@ dependencies {
     implementation(
         "androidx.room:room-gradle-plugin:${libs.versions.room.get()}"
     )
+
+    implementation(
+        "dev.detekt:detekt-gradle-plugin:" +
+            libs.versions.detekt.get()
+    )
+
+    implementation(
+        "org.jlleitschuh.gradle.ktlint:" +
+            "org.jlleitschuh.gradle.ktlint.gradle.plugin:" +
+            libs.versions.ktlint.gradle.get()
+    )
+
 }
 
 gradlePlugin {
@@ -84,6 +96,24 @@ gradlePlugin {
             id = "securechat.kmp.room"
             implementationClass =
                 "com.cbgm.securechat.buildlogic.SecureChatKmpRoomPlugin"
+        }
+
+        register("secureChatLint") {
+            id = "securechat.lint"
+            implementationClass =
+                "com.cbgm.securechat.buildlogic.SecureChatLintPlugin"
+        }
+
+        register("secureChatArchitecture") {
+            id = "securechat.architecture"
+            implementationClass =
+                "com.cbgm.securechat.buildlogic.SecureChatArchitecturePlugin"
+        }
+
+        register("secureChatQuality") {
+            id = "securechat.quality"
+            implementationClass =
+                "com.cbgm.securechat.buildlogic.SecureChatQualityPlugin"
         }
     }
 }

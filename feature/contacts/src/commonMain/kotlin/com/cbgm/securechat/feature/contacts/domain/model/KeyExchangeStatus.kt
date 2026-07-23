@@ -1,7 +1,6 @@
 package com.cbgm.securechat.feature.contacts.domain.model
 
 enum class KeyExchangeStatus {
-
     /**
      * We possess this contact's public keys, but the contact has not
      * confirmed possession of our current public keys.
@@ -15,5 +14,5 @@ enum class KeyExchangeStatus {
      *
      * Messages can be end-to-end encrypted.
      */
-    MUTUAL
+    MUTUAL,
 }

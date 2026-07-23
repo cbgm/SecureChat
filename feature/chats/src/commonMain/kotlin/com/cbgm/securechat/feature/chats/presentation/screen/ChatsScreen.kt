@@ -35,13 +35,12 @@ import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
 
-
 data class ChatListItem(
     val contactId: String,
     val contactName: String,
     val lastMessage: String,
     val timestamp: String,
-    val unreadCount: Int = 0
+    val unreadCount: Int = 0,
 )
 
 @Composable
@@ -50,7 +49,7 @@ fun ChatsScreen(
     onChatClick: (contactId: String) -> Unit,
     listState: LazyListState,
     innerPadding: PaddingValues,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (chats.isEmpty()) {
         EmptyChatsContent(modifier = modifier.fillMaxSize())
@@ -62,11 +61,11 @@ fun ChatsScreen(
         ) {
             items(
                 items = chats,
-                key = { chat -> chat.contactId }
+                key = { chat -> chat.contactId },
             ) { chat ->
                 ChatItem(
                     chat = chat,
-                    onClick = { onChatClick(chat.contactId) }
+                    onClick = { onChatClick(chat.contactId) },
                 )
             }
         }
@@ -77,20 +76,19 @@ fun ChatsScreen(
 private fun ChatItem(
     chat: ChatListItem,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val hasUnread = chat.unreadCount > 0
 
     Column(modifier = modifier.fillMaxWidth()) {
         ListItem(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick),
-
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onClick),
             leadingContent = {
                 ContactAvatar(chat.contactName)
             },
-
             headlineContent = {
                 Text(
                     text = chat.contactName,
@@ -98,93 +96,94 @@ private fun ChatItem(
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             },
-
             supportingContent = {
                 Text(
                     text = chat.lastMessage,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (hasUnread) {
-                        MaterialTheme.colorScheme.onPrimary.copy(alpha = .9f)
-                    } else {
-                        MaterialTheme.colorScheme.onPrimary.copy(alpha = .74f)
-                    },
-                    fontWeight = if (hasUnread) FontWeight.Medium else FontWeight.Normal
+                    color =
+                        if (hasUnread) {
+                            MaterialTheme.colorScheme.onPrimary.copy(alpha = .9f)
+                        } else {
+                            MaterialTheme.colorScheme.onPrimary.copy(alpha = .74f)
+                        },
+                    fontWeight = if (hasUnread) FontWeight.Medium else FontWeight.Normal,
                 )
             },
-
             trailingContent = {
                 Column(
                     horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text(
                         text = chat.timestamp,
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (hasUnread) {
-                            MaterialTheme.colorScheme.secondary
-                        } else {
-                            MaterialTheme.colorScheme.onPrimary.copy(alpha = .74f)
-                        }
+                        color =
+                            if (hasUnread) {
+                                MaterialTheme.colorScheme.secondary
+                            } else {
+                                MaterialTheme.colorScheme.onPrimary.copy(alpha = .74f)
+                            },
                     )
 
                     if (hasUnread) {
                         Box(
-                            modifier = Modifier
-                                .sizeIn(minWidth = 20.dp, minHeight = 20.dp)
-                                .background(MaterialTheme.colorScheme.secondary, CircleShape),
-                            contentAlignment = Alignment.Center
+                            modifier =
+                                Modifier
+                                    .sizeIn(minWidth = 20.dp, minHeight = 20.dp)
+                                    .background(MaterialTheme.colorScheme.secondary, CircleShape),
+                            contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 text = if (chat.unreadCount > 99) "99+" else chat.unreadCount.toString(),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF071A2E),
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
                             )
                         }
                     }
                 }
             },
-
-            colors = ListItemDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.background
-            )
+            colors =
+                ListItemDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
         )
 
         HorizontalDivider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 80.dp),
-            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .05f)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 80.dp),
+            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .05f),
         )
     }
 }
 
 @Composable
-private fun EmptyChatsContent(
-    modifier: Modifier = Modifier
-) {
+private fun EmptyChatsContent(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.padding(horizontal = MaterialTheme.spacing.screenPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Box(
-            modifier = Modifier
-                .size(80.dp)
-                .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f), CircleShape),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .size(80.dp)
+                    .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f), CircleShape),
+            contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = Icons.Default.ChatBubbleOutline,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(36.dp),
             )
         }
 
@@ -193,41 +192,42 @@ private fun EmptyChatsContent(
             modifier = Modifier.padding(top = MaterialTheme.spacing.medium),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.onBackground,
         )
 
         Text(
             text = "Press + to choose a contact and start chatting.",
             modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.base.div(2)),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
         )
     }
 }
 
 @Preview
 @Composable
-fun ChatsScreenPreview() {
+private fun ChatsScreenPreview() {
     SecureChatTheme {
         ChatsScreen(
-            chats = listOf(
-                ChatListItem(
-                    contactId = "1",
-                    contactName = "Alice",
-                    lastMessage = "Hello!",
-                    timestamp = "10:00 AM",
-                    unreadCount = 3
+            chats =
+                listOf(
+                    ChatListItem(
+                        contactId = "1",
+                        contactName = "Alice",
+                        lastMessage = "Hello!",
+                        timestamp = "10:00 AM",
+                        unreadCount = 3,
+                    ),
+                    ChatListItem(
+                        contactId = "2",
+                        contactName = "Bob",
+                        lastMessage = "Sounds good, see you then.",
+                        timestamp = "Yesterday",
+                    ),
                 ),
-                ChatListItem(
-                    contactId = "2",
-                    contactName = "Bob",
-                    lastMessage = "Sounds good, see you then.",
-                    timestamp = "Yesterday"
-                ),
-            ),
             onChatClick = {},
             listState = LazyListState(),
-            innerPadding = PaddingValues()
+            innerPadding = PaddingValues(),
         )
     }
 }

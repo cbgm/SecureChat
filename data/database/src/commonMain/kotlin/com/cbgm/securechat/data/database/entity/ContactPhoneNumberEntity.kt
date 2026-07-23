@@ -7,20 +7,18 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "contact_phone_numbers",
-
     foreignKeys = [
         ForeignKey(
             entity = ContactEntity::class,
             parentColumns = ["id"],
             childColumns = ["contactId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
-
     indices = [
         Index(value = ["contactId"]),
-        Index(value = ["normalizedValue"])
-    ]
+        Index(value = ["normalizedValue"]),
+    ],
 )
 data class ContactPhoneNumberEntity(
     @PrimaryKey
@@ -33,5 +31,5 @@ data class ContactPhoneNumberEntity(
     val normalizedValue: String,
     val type: String,
     val label: String?,
-    val updatedAtEpochMilliseconds: Long
+    val updatedAtEpochMilliseconds: Long,
 )

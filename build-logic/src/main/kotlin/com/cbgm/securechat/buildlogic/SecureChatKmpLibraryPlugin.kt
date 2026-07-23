@@ -13,6 +13,7 @@ class SecureChatKmpLibraryPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
         pluginManager.apply("org.jetbrains.kotlin.multiplatform")
         pluginManager.apply("com.android.kotlin.multiplatform.library")
+        pluginManager.apply("securechat.lint")
 
         extensions.configure<KotlinMultiplatformExtension> {
             val isMacOs = System
@@ -30,11 +31,9 @@ class SecureChatKmpLibraryPlugin : Plugin<Project> {
             targets
                 .withType<KotlinMultiplatformAndroidLibraryTarget>()
                 .configureEach {
-                    compileSdk =
-                        libs.intVersion("android-compileSdk")
+                    compileSdk = libs.intVersion("android-compileSdk")
 
-                    minSdk =
-                        libs.intVersion("android-minSdk")
+                    minSdk = libs.intVersion("android-minSdk")
 
                     compilerOptions {
                         jvmTarget.set(JvmTarget.JVM_17)

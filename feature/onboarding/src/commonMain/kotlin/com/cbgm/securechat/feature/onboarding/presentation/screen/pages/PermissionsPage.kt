@@ -18,66 +18,65 @@ import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.onboarding.presentation.screen.pages.component.ListingRow
 
-
 @Composable
 fun PermissionsPage(onRequestPermissions: () -> Unit) {
     Column(
         Modifier.padding(MaterialTheme.spacing.medium),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = "Permissions",
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onPrimary,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
         )
         Spacer(Modifier.height(MaterialTheme.spacing.base))
         Text(
             text = "SecureChat asks only for features you choose to use.",
             color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .74f),
             style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
         ListingRow(
             index = "01",
             title = "Notifications",
-            description = "Receive new-message alerts."
+            description = "Receive new-message alerts.",
         )
         ListingRow(
             index = "02",
             title = "Contacts",
-            description = "Find existing phone-book contacts."
+            description = "Find existing phone-book contacts.",
         )
         ListingRow(
             index = "03",
             title = "Camera",
-            description = "Scan SecureChat identity QR codes."
+            description = "Scan SecureChat identity QR codes.",
         )
         ListingRow(
             index = "04",
             title = "Phone number",
-            description = "Try to fill your SIM number automatically without opening a picker."
+            description = "Try to fill your SIM number automatically without opening a picker.",
         )
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
         SecureChatApprovalButton(
             onClick = onRequestPermissions,
-            text = "Allow and continue"
+            text = "Allow and continue",
         )
         Spacer(Modifier.height(MaterialTheme.spacing.base))
         Text(
             text = "Denied permissions can be enabled later in system settings.",
             style = MaterialTheme.typography.labelMedium,
             color = Color.White.copy(alpha = .58f),
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
 
 @Preview
 @Composable
-fun PermissionsPagePreview(){
+private fun PermissionsPagePreview() {
     SecureChatTheme {
-        PermissionsPage {  }
+        PermissionsPage { }
     }
 }

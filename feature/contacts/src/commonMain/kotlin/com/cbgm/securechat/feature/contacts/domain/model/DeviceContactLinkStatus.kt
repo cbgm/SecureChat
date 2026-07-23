@@ -5,7 +5,6 @@ package com.cbgm.securechat.feature.contacts.domain.model
  * the contact stored on the current device.
  */
 enum class DeviceContactLinkStatus {
-
     /**
      * This SecureChat contact has never been linked to a contact
      * from the device address book.
@@ -24,5 +23,5 @@ enum class DeviceContactLinkStatus {
      * SecureChat keeps the contact, keys, verification state,
      * conversations, and message history.
      */
-    MISSING
+    MISSING,
 }

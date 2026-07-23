@@ -11,7 +11,6 @@ import kotlinx.coroutines.sync.withLock
  * this runtime before invoking the library.
  */
 object SodiumRuntime {
-
     private val initializationMutex = Mutex()
 
     @Volatile
@@ -21,7 +20,6 @@ object SodiumRuntime {
     private var initializationFailure: Throwable? = null
 
     suspend fun initialize(): Result<Unit> {
-
         if (initialized) {
             return Result.success(Unit)
         }
@@ -49,10 +47,7 @@ object SodiumRuntime {
         }
     }
 
-    fun isInitialized(): Boolean {
-
-        return initialized
-    }
+    fun isInitialized(): Boolean = initialized
 
     fun requireInitialized() {
         check(initialized) {

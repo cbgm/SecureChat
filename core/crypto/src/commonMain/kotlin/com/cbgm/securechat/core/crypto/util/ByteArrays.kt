@@ -1,10 +1,7 @@
 package com.cbgm.securechat.core.crypto.util
 
 object ByteArrays {
-
-    fun concatenate(
-        vararg arrays: ByteArray
-    ): ByteArray {
+    fun concatenate(vararg arrays: ByteArray): ByteArray {
         val totalSize = arrays.sumOf { array -> array.size }
 
         val result = ByteArray(size = totalSize)
@@ -14,7 +11,7 @@ object ByteArrays {
         arrays.forEach { source ->
             source.copyInto(
                 destination = result,
-                destinationOffset = offset
+                destinationOffset = offset,
             )
 
             offset += source.size
@@ -23,9 +20,7 @@ object ByteArrays {
         return result
     }
 
-    fun encodeInt(
-        value: Int
-    ): ByteArray {
+    fun encodeInt(value: Int): ByteArray {
         require(value >= 0) {
             "Encoded integer must not be negative"
         }
@@ -34,19 +29,15 @@ object ByteArrays {
             (value ushr 24 and 0xFF).toByte(),
             (value ushr 16 and 0xFF).toByte(),
             (value ushr 8 and 0xFF).toByte(),
-            (value and 0xFF).toByte()
+            (value and 0xFF).toByte(),
         )
     }
 
-    fun withLengthPrefix(
-        value: ByteArray
-    ): ByteArray {
-        return concatenate(encodeInt(value.size), value)
-    }
+    fun withLengthPrefix(value: ByteArray): ByteArray = concatenate(encodeInt(value.size), value)
 
     fun compareUnsigned(
         first: ByteArray,
-        second: ByteArray
+        second: ByteArray,
     ): Int {
         val sharedSize = minOf(first.size, second.size)
 
@@ -65,9 +56,9 @@ object ByteArrays {
 
     fun contentEqualsConstantTime(
         first: ByteArray,
-        second: ByteArray
+        second: ByteArray,
     ): Boolean {
-        if (first.size != second.size)  return false
+        if (first.size != second.size) return false
 
         var difference = 0
 

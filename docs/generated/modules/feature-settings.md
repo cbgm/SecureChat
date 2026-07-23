@@ -1,0 +1,35 @@
+# `:feature:settings`
+
+Generated automatically by `./gradlew architectureReport`.
+
+## Module information
+
+| Property | Value |
+|---|---|
+| Name | `settings` |
+| Group | `feature` |
+| Directory | `feature/settings` |
+| Build file | `feature/settings/build.gradle.kts` |
+| Kotlin files | 26 |
+| Production Kotlin files | 26 |
+| Test Kotlin files | 0 |
+| Resource files | 2 |
+| Direct dependencies | 1 |
+| Direct dependents | 2 |
+
+## Source sets
+
+- `androidDeviceTest`
+- `androidHostTest`
+- `androidMain`
+- `commonMain`
+- `iosMain`
+
+## Dependencies
+
+- [`:core:ui`](../modules/core-ui.md)
+
+## Dependents
+
+- [`:androidApp`](../modules/androidApp.md)
+- [`:navigation`](../modules/navigation.md)

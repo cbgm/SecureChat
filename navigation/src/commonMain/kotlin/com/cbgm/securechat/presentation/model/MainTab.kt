@@ -12,21 +12,21 @@ import org.jetbrains.compose.resources.DrawableResource
 enum class MainTab(
     val label: String,
     val res: DrawableResource,
-    val resOutlined: DrawableResource
+    val resOutlined: DrawableResource,
 ) {
     Chats(
         label = "Chats",
         res = Res.drawable.ic_chat,
-        resOutlined = Res.drawable.ic_chat_outlined
+        resOutlined = Res.drawable.ic_chat_outlined,
     ),
     Me(
         label = "Me",
         res = Res.drawable.ic_identity,
-        resOutlined = Res.drawable.ic_identity_outlined
+        resOutlined = Res.drawable.ic_identity_outlined,
     ),
     Settings(
         label = "Settings",
         res = Res.drawable.ic_settings,
-        resOutlined = Res.drawable.ic_settings_outlined
-    )
+        resOutlined = Res.drawable.ic_settings_outlined,
+    ),
 }

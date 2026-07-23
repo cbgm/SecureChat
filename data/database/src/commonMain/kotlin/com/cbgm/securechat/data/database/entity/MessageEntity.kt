@@ -7,31 +7,29 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "messages",
-
     foreignKeys = [
         ForeignKey(
             entity = ConversationEntity::class,
             parentColumns = ["id"],
             childColumns = ["conversationId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
-
     indices = [
         Index(value = ["conversationId"]),
 
         Index(
             value = [
                 "conversationId",
-                "createdAtEpochMilliseconds"
-            ]
+                "createdAtEpochMilliseconds",
+            ],
         ),
 
         Index(
             value = ["packetId"],
-            unique = true
-        )
-    ]
+            unique = true,
+        ),
+    ],
 )
 data class MessageEntity(
     @PrimaryKey
@@ -43,7 +41,6 @@ data class MessageEntity(
     val transportMode: String,
     val contentStatus: String,
     val deliveryStatus: String,
-
     /**
      * True after this device has queued a ReadReceiptPacket for this
      * incoming message.
@@ -52,5 +49,5 @@ data class MessageEntity(
      */
     val readReceiptSent: Boolean = false,
     val isMine: Boolean,
-    val createdAtEpochMilliseconds: Long
+    val createdAtEpochMilliseconds: Long,
 )

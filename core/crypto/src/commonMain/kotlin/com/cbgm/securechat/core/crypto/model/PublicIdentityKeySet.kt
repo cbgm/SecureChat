@@ -2,7 +2,7 @@ package com.cbgm.securechat.core.crypto.model
 
 data class PublicIdentityKeySet(
     val signingPublicKey: ByteArray,
-    val encryptionPublicKey: ByteArray
+    val encryptionPublicKey: ByteArray,
 ) {
     init {
         require(signingPublicKey.isNotEmpty()) {
@@ -20,11 +20,10 @@ data class PublicIdentityKeySet(
         if (other !is PublicIdentityKeySet) return false
 
         return signingPublicKey.contentEquals(other.signingPublicKey) &&
-                encryptionPublicKey.contentEquals(other.encryptionPublicKey)
+            encryptionPublicKey.contentEquals(other.encryptionPublicKey)
     }
 
     override fun hashCode(): Int {
-
         var result = signingPublicKey.contentHashCode()
 
         result = 31 * result + encryptionPublicKey.contentHashCode()

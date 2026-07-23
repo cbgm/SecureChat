@@ -10,43 +10,40 @@ import kotlinx.coroutines.flow.flow
 
 class RelayTypingIndicatorGateway(
     private val webSocketTransportClient: WebSocketTransportClient,
-    private val contactRelayIdResolver: ContactRelayIdResolver
+    private val contactRelayIdResolver: ContactRelayIdResolver,
 ) : TypingIndicatorGateway {
+    override fun observeTyping(contactId: String): Flow<Boolean> =
+        flow {
+            val contactRelayId =
+                contactRelayIdResolver
+                    .resolve(contactId = contactId)
+                    .getOrElse {
+                        return@flow
+                    }
 
-    override fun observeTyping(
-        contactId: String
-    ): Flow<Boolean> = flow {
-        val contactRelayId = contactRelayIdResolver
-            .resolve(contactId = contactId)
-            .getOrElse {
-                return@flow
-            }
-
-        webSocketTransportClient.incomingTypingEvents
-            .filter { event ->
-                event.senderId == contactRelayId
-            }
-            .collect { event ->
-                emit(event.isTyping)
-            }
-    }.distinctUntilChanged()
+            webSocketTransportClient.incomingTypingEvents
+                .filter { event ->
+                    event.senderId == contactRelayId
+                }.collect { event ->
+                    emit(event.isTyping)
+                }
+        }.distinctUntilChanged()
 
     override suspend fun sendTypingState(
         contactId: String,
-        isTyping: Boolean
-    ): Result<Unit> {
-        return contactRelayIdResolver
+        isTyping: Boolean,
+    ): Result<Unit> =
+        contactRelayIdResolver
             .resolve(contactId = contactId)
             .fold(
                 onSuccess = { contactRelayId ->
                     webSocketTransportClient.sendTypingState(
                         recipientId = contactRelayId,
-                        isTyping = isTyping
+                        isTyping = isTyping,
                     )
                 },
                 onFailure = { error ->
                     Result.failure(error)
-                }
+                },
             )
-    }
 }

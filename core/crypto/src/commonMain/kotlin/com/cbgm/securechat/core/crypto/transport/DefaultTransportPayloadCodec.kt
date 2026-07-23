@@ -3,13 +3,9 @@ package com.cbgm.securechat.core.crypto.transport
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
-class DefaultTransportPayloadCodec :
-    TransportPayloadCodec {
-
+class DefaultTransportPayloadCodec : TransportPayloadCodec {
     @OptIn(ExperimentalEncodingApi::class)
-    override fun encode(
-        payload: EncryptedTransportPayload
-    ): String {
+    override fun encode(payload: EncryptedTransportPayload): String {
         val encodedPayload = Base64.Default.encode(payload.payload)
 
         return buildString {
@@ -24,10 +20,8 @@ class DefaultTransportPayloadCodec :
     }
 
     @OptIn(ExperimentalEncodingApi::class)
-    override fun decode(
-        encoded: String
-    ): Result<EncryptedTransportPayload> {
-        return runCatching {
+    override fun decode(encoded: String): Result<EncryptedTransportPayload> =
+        runCatching {
             val parts: List<String> = encoded.split(':', limit = 4)
 
             require(parts.size == 4) {
@@ -49,10 +43,9 @@ class DefaultTransportPayloadCodec :
             EncryptedTransportPayload(
                 version = version,
                 mode = mode,
-                payload = payload
+                payload = payload,
             )
         }
-    }
 
     private companion object {
         const val PREFIX = "scmsg"

@@ -38,63 +38,66 @@ import com.cbgm.securechat.feature.contactimport.platform.QrScanner
 fun ScanIdentityScreen(
     onQrCodeScanned: (String) -> Unit,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     SecureChatStaticScaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                ),
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    ),
                 title = {
                     Text(
                         text = "Scan identity",
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
                         )
                     }
-                }
+                },
             )
-        }
+        },
     ) { innerPadding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
         ) {
             QrScanner(
                 onQrCodeScanned = onQrCodeScanned,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
 
             ScannerOverlay(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
 
             Text(
                 text = "Point the camera at another person's SecureChat QR code.",
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = MaterialTheme.spacing.screenPadding,
-                        vertical = MaterialTheme.spacing.times(5)
-                    ),
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = MaterialTheme.spacing.screenPadding,
+                            vertical = MaterialTheme.spacing.times(5),
+                        ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White,
                 textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
         }
     }
@@ -105,7 +108,6 @@ fun ScanIdentityScreen(
 // that tells the user exactly where to aim, instead of a bare camera feed.
 @Composable
 private fun ScannerOverlay(modifier: Modifier = Modifier) {
-
     val backgroundColor = MaterialTheme.colorScheme.background
     val accentColor = MaterialTheme.colorScheme.secondary
 
@@ -114,30 +116,33 @@ private fun ScannerOverlay(modifier: Modifier = Modifier) {
         val left = (size.width - frameSize) / 2f
         val top = (size.height - frameSize) / 2f - 24.dp.toPx()
 
-        val scrimPath = Path().apply {
-            addRect(Rect(Offset.Zero, size))
-            addRoundRect(
-                RoundRect(
-                    rect = Rect(
-                        offset = Offset(left, top),
-                        size = Size(frameSize, frameSize)
+        val scrimPath =
+            Path().apply {
+                addRect(Rect(Offset.Zero, size))
+                addRoundRect(
+                    RoundRect(
+                        rect =
+                            Rect(
+                                offset = Offset(left, top),
+                                size = Size(frameSize, frameSize),
+                            ),
+                        cornerRadius = CornerRadius(24.dp.toPx()),
                     ),
-                    cornerRadius = CornerRadius(24.dp.toPx())
                 )
-            )
-            fillType = PathFillType.EvenOdd
-        }
+                fillType = PathFillType.EvenOdd
+            }
 
         drawPath(path = scrimPath, color = backgroundColor.copy(alpha = 0.65f))
 
         val cornerLength = 28.dp.toPx()
         val strokeWidth = 4.dp.toPx()
-        val corners = listOf(
-            Offset(left, top) to Pair(1, 1),
-            Offset(left + frameSize, top) to Pair(-1, 1),
-            Offset(left, top + frameSize) to Pair(1, -1),
-            Offset(left + frameSize, top + frameSize) to Pair(-1, -1)
-        )
+        val corners =
+            listOf(
+                Offset(left, top) to Pair(1, 1),
+                Offset(left + frameSize, top) to Pair(-1, 1),
+                Offset(left, top + frameSize) to Pair(1, -1),
+                Offset(left + frameSize, top + frameSize) to Pair(-1, -1),
+            )
 
         corners.forEach { (corner, direction) ->
             val (dx, dy) = direction
@@ -146,14 +151,14 @@ private fun ScannerOverlay(modifier: Modifier = Modifier) {
                 start = corner,
                 end = Offset(corner.x + cornerLength * dx, corner.y),
                 strokeWidth = strokeWidth,
-                cap = StrokeCap.Round
+                cap = StrokeCap.Round,
             )
             drawLine(
                 color = accentColor,
                 start = corner,
                 end = Offset(corner.x, corner.y + cornerLength * dy),
                 strokeWidth = strokeWidth,
-                cap = StrokeCap.Round
+                cap = StrokeCap.Round,
             )
         }
     }

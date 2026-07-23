@@ -25,7 +25,7 @@ fun VerifyIdentityDialog(
     isVerifying: Boolean,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AlertDialog(
         modifier = modifier,
@@ -34,15 +34,13 @@ fun VerifyIdentityDialog(
                 onDismiss()
             }
         },
-
         title = {
             Text(text = "Verify $contactName")
         },
-
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(
-                    text = "Compare this safety number with $contactName through a trusted channel, such as a phone call or in person."
+                    text = "Compare this safety number with $contactName through a trusted channel, such as a phone call or in person.",
                 )
 
                 when {
@@ -55,7 +53,7 @@ fun VerifyIdentityDialog(
                             text = "Safety number unavailable",
                             modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                             color = MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
                     }
 
@@ -65,7 +63,7 @@ fun VerifyIdentityDialog(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                             style = MaterialTheme.typography.titleMedium,
                             fontFamily = FontFamily.Monospace,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
                     }
                 }
@@ -73,40 +71,38 @@ fun VerifyIdentityDialog(
                 Text(
                     text = "Only confirm when both devices display exactly the same number.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         },
-
         confirmButton = {
             Button(
                 onClick = onConfirm,
-                enabled = !isVerifying && !isLoadingSafetyNumber && safetyNumber.isNotBlank()
+                enabled = !isVerifying && !isLoadingSafetyNumber && safetyNumber.isNotBlank(),
             ) {
                 if (isVerifying) {
                     CircularProgressIndicator()
                 } else {
                     Text(
-                        text = "Numbers match"
+                        text = "Numbers match",
                     )
                 }
             }
         },
-
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
-                enabled = !isVerifying
+                enabled = !isVerifying,
             ) {
                 Text(text = "Cancel")
             }
-        }
+        },
     )
 }
 
 @Preview
 @Composable
-fun VerifyIdentityDialogPreview() {
+private fun VerifyIdentityDialogPreview() {
     MaterialTheme {
         VerifyIdentityDialog(
             contactName = "Alice",
@@ -114,7 +110,7 @@ fun VerifyIdentityDialogPreview() {
             isLoadingSafetyNumber = false,
             isVerifying = false,
             onConfirm = {},
-            onDismiss = {}
+            onDismiss = {},
         )
     }
 }

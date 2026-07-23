@@ -2,7 +2,7 @@ package com.cbgm.securechat.core.protocol.identity
 
 data class LocalSigningKeyPair(
     val publicKey: ByteArray,
-    val privateKey: ByteArray
+    val privateKey: ByteArray,
 ) {
     init {
         require(publicKey.isNotEmpty()) {
@@ -14,9 +14,7 @@ data class LocalSigningKeyPair(
         }
     }
 
-    override fun equals(
-        other: Any?
-    ): Boolean {
+    override fun equals(other: Any?): Boolean {
         if (this === other) return true
 
         if (other !is LocalSigningKeyPair) return false

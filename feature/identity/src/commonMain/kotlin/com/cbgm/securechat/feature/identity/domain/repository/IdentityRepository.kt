@@ -5,7 +5,6 @@ import com.cbgm.securechat.feature.identity.domain.model.PublicIdentity
 import kotlinx.coroutines.flow.Flow
 
 interface IdentityRepository {
-
     fun observeIdentity(): Flow<PublicIdentity?>
 
     suspend fun getStatus(): Result<IdentityStatus>

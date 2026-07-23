@@ -2,25 +2,23 @@ package com.cbgm.securechat.core.crypto.transport
 
 class DefaultIncomingTransportMessageDecoder(
     private val payloadCodec: TransportPayloadCodec,
-    private val transportCipher: TransportMessageCipher
+    private val transportCipher: TransportMessageCipher,
 ) : IncomingTransportMessageDecoder {
-
     override suspend fun decode(
         encodedPayload: String,
         localPublicKey: ByteArray,
-        localPrivateKey: ByteArray
+        localPrivateKey: ByteArray,
     ): DecodedTransportMessage {
-
-        val payload = payloadCodec
-            .decode(
-                encoded = encodedPayload
-            )
-            .getOrElse { error ->
-                return DecodedTransportMessage
-                    .InvalidPacket(
-                        cause = error
-                    )
-            }
+        val payload =
+            payloadCodec
+                .decode(
+                    encoded = encodedPayload,
+                ).getOrElse { error ->
+                    return DecodedTransportMessage
+                        .InvalidPacket(
+                            cause = error,
+                        )
+                }
 
         return when (payload.mode) {
             TransportEncryptionMode.PLAINTEXT -> {
@@ -31,17 +29,14 @@ class DefaultIncomingTransportMessageDecoder(
                 decodeSealedBox(
                     payload = payload,
                     localPublicKey = localPublicKey,
-                    localPrivateKey = localPrivateKey
+                    localPrivateKey = localPrivateKey,
                 )
             }
         }
     }
 
-    private fun decodePlaintext(
-        payload: EncryptedTransportPayload
-    ): DecodedTransportMessage {
-
-        return try {
+    private fun decodePlaintext(payload: EncryptedTransportPayload): DecodedTransportMessage =
+        try {
             /*
              * This validates that the packet contains valid UTF-8.
              *
@@ -52,28 +47,25 @@ class DefaultIncomingTransportMessageDecoder(
 
             DecodedTransportMessage.Readable(
                 plaintext = text.encodeToByteArray(),
-                mode = TransportEncryptionMode.PLAINTEXT
+                mode = TransportEncryptionMode.PLAINTEXT,
             )
         } catch (
-            error: Throwable
+            error: Throwable,
         ) {
             DecodedTransportMessage.InvalidPlaintext(cause = error)
         }
-    }
 
     private suspend fun decodeSealedBox(
         payload: EncryptedTransportPayload,
         localPublicKey: ByteArray,
-        localPrivateKey: ByteArray
-    ): DecodedTransportMessage {
-
-        return transportCipher
+        localPrivateKey: ByteArray,
+    ): DecodedTransportMessage =
+        transportCipher
             .decryptFromSender(
                 encryptedPayload = payload,
                 localPublicKey = localPublicKey,
-                localPrivateKey = localPrivateKey
-            )
-            .fold(
+                localPrivateKey = localPrivateKey,
+            ).fold(
                 onSuccess = { plaintext ->
                     /*
                      * The decrypted bytes still need to be valid UTF-8
@@ -84,21 +76,19 @@ class DefaultIncomingTransportMessageDecoder(
 
                         DecodedTransportMessage.Readable(
                             plaintext = text.encodeToByteArray(),
-                            mode = TransportEncryptionMode.SEALED_BOX
+                            mode = TransportEncryptionMode.SEALED_BOX,
                         )
                     } catch (
-                        error: Throwable
+                        error: Throwable,
                     ) {
                         DecodedTransportMessage.DecryptionFailed(cause = error)
                     }
                 },
-
                 onFailure = { error ->
                     /*
                      * Never try to decode failed ciphertext directly.
                      */
                     DecodedTransportMessage.DecryptionFailed(cause = error)
-                }
+                },
             )
-    }
 }

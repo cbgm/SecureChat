@@ -1,7 +1,6 @@
 package com.cbgm.securechat.feature.chats.domain.model
 
 enum class ContactSecurityState {
-
     /**
      * Phone-book contact only.
      *
@@ -24,5 +23,5 @@ enum class ContactSecurityState {
      * Both parties possess each other's public keys,
      * and the safety number is verified.
      */
-    MUTUAL_KEYS_VERIFIED
+    MUTUAL_KEYS_VERIFIED,
 }

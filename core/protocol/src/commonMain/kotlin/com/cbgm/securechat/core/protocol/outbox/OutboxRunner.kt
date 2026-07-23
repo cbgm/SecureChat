@@ -5,7 +5,6 @@ package com.cbgm.securechat.core.protocol.outbox
  * whenever pending packets exist.
  */
 interface OutboxRunner {
-
     /**
      * Starts observing the outbox.
      *

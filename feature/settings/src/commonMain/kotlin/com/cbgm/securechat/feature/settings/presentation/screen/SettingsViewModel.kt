@@ -13,9 +13,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class SettingsViewModel(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
@@ -29,7 +28,7 @@ class SettingsViewModel(
                 it.copy(
                     currentLanguage = settingsRepository.getLanguage(),
                     isDeveloperModeEnabled = settingsRepository.isDeveloperModeEnabled(),
-                    buildInfo = settingsRepository.getBuildInfo()
+                    buildInfo = settingsRepository.getBuildInfo(),
                 )
             }
         }
@@ -50,7 +49,7 @@ class SettingsViewModel(
                 it.copy(
                     currentLanguage = language,
                     showLanguagePicker = false,
-                    snackbarMessage = "Language changed to ${language.displayName}. Restart the app to apply it everywhere."
+                    snackbarMessage = "Language changed to ${language.displayName}. Restart the app to apply it everywhere.",
                 )
             }
         }
@@ -68,7 +67,7 @@ class SettingsViewModel(
                     it.copy(
                         isDeveloperModeEnabled = true,
                         developerModeTapCount = 0,
-                        snackbarMessage = "Developer mode enabled"
+                        snackbarMessage = "Developer mode enabled",
                     )
                 }
             }

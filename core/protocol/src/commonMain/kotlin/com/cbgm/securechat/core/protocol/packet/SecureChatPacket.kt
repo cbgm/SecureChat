@@ -4,7 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 sealed interface SecureChatPacket {
-
     /**
      * Unique identifier for deduplication, acknowledgements,
      * tracing and replay protection.

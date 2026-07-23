@@ -3,7 +3,7 @@ package com.cbgm.securechat.core.ui.theme
 import androidx.compose.ui.graphics.Color
 
 object Colors {
-    val Background = Color(0xFF071A2E)//.copy(alpha = Alpha.Subtle)
+    val Background = Color(0xFF071A2E) // .copy(alpha = Alpha.Subtle)
     val Primary = Color(0xFF071A2E)
     val Secondary = Color(0xFF35E6FF)
     val Error = Color(0xFFB65353)

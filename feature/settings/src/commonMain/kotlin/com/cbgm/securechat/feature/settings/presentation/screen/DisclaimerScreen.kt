@@ -29,7 +29,7 @@ fun MarkdownDisclaimerScreen(
     title: String,
     markdownContent: String,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     SecureChatScrollScaffold(
         modifier = modifier,
@@ -38,57 +38,69 @@ fun MarkdownDisclaimerScreen(
             MarkdownDisclaimerTopBar(
                 title = title,
                 containerColor = containerColor,
-                onBack = onBack
+                onBack = onBack,
             )
-        }
+        },
     ) { innerPadding, scrollState ->
         Markdown(
             content = markdownContent,
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(
-                    top = innerPadding.calculateTopPadding() + MaterialTheme.spacing.small,
-                    bottom = innerPadding.calculateBottomPadding() + MaterialTheme.spacing.small,
-                    start = MaterialTheme.spacing.medium,
-                    end = MaterialTheme.spacing.medium
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(
+                        top = innerPadding.calculateTopPadding() + MaterialTheme.spacing.small,
+                        bottom = innerPadding.calculateBottomPadding() + MaterialTheme.spacing.small,
+                        start = MaterialTheme.spacing.medium,
+                        end = MaterialTheme.spacing.medium,
+                    ),
+            colors =
+                markdownColor(
+                    text = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
+                    codeBackground = MarkdownCardColor,
+                    inlineCodeBackground = MarkdownCardColor,
+                    dividerColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f),
+                    tableBackground = MarkdownCardColor,
                 ),
-            colors = markdownColor(
-                text = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
-                codeBackground = MarkdownCardColor,
-                inlineCodeBackground = MarkdownCardColor,
-                dividerColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f),
-                tableBackground = MarkdownCardColor
-            ),
-            typography = markdownTypography(
-                h1 = MaterialTheme.typography.titleSmall.copy(
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Bold
+            typography =
+                markdownTypography(
+                    h1 =
+                        MaterialTheme.typography.titleSmall.copy(
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    h2 =
+                        MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    h3 =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                    text =
+                        MaterialTheme.typography.bodySmall.copy(
+                            color =
+                                MaterialTheme.colorScheme.onBackground.copy(
+                                    alpha = 0.85f,
+                                ),
+                        ),
+                    paragraph =
+                        MaterialTheme.typography.bodySmall.copy(
+                            color =
+                                MaterialTheme.colorScheme.onBackground.copy(
+                                    alpha = 0.85f,
+                                ),
+                        ),
+                    list =
+                        MaterialTheme.typography.bodySmall.copy(
+                            color =
+                                MaterialTheme.colorScheme.onBackground.copy(
+                                    alpha = 0.85f,
+                                ),
+                        ),
                 ),
-                h2 = MaterialTheme.typography.bodyLarge.copy(
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Bold
-                ),
-                h3 = MaterialTheme.typography.bodyMedium.copy(
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.SemiBold
-                ),
-                text = MaterialTheme.typography.bodySmall.copy(
-                    color = MaterialTheme.colorScheme.onBackground.copy(
-                        alpha = 0.85f
-                    )
-                ),
-                paragraph = MaterialTheme.typography.bodySmall.copy(
-                    color = MaterialTheme.colorScheme.onBackground.copy(
-                        alpha = 0.85f
-                    )
-                ),
-                list = MaterialTheme.typography.bodySmall.copy(
-                    color = MaterialTheme.colorScheme.onBackground.copy(
-                        alpha = 0.85f
-                    )
-                )
-            )
         )
     }
 }
@@ -98,29 +110,30 @@ fun MarkdownDisclaimerScreen(
 private fun MarkdownDisclaimerTopBar(
     title: String,
     containerColor: Color,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     TopAppBar(
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = containerColor,
-            scrolledContainerColor = containerColor,
-            titleContentColor = MaterialTheme.colorScheme.onBackground,
-            navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-        ),
+        colors =
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = containerColor,
+                scrolledContainerColor = containerColor,
+                titleContentColor = MaterialTheme.colorScheme.onBackground,
+                navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+            ),
         title = {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
         },
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = "Back",
                 )
             }
-        }
+        },
     )
 }

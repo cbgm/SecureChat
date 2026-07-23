@@ -13,38 +13,43 @@ class OnboardingViewModel : ViewModel() {
     val state: StateFlow<OnboardingUiState> = mutableState.asStateFlow()
 
     fun next() {
-        mutableState.value = when (mutableState.value.page) {
-            OnboardingPage.WELCOME -> mutableState.value.copy(page = OnboardingPage.PRIVACY)
-            OnboardingPage.PRIVACY -> mutableState.value.copy(page = OnboardingPage.PERMISSIONS)
-            OnboardingPage.PERMISSIONS -> mutableState.value.copy(page = OnboardingPage.PHONE)
-            OnboardingPage.PHONE -> mutableState.value
-        }
+        mutableState.value =
+            when (mutableState.value.page) {
+                OnboardingPage.WELCOME -> mutableState.value.copy(page = OnboardingPage.PRIVACY)
+                OnboardingPage.PRIVACY -> mutableState.value.copy(page = OnboardingPage.PERMISSIONS)
+                OnboardingPage.PERMISSIONS -> mutableState.value.copy(page = OnboardingPage.PHONE)
+                OnboardingPage.PHONE -> mutableState.value
+            }
     }
 
     fun requestPermissions() {
-        mutableState.value = mutableState.value.copy(
-            permissionRequestId = mutableState.value.permissionRequestId + 1
-        )
+        mutableState.value =
+            mutableState.value.copy(
+                permissionRequestId = mutableState.value.permissionRequestId + 1,
+            )
     }
 
     fun onPermissionsResult(result: PermissionRequestResult) {
-        mutableState.value = mutableState.value.copy(
-            permissionsRequested = true,
-            phonePermissionGranted = result.phoneNumberGranted,
-            page = OnboardingPage.PHONE,
-            automaticPhoneRequestId = if (result.phoneNumberGranted) {
-                mutableState.value.automaticPhoneRequestId + 1
-            } else {
-                mutableState.value.automaticPhoneRequestId
-            }
-        )
+        mutableState.value =
+            mutableState.value.copy(
+                permissionsRequested = true,
+                phonePermissionGranted = result.phoneNumberGranted,
+                page = OnboardingPage.PHONE,
+                automaticPhoneRequestId =
+                    if (result.phoneNumberGranted) {
+                        mutableState.value.automaticPhoneRequestId + 1
+                    } else {
+                        mutableState.value.automaticPhoneRequestId
+                    },
+            )
     }
 
     fun retryAutomaticPhoneNumber() {
         if (!mutableState.value.phonePermissionGranted) return
-        mutableState.value = mutableState.value.copy(
-            automaticPhoneRequestId = mutableState.value.automaticPhoneRequestId + 1
-        )
+        mutableState.value =
+            mutableState.value.copy(
+                automaticPhoneRequestId = mutableState.value.automaticPhoneRequestId + 1,
+            )
     }
 
     fun setCreatingIdentity(value: Boolean) {

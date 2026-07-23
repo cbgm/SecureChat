@@ -2,9 +2,8 @@ package com.cbgm.securechat.feature.transport.relay.codec
 
 import kotlinx.serialization.json.Json
 
-fun createRelayJson(): Json {
-
-    return Json {
+fun createRelayJson(): Json =
+    Json {
         classDiscriminator = "type"
         encodeDefaults = true
         ignoreUnknownKeys = false
@@ -12,4 +11,3 @@ fun createRelayJson(): Json {
         explicitNulls = false
         prettyPrint = false
     }
-}

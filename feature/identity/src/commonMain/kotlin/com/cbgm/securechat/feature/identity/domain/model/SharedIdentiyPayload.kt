@@ -11,7 +11,7 @@ data class SharedIdentityPayload(
     val version: Int,
     val encryptionPublicKey: ByteArray,
     val signingPublicKey: ByteArray,
-    val contactDetails: SharedContactDetails
+    val contactDetails: SharedContactDetails,
 ) {
     init {
         require(version > 0) {
@@ -36,9 +36,9 @@ data class SharedIdentityPayload(
         if (other !is SharedIdentityPayload) return false
 
         return version == other.version &&
-                encryptionPublicKey.contentEquals(other.encryptionPublicKey) &&
-                signingPublicKey.contentEquals(other.signingPublicKey) &&
-                contactDetails == other.contactDetails
+            encryptionPublicKey.contentEquals(other.encryptionPublicKey) &&
+            signingPublicKey.contentEquals(other.signingPublicKey) &&
+            contactDetails == other.contactDetails
     }
 
     override fun hashCode(): Int {
@@ -58,7 +58,7 @@ data class SharedIdentityPayload(
  */
 data class SharedContactDetails(
     val displayName: String?,
-    val phoneNumber: String
+    val phoneNumber: String,
 ) {
     init {
         require(phoneNumber.isNotBlank()) {

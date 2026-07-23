@@ -3,13 +3,12 @@ package com.cbgm.securechat.navigation
 import kotlinx.serialization.Serializable
 
 sealed interface AppDestination {
-
     @Serializable
     data object Contacts : AppDestination
 
     @Serializable
     data class ContactDetails(
-        val contactId: String
+        val contactId: String,
     ) : AppDestination
 
     @Serializable
@@ -18,14 +17,13 @@ sealed interface AppDestination {
     @Serializable
     data class Chat(
         val contactId: String,
-        val contactName: String
+        val contactName: String,
     ) : AppDestination
 
     @Serializable
     data class Disclaimer(
-        val type: String
+        val type: String,
     ) : AppDestination
-
 
     @Serializable
     data object Licences : AppDestination
@@ -35,6 +33,7 @@ sealed interface AppDestination {
 
     @Serializable
     data object Main : AppDestination
+
     @Serializable
     data object ScanIdentity : AppDestination
 

@@ -54,25 +54,25 @@ fun SettingsScreen(
     onVersionRowTapped: () -> Unit,
     scrollState: ScrollState,
     innerPadding: PaddingValues,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(
-                top = innerPadding.calculateTopPadding(),
-                bottom = innerPadding.calculateBottomPadding()
-            )
-            .verticalScroll(scrollState)
-            .padding(MaterialTheme.spacing.screenPadding),
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
+        modifier =
+            modifier
+                .fillMaxSize()
+                .padding(
+                    top = innerPadding.calculateTopPadding(),
+                    bottom = innerPadding.calculateBottomPadding(),
+                ).verticalScroll(scrollState)
+                .padding(MaterialTheme.spacing.screenPadding),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
     ) {
         SettingsSection(title = "General") {
             SettingsRow(
                 icon = Icons.Default.Language,
                 title = "Language",
                 subtitle = uiState.currentLanguage.nativeName,
-                onClick = onOpenLanguagePicker
+                onClick = onOpenLanguagePicker,
             )
         }
 
@@ -81,7 +81,7 @@ fun SettingsScreen(
                 icon = Icons.Default.PrivacyTip,
                 title = "Privacy policy",
                 subtitle = "How your data is handled",
-                onClick = onOpenPrivacyPolicy
+                onClick = onOpenPrivacyPolicy,
             )
 
             SettingsDivider()
@@ -90,7 +90,7 @@ fun SettingsScreen(
                 icon = Icons.Default.Lock,
                 title = "Data disclaimer",
                 subtitle = "What SecureChat stores locally and on the relay",
-                onClick = onOpenDataDisclaimer
+                onClick = onOpenDataDisclaimer,
             )
         }
 
@@ -99,7 +99,7 @@ fun SettingsScreen(
                 icon = Icons.Default.Code,
                 title = "Open source licenses",
                 subtitle = "Libraries used in this app",
-                onClick = onOpenLicenses
+                onClick = onOpenLicenses,
             )
 
             SettingsDivider()
@@ -109,7 +109,7 @@ fun SettingsScreen(
                 title = "Version",
                 subtitle = "${uiState.buildInfo.versionName} (${uiState.buildInfo.versionCode})",
                 showChevron = false,
-                onClick = onVersionRowTapped
+                onClick = onVersionRowTapped,
             )
         }
 
@@ -120,7 +120,7 @@ fun SettingsScreen(
                     title = "Developer menu",
                     subtitle = "Build info, feature flags, diagnostics",
                     onClick = onOpenDeveloperMenu,
-                    iconTint = MaterialTheme.colorScheme.secondary
+                    iconTint = MaterialTheme.colorScheme.secondary,
                 )
             }
         }
@@ -132,7 +132,7 @@ fun SettingsScreen(
         LanguagePickerDialog(
             currentLanguage = uiState.currentLanguage,
             onLanguageSelected = onLanguageSelected,
-            onDismiss = onDismissLanguagePicker
+            onDismiss = onDismissLanguagePicker,
         )
     }
 }
@@ -140,7 +140,7 @@ fun SettingsScreen(
 @Composable
 private fun SettingsSection(
     title: String,
-    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
 ) {
     Column {
         Text(
@@ -148,13 +148,13 @@ private fun SettingsSection(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = MaterialTheme.spacing.base.div(2), bottom = MaterialTheme.spacing.base)
+            modifier = Modifier.padding(start = MaterialTheme.spacing.base.div(2), bottom = MaterialTheme.spacing.base),
         )
 
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            color = CardColor
+            color = CardColor,
         ) {
             Column(content = content)
         }
@@ -168,14 +168,15 @@ private fun SettingsRow(
     subtitle: String,
     onClick: () -> Unit,
     showChevron: Boolean = true,
-    iconTint: Color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
+    iconTint: Color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.small),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.small),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(22.dp))
 
@@ -186,12 +187,12 @@ private fun SettingsRow(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
         }
 
@@ -200,7 +201,7 @@ private fun SettingsRow(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
         }
     }
@@ -210,6 +211,6 @@ private fun SettingsRow(
 private fun SettingsDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(start = 54.dp),
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.06f)
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.06f),
     )
 }

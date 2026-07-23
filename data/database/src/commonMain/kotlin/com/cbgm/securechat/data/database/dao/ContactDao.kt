@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ContactDao {
-
     @Upsert
     suspend fun upsertContact(contact: ContactEntity)
 
@@ -28,7 +27,7 @@ interface ContactDao {
     WHERE contact_phone_numbers.normalizedValue =
         :normalizedPhoneNumber
     LIMIT 1
-    """
+    """,
     )
     suspend fun findContactEntityByNormalizedPhoneNumber(normalizedPhoneNumber: String): ContactEntity?
 
@@ -41,7 +40,7 @@ interface ContactDao {
             ON contact_phone_numbers.contactId = contacts.id
         WHERE contact_phone_numbers.normalizedValue = :normalizedPhoneNumber
         LIMIT 1
-        """
+        """,
     )
     suspend fun findByNormalizedPhoneNumber(normalizedPhoneNumber: String): ContactWithPublicIdentity?
 
@@ -52,7 +51,7 @@ interface ContactDao {
         FROM contacts
         WHERE id = :contactId
         LIMIT 1
-        """
+        """,
     )
     suspend fun findById(contactId: String): ContactWithPublicIdentity?
 
@@ -66,7 +65,7 @@ interface ContactDao {
         WHERE contact_public_identities.signingPublicKey =
             :signingPublicKey
         LIMIT 1
-        """
+        """,
     )
     suspend fun findBySigningPublicKey(signingPublicKey: ByteArray): ContactWithPublicIdentity?
 
@@ -79,7 +78,7 @@ interface ContactDao {
             ON contact_phone_numbers.contactId = contacts.id
         WHERE contact_phone_numbers.value = :phoneNumber
         LIMIT 1
-        """
+        """,
     )
     suspend fun findByPhoneNumber(phoneNumber: String): ContactWithPublicIdentity?
 
@@ -95,7 +94,7 @@ interface ContactDao {
             END,
             displayName COLLATE NOCASE,
             createdAtEpochMilliseconds
-        """
+        """,
     )
     fun observeAll(): Flow<List<ContactWithPublicIdentity>>
 
@@ -106,7 +105,7 @@ interface ContactDao {
         FROM contacts
         WHERE deviceContactId = :deviceContactId
         LIMIT 1
-        """
+        """,
     )
     suspend fun findByDeviceContactId(deviceContactId: String): ContactWithPublicIdentity?
 
@@ -116,12 +115,12 @@ interface ContactDao {
         SET verificationStatus = :status,
             updatedAtEpochMilliseconds = :updatedAt
         WHERE contactId = :contactId
-        """
+        """,
     )
     suspend fun updateVerificationStatus(
         contactId: String,
         status: String,
-        updatedAt: Long
+        updatedAt: Long,
     )
 
     @Query(
@@ -130,12 +129,12 @@ interface ContactDao {
         SET keyExchangeStatus = :status,
             updatedAtEpochMilliseconds = :updatedAt
         WHERE contactId = :contactId
-        """
+        """,
     )
     suspend fun updateKeyExchangeStatus(
         contactId: String,
         status: String,
-        updatedAt: Long
+        updatedAt: Long,
     )
 
     @Upsert
@@ -145,7 +144,7 @@ interface ContactDao {
         """
         DELETE FROM contact_phone_numbers
         WHERE contactId = :contactId
-        """
+        """,
     )
     suspend fun deletePhoneNumbersForContact(contactId: String)
 
@@ -153,7 +152,7 @@ interface ContactDao {
         """
         DELETE FROM contacts
         WHERE id = :contactId
-        """
+        """,
     )
     suspend fun deleteById(contactId: String)
 
@@ -163,7 +162,7 @@ interface ContactDao {
     FROM contact_public_identities
     WHERE contactId = :contactId
     LIMIT 1
-    """
+    """,
     )
     suspend fun findPublicIdentityByContactId(contactId: String): ContactPublicIdentityEntity?
 
@@ -175,14 +174,14 @@ interface ContactDao {
     WHERE contactId = :contactId
       AND encryptionPublicKey = :expectedEncryptionPublicKey
       AND signingPublicKey = :expectedSigningPublicKey
-    """
+    """,
     )
     suspend fun updateKeyExchangeStatusIfKeysMatch(
         contactId: String,
         expectedEncryptionPublicKey: ByteArray,
         expectedSigningPublicKey: ByteArray,
         keyExchangeStatus: String,
-        updatedAtEpochMilliseconds: Long
+        updatedAtEpochMilliseconds: Long,
     ): Int
 
     @Query(
@@ -191,11 +190,11 @@ interface ContactDao {
     SET keyExchangeStatus = :keyExchangeStatus,
         updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
     WHERE keyExchangeStatus = :currentKeyExchangeStatus
-    """
+    """,
     )
     suspend fun replaceAllKeyExchangeStatuses(
         currentKeyExchangeStatus: String,
         keyExchangeStatus: String,
-        updatedAtEpochMilliseconds: Long
+        updatedAtEpochMilliseconds: Long,
     ): Int
 }

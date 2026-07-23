@@ -30,7 +30,7 @@ private val CardColor = Color(0xFF102A46)
 fun LicensesScreen(
     uiState: LicensesUiState,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val libraries by produceLibraries { uiState.libraries }
 
@@ -39,45 +39,45 @@ fun LicensesScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             LicensesTopBar(onBack = onBack)
-        }
+        },
     ) { innerPadding ->
         LibrariesContainer(
             libraries = libraries,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            colors = licensesColors()
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+            colors = licensesColors(),
         )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LicensesTopBar(
-    onBack: () -> Unit
-) {
+private fun LicensesTopBar(onBack: () -> Unit) {
     TopAppBar(
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background,
-            scrolledContainerColor = MaterialTheme.colorScheme.background,
-            titleContentColor = MaterialTheme.colorScheme.onBackground,
-            navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-        ),
+        colors =
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.background,
+                scrolledContainerColor = MaterialTheme.colorScheme.background,
+                titleContentColor = MaterialTheme.colorScheme.onBackground,
+                navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+            ),
         title = {
             Text(
                 text = "Open source licenses",
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
         },
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = "Back",
                 )
             }
-        }
+        },
     )
 }
 
@@ -85,10 +85,11 @@ private fun LicensesTopBar(
 private fun licensesColors(): DefaultLibraryColors {
     val accentColor = MaterialTheme.colorScheme.secondary
 
-    val chipColors = DefaultChipColors(
-        containerColor = accentColor.copy(alpha = 0.15f),
-        contentColor = accentColor
-    )
+    val chipColors =
+        DefaultChipColors(
+            containerColor = accentColor.copy(alpha = 0.15f),
+            contentColor = accentColor,
+        )
 
     return DefaultLibraryColors(
         libraryBackgroundColor = CardColor,
@@ -98,6 +99,6 @@ private fun licensesColors(): DefaultLibraryColors {
         fundingChipColors = chipColors,
         dialogBackgroundColor = CardColor,
         dialogContentColor = MaterialTheme.colorScheme.onBackground,
-        dialogConfirmButtonColor = accentColor
+        dialogConfirmButtonColor = accentColor,
     )
 }

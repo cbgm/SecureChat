@@ -13,20 +13,18 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ChatDao {
-
     @Query(
         """
         SELECT *
         FROM conversations
         WHERE contactId = :contactId
         LIMIT 1
-        """
+        """,
     )
     suspend fun findConversationByContactId(contactId: String): ConversationEntity?
 
     @Upsert
-    suspend fun upsertConversation(conversation: ConversationEntity
-    )
+    suspend fun upsertConversation(conversation: ConversationEntity)
 
     @Upsert
     suspend fun upsertMessage(message: MessageEntity)
@@ -40,19 +38,19 @@ interface ChatDao {
     suspend fun upsertIncomingChatMessage(
         conversation: ConversationEntity,
         message: MessageEntity,
-        timestamp: Long
+        timestamp: Long,
     ) {
         upsertConversation(
-            conversation = conversation
+            conversation = conversation,
         )
 
         upsertMessage(
-            message = message
+            message = message,
         )
 
         updateConversationTimestamp(
             conversationId = conversation.id,
-            timestamp = timestamp
+            timestamp = timestamp,
         )
     }
 
@@ -61,11 +59,11 @@ interface ChatDao {
         UPDATE conversations
         SET updatedAtEpochMilliseconds = :timestamp
         WHERE id = :conversationId
-        """
+        """,
     )
     suspend fun updateConversationTimestamp(
         conversationId: String,
-        timestamp: Long
+        timestamp: Long,
     )
 
     @Transaction
@@ -75,7 +73,7 @@ interface ChatDao {
         FROM conversations
         WHERE contactId = :contactId
         LIMIT 1
-        """
+        """,
     )
     fun observeConversationByContactId(contactId: String): Flow<ConversationWithMessages?>
 
@@ -130,7 +128,7 @@ interface ChatDao {
     )
 
     ORDER BY conversations.updatedAtEpochMilliseconds DESC
-    """
+    """,
     )
     fun observeConversationSummaries(): Flow<List<ConversationSummary>>
 
@@ -138,7 +136,7 @@ interface ChatDao {
         """
         DELETE FROM conversations
         WHERE id = :conversationId
-        """
+        """,
     )
     suspend fun deleteConversation(conversationId: String)
 
@@ -148,7 +146,7 @@ interface ChatDao {
     FROM messages
     WHERE id = :messageId
     LIMIT 1
-    """
+    """,
     )
     suspend fun findMessageById(messageId: String): MessageEntity?
 
@@ -166,7 +164,7 @@ interface ChatDao {
       AND messages.readReceiptSent = 0
       AND messages.contentStatus = 'READABLE'
     ORDER BY messages.createdAtEpochMilliseconds ASC
-    """
+    """,
     )
     suspend fun findMessagesAwaitingReadReceipt(contactId: String): List<UnreadIncomingMessage>
 
@@ -176,7 +174,7 @@ interface ChatDao {
     SET readReceiptSent = 1
     WHERE id = :messageId
       AND isMine = 0
-    """
+    """,
     )
     suspend fun markReadReceiptSent(messageId: String): Int
 }

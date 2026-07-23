@@ -13,21 +13,19 @@ class WebSocketOutgoingWireSender(
     private val webSocketTransportClient: WebSocketTransportClient,
     private val localRelayIdProvider: LocalRelayIdProvider,
     private val contactRelayIdResolver: ContactRelayIdResolver,
-    private val relayTransportConfig: RelayTransportConfig
+    private val relayTransportConfig: RelayTransportConfig,
 ) : OutgoingWireSender {
-
     override suspend fun send(
         contactId: String,
-        encodedTransportPayload: String
-    ): Result<Unit> {
-
-        return runCatching {
+        encodedTransportPayload: String,
+    ): Result<Unit> =
+        runCatching {
             require(contactId.isNotBlank()) {
                 "Contact ID must not be blank"
             }
 
             require(
-                encodedTransportPayload.isNotBlank()
+                encodedTransportPayload.isNotBlank(),
             ) {
                 "Transport payload must not be blank"
             }
@@ -37,19 +35,19 @@ class WebSocketOutgoingWireSender(
             val recipientRelayId =
                 contactRelayIdResolver.resolve(contactId = contactId).getOrThrow()
 
-            val envelope = RelayEnvelope(
-                envelopeId = IdGenerator.generate(),
-                senderId = senderRelayId,
-                recipientId = recipientRelayId,
-                payload = encodedTransportPayload,
-                createdAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
-            )
+            val envelope =
+                RelayEnvelope(
+                    envelopeId = IdGenerator.generate(),
+                    senderId = senderRelayId,
+                    recipientId = recipientRelayId,
+                    payload = encodedTransportPayload,
+                    createdAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
+                )
 
-            webSocketTransportClient.sendEnvelopeAndAwaitAcceptance(
-                envelope = envelope,
-                timeoutMilliseconds = relayTransportConfig.acknowledgementTimeoutMilliseconds
-            )
-                .getOrThrow()
+            webSocketTransportClient
+                .sendEnvelopeAndAwaitAcceptance(
+                    envelope = envelope,
+                    timeoutMilliseconds = relayTransportConfig.acknowledgementTimeoutMilliseconds,
+                ).getOrThrow()
         }
-    }
 }

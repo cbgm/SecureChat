@@ -71,10 +71,10 @@ fun ContactsScreen(
     onImportContact: () -> Unit,
     onContactClick: (
         contactId: String,
-        contactName: String
+        contactName: String,
     ) -> Unit,
     onImportDeviceContacts: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var showImportSheet by remember { mutableStateOf(false) }
 
@@ -84,13 +84,13 @@ fun ContactsScreen(
             PatternBackground(
                 modifier = Modifier.fillMaxSize(),
                 backgroundColor = MaterialTheme.colorScheme.background,
-                alpha = 0.04f
+                alpha = 0.04f,
             )
         },
         topBar = { containerColor ->
             ContactsTopBar(
                 containerColor = containerColor,
-                onBack = onBack
+                onBack = onBack,
             )
         },
         floatingActionButton = {
@@ -101,17 +101,17 @@ fun ContactsScreen(
                 ContactsFloatingActionButton(
                     onClick = {
                         showImportSheet = true
-                    }
+                    },
                 )
             }
-        }
+        },
     ) { innerPadding, listState ->
         ContactsScreenContent(
             uiState = uiState,
             innerPadding = innerPadding,
             listState = listState,
             onContactClick = onContactClick,
-            onImportContact = onImportContact
+            onImportContact = onImportContact,
         )
     }
 
@@ -127,7 +127,7 @@ fun ContactsScreen(
             onImportDeviceContacts = {
                 showImportSheet = false
                 onImportDeviceContacts()
-            }
+            },
         )
     }
 }
@@ -136,47 +136,46 @@ fun ContactsScreen(
 @Composable
 private fun ContactsTopBar(
     containerColor: Color,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     TopAppBar(
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = containerColor,
-            scrolledContainerColor = containerColor,
-            titleContentColor = MaterialTheme.colorScheme.onBackground,
-            actionIconContentColor = MaterialTheme.colorScheme.onBackground,
-            navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-        ),
+        colors =
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = containerColor,
+                scrolledContainerColor = containerColor,
+                titleContentColor = MaterialTheme.colorScheme.onBackground,
+                actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+                navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+            ),
         title = {
             Text(
                 text = "Contacts",
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         },
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = "Back",
                 )
             }
-        }
+        },
     )
 }
 
 @Composable
-private fun ContactsFloatingActionButton(
-    onClick: () -> Unit
-) {
+private fun ContactsFloatingActionButton(onClick: () -> Unit) {
     FloatingActionButton(
         onClick = onClick,
         containerColor = MaterialTheme.colorScheme.secondary,
-        contentColor = MaterialTheme.colorScheme.background
+        contentColor = MaterialTheme.colorScheme.background,
     ) {
         Icon(
             imageVector = Icons.Default.Add,
             contentDescription = "Add contact",
-            modifier = Modifier.size(28.dp)
+            modifier = Modifier.size(28.dp),
         )
     }
 }
@@ -188,27 +187,29 @@ private fun ContactsScreenContent(
     listState: LazyListState,
     onContactClick: (
         contactId: String,
-        contactName: String
+        contactName: String,
     ) -> Unit,
-    onImportContact: () -> Unit
+    onImportContact: () -> Unit,
 ) {
     when (uiState) {
         ContactsUiState.Loading -> {
             LoadingContent(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
             )
         }
 
         ContactsUiState.Empty -> {
             EmptyContactsContent(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(
-                        MaterialTheme.spacing.medium
-                    )
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(
+                            MaterialTheme.spacing.medium,
+                        ),
             )
         }
 
@@ -218,7 +219,7 @@ private fun ContactsScreenContent(
                 innerPadding = innerPadding,
                 listState = listState,
                 onContactClick = onContactClick,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
         }
 
@@ -226,12 +227,13 @@ private fun ContactsScreenContent(
             ErrorContent(
                 message = uiState.message,
                 onImportContact = onImportContact,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(
-                        MaterialTheme.spacing.medium
-                    )
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(
+                            MaterialTheme.spacing.medium,
+                        ),
             )
         }
     }
@@ -244,27 +246,27 @@ private fun ContactsList(
     listState: LazyListState,
     onContactClick: (
         contactId: String,
-        contactName: String
+        contactName: String,
     ) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier,
         state = listState,
-        contentPadding = innerPadding
+        contentPadding = innerPadding,
     ) {
         items(
             items = contacts,
-            key = Contact::id
+            key = Contact::id,
         ) { contact ->
             ContactListItem(
                 contact = contact,
                 onClick = {
                     onContactClick(
                         contact.id,
-                        contact.displayName.orEmpty()
+                        contact.displayName.orEmpty(),
                     )
-                }
+                },
             )
         }
     }
@@ -273,15 +275,16 @@ private fun ContactsList(
 @Composable
 private fun ContactListItem(
     contact: Contact,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         ListItem(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onClick),
             leadingContent = {
                 ContactAvatar(name = contact.displayName ?: "?")
             },
@@ -292,49 +295,49 @@ private fun ContactListItem(
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             },
             supportingContent = {
                 Text(
-                    text = contact.preferredPhoneNumber?.value
-                        ?: if (contact.secureChatIdentity != null) {
-                            "SecureChat contact"
-                        } else {
-                            "No phone number"
-                        },
+                    text =
+                        contact.preferredPhoneNumber?.value
+                            ?: if (contact.secureChatIdentity != null) {
+                                "SecureChat contact"
+                            } else {
+                                "No phone number"
+                            },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.74f)
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.74f),
                 )
             },
             trailingContent = {
                 ContactStatus(contact = contact)
             },
-            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background)
+            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
         )
 
         HorizontalDivider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 80.dp),
-            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.05f)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 80.dp),
+            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.05f),
         )
     }
 }
 
 @Composable
-private fun ContactStatus(
-    contact: Contact
-) {
+private fun ContactStatus(contact: Contact) {
     when {
         contact.deviceContactLinkStatus ==
-                DeviceContactLinkStatus.MISSING -> {
+            DeviceContactLinkStatus.MISSING -> {
             StatusBadge(
                 text = "Missing",
                 icon = Icons.Default.Warning,
-                color = MaterialTheme.colorScheme.error
+                color = MaterialTheme.colorScheme.error,
             )
         }
 
@@ -342,7 +345,7 @@ private fun ContactStatus(
             StatusBadge(
                 text = "Secure",
                 icon = Icons.Default.Verified,
-                color = MaterialTheme.colorScheme.secondary
+                color = MaterialTheme.colorScheme.secondary,
             )
         }
     }
@@ -352,24 +355,25 @@ private fun ContactStatus(
 private fun StatusBadge(
     text: String,
     icon: ImageVector,
-    color: Color
+    color: Color,
 ) {
     Surface(
         shape = RoundedCornerShape(6.dp),
-        color = color.copy(alpha = 0.15f)
+        color = color.copy(alpha = 0.15f),
     ) {
         Row(
-            modifier = Modifier.padding(
-                horizontal = 8.dp,
-                vertical = 4.dp
-            ),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier.padding(
+                    horizontal = 8.dp,
+                    vertical = 4.dp,
+                ),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = color,
-                modifier = Modifier.size(12.dp)
+                modifier = Modifier.size(12.dp),
             )
 
             Text(
@@ -377,50 +381,47 @@ private fun StatusBadge(
                 modifier = Modifier.padding(start = 4.dp),
                 style = MaterialTheme.typography.labelSmall,
                 color = color,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
         }
     }
 }
 
 @Composable
-private fun LoadingContent(
-    modifier: Modifier = Modifier
-) {
+private fun LoadingContent(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier,
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
     }
 }
 
 @Composable
-private fun EmptyContactsContent(
-    modifier: Modifier = Modifier
-) {
+private fun EmptyContactsContent(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier,
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         ) {
             Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(80.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
+                            shape = CircleShape,
+                        ),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Default.Contacts,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(36.dp),
                 )
             }
 
@@ -429,14 +430,14 @@ private fun EmptyContactsContent(
                 modifier = Modifier.padding(top = MaterialTheme.spacing.small),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
             )
 
             Text(
                 text = "Tap + to import a SecureChat contact or add people from your device.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
         }
     }
@@ -446,32 +447,32 @@ private fun EmptyContactsContent(
 private fun ErrorContent(
     message: String,
     onImportContact: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier,
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         ) {
             Text(
                 text = "Could not load contacts",
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
             )
 
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
 
             SecureChatApprovalButton(
                 onClick = onImportContact,
-                text = "Import contact"
+                text = "Import contact",
             )
         }
     }
@@ -482,7 +483,7 @@ private fun ErrorContent(
 private fun ImportContactBottomSheet(
     onDismiss: () -> Unit,
     onImportContact: () -> Unit,
-    onImportDeviceContacts: () -> Unit
+    onImportDeviceContacts: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -491,12 +492,12 @@ private fun ImportContactBottomSheet(
         sheetState = sheetState,
         containerColor = SheetColor,
         contentColor = Color.White,
-        dragHandle = null
+        dragHandle = null,
     ) {
         ImportContactSheet(
             onClose = onDismiss,
             onImportContact = onImportContact,
-            onImportDeviceContacts = onImportDeviceContacts
+            onImportDeviceContacts = onImportDeviceContacts,
         )
     }
 }
@@ -505,48 +506,50 @@ private fun ImportContactBottomSheet(
 private fun ImportContactSheet(
     onClose: () -> Unit,
     onImportContact: () -> Unit,
-    onImportDeviceContacts: () -> Unit
+    onImportDeviceContacts: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                bottom = MaterialTheme.spacing.medium
-            )
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    bottom = MaterialTheme.spacing.medium,
+                ),
     ) {
         Box(
-            modifier = Modifier
-                .padding(top = 10.dp)
-                .align(Alignment.CenterHorizontally)
-                .size(
-                    width = 36.dp,
-                    height = 4.dp
-                )
-                .background(
-                    color = Color.White.copy(alpha = 0.25f),
-                    shape = RoundedCornerShape(2.dp)
-                )
+            modifier =
+                Modifier
+                    .padding(top = 10.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .size(
+                        width = 36.dp,
+                        height = 4.dp,
+                    ).background(
+                        color = Color.White.copy(alpha = 0.25f),
+                        shape = RoundedCornerShape(2.dp),
+                    ),
         )
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.base),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(MaterialTheme.spacing.base),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = "Add contact",
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = Color.White,
             )
 
             IconButton(onClick = onClose) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Close",
-                    tint = Color.White
+                    tint = Color.White,
                 )
             }
         }
@@ -556,14 +559,14 @@ private fun ImportContactSheet(
             title = "Import SecureChat contact",
             description =
                 "Scan a QR code or paste a SecureChat identity",
-            onClick = onImportContact
+            onClick = onImportContact,
         )
 
         ImportOptionRow(
             icon = Icons.Default.Contacts,
             title = "Import from device",
             description = "Add people from your address book",
-            onClick = onImportDeviceContacts
+            onClick = onImportDeviceContacts,
         )
     }
 }
@@ -573,18 +576,19 @@ private fun ImportOptionRow(
     icon: ImageVector,
     title: String,
     description: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     ListItem(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
         leadingContent = {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = Color.White.copy(alpha = 0.85f),
-                modifier = Modifier.size(22.dp)
+                modifier = Modifier.size(22.dp),
             )
         },
         headlineContent = {
@@ -592,16 +596,16 @@ private fun ImportOptionRow(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
-                color = Color.White
+                color = Color.White,
             )
         },
         supportingContent = {
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.6f)
+                color = Color.White.copy(alpha = 0.6f),
             )
         },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
     )
 }

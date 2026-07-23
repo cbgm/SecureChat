@@ -5,53 +5,51 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.derivedStateOf
 
 @Stable
 data class BarsState(
     val topBarAlpha: Float,
-    val bottomBarAlpha: Float
+    val bottomBarAlpha: Float,
 )
 
 @Composable
 fun rememberBarsState(
     state: LazyListState,
-    fadedAlpha: Float = 0.97f
-): BarsState {
-    return rememberBarsState(
+    fadedAlpha: Float = 0.97f,
+): BarsState =
+    rememberBarsState(
         canScrollBackward = {
             state.canScrollBackward
         },
         canScrollForward = {
             state.canScrollForward
         },
-        fadedAlpha = fadedAlpha
+        fadedAlpha = fadedAlpha,
     )
-}
 
 @Composable
 fun rememberBarsState(
     state: ScrollState,
-    fadedAlpha: Float = 0.97f
-): BarsState {
-    return rememberBarsState(
+    fadedAlpha: Float = 0.97f,
+): BarsState =
+    rememberBarsState(
         canScrollBackward = {
             state.canScrollBackward
         },
         canScrollForward = {
             state.canScrollForward
         },
-        fadedAlpha = fadedAlpha
+        fadedAlpha = fadedAlpha,
     )
-}
 
 @Composable
 private fun rememberBarsState(
     canScrollForward: () -> Boolean,
     canScrollBackward: () -> Boolean,
-    fadedAlpha: Float
+    fadedAlpha: Float,
 ): BarsState {
     val contentIsScrollable by remember {
         derivedStateOf {
@@ -60,16 +58,17 @@ private fun rememberBarsState(
     }
 
     val barAlpha by animateFloatAsState(
-        targetValue = if (contentIsScrollable) {
-            fadedAlpha
-        } else {
-            1f
-        },
-        label = "BarsAlpha"
+        targetValue =
+            if (contentIsScrollable) {
+                fadedAlpha
+            } else {
+                1f
+            },
+        label = "BarsAlpha",
     )
 
     return BarsState(
         topBarAlpha = barAlpha,
-        bottomBarAlpha = barAlpha
+        bottomBarAlpha = barAlpha,
     )
 }

@@ -14,12 +14,11 @@ import kotlin.random.Random
 
 class DefaultProtocolOutbox(
     private val outboxDao: ProtocolOutboxDao,
-    private val packetCodec: PacketCodec
+    private val packetCodec: PacketCodec,
 ) : ProtocolOutbox {
-
     override suspend fun enqueue(
         contactId: String,
-        packet: SecureChatPacket
+        packet: SecureChatPacket,
     ): Result<ProtocolOutboxItem> {
         return runCatching {
             require(contactId.isNotBlank()) {
@@ -40,17 +39,18 @@ class DefaultProtocolOutbox(
 
             val now = SystemClock.nowEpochMilliseconds()
 
-            val entity = ProtocolOutboxEntity(
-                id = createId(prefix = "outbox"),
-                contactId = contactId,
-                packetId = packet.packetId,
-                encodedPacket = encodedPacket,
-                status = OutboxStatus.PENDING.name,
-                attemptCount = 0,
-                lastError = null,
-                createdAtEpochMilliseconds = now,
-                updatedAtEpochMilliseconds = now
-            )
+            val entity =
+                ProtocolOutboxEntity(
+                    id = createId(prefix = "outbox"),
+                    contactId = contactId,
+                    packetId = packet.packetId,
+                    encodedPacket = encodedPacket,
+                    status = OutboxStatus.PENDING.name,
+                    attemptCount = 0,
+                    lastError = null,
+                    createdAtEpochMilliseconds = now,
+                    updatedAtEpochMilliseconds = now,
+                )
 
             outboxDao.upsert(entity = entity)
 
@@ -61,29 +61,26 @@ class DefaultProtocolOutbox(
         }
     }
 
-    override fun observePending(): Flow<List<ProtocolOutboxItem>> {
-
-        return outboxDao
+    override fun observePending(): Flow<List<ProtocolOutboxItem>> =
+        outboxDao
             .observePending()
             .map { entities ->
                 entities.map { entity ->
                     entity.toDomain()
                 }
             }
-    }
 
-    override suspend fun getPending(limit: Int): Result<List<ProtocolOutboxItem>> {
-        return runCatching {
+    override suspend fun getPending(limit: Int): Result<List<ProtocolOutboxItem>> =
+        runCatching {
             require(limit > 0) {
                 "Pending-item limit must be positive"
             }
 
             outboxDao.getPending(limit = limit).map { entity -> entity.toDomain() }
         }
-    }
 
-    override suspend fun markProcessing(itemId: String): Result<Unit> {
-        return runCatching {
+    override suspend fun markProcessing(itemId: String): Result<Unit> =
+        runCatching {
             require(itemId.isNotBlank()) {
                 "Outbox item ID must not be blank"
             }
@@ -92,46 +89,43 @@ class DefaultProtocolOutbox(
 
             check(
                 existing.status == OutboxStatus.PENDING.name ||
-                        existing.status == OutboxStatus.FAILED.name
+                    existing.status == OutboxStatus.FAILED.name,
             ) {
                 "Only pending or failed items can start processing"
             }
 
             outboxDao.markProcessing(
                 itemId = itemId,
-                updatedAt = SystemClock.nowEpochMilliseconds()
+                updatedAt = SystemClock.nowEpochMilliseconds(),
             )
         }
-    }
 
-    override suspend fun findByPacketId(packetId: String): Result<ProtocolOutboxItem?> {
-        return runCatching {
+    override suspend fun findByPacketId(packetId: String): Result<ProtocolOutboxItem?> =
+        runCatching {
             require(packetId.isNotBlank()) {
                 "Packet ID must not be blank"
             }
 
             outboxDao.findByPacketId(packetId = packetId)?.toDomain()
         }
-    }
 
-    override suspend fun markSent(itemId: String): Result<Unit> {
-        return runCatching {
+    override suspend fun markSent(itemId: String): Result<Unit> =
+        runCatching {
             require(itemId.isNotBlank()) {
                 "Outbox item ID must not be blank"
             }
 
             outboxDao.markSent(
                 itemId = itemId,
-                updatedAt = SystemClock.nowEpochMilliseconds()
+                updatedAt = SystemClock.nowEpochMilliseconds(),
             )
         }
-    }
 
     override suspend fun markFailed(
         itemId: String,
-        errorMessage: String
-    ): Result<Unit> {
-        return runCatching {
+        errorMessage: String,
+    ): Result<Unit> =
+        runCatching {
             require(itemId.isNotBlank()) {
                 "Outbox item ID must not be blank"
             }
@@ -143,27 +137,24 @@ class DefaultProtocolOutbox(
             outboxDao.markFailed(
                 itemId = itemId,
                 errorMessage = errorMessage.take(MAX_ERROR_LENGTH),
-                updatedAt = SystemClock.nowEpochMilliseconds()
+                updatedAt = SystemClock.nowEpochMilliseconds(),
             )
         }
-    }
 
-    override suspend fun retry(itemId: String): Result<Unit> {
-        return runCatching {
+    override suspend fun retry(itemId: String): Result<Unit> =
+        runCatching {
             require(itemId.isNotBlank()) {
                 "Outbox item ID must not be blank"
             }
 
             outboxDao.retry(
                 itemId = itemId,
-                updatedAt = SystemClock.nowEpochMilliseconds()
+                updatedAt = SystemClock.nowEpochMilliseconds(),
             )
         }
-    }
 
-    private fun ProtocolOutboxEntity.toDomain(): ProtocolOutboxItem {
-
-        return ProtocolOutboxItem(
+    private fun ProtocolOutboxEntity.toDomain(): ProtocolOutboxItem =
+        ProtocolOutboxItem(
             id = id,
             contactId = contactId,
             packetId = packetId,
@@ -172,13 +163,11 @@ class DefaultProtocolOutbox(
             attemptCount = attemptCount,
             lastError = lastError,
             createdAtEpochMilliseconds = createdAtEpochMilliseconds,
-            updatedAtEpochMilliseconds = updatedAtEpochMilliseconds
+            updatedAtEpochMilliseconds = updatedAtEpochMilliseconds,
         )
-    }
 
-    private fun String.toOutboxStatus(): OutboxStatus {
-
-        return when (this) {
+    private fun String.toOutboxStatus(): OutboxStatus =
+        when (this) {
             OutboxStatus.PENDING.name -> OutboxStatus.PENDING
 
             OutboxStatus.PROCESSING.name -> OutboxStatus.PROCESSING
@@ -189,7 +178,6 @@ class DefaultProtocolOutbox(
 
             else -> error("Unknown outbox status: $this")
         }
-    }
 
     private fun createId(prefix: String): String {
         val timestamp = SystemClock.nowEpochMilliseconds()

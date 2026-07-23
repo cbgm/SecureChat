@@ -3,37 +3,27 @@ package com.cbgm.securechat.relay.session
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-class InMemoryRelayConnectionRegistry :
-    RelayConnectionRegistry {
-
+class InMemoryRelayConnectionRegistry : RelayConnectionRegistry {
     private val mutex = Mutex()
 
     private val connections = mutableMapOf<String, RelayClientConnection>()
 
-    override suspend fun register(
-        connection: RelayClientConnection
-    ): RelayClientConnection? {
-
-        return mutex.withLock {
+    override suspend fun register(connection: RelayClientConnection): RelayClientConnection? =
+        mutex.withLock {
             connections.put(
                 connection.relayId,
-                connection
+                connection,
             )
         }
-    }
 
-    override suspend fun find(
-        relayId: String
-    ): RelayClientConnection? {
-
-        return mutex.withLock {
+    override suspend fun find(relayId: String): RelayClientConnection? =
+        mutex.withLock {
             connections[relayId]
         }
-    }
 
     override suspend fun unregister(
         relayId: String,
-        connection: RelayClientConnection
+        connection: RelayClientConnection,
     ) {
         mutex.withLock {
             val currentlyRegistered = connections[relayId]
@@ -44,10 +34,8 @@ class InMemoryRelayConnectionRegistry :
         }
     }
 
-    override suspend fun connectedCount(): Int {
-
-        return mutex.withLock {
+    override suspend fun connectedCount(): Int =
+        mutex.withLock {
             connections.size
         }
-    }
 }

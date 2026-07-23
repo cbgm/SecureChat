@@ -8,15 +8,14 @@ import com.cbgm.securechat.feature.contacts.domain.model.ImportDevicePhoneNumber
 internal fun ImportDevicePhoneNumber.toEntity(
     contactId: String,
     updatedAtEpochMilliseconds: Long,
-    phoneNumberNormalizer: PhoneNumberNormalizer
-): ContactPhoneNumberEntity {
-    return ContactPhoneNumberEntity(
+    phoneNumberNormalizer: PhoneNumberNormalizer,
+): ContactPhoneNumberEntity =
+    ContactPhoneNumberEntity(
         id = IdGenerator.generate(),
         contactId = contactId,
         value = value,
         normalizedValue = phoneNumberNormalizer.normalize(value).getOrThrow(),
         type = type.name,
         label = label,
-        updatedAtEpochMilliseconds = updatedAtEpochMilliseconds
+        updatedAtEpochMilliseconds = updatedAtEpochMilliseconds,
     )
-}

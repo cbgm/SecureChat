@@ -7,5 +7,5 @@ data class ConversationSummary(
     val lastMessageText: String?,
     val unreadCount: Int,
     val lastMessageTimestamp: Long?,
-    val updatedAtEpochMilliseconds: Long
+    val updatedAtEpochMilliseconds: Long,
 )

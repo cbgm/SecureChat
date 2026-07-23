@@ -5,7 +5,7 @@ data class IdentityKeyPair(
     val encryptionPublicKey: UByteArray,
     val encryptionPrivateKey: UByteArray,
     val signingPublicKey: UByteArray,
-    val signingPrivateKey: UByteArray
+    val signingPrivateKey: UByteArray,
 ) {
     init {
         require(encryptionPublicKey.isNotEmpty()) {
@@ -25,9 +25,7 @@ data class IdentityKeyPair(
         }
     }
 
-    override fun equals(
-        other: Any?
-    ): Boolean {
+    override fun equals(other: Any?): Boolean {
         if (this === other) {
             return true
         }
@@ -37,9 +35,9 @@ data class IdentityKeyPair(
         }
 
         return encryptionPublicKey.contentEquals(other.encryptionPublicKey) &&
-                encryptionPrivateKey.contentEquals(other.encryptionPrivateKey) &&
-                signingPublicKey.contentEquals(other.signingPublicKey) &&
-                signingPrivateKey.contentEquals(other.signingPrivateKey)
+            encryptionPrivateKey.contentEquals(other.encryptionPrivateKey) &&
+            signingPublicKey.contentEquals(other.signingPublicKey) &&
+            signingPrivateKey.contentEquals(other.signingPrivateKey)
     }
 
     override fun hashCode(): Int {

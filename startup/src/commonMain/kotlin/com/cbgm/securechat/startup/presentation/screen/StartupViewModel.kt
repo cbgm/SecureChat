@@ -10,9 +10,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class StartupViewModel(
-    private val appInitializer: AppInitializer
+    private val appInitializer: AppInitializer,
 ) : ViewModel() {
-
     private val mutableUiState = MutableStateFlow<StartupUiState>(StartupUiState.Loading)
 
     val uiState: StateFlow<StartupUiState> = mutableUiState.asStateFlow()
@@ -38,19 +37,21 @@ class StartupViewModel(
         viewModelScope.launch {
             mutableUiState.value = StartupUiState.Loading
 
-            appInitializer.initialize().onSuccess { result ->
-                initializationCompleted = true
+            appInitializer
+                .initialize()
+                .onSuccess { result ->
+                    initializationCompleted = true
 
-                mutableUiState.value = if (result.identityReady) {
-                    StartupUiState.Ready
-                } else {
-                    StartupUiState.IdentityRequired
-                }
-            }
-                .onFailure { error ->
+                    mutableUiState.value =
+                        if (result.identityReady) {
+                            StartupUiState.Ready
+                        } else {
+                            StartupUiState.IdentityRequired
+                        }
+                }.onFailure { error ->
                     mutableUiState.value =
                         StartupUiState.Error(
-                            message = error.message ?: "SecureChat could not complete startup."
+                            message = error.message ?: "SecureChat could not complete startup.",
                         )
                 }
         }

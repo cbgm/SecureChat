@@ -9,15 +9,14 @@ import com.cbgm.securechat.feature.contacts.domain.model.RemoteIdentityUpdate
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactKeyExchangeStore
 
 class DefaultContactKeyExchangeStore(
-    private val contactDao: ContactDao
+    private val contactDao: ContactDao,
 ) : ContactKeyExchangeStore {
-
     override suspend fun storeRemoteIdentity(
         contactId: String,
         encryptionPublicKey: ByteArray,
-        signingPublicKey: ByteArray
-    ): Result<RemoteIdentityUpdate> {
-        return runCatching {
+        signingPublicKey: ByteArray,
+    ): Result<RemoteIdentityUpdate> =
+        runCatching {
             require(contactId.isNotBlank()) {
                 "Contact ID must not be blank"
             }
@@ -42,27 +41,30 @@ class DefaultContactKeyExchangeStore(
 
             val identityChanged = existing != null && !sameIdentity
 
-            val nextKeyExchangeStatus = if (sameIdentity) {
-                existing.keyExchangeStatus.toKeyExchangeStatus()
-            } else {
-                KeyExchangeStatus.ONE_WAY
-            }
+            val nextKeyExchangeStatus =
+                if (sameIdentity) {
+                    existing.keyExchangeStatus.toKeyExchangeStatus()
+                } else {
+                    KeyExchangeStatus.ONE_WAY
+                }
 
-            val nextVerificationStatus = if (sameIdentity) {
-                existing.verificationStatus.toVerificationStatus()
-            } else {
-                ContactVerificationStatus.UNVERIFIED
-            }
+            val nextVerificationStatus =
+                if (sameIdentity) {
+                    existing.verificationStatus.toVerificationStatus()
+                } else {
+                    ContactVerificationStatus.UNVERIFIED
+                }
 
             contactDao.upsertPublicIdentity(
-                identity = ContactPublicIdentityEntity(
-                    contactId = contactId,
-                    encryptionPublicKey = encryptionPublicKey.copyOf(),
-                    signingPublicKey = signingPublicKey.copyOf(),
-                    verificationStatus = nextVerificationStatus.name,
-                    keyExchangeStatus = nextKeyExchangeStatus.name,
-                    updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
-                )
+                identity =
+                    ContactPublicIdentityEntity(
+                        contactId = contactId,
+                        encryptionPublicKey = encryptionPublicKey.copyOf(),
+                        signingPublicKey = signingPublicKey.copyOf(),
+                        verificationStatus = nextVerificationStatus.name,
+                        keyExchangeStatus = nextKeyExchangeStatus.name,
+                        updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
+                    ),
             )
 
             RemoteIdentityUpdate(
@@ -71,19 +73,16 @@ class DefaultContactKeyExchangeStore(
                 signingPublicKey = signingPublicKey.copyOf(),
                 keyExchangeStatus = nextKeyExchangeStatus,
                 verificationStatus = nextVerificationStatus,
-                identityChanged = identityChanged
+                identityChanged = identityChanged,
             )
         }
-    }
 
     override suspend fun markMutual(
         contactId: String,
-        expectedRemoteEncryptionPublicKey:
-        ByteArray,
-        expectedRemoteSigningPublicKey:
-        ByteArray
-    ): Result<Unit> {
-        return runCatching {
+        expectedRemoteEncryptionPublicKey: ByteArray,
+        expectedRemoteSigningPublicKey: ByteArray,
+    ): Result<Unit> =
+        runCatching {
             require(contactId.isNotBlank()) {
                 "Contact ID must not be blank"
             }
@@ -96,42 +95,36 @@ class DefaultContactKeyExchangeStore(
                 "Expected signing key must not be empty"
             }
 
-            val updatedRows = contactDao.updateKeyExchangeStatusIfKeysMatch(
-                contactId = contactId,
-                expectedEncryptionPublicKey = expectedRemoteEncryptionPublicKey,
-                expectedSigningPublicKey = expectedRemoteSigningPublicKey,
-                keyExchangeStatus = KeyExchangeStatus.MUTUAL.name,
-                updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
-            )
+            val updatedRows =
+                contactDao.updateKeyExchangeStatusIfKeysMatch(
+                    contactId = contactId,
+                    expectedEncryptionPublicKey = expectedRemoteEncryptionPublicKey,
+                    expectedSigningPublicKey = expectedRemoteSigningPublicKey,
+                    keyExchangeStatus = KeyExchangeStatus.MUTUAL.name,
+                    updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
+                )
 
             check(updatedRows == 1) {
                 "Contact identity changed before acknowledgement was applied"
             }
         }
-    }
 
-    override suspend fun resetAllAfterLocalIdentityChange(): Result<Unit> {
-
-        return runCatching {
+    override suspend fun resetAllAfterLocalIdentityChange(): Result<Unit> =
+        runCatching {
             contactDao.replaceAllKeyExchangeStatuses(
                 currentKeyExchangeStatus = KeyExchangeStatus.MUTUAL.name,
                 keyExchangeStatus = KeyExchangeStatus.ONE_WAY.name,
-                updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+                updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
             )
         }
-    }
 
-    private fun String.toKeyExchangeStatus(): KeyExchangeStatus {
-
-        return KeyExchangeStatus.entries.firstOrNull { status ->
+    private fun String.toKeyExchangeStatus(): KeyExchangeStatus =
+        KeyExchangeStatus.entries.firstOrNull { status ->
             status.name == this
         } ?: KeyExchangeStatus.ONE_WAY
-    }
 
-    private fun String.toVerificationStatus(): ContactVerificationStatus {
-
-        return ContactVerificationStatus.entries.firstOrNull { status ->
+    private fun String.toVerificationStatus(): ContactVerificationStatus =
+        ContactVerificationStatus.entries.firstOrNull { status ->
             status.name == this
         } ?: ContactVerificationStatus.UNVERIFIED
-    }
 }

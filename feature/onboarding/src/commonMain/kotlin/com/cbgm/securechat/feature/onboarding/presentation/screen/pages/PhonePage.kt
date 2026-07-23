@@ -29,7 +29,6 @@ import com.cbgm.securechat.feature.identity.presentation.model.IdentityUiState
 
 private val Field = Color(0xFF102A46)
 
-
 @Composable
 fun PhonePage(
     identityState: IdentityUiState,
@@ -39,13 +38,12 @@ fun PhonePage(
     onRetryAutomaticNumber: () -> Unit,
     onPhoneNumberChanged: (String) -> Unit,
     onApproveAndCreate: () -> Unit,
-    onNameChanged: (String) -> Unit
+    onNameChanged: (String) -> Unit,
 ) {
     Column(
         Modifier.padding(MaterialTheme.spacing.medium),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-
         when (identityState) {
             IdentityUiState.Loading -> {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
@@ -53,7 +51,7 @@ fun PhonePage(
                 Text(
                     text = if (isCreating) "Generating secure identity…" else "Preparing phone setup…",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
 
@@ -62,14 +60,14 @@ fun PhonePage(
                     text = "Approve phone number",
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
                 Spacer(Modifier.height(MaterialTheme.spacing.base))
                 Text(
                     text = "We use it as your stable contact and routing identity. You can edit it before continuing.",
                     color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .74f),
                     style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
                 Spacer(Modifier.height(MaterialTheme.spacing.medium))
                 OutlinedTextField(
@@ -84,29 +82,32 @@ fun PhonePage(
                     },
                     supportingText = {
                         Text(
-                            text = identityState.phoneNumberError
-                                ?: if (identityState.phoneNumber.isBlank()) "No automatic number found. Enter it manually or choose one." else "Detected automatically. Confirm or change it.",
+                            text =
+                                identityState.phoneNumberError
+                                    ?: if (identityState.phoneNumber.isBlank()) "No automatic number found. Enter it manually or choose one." else "Detected automatically. Confirm or change it.",
                             style = MaterialTheme.typography.labelLarge,
                         )
                     },
                     isError = identityState.phoneNumberError != null,
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    textStyle = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        focusedContainerColor = Field,
-                        unfocusedContainerColor = Field,
-                        focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .18f),
-                        focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .72f),
-                        cursorColor = MaterialTheme.colorScheme.secondary
-                    )
+                    textStyle =
+                        MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            focusedContainerColor = Field,
+                            unfocusedContainerColor = Field,
+                            focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .18f),
+                            focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .72f),
+                            cursorColor = MaterialTheme.colorScheme.secondary,
+                        ),
                 )
                 Spacer(Modifier.height(MaterialTheme.spacing.small))
                 OutlinedTextField(
@@ -127,40 +128,41 @@ fun PhonePage(
                     },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    textStyle = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        focusedContainerColor = Field,
-                        unfocusedContainerColor = Field,
-                        focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .18f),
-                        focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .72f),
-                        cursorColor = MaterialTheme.colorScheme.secondary
-                    )
+                    textStyle =
+                        MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            focusedContainerColor = Field,
+                            unfocusedContainerColor = Field,
+                            focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .18f),
+                            focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .72f),
+                            cursorColor = MaterialTheme.colorScheme.secondary,
+                        ),
                 )
                 Spacer(Modifier.height(MaterialTheme.spacing.base))
                 if (canRetryAutomatic) {
                     SecureChatSecondaryButton(
                         onClick = onRetryAutomaticNumber,
-                        text = "Try SIM number again"
-
+                        text = "Try SIM number again",
                     )
                     Spacer(Modifier.height(MaterialTheme.spacing.base))
                 }
                 SecureChatSecondaryButton(
                     onClick = onChooseAnotherNumber,
-                    text = if (identityState.phoneNumber.isBlank()) "Choose phone number" else "Choose another number"
+                    text = if (identityState.phoneNumber.isBlank()) "Choose phone number" else "Choose another number",
                 )
                 Spacer(Modifier.height(MaterialTheme.spacing.small))
                 SecureChatApprovalButton(
                     onClick = onApproveAndCreate,
                     enabled = identityState.phoneNumber.isNotBlank() && identityState.name.isNotBlank(),
-                    text = "Approve and create identity"
+                    text = "Approve and create identity",
                 )
             }
 
@@ -171,7 +173,7 @@ fun PhonePage(
                     text = "Identity ready. Opening SecureChat…",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
 
@@ -180,17 +182,16 @@ fun PhonePage(
                     text = "The local identity is incomplete. SecureChat will not silently replace existing keys.",
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
             }
-
 
             is IdentityUiState.Error -> {
                 Text(
                     text = identityState.message,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
             }
         }
@@ -199,15 +200,17 @@ fun PhonePage(
 
 @Preview
 @Composable
-fun PhonePagePreview() {
+private fun PhonePagePreview() {
     SecureChatTheme {
         PhonePage(
-            identityState = IdentityUiState.Ready(
-                localPhoneNumber = "445446",
-                publicIdentity = PublicIdentity(
-                    ByteArray(size = 0),
-                    ByteArray(size = 0)
-                ),
+            identityState =
+                IdentityUiState.Ready(
+                    localPhoneNumber = "445446",
+                    publicIdentity =
+                        PublicIdentity(
+                            ByteArray(size = 0),
+                            ByteArray(size = 0),
+                        ),
                 ),
             isCreating = false,
             canRetryAutomatic = true,
@@ -215,14 +218,14 @@ fun PhonePagePreview() {
             onRetryAutomaticNumber = {},
             onPhoneNumberChanged = {},
             onApproveAndCreate = {},
-            onNameChanged = {}
+            onNameChanged = {},
         )
     }
 }
 
 @Preview
 @Composable
-fun PhonePageNoIdentityPreview() {
+private fun PhonePageNoIdentityPreview() {
     SecureChatTheme {
         PhonePage(
             identityState = IdentityUiState.NoIdentity(),
@@ -232,7 +235,7 @@ fun PhonePageNoIdentityPreview() {
             onRetryAutomaticNumber = {},
             onPhoneNumberChanged = {},
             onApproveAndCreate = {},
-            onNameChanged = {}
+            onNameChanged = {},
         )
     }
 }

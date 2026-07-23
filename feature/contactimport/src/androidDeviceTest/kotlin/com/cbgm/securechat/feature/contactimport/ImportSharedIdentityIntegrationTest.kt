@@ -44,14 +44,13 @@ import kotlin.test.assertTrue
  * - in-memory Room database
  */
 class ImportSharedIdentityIntegrationTest {
-
     private lateinit var database: SecureChatDatabase
 
     private lateinit var contactRepository:
-            DefaultContactRepository
+        DefaultContactRepository
 
     private lateinit var importSharedIdentity:
-            ImportSharedIdentity
+        ImportSharedIdentity
 
     @BeforeTest
     fun setUp() {
@@ -62,42 +61,38 @@ class ImportSharedIdentityIntegrationTest {
         database =
             Room
                 .inMemoryDatabaseBuilder<SecureChatDatabase>(
-                    context = context
-                )
-                .setDriver(
-                    BundledSQLiteDriver()
-                )
-                .setQueryCoroutineContext(
-                    Dispatchers.IO
-                )
-                .build()
+                    context = context,
+                ).setDriver(
+                    BundledSQLiteDriver(),
+                ).setQueryCoroutineContext(
+                    Dispatchers.IO,
+                ).build()
 
         val contactDao =
             database.contactDao()
 
         val mergeService =
             DefaultContactMergeService(
-                contactDao = contactDao
+                contactDao = contactDao,
             )
 
         contactRepository =
             DefaultContactRepository(
                 contactDao = contactDao,
-                mergeService = mergeService
+                mergeService = mergeService,
             )
 
         val importContact =
             ImportContact(
-                repository = contactRepository
+                repository = contactRepository,
             )
 
         importSharedIdentity =
             ImportSharedIdentity(
                 identityShareCodec =
                     DefaultIdentityShareCodec(),
-
                 importContact =
-                    importContact
+                importContact,
             )
     }
 
@@ -109,7 +104,6 @@ class ImportSharedIdentityIntegrationTest {
     @Test
     fun keysOnlyPayloadStoresBothPublicKeys() =
         runBlocking {
-
             val encryptionPublicKey =
                 testKey(seed = 1)
 
@@ -119,14 +113,11 @@ class ImportSharedIdentityIntegrationTest {
             val payload =
                 SharedIdentityPayload(
                     version = 1,
-
                     encryptionPublicKey =
-                        encryptionPublicKey,
-
+                    encryptionPublicKey,
                     signingPublicKey =
-                        signingPublicKey,
-
-                    contactDetails = null
+                    signingPublicKey,
+                    contactDetails = null,
                 )
 
             val encodedIdentity =
@@ -137,111 +128,107 @@ class ImportSharedIdentityIntegrationTest {
             val result =
                 importSharedIdentity(
                     encodedIdentity =
-                        encodedIdentity
+                    encodedIdentity,
                 )
 
             assertTrue(
                 actual = result.isSuccess,
                 message =
                     "Import failed: " +
-                            result.exceptionOrNull()?.message
+                        result.exceptionOrNull()?.message,
             )
 
             val importedContact =
                 result.getOrThrow()
 
             assertNull(
-                actual = importedContact.displayName
+                actual = importedContact.displayName,
             )
 
             assertTrue(
                 actual =
-                    importedContact.phoneNumbers.isEmpty()
+                    importedContact.phoneNumbers.isEmpty(),
             )
 
             assertNull(
                 actual =
-                    importedContact.preferredPhoneNumber
+                    importedContact.preferredPhoneNumber,
             )
 
             assertNull(
                 actual =
-                    importedContact.deviceContactId
+                    importedContact.deviceContactId,
             )
 
             assertEquals(
                 expected =
                     DeviceContactLinkStatus.NOT_LINKED,
-
                 actual =
                     importedContact
-                        .deviceContactLinkStatus
+                        .deviceContactLinkStatus,
             )
 
             val secureChatIdentity =
                 requireSecureChatIdentity(
-                    importedContact.secureChatIdentity
+                    importedContact.secureChatIdentity,
                 )
 
             assertContentEquals(
                 expected = encryptionPublicKey,
                 actual =
                     secureChatIdentity
-                        .encryptionPublicKey
+                        .encryptionPublicKey,
             )
 
             assertContentEquals(
                 expected = signingPublicKey,
                 actual =
                     secureChatIdentity
-                        .signingPublicKey
+                        .signingPublicKey,
             )
 
             assertEquals(
                 expected =
                     ContactVerificationStatus.UNVERIFIED,
-
                 actual =
                     secureChatIdentity
-                        .verificationStatus
+                        .verificationStatus,
             )
 
             val storedContact =
                 contactRepository
                     .findBySigningPublicKey(
                         signingPublicKey =
-                            signingPublicKey
-                    )
-                    .getOrThrow()
+                        signingPublicKey,
+                    ).getOrThrow()
 
             assertNotNull(
-                actual = storedContact
+                actual = storedContact,
             )
 
             val storedIdentity =
                 requireSecureChatIdentity(
-                    storedContact.secureChatIdentity
+                    storedContact.secureChatIdentity,
                 )
 
             assertContentEquals(
                 expected = encryptionPublicKey,
                 actual =
                     storedIdentity
-                        .encryptionPublicKey
+                        .encryptionPublicKey,
             )
 
             assertContentEquals(
                 expected = signingPublicKey,
                 actual =
                     storedIdentity
-                        .signingPublicKey
+                        .signingPublicKey,
             )
         }
 
     @Test
     fun fullContactPayloadStoresKeysAndContactDetails() =
         runBlocking {
-
             val encryptionPublicKey =
                 testKey(seed = 2)
 
@@ -251,21 +238,17 @@ class ImportSharedIdentityIntegrationTest {
             val payload =
                 SharedIdentityPayload(
                     version = 1,
-
                     encryptionPublicKey =
-                        encryptionPublicKey,
-
+                    encryptionPublicKey,
                     signingPublicKey =
-                        signingPublicKey,
-
+                    signingPublicKey,
                     contactDetails =
                         SharedContactDetails(
                             displayName =
                                 "Alice Example",
-
                             phoneNumber =
-                                "+49 170 1234567"
-                        )
+                                "+49 170 1234567",
+                        ),
                 )
 
             val encodedIdentity =
@@ -276,14 +259,13 @@ class ImportSharedIdentityIntegrationTest {
             val importedContact =
                 importSharedIdentity(
                     encodedIdentity =
-                        encodedIdentity
-                )
-                    .getOrThrow()
+                    encodedIdentity,
+                ).getOrThrow()
 
             assertEquals(
                 expected = "Alice Example",
                 actual =
-                    importedContact.displayName
+                    importedContact.displayName,
             )
 
             assertEquals(
@@ -291,49 +273,48 @@ class ImportSharedIdentityIntegrationTest {
                 actual =
                     importedContact
                         .preferredPhoneNumber
-                        ?.value
+                        ?.value,
             )
 
             assertEquals(
                 expected = 1,
                 actual =
-                    importedContact.phoneNumbers.size
+                    importedContact.phoneNumbers.size,
             )
 
             val secureChatIdentity =
                 requireSecureChatIdentity(
-                    importedContact.secureChatIdentity
+                    importedContact.secureChatIdentity,
                 )
 
             assertContentEquals(
                 expected = encryptionPublicKey,
                 actual =
                     secureChatIdentity
-                        .encryptionPublicKey
+                        .encryptionPublicKey,
             )
 
             assertContentEquals(
                 expected = signingPublicKey,
                 actual =
                     secureChatIdentity
-                        .signingPublicKey
+                        .signingPublicKey,
             )
 
             val storedContact =
                 contactRepository
                     .findBySigningPublicKey(
                         signingPublicKey =
-                            signingPublicKey
-                    )
-                    .getOrThrow()
+                        signingPublicKey,
+                    ).getOrThrow()
 
             assertNotNull(
-                actual = storedContact
+                actual = storedContact,
             )
 
             assertEquals(
                 expected = "Alice Example",
-                actual = storedContact.displayName
+                actual = storedContact.displayName,
             )
 
             assertEquals(
@@ -341,20 +322,19 @@ class ImportSharedIdentityIntegrationTest {
                 actual =
                     storedContact
                         .preferredPhoneNumber
-                        ?.value
+                        ?.value,
             )
 
             assertEquals(
                 expected = 1,
                 actual =
-                    storedContact.phoneNumbers.size
+                    storedContact.phoneNumbers.size,
             )
         }
 
     @Test
     fun fullContactImportUpdatesEarlierKeysOnlyContact() =
         runBlocking {
-
             val encryptionPublicKey =
                 testKey(seed = 3)
 
@@ -367,14 +347,11 @@ class ImportSharedIdentityIntegrationTest {
             val keysOnlyPayload =
                 SharedIdentityPayload(
                     version = 1,
-
                     encryptionPublicKey =
-                        encryptionPublicKey,
-
+                    encryptionPublicKey,
                     signingPublicKey =
-                        signingPublicKey,
-
-                    contactDetails = null
+                    signingPublicKey,
+                    contactDetails = null,
                 )
 
             val firstContact =
@@ -382,28 +359,23 @@ class ImportSharedIdentityIntegrationTest {
                     encodedIdentity =
                         codec
                             .encode(keysOnlyPayload)
-                            .getOrThrow()
-                )
-                    .getOrThrow()
+                            .getOrThrow(),
+                ).getOrThrow()
 
             val fullContactPayload =
                 SharedIdentityPayload(
                     version = 1,
-
                     encryptionPublicKey =
-                        encryptionPublicKey,
-
+                    encryptionPublicKey,
                     signingPublicKey =
-                        signingPublicKey,
-
+                    signingPublicKey,
                     contactDetails =
                         SharedContactDetails(
                             displayName =
                                 "Bob",
-
                             phoneNumber =
-                                "+49 111 222333"
-                        )
+                                "+49 111 222333",
+                        ),
                 )
 
             val updatedContact =
@@ -411,18 +383,17 @@ class ImportSharedIdentityIntegrationTest {
                     encodedIdentity =
                         codec
                             .encode(fullContactPayload)
-                            .getOrThrow()
-                )
-                    .getOrThrow()
+                            .getOrThrow(),
+                ).getOrThrow()
 
             assertEquals(
                 expected = firstContact.id,
-                actual = updatedContact.id
+                actual = updatedContact.id,
             )
 
             assertEquals(
                 expected = "Bob",
-                actual = updatedContact.displayName
+                actual = updatedContact.displayName,
             )
 
             assertEquals(
@@ -430,32 +401,32 @@ class ImportSharedIdentityIntegrationTest {
                 actual =
                     updatedContact
                         .preferredPhoneNumber
-                        ?.value
+                        ?.value,
             )
 
             assertEquals(
                 expected = 1,
                 actual =
-                    updatedContact.phoneNumbers.size
+                    updatedContact.phoneNumbers.size,
             )
 
             val secureChatIdentity =
                 requireSecureChatIdentity(
-                    updatedContact.secureChatIdentity
+                    updatedContact.secureChatIdentity,
                 )
 
             assertContentEquals(
                 expected = encryptionPublicKey,
                 actual =
                     secureChatIdentity
-                        .encryptionPublicKey
+                        .encryptionPublicKey,
             )
 
             assertContentEquals(
                 expected = signingPublicKey,
                 actual =
                     secureChatIdentity
-                        .signingPublicKey
+                        .signingPublicKey,
             )
 
             val contacts =
@@ -465,14 +436,13 @@ class ImportSharedIdentityIntegrationTest {
 
             assertEquals(
                 expected = 1,
-                actual = contacts.size
+                actual = contacts.size,
             )
         }
 
     @Test
     fun sharedIdentityAttachesKeysToExistingDeviceContact() =
         runBlocking {
-
             val contactId =
                 "device-contact-row"
 
@@ -485,27 +455,21 @@ class ImportSharedIdentityIntegrationTest {
                     contact =
                         ContactEntity(
                             id = contactId,
-
                             displayName =
                                 "Charlie Device",
-
                             deviceContactId =
                                 "android-contact-77",
-
                             deviceContactLinkStatus =
                                 DeviceContactLinkStatus
                                     .LINKED
                                     .name,
-
                             preferredPhoneNumberId =
-                                phoneNumberId,
-
+                            phoneNumberId,
                             createdAtEpochMilliseconds =
-                                1_000L,
-
+                            1_000L,
                             updatedAtEpochMilliseconds =
-                                1_000L
-                        )
+                            1_000L,
+                        ),
                 )
 
             database
@@ -515,26 +479,21 @@ class ImportSharedIdentityIntegrationTest {
                         listOf(
                             ContactPhoneNumberEntity(
                                 id =
-                                    phoneNumberId,
-
+                                phoneNumberId,
                                 contactId =
-                                    contactId,
-
+                                contactId,
                                 value =
                                     "+49 222 333444",
-
                                 type =
                                     ContactPhoneNumberType
                                         .MOBILE
                                         .name,
-
                                 label =
-                                    null,
-
+                                null,
                                 updatedAtEpochMilliseconds =
-                                    1_000L
-                            )
-                        )
+                                1_000L,
+                            ),
+                        ),
                 )
 
             val encryptionPublicKey =
@@ -546,21 +505,17 @@ class ImportSharedIdentityIntegrationTest {
             val payload =
                 SharedIdentityPayload(
                     version = 1,
-
                     encryptionPublicKey =
-                        encryptionPublicKey,
-
+                    encryptionPublicKey,
                     signingPublicKey =
-                        signingPublicKey,
-
+                    signingPublicKey,
                     contactDetails =
                         SharedContactDetails(
                             displayName =
                                 "Charlie",
-
                             phoneNumber =
-                                "+49 222 333444"
-                        )
+                                "+49 222 333444",
+                        ),
                 )
 
             val encodedIdentity =
@@ -571,18 +526,17 @@ class ImportSharedIdentityIntegrationTest {
             val importedContact =
                 importSharedIdentity(
                     encodedIdentity =
-                        encodedIdentity
-                )
-                    .getOrThrow()
+                    encodedIdentity,
+                ).getOrThrow()
 
             assertEquals(
                 expected = contactId,
-                actual = importedContact.id
+                actual = importedContact.id,
             )
 
             assertEquals(
                 expected = "Charlie",
-                actual = importedContact.displayName
+                actual = importedContact.displayName,
             )
 
             assertEquals(
@@ -590,47 +544,46 @@ class ImportSharedIdentityIntegrationTest {
                 actual =
                     importedContact
                         .preferredPhoneNumber
-                        ?.value
+                        ?.value,
             )
 
             assertEquals(
                 expected = 1,
                 actual =
-                    importedContact.phoneNumbers.size
+                    importedContact.phoneNumbers.size,
             )
 
             assertEquals(
                 expected = "android-contact-77",
                 actual =
-                    importedContact.deviceContactId
+                    importedContact.deviceContactId,
             )
 
             assertEquals(
                 expected =
                     DeviceContactLinkStatus.LINKED,
-
                 actual =
                     importedContact
-                        .deviceContactLinkStatus
+                        .deviceContactLinkStatus,
             )
 
             val secureChatIdentity =
                 requireSecureChatIdentity(
-                    importedContact.secureChatIdentity
+                    importedContact.secureChatIdentity,
                 )
 
             assertContentEquals(
                 expected = encryptionPublicKey,
                 actual =
                     secureChatIdentity
-                        .encryptionPublicKey
+                        .encryptionPublicKey,
             )
 
             assertContentEquals(
                 expected = signingPublicKey,
                 actual =
                     secureChatIdentity
-                        .signingPublicKey
+                        .signingPublicKey,
             )
 
             val contacts =
@@ -640,14 +593,13 @@ class ImportSharedIdentityIntegrationTest {
 
             assertEquals(
                 expected = 1,
-                actual = contacts.size
+                actual = contacts.size,
             )
         }
 
     @Test
     fun sharedIdentityPreservesOtherExistingPhoneNumbers() =
         runBlocking {
-
             val contactId =
                 "multiple-device-contact"
 
@@ -663,27 +615,21 @@ class ImportSharedIdentityIntegrationTest {
                     contact =
                         ContactEntity(
                             id = contactId,
-
                             displayName =
                                 "Dana",
-
                             deviceContactId =
                                 "device-dana",
-
                             deviceContactLinkStatus =
                                 DeviceContactLinkStatus
                                     .LINKED
                                     .name,
-
                             preferredPhoneNumberId =
-                                homePhoneId,
-
+                            homePhoneId,
                             createdAtEpochMilliseconds =
-                                1_000L,
-
+                            1_000L,
                             updatedAtEpochMilliseconds =
-                                1_000L
-                        )
+                            1_000L,
+                        ),
                 )
 
             database
@@ -702,7 +648,7 @@ class ImportSharedIdentityIntegrationTest {
                                         .name,
                                 label = null,
                                 updatedAtEpochMilliseconds =
-                                    1_000L
+                                1_000L,
                             ),
                             ContactPhoneNumberEntity(
                                 id = mobilePhoneId,
@@ -715,29 +661,25 @@ class ImportSharedIdentityIntegrationTest {
                                         .name,
                                 label = null,
                                 updatedAtEpochMilliseconds =
-                                    1_000L
-                            )
-                        )
+                                1_000L,
+                            ),
+                        ),
                 )
 
             val payload =
                 SharedIdentityPayload(
                     version = 1,
-
                     encryptionPublicKey =
                         testKey(seed = 5),
-
                     signingPublicKey =
                         testKey(seed = 105),
-
                     contactDetails =
                         SharedContactDetails(
                             displayName =
                                 "Dana Secure",
-
                             phoneNumber =
-                                "+49 222 222222"
-                        )
+                                "+49 222 222222",
+                        ),
                 )
 
             val importedContact =
@@ -745,19 +687,18 @@ class ImportSharedIdentityIntegrationTest {
                     encodedIdentity =
                         DefaultIdentityShareCodec()
                             .encode(payload)
-                            .getOrThrow()
-                )
-                    .getOrThrow()
+                            .getOrThrow(),
+                ).getOrThrow()
 
             assertEquals(
                 expected = contactId,
-                actual = importedContact.id
+                actual = importedContact.id,
             )
 
             assertEquals(
                 expected = 2,
                 actual =
-                    importedContact.phoneNumbers.size
+                    importedContact.phoneNumbers.size,
             )
 
             assertEquals(
@@ -765,44 +706,39 @@ class ImportSharedIdentityIntegrationTest {
                 actual =
                     importedContact
                         .preferredPhoneNumber
-                        ?.value
+                        ?.value,
             )
 
             assertTrue(
                 importedContact.phoneNumbers.any {
                     it.value == "+49 111 111111"
-                }
+                },
             )
 
             assertTrue(
                 importedContact.phoneNumbers.any {
                     it.value == "+49 222 222222"
-                }
+                },
             )
         }
 
     @Test
     fun importingSamePayloadTwiceDoesNotDuplicateContactOrPhoneNumber() =
         runBlocking {
-
             val payload =
                 SharedIdentityPayload(
                     version = 1,
-
                     encryptionPublicKey =
                         testKey(seed = 6),
-
                     signingPublicKey =
                         testKey(seed = 106),
-
                     contactDetails =
                         SharedContactDetails(
                             displayName =
                                 "Erin",
-
                             phoneNumber =
-                                "+49 333 333333"
-                        )
+                                "+49 333 333333",
+                        ),
                 )
 
             val encodedIdentity =
@@ -813,26 +749,24 @@ class ImportSharedIdentityIntegrationTest {
             val firstContact =
                 importSharedIdentity(
                     encodedIdentity =
-                        encodedIdentity
-                )
-                    .getOrThrow()
+                    encodedIdentity,
+                ).getOrThrow()
 
             val secondContact =
                 importSharedIdentity(
                     encodedIdentity =
-                        encodedIdentity
-                )
-                    .getOrThrow()
+                    encodedIdentity,
+                ).getOrThrow()
 
             assertEquals(
                 expected = firstContact.id,
-                actual = secondContact.id
+                actual = secondContact.id,
             )
 
             assertEquals(
                 expected = 1,
                 actual =
-                    secondContact.phoneNumbers.size
+                    secondContact.phoneNumbers.size,
             )
 
             assertEquals(
@@ -840,7 +774,7 @@ class ImportSharedIdentityIntegrationTest {
                 actual =
                     secondContact
                         .preferredPhoneNumber
-                        ?.value
+                        ?.value,
             )
 
             val contacts =
@@ -850,22 +784,21 @@ class ImportSharedIdentityIntegrationTest {
 
             assertEquals(
                 expected = 1,
-                actual = contacts.size
+                actual = contacts.size,
             )
         }
 
     @Test
     fun invalidPayloadFailsWithoutCreatingContact() =
         runBlocking {
-
             val result =
                 importSharedIdentity(
                     encodedIdentity =
-                        "This is not a SecureChat identity"
+                        "This is not a SecureChat identity",
                 )
 
             assertTrue(
-                actual = result.isFailure
+                actual = result.isFailure,
             )
 
             val contacts =
@@ -874,31 +807,24 @@ class ImportSharedIdentityIntegrationTest {
                     .first()
 
             assertTrue(
-                actual = contacts.isEmpty()
+                actual = contacts.isEmpty(),
             )
         }
 
-    private fun requireSecureChatIdentity(
-        secureChatIdentity: SecureChatIdentity?
-    ): SecureChatIdentity {
-        return assertNotNull(
+    private fun requireSecureChatIdentity(secureChatIdentity: SecureChatIdentity?): SecureChatIdentity =
+        assertNotNull(
             actual = secureChatIdentity,
             message =
-                "Expected contact to have a SecureChat identity"
+                "Expected contact to have a SecureChat identity",
         )
-    }
 
-    private fun testKey(
-        seed: Int
-    ): ByteArray {
-        return ByteArray(
-            size = 32
+    private fun testKey(seed: Int): ByteArray =
+        ByteArray(
+            size = 32,
         ) { index ->
             (
-                    seed + index
-                    )
-                .mod(256)
+                seed + index
+            ).mod(256)
                 .toByte()
         }
-    }
 }

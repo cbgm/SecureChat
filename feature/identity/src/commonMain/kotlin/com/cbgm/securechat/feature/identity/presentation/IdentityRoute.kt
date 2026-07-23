@@ -24,9 +24,8 @@ fun IdentityRoute(
     onShareIdentity: () -> Unit,
     scrollState: ScrollState,
     innerPadding: PaddingValues,
-
     viewModel: IdentityViewModel =
-        koinViewModel()
+        koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -58,7 +57,7 @@ fun IdentityRoute(
                     viewModel.onPhoneNumberHintFailed(message = result.message)
                 }
             }
-        }
+        },
     )
 
     LaunchedEffect(uiState) {
@@ -66,7 +65,6 @@ fun IdentityRoute(
             onIdentityReady()
         }
     }
-
 
     IdentityScreen(
         uiState = uiState,
@@ -79,6 +77,6 @@ fun IdentityRoute(
         onShareIdentity = onShareIdentity,
         scrollState = scrollState,
         innerPadding = innerPadding,
-        modifier = modifier
+        modifier = modifier,
     )
 }

@@ -5,19 +5,19 @@ import com.cbgm.securechat.feature.contactimport.presentation.screen.ImportIdent
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
-val contactImportModule = module {
+val contactImportModule =
+    module {
 
-    factory {
-        ImportSharedIdentity(
-            identityShareCodec = get(),
+        factory {
+            ImportSharedIdentity(
+                identityShareCodec = get(),
+                importContact = get(),
+            )
+        }
 
-            importContact = get()
-        )
+        viewModel {
+            ImportIdentityViewModel(
+                importSharedIdentity = get(),
+            )
+        }
     }
-
-    viewModel {
-        ImportIdentityViewModel(
-            importSharedIdentity = get()
-        )
-    }
-}

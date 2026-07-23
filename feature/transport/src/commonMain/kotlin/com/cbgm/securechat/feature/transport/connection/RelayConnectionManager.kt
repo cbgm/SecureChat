@@ -3,7 +3,6 @@ package com.cbgm.securechat.feature.transport.connection
 import kotlinx.coroutines.flow.StateFlow
 
 interface RelayConnectionManager {
-
     val connectionState: StateFlow<TransportConnectionState>
 
     /**

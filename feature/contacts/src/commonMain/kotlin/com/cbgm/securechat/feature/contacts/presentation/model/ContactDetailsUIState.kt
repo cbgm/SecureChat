@@ -4,7 +4,6 @@ import com.cbgm.securechat.core.crypto.safety.SafetyNumber
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 
 sealed interface ContactDetailsUiState {
-
     data object Loading : ContactDetailsUiState
 
     data class Content(
@@ -13,9 +12,8 @@ sealed interface ContactDetailsUiState {
         val isVerificationDialogVisible: Boolean = false,
         val hasConfirmedComparison: Boolean = false,
         val isSavingVerification: Boolean = false,
-        val verificationError: String? = null
+        val verificationError: String? = null,
     ) : ContactDetailsUiState {
-
         val canVerify: Boolean
             get() {
                 return safetyNumber != null && contact.secureChatIdentity != null
@@ -25,6 +23,6 @@ sealed interface ContactDetailsUiState {
     data object NotFound : ContactDetailsUiState
 
     data class Error(
-        val message: String
+        val message: String,
     ) : ContactDetailsUiState
 }

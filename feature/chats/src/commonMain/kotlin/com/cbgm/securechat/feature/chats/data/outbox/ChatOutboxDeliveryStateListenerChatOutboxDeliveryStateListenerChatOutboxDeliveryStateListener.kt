@@ -5,50 +5,43 @@ import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 
 class ChatOutboxDeliveryStateListener(
-    private val messageDeliveryStatusDao: MessageDeliveryStatusDao
+    private val messageDeliveryStatusDao: MessageDeliveryStatusDao,
 ) : OutboxDeliveryStateListener {
-
-    override suspend fun onProcessing(
-        packetId: String
-    ): Result<Unit> {
-        return updateStatus(
+    override suspend fun onProcessing(packetId: String): Result<Unit> =
+        updateStatus(
             packetId = packetId,
-            status = MessageDeliveryStatus.SENDING
+            status = MessageDeliveryStatus.SENDING,
         )
-    }
 
-    override suspend fun onSent(
-        packetId: String
-    ): Result<Unit> {
-        return updateStatus(
+    override suspend fun onSent(packetId: String): Result<Unit> =
+        updateStatus(
             packetId = packetId,
-            status = MessageDeliveryStatus.SENT
+            status = MessageDeliveryStatus.SENT,
         )
-    }
 
     override suspend fun onFailed(
         packetId: String,
-        errorMessage: String
-    ): Result<Unit> {
-        return updateStatus(
+        errorMessage: String,
+    ): Result<Unit> =
+        updateStatus(
             packetId = packetId,
-            status = MessageDeliveryStatus.FAILED
+            status = MessageDeliveryStatus.FAILED,
         )
-    }
 
     private suspend fun updateStatus(
         packetId: String,
-        status: MessageDeliveryStatus
-    ): Result<Unit> {
-        return runCatching {
+        status: MessageDeliveryStatus,
+    ): Result<Unit> =
+        runCatching {
             require(packetId.isNotBlank()) {
                 "Packet ID must not be blank"
             }
 
-            val updatedRows = messageDeliveryStatusDao.updateDeliveryStatus(
-                packetId = packetId,
-                deliveryStatus = status.name
-            )
+            val updatedRows =
+                messageDeliveryStatusDao.updateDeliveryStatus(
+                    packetId = packetId,
+                    deliveryStatus = status.name,
+                )
 
             /*
              * Not every protocol packet corresponds to a visible chat
@@ -57,5 +50,4 @@ class ChatOutboxDeliveryStateListener(
              */
             check(updatedRows >= 0)
         }
-    }
 }

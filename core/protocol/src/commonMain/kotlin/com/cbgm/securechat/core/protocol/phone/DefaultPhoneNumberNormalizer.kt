@@ -1,9 +1,8 @@
 package com.cbgm.securechat.core.protocol.phone
 
 class DefaultPhoneNumberNormalizer : PhoneNumberNormalizer {
-
-    override fun normalize(phoneNumber: String): Result<String> {
-        return runCatching {
+    override fun normalize(phoneNumber: String): Result<String> =
+        runCatching {
             val trimmed = phoneNumber.trim()
 
             require(trimmed.isNotEmpty()) {
@@ -16,19 +15,20 @@ class DefaultPhoneNumberNormalizer : PhoneNumberNormalizer {
                 "Phone number contains no digits"
             }
 
-            val normalized = when {
-                trimmed.startsWith("+") -> {
-                    "+$digits"
-                }
+            val normalized =
+                when {
+                    trimmed.startsWith("+") -> {
+                        "+$digits"
+                    }
 
-                digits.startsWith("00") -> {
-                    "+${digits.drop(2)}"
-                }
+                    digits.startsWith("00") -> {
+                        "+${digits.drop(2)}"
+                    }
 
-                else -> {
-                    digits
+                    else -> {
+                        digits
+                    }
                 }
-            }
 
             require(normalized.count { character -> character.isDigit() } >= MINIMUM_DIGIT_COUNT) {
                 "Phone number is too short"
@@ -36,10 +36,8 @@ class DefaultPhoneNumberNormalizer : PhoneNumberNormalizer {
 
             normalized
         }
-    }
 
     private companion object {
-
         const val MINIMUM_DIGIT_COUNT = 5
     }
 }

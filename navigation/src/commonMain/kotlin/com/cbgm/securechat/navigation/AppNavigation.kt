@@ -12,7 +12,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.cbgm.securechat.feature.chats.presentation.ChatRoute
 import com.cbgm.securechat.feature.contactimport.presentation.ImportIdentityRoute
-import com.cbgm.securechat.feature.identity.presentation.ShareIdentityRoute
 import com.cbgm.securechat.feature.contactimport.presentation.ScanIdentityRoute
 import com.cbgm.securechat.feature.contacts.presentation.ContactDetailsRoute
 import com.cbgm.securechat.feature.contacts.presentation.ContactsRoute
@@ -20,6 +19,7 @@ import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
 import com.cbgm.securechat.feature.identity.domain.model.SharedContactDetails
 import com.cbgm.securechat.feature.identity.domain.model.SharedIdentityPayload
 import com.cbgm.securechat.feature.identity.platform.rememberIdentityShareLauncher
+import com.cbgm.securechat.feature.identity.presentation.ShareIdentityRoute
 import com.cbgm.securechat.feature.settings.presentation.DeveloperMenuRoute
 import com.cbgm.securechat.feature.settings.presentation.DisclaimerRoute
 import com.cbgm.securechat.feature.settings.presentation.LicensesRoute
@@ -36,9 +36,8 @@ fun AppNavigation() {
     SecureChatAppBackground {
         NavHost(
             navController = navController,
-            startDestination = AppDestination.Startup
+            startDestination = AppDestination.Startup,
         ) {
-
             composable<AppDestination.Licences> {
                 LicensesRoute(onBack = { navController.popBackStack() })
             }
@@ -53,13 +52,14 @@ fun AppNavigation() {
                         .currentBackStackEntry
                         ?.savedStateHandle
                         ?.get<String>(
-                            "type"
+                            "type",
                         )
 
                 DisclaimerRoute(
-                    type = type?.let { DisclaimerType.valueOf(it) }
-                        ?: DisclaimerType.DATA_DISCLAIMER,
-                    onBack = { navController.popBackStack() }
+                    type =
+                        type?.let { DisclaimerType.valueOf(it) }
+                            ?: DisclaimerType.DATA_DISCLAIMER,
+                    onBack = { navController.popBackStack() },
                 )
             }
 
@@ -67,7 +67,7 @@ fun AppNavigation() {
                 ShareIdentityRoute(
                     onBack = {
                         navController.popBackStack()
-                    }
+                    },
                 )
             }
 
@@ -77,7 +77,7 @@ fun AppNavigation() {
                         .currentBackStackEntry
                         ?.savedStateHandle
                         ?.get<String>(
-                            "scannedIdentity"
+                            "scannedIdentity",
                         )
 
                 ImportIdentityRoute(
@@ -87,7 +87,7 @@ fun AppNavigation() {
                     },
                     onBack = {
                         navController.popBackStack()
-                    }
+                    },
                 )
             }
 
@@ -96,19 +96,17 @@ fun AppNavigation() {
                     onBack = {
                         navController.popBackStack()
                     },
-
                     onImportContact = {
                         navController.navigate(AppDestination.ImportContact)
                     },
-
                     onContactClick = { contactId, contactName ->
                         navController.navigate(
                             AppDestination.Chat(
                                 contactId = contactId,
-                                contactName = contactName
-                            )
+                                contactName = contactName,
+                            ),
                         )
-                    }
+                    },
                 )
             }
 
@@ -122,8 +120,8 @@ fun AppNavigation() {
                         navController.navigate(
                             AppDestination.Chat(
                                 contactId = contactId,
-                                contactName = contactName
-                            )
+                                contactName = contactName,
+                            ),
                         )
                     },
                     onShareIdentity = {
@@ -132,15 +130,15 @@ fun AppNavigation() {
                     onNavigateToPrivacyPolicy = {
                         navController.navigate(
                             AppDestination.Disclaimer(
-                                type = DisclaimerType.PRIVACY_POLICY.name
-                            )
+                                type = DisclaimerType.PRIVACY_POLICY.name,
+                            ),
                         )
                     },
                     onNavigateToDataDisclaimer = {
                         navController.navigate(
                             AppDestination.Disclaimer(
-                                type = DisclaimerType.DATA_DISCLAIMER.name
-                            )
+                                type = DisclaimerType.DATA_DISCLAIMER.name,
+                            ),
                         )
                     },
                     onNavigateToLicenses = {
@@ -148,7 +146,7 @@ fun AppNavigation() {
                     },
                     onNavigateToDeveloperMenu = {
                         navController.navigate(AppDestination.DeveloperMenu)
-                    }
+                    },
                 )
             }
 
@@ -163,7 +161,7 @@ fun AppNavigation() {
                     },
                     onClickHeader = {
                         navController.navigate(AppDestination.ContactDetails(destination.contactId))
-                    }
+                    },
                 )
             }
 
@@ -174,10 +172,11 @@ fun AppNavigation() {
 
                 var encodedContactToShare by remember { mutableStateOf("") }
 
-                val shareContact = rememberIdentityShareLauncher(
-                    encodedIdentity = encodedContactToShare,
-                    shareTitle = "Share SecureChat contact"
-                )
+                val shareContact =
+                    rememberIdentityShareLauncher(
+                        encodedIdentity = encodedContactToShare,
+                        shareTitle = "Share SecureChat contact",
+                    )
 
                 var shouldLaunchShare by remember { mutableStateOf(false) }
 
@@ -199,30 +198,34 @@ fun AppNavigation() {
                     onShareContact = { contact ->
                         val identity = contact.secureChatIdentity
 
-                        val phoneNumber = contact
-                            .preferredPhoneNumber
-                            ?.value
-                            ?.takeIf { value ->
-                                value.isNotBlank()
-                            }
+                        val phoneNumber =
+                            contact
+                                .preferredPhoneNumber
+                                ?.value
+                                ?.takeIf { value ->
+                                    value.isNotBlank()
+                                }
 
                         if (identity != null && phoneNumber != null) {
-                            identityShareCodec.encode(
-                                payload = SharedIdentityPayload(
-                                    version = 1,
-                                    encryptionPublicKey = identity.encryptionPublicKey,
-                                    signingPublicKey = identity.signingPublicKey,
-                                    contactDetails = SharedContactDetails(
-                                        displayName = contact.displayName,
-                                        phoneNumber = phoneNumber
-                                    )
-                                )
-                            ).onSuccess { encodedIdentity ->
-                                encodedContactToShare = encodedIdentity
-                                shouldLaunchShare = true
-                            }
+                            identityShareCodec
+                                .encode(
+                                    payload =
+                                        SharedIdentityPayload(
+                                            version = 1,
+                                            encryptionPublicKey = identity.encryptionPublicKey,
+                                            signingPublicKey = identity.signingPublicKey,
+                                            contactDetails =
+                                                SharedContactDetails(
+                                                    displayName = contact.displayName,
+                                                    phoneNumber = phoneNumber,
+                                                ),
+                                        ),
+                                ).onSuccess { encodedIdentity ->
+                                    encodedContactToShare = encodedIdentity
+                                    shouldLaunchShare = true
+                                }
                         }
-                    }
+                    },
                 )
             }
 
@@ -238,15 +241,14 @@ fun AppNavigation() {
                             ?.savedStateHandle
                             ?.set(
                                 "scannedIdentity",
-                                encodedIdentity
+                                encodedIdentity,
                             )
 
                         navController.popBackStack()
                     },
-
                     onBack = {
                         navController.popBackStack()
-                    }
+                    },
                 )
             }
 
@@ -254,12 +256,11 @@ fun AppNavigation() {
                 StartupRoute(
                     onStartupComplete = {
                         navController.navigate(AppDestination.Main) {
-
                             popUpTo(AppDestination.Startup) {
                                 inclusive = true
                             }
                         }
-                    }
+                    },
                 )
             }
         }

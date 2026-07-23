@@ -12,14 +12,14 @@ val androidIdentityStorageModule =
 
         single<SharedPreferences> {
             androidContext().getSharedPreferences(
-                    IDENTITY_PREFERENCES_NAME,
-                    Context.MODE_PRIVATE
-                )
+                IDENTITY_PREFERENCES_NAME,
+                Context.MODE_PRIVATE,
+            )
         }
 
         single<LocalPhoneNameStorage> {
             AndroidLocalPhoneNameStorage(
-                preferences = get<SharedPreferences>()
+                preferences = get<SharedPreferences>(),
             )
         }
     }

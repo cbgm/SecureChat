@@ -9,7 +9,6 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class SafetyNumberGeneratorTest {
-
     private val generator =
         SafetyNumberGenerator()
 
@@ -22,15 +21,15 @@ class SafetyNumberGeneratorTest {
                         1,
                         2,
                         3,
-                        4
+                        4,
                     ),
                 encryptionPublicKey =
                     byteArrayOf(
                         5,
                         6,
                         7,
-                        8
-                    )
+                        8,
+                    ),
             )
 
         val bob =
@@ -40,32 +39,33 @@ class SafetyNumberGeneratorTest {
                         11,
                         12,
                         13,
-                        14
+                        14,
                     ),
                 encryptionPublicKey =
                     byteArrayOf(
                         15,
                         16,
                         17,
-                        18
+                        18,
                     ),
                 verificationStatus =
                     ContactVerificationStatus.UNVERIFIED,
-                updatedAtEpochMilliseconds = 0L
+                updatedAtEpochMilliseconds = 0L,
             )
 
         val aliceView =
-            generator.generate(
-                localIdentity = alice,
-                remoteIdentity = bob
-            ).getOrThrow()
+            generator
+                .generate(
+                    localIdentity = alice,
+                    remoteIdentity = bob,
+                ).getOrThrow()
 
         val bobLocalIdentity =
             PublicIdentity(
                 signingPublicKey =
                     bob.signingPublicKey,
                 encryptionPublicKey =
-                    bob.encryptionPublicKey
+                    bob.encryptionPublicKey,
             )
 
         val aliceRemoteIdentity =
@@ -76,22 +76,23 @@ class SafetyNumberGeneratorTest {
                     alice.encryptionPublicKey,
                 verificationStatus =
                     ContactVerificationStatus.UNVERIFIED,
-                updatedAtEpochMilliseconds = 0L
+                updatedAtEpochMilliseconds = 0L,
             )
 
         val bobView =
-            generator.generate(
-                localIdentity =
+            generator
+                .generate(
+                    localIdentity =
                     bobLocalIdentity,
-                remoteIdentity =
-                    aliceRemoteIdentity
-            ).getOrThrow()
+                    remoteIdentity =
+                    aliceRemoteIdentity,
+                ).getOrThrow()
 
         assertEquals(
             expected =
                 aliceView.groups,
             actual =
-                bobView.groups
+                bobView.groups,
         )
     }
 
@@ -104,15 +105,15 @@ class SafetyNumberGeneratorTest {
                         1,
                         2,
                         3,
-                        4
+                        4,
                     ),
                 encryptionPublicKey =
                     byteArrayOf(
                         5,
                         6,
                         7,
-                        8
-                    )
+                        8,
+                    ),
             )
 
         val firstRemoteIdentity =
@@ -122,18 +123,18 @@ class SafetyNumberGeneratorTest {
                         11,
                         12,
                         13,
-                        14
+                        14,
                     ),
                 encryptionPublicKey =
                     byteArrayOf(
                         15,
                         16,
                         17,
-                        18
+                        18,
                     ),
                 verificationStatus =
                     ContactVerificationStatus.UNVERIFIED,
-                updatedAtEpochMilliseconds = 0L
+                updatedAtEpochMilliseconds = 0L,
             )
 
         val changedRemoteIdentity =
@@ -143,31 +144,33 @@ class SafetyNumberGeneratorTest {
                         15,
                         16,
                         17,
-                        19
-                    )
+                        19,
+                    ),
             )
 
         val first =
-            generator.generate(
-                localIdentity =
+            generator
+                .generate(
+                    localIdentity =
                     localIdentity,
-                remoteIdentity =
-                    firstRemoteIdentity
-            ).getOrThrow()
+                    remoteIdentity =
+                    firstRemoteIdentity,
+                ).getOrThrow()
 
         val changed =
-            generator.generate(
-                localIdentity =
+            generator
+                .generate(
+                    localIdentity =
                     localIdentity,
-                remoteIdentity =
-                    changedRemoteIdentity
-            ).getOrThrow()
+                    remoteIdentity =
+                    changedRemoteIdentity,
+                ).getOrThrow()
 
         assertNotEquals(
             illegal =
                 first.groups,
             actual =
-                changed.groups
+                changed.groups,
         )
     }
 
@@ -178,7 +181,7 @@ class SafetyNumberGeneratorTest {
                 signingPublicKey =
                     byteArrayOf(1),
                 encryptionPublicKey =
-                    byteArrayOf(2)
+                    byteArrayOf(2),
             )
 
         val remoteIdentity =
@@ -189,30 +192,30 @@ class SafetyNumberGeneratorTest {
                     byteArrayOf(4),
                 verificationStatus =
                     ContactVerificationStatus.UNVERIFIED,
-                updatedAtEpochMilliseconds = 0L
+                updatedAtEpochMilliseconds = 0L,
             )
 
         val safetyNumber =
-            generator.generate(
-                localIdentity =
+            generator
+                .generate(
+                    localIdentity =
                     localIdentity,
-                remoteIdentity =
-                    remoteIdentity
-            ).getOrThrow()
+                    remoteIdentity =
+                    remoteIdentity,
+                ).getOrThrow()
 
         assertEquals(
             expected = 16,
             actual =
-                safetyNumber.groups.size
+                safetyNumber.groups.size,
         )
 
         assertTrue {
             safetyNumber.groups.all { group ->
                 group.length == 5 &&
-                        group.all {
-                                character ->
-                            character.isDigit()
-                        }
+                    group.all { character ->
+                        character.isDigit()
+                    }
             }
         }
     }

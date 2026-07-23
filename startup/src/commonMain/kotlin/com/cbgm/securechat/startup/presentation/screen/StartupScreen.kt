@@ -50,21 +50,22 @@ fun StartupScreen(
     onPhoneNumberChanged: (String) -> Unit,
     onCreateIdentity: () -> Unit,
     onRetry: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(color = MaterialTheme.colorScheme.primary)
-            .padding(horizontal = MaterialTheme.spacing.screenPadding)
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(color = MaterialTheme.colorScheme.primary)
+                .padding(horizontal = MaterialTheme.spacing.screenPadding),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             PulsingLogo(modifier = Modifier.size(200.dp))
 
@@ -74,7 +75,7 @@ fun StartupScreen(
                 text = "SecureChat",
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onPrimary,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
@@ -82,11 +83,11 @@ fun StartupScreen(
             Text(
                 text = "Private. Encrypted. Yours.",
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.72f)
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.72f),
             )
 
             Spacer(
-                modifier = Modifier.height(MaterialTheme.spacing.medium)
+                modifier = Modifier.height(MaterialTheme.spacing.medium),
             )
 
             SecureChatCard(modifier = Modifier.widthIn(max = 520.dp)) {
@@ -94,12 +95,13 @@ fun StartupScreen(
                     targetState = uiState,
                     transitionSpec = {
                         fadeIn(
-                            animationSpec = tween(300)
-                        ) togetherWith fadeOut(
-                            animationSpec = tween(180)
-                        )
+                            animationSpec = tween(300),
+                        ) togetherWith
+                            fadeOut(
+                                animationSpec = tween(180),
+                            )
                     },
-                    label = "startupState"
+                    label = "startupState",
                 ) { state ->
                     Box(modifier = Modifier.padding(MaterialTheme.spacing.medium)) {
                         StartupStateContent(
@@ -108,7 +110,7 @@ fun StartupScreen(
                             onRequestPhoneNumberHint = onRequestPhoneNumberHint,
                             onPhoneNumberChanged = onPhoneNumberChanged,
                             onCreateIdentity = onCreateIdentity,
-                            onRetry = onRetry
+                            onRetry = onRetry,
                         )
                     }
                 }
@@ -126,7 +128,7 @@ private fun StartupStateContent(
     onRequestPhoneNumberHint: () -> Unit,
     onPhoneNumberChanged: (String) -> Unit,
     onCreateIdentity: () -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
 ) {
     when (uiState) {
         StartupUiState.Loading -> {
@@ -143,14 +145,14 @@ private fun StartupStateContent(
                 onRequestPhoneNumberHint = onRequestPhoneNumberHint,
                 onPhoneNumberChanged = onPhoneNumberChanged,
                 onCreateIdentity = onCreateIdentity,
-                onRetry = onRetry
+                onRetry = onRetry,
             )
         }
 
         is StartupUiState.Error -> {
             StartupErrorContent(
                 message = uiState.message,
-                onRetry = onRetry
+                onRetry = onRetry,
             )
         }
     }
@@ -162,7 +164,7 @@ private fun StartupIdentityContent(
     onRequestPhoneNumberHint: () -> Unit,
     onPhoneNumberChanged: (String) -> Unit,
     onCreateIdentity: () -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
 ) {
     when (identityUiState) {
         IdentityUiState.Loading -> {
@@ -172,29 +174,29 @@ private fun StartupIdentityContent(
         is IdentityUiState.NoIdentity -> {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = "Verify your phone number",
                     style = MaterialTheme.typography.titleSmall,
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
 
                 Spacer(
-                    modifier = Modifier.height(MaterialTheme.spacing.base)
+                    modifier = Modifier.height(MaterialTheme.spacing.base),
                 )
 
                 Text(
                     text = "Your contacts use your phone number to securely find you on SecureChat.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
 
                 Spacer(
-                    modifier = Modifier.height(MaterialTheme.spacing.medium)
+                    modifier = Modifier.height(MaterialTheme.spacing.medium),
                 )
 
                 OutlinedTextField(
@@ -205,61 +207,67 @@ private fun StartupIdentityContent(
                         Text(text = "Phone number")
                     },
                     placeholder = {
-                        Text(text = "+491701234567", style = MaterialTheme.typography.bodyMedium,)
+                        Text(text = "+491701234567", style = MaterialTheme.typography.bodyMedium)
                     },
                     supportingText = {
                         Text(
-                            text = identityUiState.phoneNumberError
-                                ?: if (identityUiState.phoneNumber.isBlank()
-                                ) {
-                                    "Choose a number from your device or enter it manually."
-                                } else {
-                                    "Detected automatically. You can edit it or choose another number."
-                                }
+                            text =
+                                identityUiState.phoneNumberError
+                                    ?: if (identityUiState.phoneNumber.isBlank()) {
+                                        "Choose a number from your device or enter it manually."
+                                    } else {
+                                        "Detected automatically. You can edit it or choose another number."
+                                    },
                         )
                     },
                     isError = identityUiState.phoneNumberError != null,
                     singleLine = true,
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.60f),
-                        focusedContainerColor = StartupPhoneFieldBackground,
-                        unfocusedContainerColor = StartupPhoneFieldBackground,
-                        errorContainerColor = StartupPhoneFieldBackground,
-                        focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.18f),
-                        errorBorderColor = MaterialTheme.colorScheme.error,
-                        focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.76f),
-                        errorLabelColor = MaterialTheme.colorScheme.error,
-                        focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
-                        unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
-                        focusedSupportingTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.66f),
-                        unfocusedSupportingTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.66f),
-                        errorSupportingTextColor = MaterialTheme.colorScheme.error,
-                        cursorColor = MaterialTheme.colorScheme.secondary,
-                        errorCursorColor = MaterialTheme.colorScheme.error
-                    ),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                    textStyle =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.60f),
+                            focusedContainerColor = StartupPhoneFieldBackground,
+                            unfocusedContainerColor = StartupPhoneFieldBackground,
+                            errorContainerColor = StartupPhoneFieldBackground,
+                            focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.18f),
+                            errorBorderColor = MaterialTheme.colorScheme.error,
+                            focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.76f),
+                            errorLabelColor = MaterialTheme.colorScheme.error,
+                            focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                            unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                            focusedSupportingTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.66f),
+                            unfocusedSupportingTextColor =
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                    alpha = 0.66f,
+                                ),
+                            errorSupportingTextColor = MaterialTheme.colorScheme.error,
+                            cursorColor = MaterialTheme.colorScheme.secondary,
+                            errorCursorColor = MaterialTheme.colorScheme.error,
+                        ),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 )
 
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
                 OutlinedButton(
                     onClick = onRequestPhoneNumberHint,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
-                        text = if (identityUiState.phoneNumber.isBlank()) {
-                            "Choose phone number"
-                        } else {
-                            "Choose another number"
-                        }
+                        text =
+                            if (identityUiState.phoneNumber.isBlank()) {
+                                "Choose phone number"
+                            } else {
+                                "Choose another number"
+                            },
                     )
                 }
 
@@ -268,7 +276,7 @@ private fun StartupIdentityContent(
                 SecureChatApprovalButton(
                     onClick = onCreateIdentity,
                     enabled = identityUiState.phoneNumber.isNotBlank(),
-                    text = "Continue"
+                    text = "Continue",
                 )
 
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
@@ -277,7 +285,7 @@ private fun StartupIdentityContent(
                     text = "Your encryption keys are generated only after you approve your number.",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
             }
         }
@@ -289,14 +297,14 @@ private fun StartupIdentityContent(
         IdentityUiState.IncompleteIdentity -> {
             StartupErrorContent(
                 message = "Only part of the local identity is available. SecureChat will not generate replacement keys automatically.",
-                onRetry = onRetry
+                onRetry = onRetry,
             )
         }
 
         is IdentityUiState.Error -> {
             StartupErrorContent(
                 message = identityUiState.message,
-                onRetry = onRetry
+                onRetry = onRetry,
             )
         }
     }
@@ -305,51 +313,49 @@ private fun StartupIdentityContent(
 @Composable
 private fun StartupErrorContent(
     message: String,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = "SecureChat could not finish setup.",
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.SemiBold,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Spacer(
-            modifier = Modifier.height(MaterialTheme.spacing.base)
+            modifier = Modifier.height(MaterialTheme.spacing.base),
         )
 
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
         SecureChatApprovalButton(
             onClick = onRetry,
-            text = "Retry"
+            text = "Retry",
         )
     }
 }
 
 @Composable
-private fun StartupProgress(
-    message: String
-) {
+private fun StartupProgress(message: String) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         CircularProgressIndicator(
             color = MaterialTheme.colorScheme.secondary,
-            trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f)
+            trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f),
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
@@ -358,14 +364,14 @@ private fun StartupProgress(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
 
 @Preview
 @Composable
-fun StartupScreenPreview() {
+private fun StartupScreenPreview() {
     SecureChatTheme {
         StartupScreen(
             uiState = StartupUiState.IdentityRequired,
@@ -373,7 +379,7 @@ fun StartupScreenPreview() {
             onRequestPhoneNumberHint = {},
             onPhoneNumberChanged = {},
             onCreateIdentity = {},
-            onRetry = {}
+            onRetry = {},
         )
     }
 }

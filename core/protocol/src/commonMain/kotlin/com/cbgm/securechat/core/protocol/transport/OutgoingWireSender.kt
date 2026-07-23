@@ -14,9 +14,8 @@ package com.cbgm.securechat.core.protocol.transport
  * The sender does not inspect or modify the payload.
  */
 interface OutgoingWireSender {
-
     suspend fun send(
         contactId: String,
-        encodedTransportPayload: String
+        encodedTransportPayload: String,
     ): Result<Unit>
 }

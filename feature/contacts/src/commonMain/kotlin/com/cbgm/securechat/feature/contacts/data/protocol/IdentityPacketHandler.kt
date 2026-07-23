@@ -15,21 +15,18 @@ class IdentityPacketHandler(
     private val contactKeyExchangeStore: ContactKeyExchangeStore,
     private val localSigningKeyPairProvider: LocalSigningKeyPairProvider,
     private val identityAcknowledgementCrypto: IdentityAcknowledgementCrypto,
-    private val protocolOutbox: ProtocolOutbox
+    private val protocolOutbox: ProtocolOutbox,
 ) : TypedProtocolPacketHandler {
-
-    override fun canHandle(packet: SecureChatPacket): Boolean {
-        return packet is IdentityPacket
-    }
+    override fun canHandle(packet: SecureChatPacket): Boolean = packet is IdentityPacket
 
     override suspend fun handle(
         context: IncomingPacketContext,
-        packet: SecureChatPacket
-    ): Result<Unit> {
-
-        return runCatching {
-            val identityPacket = packet as? IdentityPacket
-                ?: error("IdentityPacketHandler received an incompatible packet")
+        packet: SecureChatPacket,
+    ): Result<Unit> =
+        runCatching {
+            val identityPacket =
+                packet as? IdentityPacket
+                    ?: error("IdentityPacketHandler received an incompatible packet")
 
             /*
              * Same keys preserve MUTUAL and verification.
@@ -37,11 +34,12 @@ class IdentityPacketHandler(
              * Changed keys reset the contact to:
              * ONE_WAY + UNVERIFIED.
              */
-            contactKeyExchangeStore.storeRemoteIdentity(
-                contactId = context.contactId,
-                encryptionPublicKey = identityPacket.encryptionPublicKey,
-                signingPublicKey = identityPacket.signingPublicKey
-            ).getOrThrow()
+            contactKeyExchangeStore
+                .storeRemoteIdentity(
+                    contactId = context.contactId,
+                    encryptionPublicKey = identityPacket.encryptionPublicKey,
+                    signingPublicKey = identityPacket.signingPublicKey,
+                ).getOrThrow()
 
             val localSigningKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
 
@@ -51,20 +49,23 @@ class IdentityPacketHandler(
              * This proves to the remote party that we possess and
              * acknowledge its current encryption and signing keys.
              */
-            val signature = identityAcknowledgementCrypto.sign(
-                acknowledgedEncryptionPublicKey = identityPacket.encryptionPublicKey,
-                acknowledgedSigningPublicKey = identityPacket.signingPublicKey,
-                senderSigningPublicKey = localSigningKeyPair.publicKey,
-                senderSigningPrivateKey = localSigningKeyPair.privateKey
-            ).getOrThrow()
+            val signature =
+                identityAcknowledgementCrypto
+                    .sign(
+                        acknowledgedEncryptionPublicKey = identityPacket.encryptionPublicKey,
+                        acknowledgedSigningPublicKey = identityPacket.signingPublicKey,
+                        senderSigningPublicKey = localSigningKeyPair.publicKey,
+                        senderSigningPrivateKey = localSigningKeyPair.privateKey,
+                    ).getOrThrow()
 
-            val acknowledgement = IdentityAcknowledgementPacket(
-                packetId = IdGenerator.generate(),
-                senderSigningPublicKey = localSigningKeyPair.publicKey.copyOf(),
-                acknowledgedEncryptionPublicKey = identityPacket.encryptionPublicKey.copyOf(),
-                acknowledgedSigningPublicKey = identityPacket.signingPublicKey.copyOf(),
-                signature = signature.copyOf()
-            )
+            val acknowledgement =
+                IdentityAcknowledgementPacket(
+                    packetId = IdGenerator.generate(),
+                    senderSigningPublicKey = localSigningKeyPair.publicKey.copyOf(),
+                    acknowledgedEncryptionPublicKey = identityPacket.encryptionPublicKey.copyOf(),
+                    acknowledgedSigningPublicKey = identityPacket.signingPublicKey.copyOf(),
+                    signature = signature.copyOf(),
+                )
 
             /*
              * Do not send directly from the handler.
@@ -72,10 +73,10 @@ class IdentityPacketHandler(
              * The outbox applies the current encryption policy and
              * delivers the acknowledgement through the relay.
              */
-            protocolOutbox.enqueue(
-                contactId = context.contactId,
-                packet = acknowledgement
-            ).getOrThrow()
+            protocolOutbox
+                .enqueue(
+                    contactId = context.contactId,
+                    packet = acknowledgement,
+                ).getOrThrow()
         }
-    }
 }

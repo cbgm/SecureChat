@@ -14,10 +14,11 @@ data class ChatUiState(
     val isLoadingContact: Boolean = true,
     val isLoadingSafetyNumber: Boolean = false,
     val isVerifyingIdentity: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
 ) {
     val isEndToEndEncrypted: Boolean
         get() {
-            return contactSecurityState == ContactSecurityState.MUTUAL_KEYS_UNVERIFIED || contactSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED
+            return contactSecurityState == ContactSecurityState.MUTUAL_KEYS_UNVERIFIED ||
+                contactSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED
         }
 }

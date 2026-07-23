@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 @Composable
 actual fun QrScanner(
     onQrCodeScanned: (String) -> Unit,
-    modifier: Modifier
+    modifier: Modifier,
 ) {
     val context = LocalContext.current
 
@@ -43,73 +43,81 @@ actual fun QrScanner(
 
     val hasScanned = remember { AtomicBoolean(false) }
 
-    val previewView = remember {
-        PreviewView(context).apply {
-            implementationMode =
-                PreviewView.ImplementationMode.COMPATIBLE
+    val previewView =
+        remember {
+            PreviewView(context).apply {
+                implementationMode =
+                    PreviewView.ImplementationMode.COMPATIBLE
 
-            scaleType =
-                PreviewView.ScaleType.FILL_CENTER
+                scaleType =
+                    PreviewView.ScaleType.FILL_CENTER
+            }
         }
-    }
 
     DisposableEffect(
         lifecycleOwner,
-        previewView
+        previewView,
     ) {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
 
-        val listener = Runnable {
-            val cameraProvider = cameraProviderFuture.get()
+        val listener =
+            Runnable {
+                val cameraProvider = cameraProviderFuture.get()
 
-            val preview = Preview.Builder().build().also { cameraPreview ->
-                cameraPreview.setSurfaceProvider(previewView.surfaceProvider)
-            }
+                val preview =
+                    Preview.Builder().build().also { cameraPreview ->
+                        cameraPreview.setSurfaceProvider(previewView.surfaceProvider)
+                    }
 
-            val reader = MultiFormatReader().apply {
-                setHints(
-                    mapOf(
-                        DecodeHintType.POSSIBLE_FORMATS to listOf(BarcodeFormat.QR_CODE),
-                        DecodeHintType.TRY_HARDER to true
-                    )
-                )
-            }
-
-            val imageAnalysis = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build()
-                .also { analysis ->
-                    analysis.setAnalyzer(
-                        cameraExecutor
-                    ) { imageProxy ->
-                        analyzeQrImage(
-                            imageProxy = imageProxy,
-                            reader = reader,
-                            hasScanned = hasScanned,
-                            onQrCodeScanned = { decodedValue ->
-
-                                ContextCompat.getMainExecutor(context)
-                                    .execute { currentOnQrCodeScanned.value(decodedValue) }
-                            }
+                val reader =
+                    MultiFormatReader().apply {
+                        setHints(
+                            mapOf(
+                                DecodeHintType.POSSIBLE_FORMATS to listOf(BarcodeFormat.QR_CODE),
+                                DecodeHintType.TRY_HARDER to true,
+                            ),
                         )
                     }
-                }
 
-            try {
-                cameraProvider.unbindAll()
+                val imageAnalysis =
+                    ImageAnalysis
+                        .Builder()
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build()
+                        .also { analysis ->
+                            analysis.setAnalyzer(
+                                cameraExecutor,
+                            ) { imageProxy ->
+                                analyzeQrImage(
+                                    imageProxy = imageProxy,
+                                    reader = reader,
+                                    hasScanned = hasScanned,
+                                    onQrCodeScanned = { decodedValue ->
 
-                cameraProvider.bindToLifecycle(
-                    lifecycleOwner,
-                    CameraSelector.DEFAULT_BACK_CAMERA,
-                    preview,
-                    imageAnalysis
-                )
-            } catch (_: Exception) {
+                                        ContextCompat
+                                            .getMainExecutor(context)
+                                            .execute { currentOnQrCodeScanned.value(decodedValue) }
+                                    },
+                                )
+                            }
+                        }
+
+                try {
+                    cameraProvider.unbindAll()
+
+                    cameraProvider.bindToLifecycle(
+                        lifecycleOwner,
+                        CameraSelector.DEFAULT_BACK_CAMERA,
+                        preview,
+                        imageAnalysis,
+                    )
+                } catch (_: Exception) {
                 /*
                  * The UI remains visible. Camera errors can be
                  * surfaced through a dedicated callback later.
                  */
+                }
             }
-        }
 
         cameraProviderFuture.addListener(listener, ContextCompat.getMainExecutor(context))
 
@@ -128,7 +136,7 @@ actual fun QrScanner(
         factory = {
             previewView
         },
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
@@ -136,7 +144,7 @@ private fun analyzeQrImage(
     imageProxy: ImageProxy,
     reader: MultiFormatReader,
     hasScanned: AtomicBoolean,
-    onQrCodeScanned: (String) -> Unit
+    onQrCodeScanned: (String) -> Unit,
 ) {
     try {
         if (hasScanned.get()) {
@@ -149,32 +157,35 @@ private fun analyzeQrImage(
 
         val luminanceData = imageProxy.copyLuminancePlane()
 
-        val rotated = rotateLuminance(
-            source = luminanceData,
-            width = imageProxy.width,
-            height = imageProxy.height,
-            rotationDegrees = imageProxy.imageInfo.rotationDegrees
-        )
+        val rotated =
+            rotateLuminance(
+                source = luminanceData,
+                width = imageProxy.width,
+                height = imageProxy.height,
+                rotationDegrees = imageProxy.imageInfo.rotationDegrees,
+            )
 
-        val luminanceSource = PlanarYUVLuminanceSource(
-            rotated.bytes,
-            rotated.width,
-            rotated.height,
-            0,
-            0,
-            rotated.width,
-            rotated.height,
-            false
-        )
+        val luminanceSource =
+            PlanarYUVLuminanceSource(
+                rotated.bytes,
+                rotated.width,
+                rotated.height,
+                0,
+                0,
+                rotated.width,
+                rotated.height,
+                false,
+            )
 
         val bitmap = BinaryBitmap(HybridBinarizer(luminanceSource))
 
         val result = reader.decodeWithState(bitmap)
 
-        val decodedValue = result.text
-            ?.trim()
-            ?.takeIf { it.isNotEmpty() }
-            ?: return
+        val decodedValue =
+            result.text
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() }
+                ?: return
 
         if (hasScanned.compareAndSet(false, true)) {
             onQrCodeScanned(decodedValue)
@@ -194,7 +205,6 @@ private fun analyzeQrImage(
 }
 
 private fun ImageProxy.copyLuminancePlane(): ByteArray {
-
     val plane = planes.first()
 
     val buffer = plane.buffer
@@ -229,7 +239,7 @@ private fun ImageProxy.copyLuminancePlane(): ByteArray {
 private data class RotatedLuminance(
     val bytes: ByteArray,
     val width: Int,
-    val height: Int
+    val height: Int,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -256,9 +266,9 @@ private fun rotateLuminance(
     source: ByteArray,
     width: Int,
     height: Int,
-    rotationDegrees: Int
-): RotatedLuminance {
-    return when (rotationDegrees) {
+    rotationDegrees: Int,
+): RotatedLuminance =
+    when (rotationDegrees) {
         90 -> {
             val rotated = ByteArray(source.size)
 
@@ -301,4 +311,3 @@ private fun rotateLuminance(
             RotatedLuminance(bytes = source, width = width, height = height)
         }
     }
-}

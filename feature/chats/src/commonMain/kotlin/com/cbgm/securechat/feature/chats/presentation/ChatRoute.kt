@@ -23,12 +23,13 @@ fun ChatRoute(
     onBack: () -> Unit,
     onClickHeader: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: ChatViewModel = koinViewModel {
-        parametersOf(
-            contactId,
-            contactName
-        )
-    }
+    viewModel: ChatViewModel =
+        koinViewModel {
+            parametersOf(
+                contactId,
+                contactName,
+            )
+        },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -44,14 +45,14 @@ fun ChatRoute(
         }
     }
 
-    val incomingMessageIds = uiState.messages
-        .asSequence()
-        .filter { message ->
-            !message.isMine
-        }
-        .map { message ->
-            message.id
-        }.toList()
+    val incomingMessageIds =
+        uiState.messages
+            .asSequence()
+            .filter { message ->
+                !message.isMine
+            }.map { message ->
+                message.id
+            }.toList()
 
     LaunchedEffect(key1 = incomingMessageIds) {
         if (incomingMessageIds.isNotEmpty()) {
@@ -76,7 +77,7 @@ fun ChatRoute(
         },
         onClickHeader = onClickHeader,
         onBack = onBack,
-        modifier = modifier
+        modifier = modifier,
     )
 
     if (
@@ -90,7 +91,7 @@ fun ChatRoute(
             onConfirm = viewModel::verifyIdentity,
             onDismiss = {
                 showVerificationDialog = false
-            }
+            },
         )
     }
 }

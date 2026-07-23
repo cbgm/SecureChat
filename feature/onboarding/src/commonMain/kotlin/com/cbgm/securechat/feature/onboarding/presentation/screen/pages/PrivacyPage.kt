@@ -20,41 +20,41 @@ import com.cbgm.securechat.feature.onboarding.presentation.screen.pages.componen
 fun PrivacyPage(onNext: () -> Unit) {
     Column(
         Modifier.padding(MaterialTheme.spacing.medium),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = "Your privacy comes first",
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onPrimary,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
         )
         Spacer(Modifier.height(MaterialTheme.spacing.small))
         ListingRow(
             index = "01",
             title = "End-to-end encryption",
-            description = "Messages are encrypted automatically when both identities are available."
+            description = "Messages are encrypted automatically when both identities are available.",
         )
         ListingRow(
             index = "02",
             title = "Your contacts stay local",
-            description = "Contacts are used to match people by phone number on your device."
+            description = "Contacts are used to match people by phone number on your device.",
         )
         ListingRow(
             index = "03",
             title = "Your identity belongs to you",
-            description = "Private identity keys remain protected on this device."
+            description = "Private identity keys remain protected on this device.",
         )
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
         SecureChatApprovalButton(
             onClick = onNext,
-            text = "Continue"
+            text = "Continue",
         )
     }
 }
 
 @Preview
 @Composable
-fun PrivacyPagePreview() {
+private fun PrivacyPagePreview() {
     SecureChatTheme {
         PrivacyPage {}
     }

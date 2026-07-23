@@ -7,31 +7,29 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "protocol_outbox",
-
     foreignKeys = [
         ForeignKey(
             entity = ContactEntity::class,
             parentColumns = ["id"],
             childColumns = ["contactId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
-
     indices = [
         Index(value = ["contactId"]),
 
         Index(
             value = ["packetId"],
-            unique = true
+            unique = true,
         ),
 
         Index(
             value = [
                 "status",
-                "createdAtEpochMilliseconds"
-            ]
-        )
-    ]
+                "createdAtEpochMilliseconds",
+            ],
+        ),
+    ],
 )
 data class ProtocolOutboxEntity(
     @PrimaryKey
@@ -54,25 +52,22 @@ data class ProtocolOutboxEntity(
     val attemptCount: Int,
     val lastError: String?,
     val createdAtEpochMilliseconds: Long,
-    val updatedAtEpochMilliseconds: Long
+    val updatedAtEpochMilliseconds: Long,
 ) {
-
-    override fun equals(
-        other: Any?
-    ): Boolean {
+    override fun equals(other: Any?): Boolean {
         if (this === other) return true
 
         if (other !is ProtocolOutboxEntity) return false
 
         return id == other.id &&
-                contactId == other.contactId &&
-                packetId == other.packetId &&
-                encodedPacket.contentEquals(other.encodedPacket) &&
-                status == other.status &&
-                attemptCount == other.attemptCount &&
-                lastError == other.lastError &&
-                createdAtEpochMilliseconds == other.createdAtEpochMilliseconds &&
-                updatedAtEpochMilliseconds == other.updatedAtEpochMilliseconds
+            contactId == other.contactId &&
+            packetId == other.packetId &&
+            encodedPacket.contentEquals(other.encodedPacket) &&
+            status == other.status &&
+            attemptCount == other.attemptCount &&
+            lastError == other.lastError &&
+            createdAtEpochMilliseconds == other.createdAtEpochMilliseconds &&
+            updatedAtEpochMilliseconds == other.updatedAtEpochMilliseconds
     }
 
     override fun hashCode(): Int {

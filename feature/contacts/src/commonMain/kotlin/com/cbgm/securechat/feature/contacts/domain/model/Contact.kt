@@ -13,13 +13,9 @@ package com.cbgm.securechat.feature.contacts.domain.model
  */
 data class Contact(
     val id: String,
-
     val displayName: String?,
-
     val phoneNumbers: List<ContactPhoneNumber>,
-
     val preferredPhoneNumberId: String?,
-
     /**
      * Identifier of the linked contact in the device address book.
      *
@@ -27,22 +23,18 @@ data class Contact(
      * display a warning and potentially relink it later.
      */
     val deviceContactId: String?,
-
     /**
      * Current state of the relationship to the device contact.
      */
     val deviceContactLinkStatus: DeviceContactLinkStatus,
-
     /**
      * Another person's optional SecureChat identity.
      *
      * Null means this contact currently has no SecureChat keys.
      */
     val secureChatIdentity: SecureChatIdentity?,
-
     val createdAtEpochMilliseconds: Long,
-
-    val updatedAtEpochMilliseconds: Long
+    val updatedAtEpochMilliseconds: Long,
 ) {
     val preferredPhoneNumber: ContactPhoneNumber?
         get() {

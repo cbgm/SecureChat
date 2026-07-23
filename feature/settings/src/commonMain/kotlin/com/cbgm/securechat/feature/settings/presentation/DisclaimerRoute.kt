@@ -10,18 +10,20 @@ import com.cbgm.securechat.feature.settings.presentation.screen.MarkdownDisclaim
 fun DisclaimerRoute(
     type: DisclaimerType,
     modifier: Modifier = Modifier,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     MarkdownDisclaimerScreen(
-        title = when (type) {
-            DisclaimerType.PRIVACY_POLICY -> "Privacy policy"
-            DisclaimerType.DATA_DISCLAIMER -> "Data disclaimer"
-        },
-        markdownContent = when (type) {
-            DisclaimerType.PRIVACY_POLICY -> DisclaimerContent.privacyPolicy
-            DisclaimerType.DATA_DISCLAIMER -> DisclaimerContent.dataDisclaimer
-        },
+        title =
+            when (type) {
+                DisclaimerType.PRIVACY_POLICY -> "Privacy policy"
+                DisclaimerType.DATA_DISCLAIMER -> "Data disclaimer"
+            },
+        markdownContent =
+            when (type) {
+                DisclaimerType.PRIVACY_POLICY -> DisclaimerContent.privacyPolicy
+                DisclaimerType.DATA_DISCLAIMER -> DisclaimerContent.dataDisclaimer
+            },
         onBack = onBack,
-        modifier = modifier
+        modifier = modifier,
     )
 }

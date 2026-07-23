@@ -19,9 +19,8 @@ class ContactDetailsViewModel(
     private val getContact: GetContact,
     private val getPublicIdentity: GetPublicIdentity,
     private val contactRepository: ContactRepository,
-    private val safetyNumberGenerator: SafetyNumberGenerator
+    private val safetyNumberGenerator: SafetyNumberGenerator,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow<ContactDetailsUiState>(ContactDetailsUiState.Loading)
 
     val uiState: StateFlow<ContactDetailsUiState> = _uiState.asStateFlow()
@@ -36,12 +35,13 @@ class ContactDetailsViewModel(
 
             val contactResult = getContact(contactId = contactId)
 
-            val contact = contactResult.getOrElse { error ->
-                _uiState.value =
-                    ContactDetailsUiState.Error(message = error.message ?: "Failed to load contact")
+            val contact =
+                contactResult.getOrElse { error ->
+                    _uiState.value =
+                        ContactDetailsUiState.Error(message = error.message ?: "Failed to load contact")
 
-                return@launch
-            }
+                    return@launch
+                }
 
             if (contact == null) {
                 _uiState.value = ContactDetailsUiState.NotFound
@@ -52,21 +52,24 @@ class ContactDetailsViewModel(
             val remoteIdentity = contact.secureChatIdentity
 
             if (remoteIdentity == null) {
-                _uiState.value = ContactDetailsUiState.Content(
-                    contact = contact,
-                    safetyNumber = null
-                )
+                _uiState.value =
+                    ContactDetailsUiState.Content(
+                        contact = contact,
+                        safetyNumber = null,
+                    )
 
                 return@launch
             }
 
-            val localIdentity = getPublicIdentity().getOrElse { error ->
-                _uiState.value = ContactDetailsUiState.Error(
-                    message = error.message ?: "Failed to load your SecureChat identity"
-                )
+            val localIdentity =
+                getPublicIdentity().getOrElse { error ->
+                    _uiState.value =
+                        ContactDetailsUiState.Error(
+                            message = error.message ?: "Failed to load your SecureChat identity",
+                        )
 
-                return@launch
-            }
+                    return@launch
+                }
 
             if (localIdentity == null) {
                 _uiState.value =
@@ -75,29 +78,33 @@ class ContactDetailsViewModel(
                 return@launch
             }
 
-            val safetyNumber = safetyNumberGenerator.generate(
-                firstIdentity = PublicIdentityKeySet(
-                    signingPublicKey = localIdentity.signingPublicKey,
-                    encryptionPublicKey = localIdentity.encryptionPublicKey
-                ),
+            val safetyNumber =
+                safetyNumberGenerator
+                    .generate(
+                        firstIdentity =
+                            PublicIdentityKeySet(
+                                signingPublicKey = localIdentity.signingPublicKey,
+                                encryptionPublicKey = localIdentity.encryptionPublicKey,
+                            ),
+                        secondIdentity =
+                            PublicIdentityKeySet(
+                                signingPublicKey = remoteIdentity.signingPublicKey,
+                                encryptionPublicKey = remoteIdentity.encryptionPublicKey,
+                            ),
+                    ).getOrElse { error ->
+                        _uiState.value =
+                            ContactDetailsUiState.Error(
+                                message = error.message ?: "Failed to generate safety number",
+                            )
 
-                secondIdentity = PublicIdentityKeySet(
-                    signingPublicKey = remoteIdentity.signingPublicKey,
-                    encryptionPublicKey = remoteIdentity.encryptionPublicKey
+                        return@launch
+                    }
+
+            _uiState.value =
+                ContactDetailsUiState.Content(
+                    contact = contact,
+                    safetyNumber = safetyNumber,
                 )
-            )
-                .getOrElse { error ->
-                    _uiState.value = ContactDetailsUiState.Error(
-                        message = error.message ?: "Failed to generate safety number"
-                    )
-
-                    return@launch
-                }
-
-            _uiState.value = ContactDetailsUiState.Content(
-                contact = contact,
-                safetyNumber = safetyNumber
-            )
         }
     }
 
@@ -109,7 +116,7 @@ class ContactDetailsViewModel(
                 current.copy(
                     isVerificationDialogVisible = true,
                     hasConfirmedComparison = false,
-                    verificationError = null
+                    verificationError = null,
                 )
             }
         }
@@ -123,19 +130,17 @@ class ContactDetailsViewModel(
                 current.copy(
                     isVerificationDialogVisible = false,
                     hasConfirmedComparison = false,
-                    verificationError = null
+                    verificationError = null,
                 )
             }
         }
     }
 
-    fun onComparisonConfirmedChanged(
-        confirmed: Boolean
-    ) {
+    fun onComparisonConfirmedChanged(confirmed: Boolean) {
         updateContent { current ->
             current.copy(
                 hasConfirmedComparison = confirmed,
-                verificationError = null
+                verificationError = null,
             )
         }
     }
@@ -154,36 +159,36 @@ class ContactDetailsViewModel(
         _uiState.value = current.copy(isSavingVerification = true, verificationError = null)
 
         viewModelScope.launch {
-            contactRepository.markVerified(contactId = contactId)
+            contactRepository
+                .markVerified(contactId = contactId)
                 .onSuccess { verifiedContact ->
                     val latest = _uiState.value as? ContactDetailsUiState.Content
 
                     if (latest != null) {
-                        _uiState.value = latest.copy(
-                            contact = verifiedContact,
-                            isVerificationDialogVisible = false,
-                            hasConfirmedComparison = false,
-                            isSavingVerification = false,
-                            verificationError = null
-                        )
+                        _uiState.value =
+                            latest.copy(
+                                contact = verifiedContact,
+                                isVerificationDialogVisible = false,
+                                hasConfirmedComparison = false,
+                                isSavingVerification = false,
+                                verificationError = null,
+                            )
                     }
-                }
-                .onFailure { error ->
+                }.onFailure { error ->
                     val latest = _uiState.value as? ContactDetailsUiState.Content
 
                     if (latest != null) {
-                        _uiState.value = latest.copy(
-                            isSavingVerification = false,
-                            verificationError = error.message ?: "Failed to verify identity"
-                        )
+                        _uiState.value =
+                            latest.copy(
+                                isSavingVerification = false,
+                                verificationError = error.message ?: "Failed to verify identity",
+                            )
                     }
                 }
         }
     }
 
-    private fun updateContent(
-        transform: (ContactDetailsUiState.Content) -> ContactDetailsUiState.Content
-    ) {
+    private fun updateContent(transform: (ContactDetailsUiState.Content) -> ContactDetailsUiState.Content) {
         val current = _uiState.value as? ContactDetailsUiState.Content ?: return
 
         _uiState.value = transform(current)

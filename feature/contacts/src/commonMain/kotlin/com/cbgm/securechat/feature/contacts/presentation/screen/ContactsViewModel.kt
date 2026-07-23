@@ -12,9 +12,8 @@ import kotlinx.coroutines.launch
 
 class ContactsViewModel(
     private val observeContacts: ObserveContacts,
-    private val importDeviceContacts: ImportDeviceContacts
+    private val importDeviceContacts: ImportDeviceContacts,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow<ContactsUiState>(ContactsUiState.Loading)
 
     val uiState: StateFlow<ContactsUiState> = _uiState.asStateFlow()
@@ -38,13 +37,14 @@ class ContactsViewModel(
         viewModelScope.launch {
             try {
                 observeContacts().collect { contacts ->
-                    _uiState.value = if (contacts.isEmpty()) {
-                        ContactsUiState.Empty
-                    } else {
-                        ContactsUiState.Content(
-                            contacts = contacts
-                        )
-                    }
+                    _uiState.value =
+                        if (contacts.isEmpty()) {
+                            ContactsUiState.Empty
+                        } else {
+                            ContactsUiState.Content(
+                                contacts = contacts,
+                            )
+                        }
                 }
             } catch (error: Throwable) {
                 _uiState.value =

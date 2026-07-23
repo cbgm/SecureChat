@@ -1,0 +1,566 @@
+[
+  {
+    "name": "androidApp",
+    "path": ":androidApp",
+    "group": "androidApp",
+    "directory": "androidApp",
+    "buildFile": "androidApp/build.gradle.kts",
+    "kotlinSourceFileCount": 4,
+    "productionKotlinFileCount": 4,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 20,
+    "sourceSets": [
+      "main"
+    ],
+    "dependencies": [
+      ":core",
+      ":core:crypto",
+      ":core:protocol",
+      ":data:database",
+      ":feature:chats",
+      ":feature:contactimport",
+      ":feature:contacts",
+      ":feature:identity",
+      ":feature:onboarding",
+      ":feature:settings",
+      ":feature:transport",
+      ":shared",
+      ":startup"
+    ],
+    "dependents": [
+    ]
+  },
+  {
+    "name": "core",
+    "path": ":core",
+    "group": "core",
+    "directory": "core",
+    "buildFile": "core/build.gradle.kts",
+    "kotlinSourceFileCount": 7,
+    "productionKotlinFileCount": 7,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 1,
+    "sourceSets": [
+      "androidDeviceTest",
+      "androidHostTest",
+      "androidMain",
+      "commonMain",
+      "iosMain"
+    ],
+    "dependencies": [
+    ],
+    "dependents": [
+      ":androidApp",
+      ":data:database",
+      ":feature:chats",
+      ":feature:contactimport",
+      ":feature:contacts",
+      ":feature:identity",
+      ":feature:transport",
+      ":navigation",
+      ":shared"
+    ]
+  },
+  {
+    "name": "crypto",
+    "path": ":core:crypto",
+    "group": "core",
+    "directory": "core/crypto",
+    "buildFile": "core/crypto/build.gradle.kts",
+    "kotlinSourceFileCount": 29,
+    "productionKotlinFileCount": 25,
+    "testKotlinFileCount": 4,
+    "resourceFileCount": 1,
+    "sourceSets": [
+      "androidDeviceTest",
+      "androidHostTest",
+      "androidMain",
+      "commonMain",
+      "commonTest",
+      "iosMain"
+    ],
+    "dependencies": [
+    ],
+    "dependents": [
+      ":androidApp",
+      ":feature:chats",
+      ":feature:contacts",
+      ":feature:identity",
+      ":feature:transport"
+    ]
+  },
+  {
+    "name": "protocol",
+    "path": ":core:protocol",
+    "group": "core",
+    "directory": "core/protocol",
+    "buildFile": "core/protocol/build.gradle.kts",
+    "kotlinSourceFileCount": 35,
+    "productionKotlinFileCount": 34,
+    "testKotlinFileCount": 1,
+    "resourceFileCount": 1,
+    "sourceSets": [
+      "androidDeviceTest",
+      "androidHostTest",
+      "androidMain",
+      "commonMain",
+      "commonTest",
+      "iosMain"
+    ],
+    "dependencies": [
+    ],
+    "dependents": [
+      ":androidApp",
+      ":data:database",
+      ":feature:chats",
+      ":feature:contacts",
+      ":feature:identity",
+      ":feature:transport"
+    ]
+  },
+  {
+    "name": "ui",
+    "path": ":core:ui",
+    "group": "core",
+    "directory": "core/ui",
+    "buildFile": "core/ui/build.gradle.kts",
+    "kotlinSourceFileCount": 15,
+    "productionKotlinFileCount": 15,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 14,
+    "sourceSets": [
+      "androidDeviceTest",
+      "androidHostTest",
+      "androidMain",
+      "commonMain",
+      "iosMain"
+    ],
+    "dependencies": [
+    ],
+    "dependents": [
+      ":feature:chats",
+      ":feature:contactimport",
+      ":feature:contacts",
+      ":feature:identity",
+      ":feature:onboarding",
+      ":feature:settings",
+      ":navigation",
+      ":shared",
+      ":startup"
+    ]
+  },
+  {
+    "name": "data",
+    "path": ":data",
+    "group": "data",
+    "directory": "data",
+    "buildFile": "data/build.gradle",
+    "kotlinSourceFileCount": 0,
+    "productionKotlinFileCount": 0,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 0,
+    "sourceSets": [
+    ],
+    "dependencies": [
+    ],
+    "dependents": [
+    ]
+  },
+  {
+    "name": "database",
+    "path": ":data:database",
+    "group": "data",
+    "directory": "data/database",
+    "buildFile": "data/database/build.gradle.kts",
+    "kotlinSourceFileCount": 22,
+    "productionKotlinFileCount": 22,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 1,
+    "sourceSets": [
+      "androidDeviceTest",
+      "androidHostTest",
+      "androidMain",
+      "commonMain",
+      "iosMain"
+    ],
+    "dependencies": [
+      ":core",
+      ":core:protocol"
+    ],
+    "dependents": [
+      ":androidApp",
+      ":feature:chats",
+      ":feature:contacts",
+      ":feature:transport"
+    ]
+  },
+  {
+    "name": "feature",
+    "path": ":feature",
+    "group": "feature",
+    "directory": "feature",
+    "buildFile": "feature/build.gradle",
+    "kotlinSourceFileCount": 0,
+    "productionKotlinFileCount": 0,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 0,
+    "sourceSets": [
+    ],
+    "dependencies": [
+    ],
+    "dependents": [
+    ]
+  },
+  {
+    "name": "chats",
+    "path": ":feature:chats",
+    "group": "feature",
+    "directory": "feature/chats",
+    "buildFile": "feature/chats/build.gradle.kts",
+    "kotlinSourceFileCount": 24,
+    "productionKotlinFileCount": 24,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 1,
+    "sourceSets": [
+      "androidDeviceTest",
+      "androidHostTest",
+      "androidMain",
+      "commonMain",
+      "commonTest",
+      "iosMain"
+    ],
+    "dependencies": [
+      ":core",
+      ":core:crypto",
+      ":core:protocol",
+      ":core:ui",
+      ":data:database",
+      ":feature:contacts"
+    ],
+    "dependents": [
+      ":androidApp",
+      ":feature:transport",
+      ":navigation"
+    ]
+  },
+  {
+    "name": "contactimport",
+    "path": ":feature:contactimport",
+    "group": "feature",
+    "directory": "feature/contactimport",
+    "buildFile": "feature/contactimport/build.gradle.kts",
+    "kotlinSourceFileCount": 15,
+    "productionKotlinFileCount": 14,
+    "testKotlinFileCount": 1,
+    "resourceFileCount": 1,
+    "sourceSets": [
+      "androidDeviceTest",
+      "androidHostTest",
+      "androidMain",
+      "commonMain",
+      "iosMain"
+    ],
+    "dependencies": [
+      ":core",
+      ":core:ui",
+      ":feature:contacts",
+      ":feature:identity"
+    ],
+    "dependents": [
+      ":androidApp",
+      ":navigation"
+    ]
+  },
+  {
+    "name": "contacts",
+    "path": ":feature:contacts",
+    "group": "feature",
+    "directory": "feature/contacts",
+    "buildFile": "feature/contacts/build.gradle.kts",
+    "kotlinSourceFileCount": 52,
+    "productionKotlinFileCount": 50,
+    "testKotlinFileCount": 2,
+    "resourceFileCount": 1,
+    "sourceSets": [
+      "androidDeviceTest",
+      "androidHostTest",
+      "androidMain",
+      "commonMain",
+      "commonTest",
+      "iosMain"
+    ],
+    "dependencies": [
+      ":core",
+      ":core:crypto",
+      ":core:protocol",
+      ":core:ui",
+      ":data:database",
+      ":feature:identity"
+    ],
+    "dependents": [
+      ":androidApp",
+      ":feature:chats",
+      ":feature:contactimport",
+      ":feature:transport",
+      ":navigation"
+    ]
+  },
+  {
+    "name": "identity",
+    "path": ":feature:identity",
+    "group": "feature",
+    "directory": "feature/identity",
+    "buildFile": "feature/identity/build.gradle.kts",
+    "kotlinSourceFileCount": 45,
+    "productionKotlinFileCount": 41,
+    "testKotlinFileCount": 4,
+    "resourceFileCount": 1,
+    "sourceSets": [
+      "androidDeviceTest",
+      "androidHostTest",
+      "androidMain",
+      "commonMain",
+      "iosMain"
+    ],
+    "dependencies": [
+      ":core",
+      ":core:crypto",
+      ":core:protocol",
+      ":core:ui"
+    ],
+    "dependents": [
+      ":androidApp",
+      ":feature:contactimport",
+      ":feature:contacts",
+      ":feature:onboarding",
+      ":navigation",
+      ":startup"
+    ]
+  },
+  {
+    "name": "onboarding",
+    "path": ":feature:onboarding",
+    "group": "feature",
+    "directory": "feature/onboarding",
+    "buildFile": "feature/onboarding/build.gradle.kts",
+    "kotlinSourceFileCount": 13,
+    "productionKotlinFileCount": 13,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 1,
+    "sourceSets": [
+      "androidDeviceTest",
+      "androidHostTest",
+      "androidMain",
+      "commonMain",
+      "iosMain"
+    ],
+    "dependencies": [
+      ":core:ui",
+      ":feature:identity"
+    ],
+    "dependents": [
+      ":androidApp",
+      ":navigation",
+      ":startup"
+    ]
+  },
+  {
+    "name": "settings",
+    "path": ":feature:settings",
+    "group": "feature",
+    "directory": "feature/settings",
+    "buildFile": "feature/settings/build.gradle.kts",
+    "kotlinSourceFileCount": 26,
+    "productionKotlinFileCount": 26,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 2,
+    "sourceSets": [
+      "androidDeviceTest",
+      "androidHostTest",
+      "androidMain",
+      "commonMain",
+      "iosMain"
+    ],
+    "dependencies": [
+      ":core:ui"
+    ],
+    "dependents": [
+      ":androidApp",
+      ":navigation"
+    ]
+  },
+  {
+    "name": "transport",
+    "path": ":feature:transport",
+    "group": "feature",
+    "directory": "feature/transport",
+    "buildFile": "feature/transport/build.gradle.kts",
+    "kotlinSourceFileCount": 31,
+    "productionKotlinFileCount": 31,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 1,
+    "sourceSets": [
+      "androidDeviceTest",
+      "androidHostTest",
+      "androidMain",
+      "commonMain",
+      "iosMain"
+    ],
+    "dependencies": [
+      ":core",
+      ":core:crypto",
+      ":core:protocol",
+      ":data:database",
+      ":feature:chats",
+      ":feature:contacts"
+    ],
+    "dependents": [
+      ":androidApp"
+    ]
+  },
+  {
+    "name": "navigation",
+    "path": ":navigation",
+    "group": "navigation",
+    "directory": "navigation",
+    "buildFile": "navigation/build.gradle.kts",
+    "kotlinSourceFileCount": 4,
+    "productionKotlinFileCount": 4,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 1,
+    "sourceSets": [
+      "androidDeviceTest",
+      "androidHostTest",
+      "androidMain",
+      "commonMain",
+      "iosMain"
+    ],
+    "dependencies": [
+      ":core",
+      ":core:ui",
+      ":feature:chats",
+      ":feature:contactimport",
+      ":feature:contacts",
+      ":feature:identity",
+      ":feature:onboarding",
+      ":feature:settings",
+      ":startup"
+    ],
+    "dependents": [
+      ":shared"
+    ]
+  },
+  {
+    "name": "quality",
+    "path": ":quality",
+    "group": "quality",
+    "directory": "quality",
+    "buildFile": "quality/build.gradle",
+    "kotlinSourceFileCount": 0,
+    "productionKotlinFileCount": 0,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 0,
+    "sourceSets": [
+    ],
+    "dependencies": [
+    ],
+    "dependents": [
+    ]
+  },
+  {
+    "name": "detekt-rules",
+    "path": ":quality:detekt-rules",
+    "group": "quality",
+    "directory": "quality/detekt-rules",
+    "buildFile": "quality/detekt-rules/build.gradle.kts",
+    "kotlinSourceFileCount": 11,
+    "productionKotlinFileCount": 11,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 0,
+    "sourceSets": [
+      "main"
+    ],
+    "dependencies": [
+    ],
+    "dependents": [
+    ]
+  },
+  {
+    "name": "relay",
+    "path": ":relay",
+    "group": "relay",
+    "directory": "relay",
+    "buildFile": "relay/build.gradle.kts",
+    "kotlinSourceFileCount": 14,
+    "productionKotlinFileCount": 14,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 2,
+    "sourceSets": [
+      "androidDeviceTest",
+      "androidHostTest",
+      "androidMain",
+      "commonMain",
+      "iosMain",
+      "main"
+    ],
+    "dependencies": [
+    ],
+    "dependents": [
+    ]
+  },
+  {
+    "name": "shared",
+    "path": ":shared",
+    "group": "shared",
+    "directory": "shared",
+    "buildFile": "shared/build.gradle.kts",
+    "kotlinSourceFileCount": 8,
+    "productionKotlinFileCount": 6,
+    "testKotlinFileCount": 2,
+    "resourceFileCount": 0,
+    "sourceSets": [
+      "androidDeviceTest",
+      "androidHostTest",
+      "androidMain",
+      "commonMain",
+      "commonTest",
+      "iosMain",
+      "iosTest"
+    ],
+    "dependencies": [
+      ":core",
+      ":core:ui",
+      ":navigation"
+    ],
+    "dependents": [
+      ":androidApp"
+    ]
+  },
+  {
+    "name": "startup",
+    "path": ":startup",
+    "group": "startup",
+    "directory": "startup",
+    "buildFile": "startup/build.gradle.kts",
+    "kotlinSourceFileCount": 8,
+    "productionKotlinFileCount": 8,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 1,
+    "sourceSets": [
+      "androidDeviceTest",
+      "androidHostTest",
+      "androidMain",
+      "commonMain",
+      "iosMain"
+    ],
+    "dependencies": [
+      ":core:ui",
+      ":feature:identity",
+      ":feature:onboarding"
+    ],
+    "dependents": [
+      ":androidApp",
+      ":navigation"
+    ]
+  }
+]

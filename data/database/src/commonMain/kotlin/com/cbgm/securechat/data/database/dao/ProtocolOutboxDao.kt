@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ProtocolOutboxDao {
-
     @Upsert
     suspend fun upsert(entity: ProtocolOutboxEntity)
 
@@ -18,7 +17,7 @@ interface ProtocolOutboxDao {
         FROM protocol_outbox
         WHERE packetId = :packetId
         LIMIT 1
-        """
+        """,
     )
     suspend fun findByPacketId(packetId: String): ProtocolOutboxEntity?
 
@@ -28,7 +27,7 @@ interface ProtocolOutboxDao {
         FROM protocol_outbox
         WHERE id = :itemId
         LIMIT 1
-        """
+        """,
     )
     suspend fun findById(itemId: String): ProtocolOutboxEntity?
 
@@ -38,7 +37,7 @@ interface ProtocolOutboxDao {
         FROM protocol_outbox
         WHERE status = 'PENDING'
         ORDER BY createdAtEpochMilliseconds ASC
-        """
+        """,
     )
     fun observePending(): Flow<List<ProtocolOutboxEntity>>
 
@@ -49,7 +48,7 @@ interface ProtocolOutboxDao {
         WHERE status = 'PENDING'
         ORDER BY createdAtEpochMilliseconds ASC
         LIMIT :limit
-        """
+        """,
     )
     suspend fun getPending(limit: Int): List<ProtocolOutboxEntity>
 
@@ -62,11 +61,11 @@ interface ProtocolOutboxDao {
             updatedAtEpochMilliseconds = :updatedAt
         WHERE id = :itemId
           AND status IN ('PENDING', 'FAILED')
-        """
+        """,
     )
     suspend fun markProcessing(
         itemId: String,
-        updatedAt: Long
+        updatedAt: Long,
     )
 
     @Query(
@@ -76,11 +75,11 @@ interface ProtocolOutboxDao {
             lastError = NULL,
             updatedAtEpochMilliseconds = :updatedAt
         WHERE id = :itemId
-        """
+        """,
     )
     suspend fun markSent(
         itemId: String,
-        updatedAt: Long
+        updatedAt: Long,
     )
 
     @Query(
@@ -90,12 +89,12 @@ interface ProtocolOutboxDao {
             lastError = :errorMessage,
             updatedAtEpochMilliseconds = :updatedAt
         WHERE id = :itemId
-        """
+        """,
     )
     suspend fun markFailed(
         itemId: String,
         errorMessage: String,
-        updatedAt: Long
+        updatedAt: Long,
     )
 
     @Query(
@@ -106,11 +105,11 @@ interface ProtocolOutboxDao {
             updatedAtEpochMilliseconds = :updatedAt
         WHERE id = :itemId
           AND status = 'FAILED'
-        """
+        """,
     )
     suspend fun retry(
         itemId: String,
-        updatedAt: Long
+        updatedAt: Long,
     )
 
     @Query(
@@ -118,9 +117,7 @@ interface ProtocolOutboxDao {
         DELETE FROM protocol_outbox
         WHERE status = 'SENT'
           AND updatedAtEpochMilliseconds < :beforeTimestamp
-        """
+        """,
     )
     suspend fun deleteSentBefore(beforeTimestamp: Long)
-
-
 }

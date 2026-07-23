@@ -4,7 +4,6 @@ package com.cbgm.securechat.feature.identity.domain.model
  * Describes the current state of the user's local cryptographic identity.
  */
 enum class IdentityStatus {
-
     /**
      * Neither public keys nor private keys exist.
      *
@@ -31,5 +30,5 @@ enum class IdentityStatus {
      * because doing so could permanently break access to encrypted
      * conversation history.
      */
-    INCOMPLETE
+    INCOMPLETE,
 }

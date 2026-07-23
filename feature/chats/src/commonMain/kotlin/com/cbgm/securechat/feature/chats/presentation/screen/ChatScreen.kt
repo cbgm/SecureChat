@@ -82,7 +82,7 @@ fun ChatScreen(
     onRetryMessage: (String) -> Unit,
     onVerifyIdentity: () -> Unit,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     SecureChatLazyScaffold(
         modifier = modifier,
@@ -92,7 +92,7 @@ fun ChatScreen(
             PatternBackground(
                 modifier = Modifier.fillMaxSize(),
                 backgroundColor = MaterialTheme.colorScheme.background,
-                alpha = 0.04f
+                alpha = 0.04f,
             )
         },
         topBar = { containerColor ->
@@ -101,7 +101,7 @@ fun ChatScreen(
                 containerColor = containerColor,
                 onClickHeader = onClickHeader,
                 onVerifyIdentity = onVerifyIdentity,
-                onBack = onBack
+                onBack = onBack,
             )
         },
         bottomBar = { containerColor ->
@@ -109,15 +109,15 @@ fun ChatScreen(
                 uiState = uiState,
                 containerColor = containerColor,
                 onMessageTextChanged = onMessageTextChanged,
-                onSendClick = onSendClick
+                onSendClick = onSendClick,
             )
-        }
+        },
     ) { innerPadding, listState ->
         ChatContent(
             uiState = uiState,
             listState = listState,
             innerPadding = innerPadding,
-            onRetryMessage = onRetryMessage
+            onRetryMessage = onRetryMessage,
         )
     }
 }
@@ -129,44 +129,47 @@ private fun ChatTopBar(
     containerColor: Color,
     onClickHeader: () -> Unit,
     onVerifyIdentity: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         TopAppBar(
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = containerColor,
-                scrolledContainerColor = containerColor,
-                titleContentColor = MaterialTheme.colorScheme.onBackground,
-                navigationIconContentColor =
-                    MaterialTheme.colorScheme.onBackground,
-                actionIconContentColor =
-                    MaterialTheme.colorScheme.onBackground
-            ),
+            colors =
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = containerColor,
+                    scrolledContainerColor = containerColor,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor =
+                        MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor =
+                        MaterialTheme.colorScheme.onBackground,
+                ),
             title = {
                 Row(
-                    modifier = Modifier.clickable(
-                        onClick = onClickHeader
-                    ),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier =
+                        Modifier.clickable(
+                            onClick = onClickHeader,
+                        ),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     ContactAvatar(
                         name = uiState.contactName,
-                        size = 36.dp
+                        size = 36.dp,
                     )
 
                     Spacer(
-                        modifier = Modifier.width(
-                            MaterialTheme.spacing.small
-                        )
+                        modifier =
+                            Modifier.width(
+                                MaterialTheme.spacing.small,
+                            ),
                     )
 
                     Text(
                         text = uiState.contactName,
                         style = MaterialTheme.typography.titleSmall,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             },
@@ -175,15 +178,15 @@ private fun ChatTopBar(
                     Icon(
                         imageVector =
                             Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
+                        contentDescription = "Back",
                     )
                 }
-            }
+            },
         )
 
         SecurityBanner(
             securityState = uiState.contactSecurityState,
-            onVerifyIdentity = onVerifyIdentity
+            onVerifyIdentity = onVerifyIdentity,
         )
 
         uiState.errorMessage?.let { message ->
@@ -197,36 +200,39 @@ private fun ChatBottomBar(
     uiState: ChatUiState,
     containerColor: Color,
     onMessageTextChanged: (String) -> Unit,
-    onSendClick: () -> Unit
+    onSendClick: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(containerColor)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(containerColor),
     ) {
         Text(
-            text = if (uiState.isContactTyping) {
-                "${uiState.contactName} is typing…"
-            } else {
-                ""
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = MaterialTheme.spacing.large,
-                    vertical = MaterialTheme.spacing.base / 2
-                ),
+            text =
+                if (uiState.isContactTyping) {
+                    "${uiState.contactName} is typing…"
+                } else {
+                    ""
+                },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = MaterialTheme.spacing.large,
+                        vertical = MaterialTheme.spacing.base / 2,
+                    ),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
 
         MessageInput(
             value = uiState.messageText,
             onValueChange = onMessageTextChanged,
             onSendClick = onSendClick,
-            enabled = !uiState.isLoadingContact
+            enabled = !uiState.isLoadingContact,
         )
     }
 }
@@ -236,14 +242,15 @@ private fun ChatContent(
     uiState: ChatUiState,
     listState: LazyListState,
     innerPadding: PaddingValues,
-    onRetryMessage: (String) -> Unit
+    onRetryMessage: (String) -> Unit,
 ) {
     when {
         uiState.isLoadingContact -> {
             LoadingChatContent(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
             )
         }
 
@@ -251,9 +258,10 @@ private fun ChatContent(
             EmptyChatContent(
                 contactName = uiState.contactName,
                 securityState = uiState.contactSecurityState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
             )
         }
 
@@ -264,7 +272,7 @@ private fun ChatContent(
                 onRetryMessage = onRetryMessage,
                 topPadding = innerPadding.calculateTopPadding(),
                 bottomPadding = innerPadding.calculateBottomPadding(),
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
         }
     }
@@ -274,7 +282,7 @@ private fun ChatContent(
 private fun SecurityBanner(
     securityState: ContactSecurityState,
     onVerifyIdentity: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (securityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED) {
         VerifiedSecurityIndicator(modifier = modifier)
@@ -289,67 +297,72 @@ private fun SecurityBanner(
         val contentColor: Color,
     )
 
-    val combinedState = when (securityState) {
-        ContactSecurityState.NO_REMOTE_PUBLIC_KEYS -> CombinedState(
-            icon = Icons.Default.LockOpen,
-            title = "Messages are not end-to-end encrypted",
-            description = "You do not have this contact's SecureChat public keys.",
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-        )
+    val combinedState =
+        when (securityState) {
+            ContactSecurityState.NO_REMOTE_PUBLIC_KEYS ->
+                CombinedState(
+                    icon = Icons.Default.LockOpen,
+                    title = "Messages are not end-to-end encrypted",
+                    description = "You do not have this contact's SecureChat public keys.",
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                )
 
-        ContactSecurityState.ONE_WAY_KEYS -> CombinedState(
-            icon = Icons.Default.LockOpen,
-            title = "Key exchange is incomplete",
-            description = "Both parties have not completed the identity exchange.",
-            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f),
-            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-        )
+            ContactSecurityState.ONE_WAY_KEYS ->
+                CombinedState(
+                    icon = Icons.Default.LockOpen,
+                    title = "Key exchange is incomplete",
+                    description = "Both parties have not completed the identity exchange.",
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f),
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                )
 
-        ContactSecurityState.MUTUAL_KEYS_UNVERIFIED -> CombinedState(
-            icon = Icons.Default.Warning,
-            title = "Encrypted using an unverified identity",
-            description = "Compare the safety number through another trusted channel.",
-            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
-            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-        )
+            ContactSecurityState.MUTUAL_KEYS_UNVERIFIED ->
+                CombinedState(
+                    icon = Icons.Default.Warning,
+                    title = "Encrypted using an unverified identity",
+                    description = "Compare the safety number through another trusted channel.",
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                )
 
-        // MUTUAL_KEYS_VERIFIED is handled above and returns early — no branch
-        // needed here, so the dead commented-out entry that used to live in
-        // this `when` has been removed.
-        ContactSecurityState.MUTUAL_KEYS_VERIFIED -> error("Unreachable")
-    }
+            // MUTUAL_KEYS_VERIFIED is handled above and returns early — no branch
+            // needed here, so the dead commented-out entry that used to live in
+            // this `when` has been removed.
+            ContactSecurityState.MUTUAL_KEYS_VERIFIED -> error("Unreachable")
+        }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = combinedState.containerColor,
-        contentColor = combinedState.contentColor
+        contentColor = combinedState.contentColor,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = combinedState.icon,
                 contentDescription = null,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(16.dp),
             )
 
             Column(
-                modifier = Modifier
-                    .padding(start = MaterialTheme.spacing.small)
-                    .weight(1f)
+                modifier =
+                    Modifier
+                        .padding(start = MaterialTheme.spacing.small)
+                        .weight(1f),
             ) {
                 Text(
                     text = combinedState.title,
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
 
                 Text(
                     text = combinedState.description,
                     modifier = Modifier.padding(top = 2.dp),
-                    style = MaterialTheme.typography.labelSmall
+                    style = MaterialTheme.typography.labelSmall,
                 )
             }
 
@@ -359,7 +372,7 @@ private fun SecurityBanner(
                         text = "Verify",
                         style = MaterialTheme.typography.bodySmall,
                         color = combinedState.contentColor,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
             }
@@ -371,18 +384,18 @@ private fun SecurityBanner(
 private fun VerifiedSecurityIndicator(modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f)
+        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.Center,
         ) {
             Icon(
                 imageVector = Icons.Default.Lock,
                 contentDescription = null,
                 modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.colorScheme.secondary
+                tint = MaterialTheme.colorScheme.secondary,
             )
 
             Spacer(modifier = Modifier.width(6.dp))
@@ -391,7 +404,7 @@ private fun VerifiedSecurityIndicator(modifier: Modifier = Modifier) {
                 text = "Verified end-to-end encrypted",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.secondary
+                color = MaterialTheme.colorScheme.secondary,
             )
         }
     }
@@ -404,27 +417,28 @@ private fun MessageList(
     onRetryMessage: (String) -> Unit,
     topPadding: Dp,
     bottomPadding: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier,
         state = listState,
         reverseLayout = true,
-        contentPadding = PaddingValues(
-            start = 12.dp,
-            top = topPadding + MaterialTheme.spacing.small,
-            end = 12.dp,
-            bottom = bottomPadding + MaterialTheme.spacing.small
-        ),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        contentPadding =
+            PaddingValues(
+                start = 12.dp,
+                top = topPadding + MaterialTheme.spacing.small,
+                end = 12.dp,
+                bottom = bottomPadding + MaterialTheme.spacing.small,
+            ),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(
             items = messages,
-            key = { message -> message.id }
+            key = { message -> message.id },
         ) { message ->
             MessageBubble(
                 message = message,
-                onRetryClick = { onRetryMessage(message.id) }
+                onRetryClick = { onRetryMessage(message.id) },
             )
         }
     }
@@ -434,7 +448,7 @@ private fun MessageList(
 private fun MessageBubble(
     message: ChatMessage,
     onRetryClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     data class MessageBubbleState(
         val text: String,
@@ -443,61 +457,68 @@ private fun MessageBubble(
         val contentColor: Color,
     )
 
-    val bubbleState = when (message.contentStatus) {
-        MessageContentStatus.READABLE -> MessageBubbleState(
-            text = message.text,
-            isContentFailed = false,
-            bubbleColor = if (message.isMine) {
-                MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)
-            } else {
-                IncomingBubbleColor
-            },
-            contentColor = MaterialTheme.colorScheme.onBackground,
-        )
+    val bubbleState =
+        when (message.contentStatus) {
+            MessageContentStatus.READABLE ->
+                MessageBubbleState(
+                    text = message.text,
+                    isContentFailed = false,
+                    bubbleColor =
+                        if (message.isMine) {
+                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)
+                        } else {
+                            IncomingBubbleColor
+                        },
+                    contentColor = MaterialTheme.colorScheme.onBackground,
+                )
 
-        MessageContentStatus.INVALID_PACKET -> MessageBubbleState(
-            text = "Invalid message packet",
-            isContentFailed = true,
-            bubbleColor = MaterialTheme.colorScheme.errorContainer,
-            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-        )
+            MessageContentStatus.INVALID_PACKET ->
+                MessageBubbleState(
+                    text = "Invalid message packet",
+                    isContentFailed = true,
+                    bubbleColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                )
 
-        MessageContentStatus.INVALID_PLAINTEXT_PACKET -> MessageBubbleState(
-            text = "Unable to read plaintext message",
-            isContentFailed = true,
-            bubbleColor = MaterialTheme.colorScheme.errorContainer,
-            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-        )
+            MessageContentStatus.INVALID_PLAINTEXT_PACKET ->
+                MessageBubbleState(
+                    text = "Unable to read plaintext message",
+                    isContentFailed = true,
+                    bubbleColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                )
 
-        MessageContentStatus.TRANSPORT_DECRYPTION_FAILED -> MessageBubbleState(
-            text = "Unable to decrypt secure message",
-            isContentFailed = true,
-            bubbleColor = MaterialTheme.colorScheme.errorContainer,
-            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-        )
-    }
+            MessageContentStatus.TRANSPORT_DECRYPTION_FAILED ->
+                MessageBubbleState(
+                    text = "Unable to decrypt secure message",
+                    isContentFailed = true,
+                    bubbleColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                )
+        }
 
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = if (message.isMine) Arrangement.End else Arrangement.Start
+        horizontalArrangement = if (message.isMine) Arrangement.End else Arrangement.Start,
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(fraction = 0.78f),
-            horizontalAlignment = if (message.isMine) Alignment.End else Alignment.Start
+            horizontalAlignment = if (message.isMine) Alignment.End else Alignment.Start,
         ) {
             Surface(
                 color = bubbleState.bubbleColor,
                 contentColor = bubbleState.contentColor,
-                shape = RoundedCornerShape(
-                    topStart = 16.dp,
-                    topEnd = 16.dp,
-                    bottomStart = if (message.isMine) 16.dp else 4.dp,
-                    bottomEnd = if (message.isMine) 4.dp else 16.dp
-                )
+                shape =
+                    RoundedCornerShape(
+                        topStart = 16.dp,
+                        topEnd = 16.dp,
+                        bottomStart = if (message.isMine) 16.dp else 4.dp,
+                        bottomEnd = if (message.isMine) 4.dp else 16.dp,
+                    ),
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.Top
+                    verticalAlignment = Alignment.Top,
                 ) {
                     if (bubbleState.isContentFailed) {
                         Icon(imageVector = Icons.Default.ErrorOutline, contentDescription = null)
@@ -515,7 +536,7 @@ private fun MessageBubble(
             MessageMetadata(
                 message = message,
                 onRetryClick = onRetryClick,
-                modifier = Modifier.padding(top = 3.dp, start = 4.dp, end = 4.dp)
+                modifier = Modifier.padding(top = 3.dp, start = 4.dp, end = 4.dp),
             )
         }
     }
@@ -525,19 +546,19 @@ private fun MessageBubble(
 private fun MessageMetadata(
     message: ChatMessage,
     onRetryClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         MessageSecurityIndicator(message = message)
 
         if (message.isMine && message.deliveryStatus != MessageDeliveryStatus.NOT_APPLICABLE) {
             OutgoingDeliveryIndicator(
                 deliveryStatus = message.deliveryStatus,
-                onRetryClick = onRetryClick
+                onRetryClick = onRetryClick,
             )
         }
     }
@@ -545,28 +566,31 @@ private fun MessageMetadata(
 
 @Composable
 private fun MessageSecurityIndicator(message: ChatMessage) {
-    val text = when (message.contentStatus) {
-        MessageContentStatus.INVALID_PACKET -> "Invalid packet"
-        MessageContentStatus.INVALID_PLAINTEXT_PACKET -> "Invalid plaintext"
-        MessageContentStatus.TRANSPORT_DECRYPTION_FAILED -> "Decryption failed"
-        MessageContentStatus.READABLE -> when (message.security) {
-            MessageSecurity.INSECURE -> "Not encrypted"
-            MessageSecurity.END_TO_END_ENCRYPTED -> "Encrypted"
+    val text =
+        when (message.contentStatus) {
+            MessageContentStatus.INVALID_PACKET -> "Invalid packet"
+            MessageContentStatus.INVALID_PLAINTEXT_PACKET -> "Invalid plaintext"
+            MessageContentStatus.TRANSPORT_DECRYPTION_FAILED -> "Decryption failed"
+            MessageContentStatus.READABLE ->
+                when (message.security) {
+                    MessageSecurity.INSECURE -> "Not encrypted"
+                    MessageSecurity.END_TO_END_ENCRYPTED -> "Encrypted"
+                }
         }
-    }
 
-    val icon = when {
-        message.contentStatus != MessageContentStatus.READABLE -> Icons.Default.ErrorOutline
-        message.security == MessageSecurity.END_TO_END_ENCRYPTED -> Icons.Default.Lock
-        else -> Icons.Default.LockOpen
-    }
+    val icon =
+        when {
+            message.contentStatus != MessageContentStatus.READABLE -> Icons.Default.ErrorOutline
+            message.security == MessageSecurity.END_TO_END_ENCRYPTED -> Icons.Default.Lock
+            else -> Icons.Default.LockOpen
+        }
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(14.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(modifier = Modifier.width(MaterialTheme.spacing.base))
@@ -574,7 +598,7 @@ private fun MessageSecurityIndicator(message: ChatMessage) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -582,7 +606,7 @@ private fun MessageSecurityIndicator(message: ChatMessage) {
 @Composable
 private fun OutgoingDeliveryIndicator(
     deliveryStatus: MessageDeliveryStatus,
-    onRetryClick: () -> Unit
+    onRetryClick: () -> Unit,
 ) {
     when (deliveryStatus) {
         MessageDeliveryStatus.NOT_APPLICABLE -> Unit
@@ -594,9 +618,9 @@ private fun OutgoingDeliveryIndicator(
                     Icon(
                         imageVector = Icons.Default.Schedule,
                         contentDescription = null,
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(14.dp),
                     )
-                }
+                },
             )
         }
 
@@ -606,9 +630,9 @@ private fun OutgoingDeliveryIndicator(
                 icon = {
                     CircularProgressIndicator(
                         modifier = Modifier.size(12.dp),
-                        strokeWidth = 1.5.dp
+                        strokeWidth = 1.5.dp,
                     )
-                }
+                },
             )
         }
 
@@ -619,9 +643,9 @@ private fun OutgoingDeliveryIndicator(
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(14.dp),
                     )
-                }
+                },
             )
         }
 
@@ -633,20 +657,19 @@ private fun OutgoingDeliveryIndicator(
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
-                            modifier = Modifier.size(14.dp)
+                            modifier = Modifier.size(14.dp),
                         )
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
-                            modifier = Modifier.size(14.dp).padding(start = 1.dp)
+                            modifier = Modifier.size(14.dp).padding(start = 1.dp),
                         )
                     }
-                }
+                },
             )
         }
 
         MessageDeliveryStatus.READ -> {
-
             DeliveryLabel(
                 text = "Read",
                 textColor = MaterialTheme.colorScheme.secondary,
@@ -656,16 +679,16 @@ private fun OutgoingDeliveryIndicator(
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
                             modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.secondary
+                            tint = MaterialTheme.colorScheme.secondary,
                         )
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
                             modifier = Modifier.size(14.dp).padding(start = 1.dp),
-                            tint = MaterialTheme.colorScheme.secondary
+                            tint = MaterialTheme.colorScheme.secondary,
                         )
                     }
-                }
+                },
             )
         }
 
@@ -675,7 +698,7 @@ private fun OutgoingDeliveryIndicator(
                     imageVector = Icons.Default.ErrorOutline,
                     contentDescription = null,
                     modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.error
+                    tint = MaterialTheme.colorScheme.error,
                 )
 
                 Spacer(modifier = Modifier.width(3.dp))
@@ -683,18 +706,18 @@ private fun OutgoingDeliveryIndicator(
                 Text(
                     text = "Failed",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
 
                 IconButton(
                     onClick = onRetryClick,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(28.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Retry message",
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.error
+                        tint = MaterialTheme.colorScheme.error,
                     )
                 }
             }
@@ -706,7 +729,7 @@ private fun OutgoingDeliveryIndicator(
 private fun DeliveryLabel(
     text: String,
     icon: @Composable () -> Unit,
-    textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
+    textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         icon()
@@ -716,7 +739,7 @@ private fun DeliveryLabel(
         Text(
             text = text,
             style = MaterialTheme.typography.labelSmall,
-            color = textColor
+            color = textColor,
         )
     }
 }
@@ -727,57 +750,60 @@ private fun MessageInput(
     onValueChange: (String) -> Unit,
     onSendClick: () -> Unit,
     enabled: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.navigationBars)
-            .imePadding()
-            .padding(
-                start = MaterialTheme.spacing.base,
-                end = MaterialTheme.spacing.base,
-                bottom = MaterialTheme.spacing.base
-            ),
-        verticalAlignment = Alignment.Bottom
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .imePadding()
+                .padding(
+                    start = MaterialTheme.spacing.base,
+                    end = MaterialTheme.spacing.base,
+                    bottom = MaterialTheme.spacing.base,
+                ),
+        verticalAlignment = Alignment.Bottom,
     ) {
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier
-                .weight(1f)
-                .background(
-                    color = Field,
-                    shape = RoundedCornerShape(24.dp)
-                )
-                .padding(
-                    horizontal = MaterialTheme.spacing.small + 4.dp,
-                    vertical = MaterialTheme.spacing.base
-                ),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .background(
+                        color = Field,
+                        shape = RoundedCornerShape(24.dp),
+                    ).padding(
+                        horizontal = MaterialTheme.spacing.small + 4.dp,
+                        vertical = MaterialTheme.spacing.base,
+                    ),
             enabled = enabled,
             minLines = 1,
             maxLines = 5,
-            textStyle = MaterialTheme.typography.bodyMedium.copy(
-                color = MaterialTheme.colorScheme.onBackground
-            ),
+            textStyle =
+                MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onBackground,
+                ),
             cursorBrush = SolidColor(MaterialTheme.colorScheme.secondary),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
-            decorationBox = { innerTextField -> innerTextField() }
+            decorationBox = { innerTextField -> innerTextField() },
         )
 
         IconButton(
             onClick = onSendClick,
             enabled = enabled && value.isNotBlank(),
-            modifier = Modifier.padding(start = 4.dp)
+            modifier = Modifier.padding(start = 4.dp),
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Send,
                 contentDescription = "Send message",
-                tint = if (enabled && value.isNotBlank()) {
-                    MaterialTheme.colorScheme.secondary
-                } else {
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
-                }
+                tint =
+                    if (enabled && value.isNotBlank()) {
+                        MaterialTheme.colorScheme.secondary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+                    },
             )
         }
     }
@@ -787,11 +813,11 @@ private fun MessageInput(
 private fun EmptyChatContent(
     contactName: String,
     securityState: ContactSecurityState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier.padding(horizontal = MaterialTheme.spacing.large),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
@@ -799,27 +825,28 @@ private fun EmptyChatContent(
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
 
             Text(
-                text = when (securityState) {
-                    ContactSecurityState.NO_REMOTE_PUBLIC_KEYS ->
-                        "This contact has no SecureChat public keys. Messages use plaintext transport."
+                text =
+                    when (securityState) {
+                        ContactSecurityState.NO_REMOTE_PUBLIC_KEYS ->
+                            "This contact has no SecureChat public keys. Messages use plaintext transport."
 
-                    ContactSecurityState.ONE_WAY_KEYS ->
-                        "You have this contact's public keys, but they do not have yours yet. Messages remain plaintext."
+                        ContactSecurityState.ONE_WAY_KEYS ->
+                            "You have this contact's public keys, but they do not have yours yet. Messages remain plaintext."
 
-                    ContactSecurityState.MUTUAL_KEYS_UNVERIFIED ->
-                        "Messages are encrypted. Compare the safety number through a trusted channel."
+                        ContactSecurityState.MUTUAL_KEYS_UNVERIFIED ->
+                            "Messages are encrypted. Compare the safety number through a trusted channel."
 
-                    ContactSecurityState.MUTUAL_KEYS_VERIFIED ->
-                        "Messages use the verified SecureChat identity."
-                },
+                        ContactSecurityState.MUTUAL_KEYS_VERIFIED ->
+                            "Messages use the verified SecureChat identity."
+                    },
                 modifier = Modifier.padding(top = MaterialTheme.spacing.base),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
         }
     }
@@ -830,7 +857,7 @@ private fun LoadingChatContent(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
 
@@ -839,7 +866,7 @@ private fun LoadingChatContent(modifier: Modifier = Modifier) {
         Text(
             text = "Loading chat…",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -847,84 +874,88 @@ private fun LoadingChatContent(modifier: Modifier = Modifier) {
 @Composable
 private fun ErrorMessage(
     message: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Text(
         text = message,
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.errorContainer)
-            .padding(
-                horizontal = MaterialTheme.spacing.small,
-                vertical = MaterialTheme.spacing.base
-            ),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.errorContainer)
+                .padding(
+                    horizontal = MaterialTheme.spacing.small,
+                    vertical = MaterialTheme.spacing.base,
+                ),
         color = MaterialTheme.colorScheme.onErrorContainer,
         style = MaterialTheme.typography.bodySmall,
-        textAlign = TextAlign.Center
+        textAlign = TextAlign.Center,
     )
 }
 
 @Preview
 @Composable
-fun ChatScreenPreview() {
+private fun ChatScreenPreview() {
     SecureChatTheme {
         ChatScreen(
-            uiState = ChatUiState(
-                isLoadingContact = false,
-                contactName = "Alex",
-                contactSecurityState = ContactSecurityState.MUTUAL_KEYS_VERIFIED,
-                errorMessage = "sfsfsjljljljljljlf"
-            ),
+            uiState =
+                ChatUiState(
+                    isLoadingContact = false,
+                    contactName = "Alex",
+                    contactSecurityState = ContactSecurityState.MUTUAL_KEYS_VERIFIED,
+                    errorMessage = "sfsfsjljljljljljlf",
+                ),
             onMessageTextChanged = {},
             onSendClick = {},
             onClickHeader = {},
             onRetryMessage = {},
             onVerifyIdentity = {},
-            onBack = {}
+            onBack = {},
         )
     }
 }
 
 @Preview
 @Composable
-fun ChatScreenMessagesPreview() {
+private fun ChatScreenMessagesPreview() {
     SecureChatTheme {
         ChatScreen(
-            uiState = ChatUiState(
-                isLoadingContact = false,
-                contactName = "Alex",
-                contactSecurityState = ContactSecurityState.MUTUAL_KEYS_VERIFIED,
-                errorMessage = null,
-                isContactTyping = true,
-                messages = listOf(
-                    ChatMessage(
-                        id = "1",
-                        isMine = true,
-                        text = "This is a test goes very long and hopefully brearks right",
-                        security = MessageSecurity.INSECURE,
-                        contentStatus = MessageContentStatus.READABLE,
-                        deliveryStatus = MessageDeliveryStatus.SENDING,
-                        timestamp = System.currentTimeMillis(),
-                        contactId = "2"
-                    ),
-                    ChatMessage(
-                        id = "2",
-                        isMine = false,
-                        text = "This is a test goes very long and hopefully brearks right",
-                        security = MessageSecurity.END_TO_END_ENCRYPTED,
-                        contentStatus = MessageContentStatus.READABLE,
-                        deliveryStatus = MessageDeliveryStatus.QUEUED,
-                        timestamp = System.currentTimeMillis(),
-                        contactId = "1"
-                    )
-                )
-            ),
+            uiState =
+                ChatUiState(
+                    isLoadingContact = false,
+                    contactName = "Alex",
+                    contactSecurityState = ContactSecurityState.MUTUAL_KEYS_VERIFIED,
+                    errorMessage = null,
+                    isContactTyping = true,
+                    messages =
+                        listOf(
+                            ChatMessage(
+                                id = "1",
+                                isMine = true,
+                                text = "This is a test goes very long and hopefully brearks right",
+                                security = MessageSecurity.INSECURE,
+                                contentStatus = MessageContentStatus.READABLE,
+                                deliveryStatus = MessageDeliveryStatus.SENDING,
+                                timestamp = System.currentTimeMillis(),
+                                contactId = "2",
+                            ),
+                            ChatMessage(
+                                id = "2",
+                                isMine = false,
+                                text = "This is a test goes very long and hopefully brearks right",
+                                security = MessageSecurity.END_TO_END_ENCRYPTED,
+                                contentStatus = MessageContentStatus.READABLE,
+                                deliveryStatus = MessageDeliveryStatus.QUEUED,
+                                timestamp = System.currentTimeMillis(),
+                                contactId = "1",
+                            ),
+                        ),
+                ),
             onMessageTextChanged = {},
             onSendClick = {},
             onClickHeader = {},
             onRetryMessage = {},
             onVerifyIdentity = {},
-            onBack = {}
+            onBack = {},
         )
     }
 }

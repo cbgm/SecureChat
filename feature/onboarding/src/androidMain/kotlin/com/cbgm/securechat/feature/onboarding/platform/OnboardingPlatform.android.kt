@@ -18,12 +18,13 @@ import androidx.core.content.ContextCompat
 @Composable
 actual fun OnboardingPermissionRequester(
     requestId: Int,
-    onResult: (PermissionRequestResult) -> Unit
+    onResult: (PermissionRequestResult) -> Unit,
 ) {
     val context = LocalContext.current
 
-    val permissions = remember {
-        buildList {
+    val permissions =
+        remember {
+            buildList {
             /*
              * READ_CONTACTS:
              * Required for loading contacts and duplicate detection.
@@ -32,82 +33,80 @@ actual fun OnboardingPermissionRequester(
              * Required for directly inserting a contact without
              * opening the system contact editor.
              */
-            add(Manifest.permission.READ_CONTACTS)
-            add(Manifest.permission.WRITE_CONTACTS)
+                add(Manifest.permission.READ_CONTACTS)
+                add(Manifest.permission.WRITE_CONTACTS)
 
-            add(Manifest.permission.CAMERA)
+                add(Manifest.permission.CAMERA)
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                add(Manifest.permission.READ_PHONE_NUMBERS)
-                add(Manifest.permission.READ_PHONE_STATE)
-            }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    add(Manifest.permission.READ_PHONE_NUMBERS)
+                    add(Manifest.permission.READ_PHONE_STATE)
+                }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                add(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }.toTypedArray()
-    }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    add(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }.toTypedArray()
+        }
 
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { result ->
+    val launcher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestMultiplePermissions(),
+        ) { result ->
 
-        val contactsReadGranted =
-            result[Manifest.permission.READ_CONTACTS] == true ||
+            val contactsReadGranted =
+                result[Manifest.permission.READ_CONTACTS] == true ||
                     context.isGranted(Manifest.permission.READ_CONTACTS)
 
-        val contactsWriteGranted =
-            result[Manifest.permission.WRITE_CONTACTS] == true ||
+            val contactsWriteGranted =
+                result[Manifest.permission.WRITE_CONTACTS] == true ||
                     context.isGranted(Manifest.permission.WRITE_CONTACTS)
 
-        onResult(
-            PermissionRequestResult(
+            onResult(
+                PermissionRequestResult(
                 /*
                  * Treat contacts as granted only when the app can
                  * both check for duplicates and insert contacts.
                  */
-                contactsGranted =
-                    contactsReadGranted &&
+                    contactsGranted =
+                        contactsReadGranted &&
                             contactsWriteGranted,
-
-                cameraGranted =
-                    result[Manifest.permission.CAMERA] == true ||
+                    cameraGranted =
+                        result[Manifest.permission.CAMERA] == true ||
                             context.isGranted(
-                                Manifest.permission.CAMERA
+                                Manifest.permission.CAMERA,
                             ),
-
-                notificationsGranted =
-                    Build.VERSION.SDK_INT <
+                    notificationsGranted =
+                        Build.VERSION.SDK_INT <
                             Build.VERSION_CODES.TIRAMISU ||
                             result[
-                                Manifest.permission.POST_NOTIFICATIONS
+                                Manifest.permission.POST_NOTIFICATIONS,
                             ] == true ||
                             context.isGranted(
-                                Manifest.permission.POST_NOTIFICATIONS
+                                Manifest.permission.POST_NOTIFICATIONS,
                             ),
-
-                phoneNumberGranted =
-                    Build.VERSION.SDK_INT >=
+                    phoneNumberGranted =
+                        Build.VERSION.SDK_INT >=
                             Build.VERSION_CODES.O &&
                             (
-                                    result[
-                                        Manifest.permission.READ_PHONE_NUMBERS
-                                    ] == true ||
-                                            context.isGranted(
-                                                Manifest.permission.READ_PHONE_NUMBERS
-                                            )
-                                    ) &&
-                            (
-                                    result[
-                                        Manifest.permission.READ_PHONE_STATE
-                                    ] == true ||
-                                            context.isGranted(
-                                                Manifest.permission.READ_PHONE_STATE
-                                            )
+                                result[
+                                    Manifest.permission.READ_PHONE_NUMBERS,
+                                ] == true ||
+                                    context.isGranted(
+                                        Manifest.permission.READ_PHONE_NUMBERS,
                                     )
+                            ) &&
+                            (
+                                result[
+                                    Manifest.permission.READ_PHONE_STATE,
+                                ] == true ||
+                                    context.isGranted(
+                                        Manifest.permission.READ_PHONE_STATE,
+                                    )
+                            ),
+                ),
             )
-        )
-    }
+        }
 
     LaunchedEffect(requestId) {
         if (requestId > 0) {
@@ -118,19 +117,19 @@ actual fun OnboardingPermissionRequester(
 
 @SuppressLint(
     "MissingPermission",
-    "HardwareIds"
+    "HardwareIds",
 )
 @Composable
 actual fun AutomaticPhoneNumberReader(
     requestId: Int,
     enabled: Boolean,
-    onResult: (AutomaticPhoneNumberResult) -> Unit
+    onResult: (AutomaticPhoneNumberResult) -> Unit,
 ) {
     val context = LocalContext.current
 
     LaunchedEffect(
         requestId,
-        enabled
+        enabled,
     ) {
         if (!enabled || requestId <= 0) {
             return@LaunchedEffect
@@ -140,81 +139,78 @@ actual fun AutomaticPhoneNumberReader(
             Build.VERSION.SDK_INT <
             Build.VERSION_CODES.O ||
             !context.isGranted(
-                Manifest.permission.READ_PHONE_NUMBERS
+                Manifest.permission.READ_PHONE_NUMBERS,
             ) ||
             !context.isGranted(
-                Manifest.permission.READ_PHONE_STATE
+                Manifest.permission.READ_PHONE_STATE,
             )
         ) {
             onResult(
-                AutomaticPhoneNumberResult.Unavailable
+                AutomaticPhoneNumberResult.Unavailable,
             )
             return@LaunchedEffect
         }
 
-        val number = runCatching {
-            val manager = context.getSystemService(
-                Context.TELEPHONY_SUBSCRIPTION_SERVICE
-            ) as SubscriptionManager
+        val number =
+            runCatching {
+                val manager =
+                    context.getSystemService(
+                        Context.TELEPHONY_SUBSCRIPTION_SERVICE,
+                    ) as SubscriptionManager
 
-            val subscriptions =
-                manager.activeSubscriptionInfoList.orEmpty()
+                val subscriptions =
+                    manager.activeSubscriptionInfoList.orEmpty()
 
-            subscriptions.firstNotNullOfOrNull { info ->
-                val value =
-                    if (
-                        Build.VERSION.SDK_INT >=
-                        Build.VERSION_CODES.TIRAMISU
-                    ) {
-                        manager.getPhoneNumber(
-                            info.subscriptionId
-                        )
-                    } else {
-                        @Suppress("DEPRECATION")
-                        (
-                                context.getSystemService(
-                                    Context.TELEPHONY_SERVICE
-                                ) as TelephonyManager
-                                )
-                            .createForSubscriptionId(
-                                info.subscriptionId
+                subscriptions.firstNotNullOfOrNull { info ->
+                    val value =
+                        if (
+                            Build.VERSION.SDK_INT >=
+                            Build.VERSION_CODES.TIRAMISU
+                        ) {
+                            manager.getPhoneNumber(
+                                info.subscriptionId,
                             )
-                            .line1Number
-                    }
+                        } else {
+                            @Suppress("DEPRECATION")
+                            (
+                                context.getSystemService(
+                                    Context.TELEPHONY_SERVICE,
+                                ) as TelephonyManager
+                            ).createForSubscriptionId(
+                                info.subscriptionId,
+                            ).line1Number
+                        }
 
-                value
-                    ?.trim()
-                    ?.takeIf { it.isNotBlank() }
-            }
-        }.getOrElse { throwable ->
-            onResult(
-                AutomaticPhoneNumberResult.Failed(
-                    throwable.message
-                        ?: "SIM phone number could not be read"
+                    value
+                        ?.trim()
+                        ?.takeIf { it.isNotBlank() }
+                }
+            }.getOrElse { throwable ->
+                onResult(
+                    AutomaticPhoneNumberResult.Failed(
+                        throwable.message
+                            ?: "SIM phone number could not be read",
+                    ),
                 )
-            )
-            return@LaunchedEffect
-        }
+                return@LaunchedEffect
+            }
 
         if (number == null) {
             onResult(
-                AutomaticPhoneNumberResult.Unavailable
+                AutomaticPhoneNumberResult.Unavailable,
             )
         } else {
             onResult(
                 AutomaticPhoneNumberResult.Found(
-                    number
-                )
+                    number,
+                ),
             )
         }
     }
 }
 
-private fun Context.isGranted(
-    permission: String
-): Boolean {
-    return ContextCompat.checkSelfPermission(
+private fun Context.isGranted(permission: String): Boolean =
+    ContextCompat.checkSelfPermission(
         this,
-        permission
+        permission,
     ) == PackageManager.PERMISSION_GRANTED
-}

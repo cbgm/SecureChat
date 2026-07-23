@@ -1,0 +1,109 @@
+graph TD
+
+    subgraph group_androidApp["androidApp"]
+        module_androidApp[":androidApp"]
+    end
+
+    subgraph group_core["core"]
+        module_core[":core"]
+        module_core_crypto[":core:crypto"]
+        module_core_protocol[":core:protocol"]
+        module_core_ui[":core:ui"]
+    end
+
+    subgraph group_data["data"]
+        module_data[":data"]
+        module_data_database[":data:database"]
+    end
+
+    subgraph group_feature["feature"]
+        module_feature[":feature"]
+        module_feature_chats[":feature:chats"]
+        module_feature_contactimport[":feature:contactimport"]
+        module_feature_contacts[":feature:contacts"]
+        module_feature_identity[":feature:identity"]
+        module_feature_onboarding[":feature:onboarding"]
+        module_feature_settings[":feature:settings"]
+        module_feature_transport[":feature:transport"]
+    end
+
+    subgraph group_navigation["navigation"]
+        module_navigation[":navigation"]
+    end
+
+    subgraph group_quality["quality"]
+        module_quality[":quality"]
+        module_quality_detekt_rules[":quality:detekt-rules"]
+    end
+
+    subgraph group_relay["relay"]
+        module_relay[":relay"]
+    end
+
+    subgraph group_shared["shared"]
+        module_shared[":shared"]
+    end
+
+    subgraph group_startup["startup"]
+        module_startup[":startup"]
+    end
+
+    module_androidApp --> module_core
+    module_androidApp --> module_core_crypto
+    module_androidApp --> module_core_protocol
+    module_androidApp --> module_data_database
+    module_androidApp --> module_feature_chats
+    module_androidApp --> module_feature_contactimport
+    module_androidApp --> module_feature_contacts
+    module_androidApp --> module_feature_identity
+    module_androidApp --> module_feature_onboarding
+    module_androidApp --> module_feature_settings
+    module_androidApp --> module_feature_transport
+    module_androidApp --> module_shared
+    module_androidApp --> module_startup
+    module_data_database --> module_core
+    module_data_database --> module_core_protocol
+    module_feature_chats --> module_core
+    module_feature_chats --> module_core_crypto
+    module_feature_chats --> module_core_protocol
+    module_feature_chats --> module_core_ui
+    module_feature_chats --> module_data_database
+    module_feature_chats --> module_feature_contacts
+    module_feature_contactimport --> module_core
+    module_feature_contactimport --> module_core_ui
+    module_feature_contactimport --> module_feature_contacts
+    module_feature_contactimport --> module_feature_identity
+    module_feature_contacts --> module_core
+    module_feature_contacts --> module_core_crypto
+    module_feature_contacts --> module_core_protocol
+    module_feature_contacts --> module_core_ui
+    module_feature_contacts --> module_data_database
+    module_feature_contacts --> module_feature_identity
+    module_feature_identity --> module_core
+    module_feature_identity --> module_core_crypto
+    module_feature_identity --> module_core_protocol
+    module_feature_identity --> module_core_ui
+    module_feature_onboarding --> module_core_ui
+    module_feature_onboarding --> module_feature_identity
+    module_feature_settings --> module_core_ui
+    module_feature_transport --> module_core
+    module_feature_transport --> module_core_crypto
+    module_feature_transport --> module_core_protocol
+    module_feature_transport --> module_data_database
+    module_feature_transport --> module_feature_chats
+    module_feature_transport --> module_feature_contacts
+    module_navigation --> module_core
+    module_navigation --> module_core_ui
+    module_navigation --> module_feature_chats
+    module_navigation --> module_feature_contactimport
+    module_navigation --> module_feature_contacts
+    module_navigation --> module_feature_identity
+    module_navigation --> module_feature_onboarding
+    module_navigation --> module_feature_settings
+    module_navigation --> module_startup
+    module_shared --> module_core
+    module_shared --> module_core_ui
+    module_shared --> module_navigation
+    module_startup --> module_core_ui
+    module_startup --> module_feature_identity
+    module_startup --> module_feature_onboarding

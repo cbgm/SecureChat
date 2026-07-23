@@ -3,6 +3,7 @@ package com.cbgm.securechat
 import android.Manifest
 import android.app.Application
 import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import com.cbgm.securechat.core.crypto.SodiumRuntime
 import com.cbgm.securechat.core.crypto.di.cryptoModule
 import com.cbgm.securechat.core.protocol.di.protocolModule
@@ -13,16 +14,19 @@ import com.cbgm.securechat.di.sharedModule
 import com.cbgm.securechat.feature.chats.di.chatsModule
 import com.cbgm.securechat.feature.contactimport.di.contactImportModule
 import com.cbgm.securechat.feature.contacts.di.contactsModule
+import com.cbgm.securechat.feature.contacts.domain.usecase.ImportDeviceContacts
 import com.cbgm.securechat.feature.identity.core.LocalPhoneNameStorage
 import com.cbgm.securechat.feature.identity.di.androidIdentityStorageModule
 import com.cbgm.securechat.feature.identity.di.identityModule
-import com.cbgm.securechat.feature.onboarding.di.onboardingModule
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
+import com.cbgm.securechat.feature.onboarding.di.onboardingModule
+import com.cbgm.securechat.feature.settings.di.settingsModule
 import com.cbgm.securechat.feature.transport.connection.RelayConnectionManager
 import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
 import com.cbgm.securechat.feature.transport.di.transportModule
 import com.cbgm.securechat.feature.transport.incoming.IncomingRelayRunner
 import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
+import com.cbgm.securechat.startup.di.startupModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -30,18 +34,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import androidx.core.content.ContextCompat
-import com.cbgm.securechat.feature.contacts.domain.usecase.ImportDeviceContacts
-import com.cbgm.securechat.feature.settings.di.settingsModule
-import com.cbgm.securechat.startup.di.startupModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
 
-class SecureChatApplication :
-    Application() {
-
+class SecureChatApplication : Application() {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onCreate() {
@@ -49,28 +47,29 @@ class SecureChatApplication :
 
         initializeCrypto()
 
-        val koinApplication = startKoin {
-            androidLogger()
-            androidContext(
-                this@SecureChatApplication
-            )
-            modules(
-                cryptoModule,
-                protocolModule,
-                transportModule,
-                androidDatabaseModule,
-                androidIdentityStorageModule,
-                identityModule,
-                onboardingModule,
-                contactsModule,
-                appModule,
-                sharedModule,
-                contactImportModule,
-                startupModule,
-                chatsModule,
-                settingsModule
-            )
-        }
+        val koinApplication =
+            startKoin {
+                androidLogger()
+                androidContext(
+                    this@SecureChatApplication,
+                )
+                modules(
+                    cryptoModule,
+                    protocolModule,
+                    transportModule,
+                    androidDatabaseModule,
+                    androidIdentityStorageModule,
+                    identityModule,
+                    onboardingModule,
+                    contactsModule,
+                    appModule,
+                    sharedModule,
+                    contactImportModule,
+                    startupModule,
+                    chatsModule,
+                    settingsModule,
+                )
+            }
 
         val koin = koinApplication.koin
 
@@ -81,13 +80,12 @@ class SecureChatApplication :
 
             combine(
                 identityRepository.observeIdentity(),
-                phoneNumberStorage.observePhoneNumber()
+                phoneNumberStorage.observePhoneNumber(),
             ) { identity, phoneNumber ->
                 identity != null && !phoneNumber.isNullOrBlank()
+            }.first { ready ->
+                ready
             }
-                .first { ready ->
-                    ready
-                }
 
             startRuntimeServices(koin = koin)
 
@@ -95,9 +93,7 @@ class SecureChatApplication :
         }
     }
 
-    private fun startRuntimeServices(
-        koin: Koin
-    ) {
+    private fun startRuntimeServices(koin: Koin) {
         val webSocketClient =
             koin.get<WebSocketTransportClient>()
 
@@ -106,7 +102,7 @@ class SecureChatApplication :
                 .connectionState
                 .collect { state ->
                     println(
-                        "SecureChat relay state: $state"
+                        "SecureChat relay state: $state",
                     )
                 }
         }
@@ -159,13 +155,12 @@ class SecureChatApplication :
      *   to the same contact;
      * - duplicate contacts are not intentionally created.
      */
-    private suspend fun syncDeviceContactsIfPermitted(
-        koin: Koin
-    ) {
-        val permissionGranted = ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.READ_CONTACTS
-        ) == PackageManager.PERMISSION_GRANTED
+    private suspend fun syncDeviceContactsIfPermitted(koin: Koin) {
+        val permissionGranted =
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_CONTACTS,
+            ) == PackageManager.PERMISSION_GRANTED
 
         if (!permissionGranted) {
             println("Device contact sync skipped: READ_CONTACTS is not granted")
@@ -173,11 +168,12 @@ class SecureChatApplication :
             return
         }
 
-        koin.get<ImportDeviceContacts>().invoke()
+        koin
+            .get<ImportDeviceContacts>()
+            .invoke()
             .onSuccess {
                 println("Device contact sync completed")
-            }
-            .onFailure { error ->
+            }.onFailure { error ->
                 println("Device contact sync failed: ${error.message}")
 
                 error.printStackTrace()
@@ -189,7 +185,7 @@ class SecureChatApplication :
             SodiumRuntime.initialize().getOrElse { error ->
                 throw IllegalStateException(
                     "SecureChat could not initialize its cryptographic runtime",
-                    error
+                    error,
                 )
             }
         }

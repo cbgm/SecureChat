@@ -7,14 +7,11 @@ import kotlinx.coroutines.sync.withLock
 
 class RelayClientConnection(
     val relayId: String,
-    private val session: DefaultWebSocketServerSession
+    private val session: DefaultWebSocketServerSession,
 ) {
-
     private val sendMutex = Mutex()
 
-    suspend fun sendText(
-        text: String
-    ) {
+    suspend fun sendText(text: String) {
         sendMutex.withLock {
             session.send(Frame.Text(text))
         }

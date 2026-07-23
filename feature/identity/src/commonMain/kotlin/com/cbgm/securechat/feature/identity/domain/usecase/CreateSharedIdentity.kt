@@ -16,15 +16,12 @@ class CreateSharedIdentity(
     private val getPublicIdentity: GetPublicIdentity,
     private val localPhoneNameStorage: LocalPhoneNameStorage,
     private val phoneNumberNormalizer: PhoneNumberNormalizer,
-    private val identityShareCodec: IdentityShareCodec
+    private val identityShareCodec: IdentityShareCodec,
 ) {
-
-    suspend operator fun invoke(): Result<String> {
-        return runCatching {
+    suspend operator fun invoke(): Result<String> =
+        runCatching {
             val publicIdentity =
                 getPublicIdentity().getOrThrow() ?: error("No public identity exists")
-
-
 
             val storedPhoneName =
                 localPhoneNameStorage.loadPhoneName().getOrThrow().takeIf { it != null }
@@ -35,17 +32,19 @@ class CreateSharedIdentity(
 
             val normalizedDisplayName = storedPhoneName.second
 
-            identityShareCodec.encode(
-                payload = SharedIdentityPayload(
-                    version = 1,
-                    encryptionPublicKey = publicIdentity.encryptionPublicKey.copyOf(),
-                    signingPublicKey = publicIdentity.signingPublicKey.copyOf(),
-                    contactDetails = SharedContactDetails(
-                        displayName = normalizedDisplayName,
-                        phoneNumber = normalizedPhoneNumber
-                    )
-                )
-            ).getOrThrow()
+            identityShareCodec
+                .encode(
+                    payload =
+                        SharedIdentityPayload(
+                            version = 1,
+                            encryptionPublicKey = publicIdentity.encryptionPublicKey.copyOf(),
+                            signingPublicKey = publicIdentity.signingPublicKey.copyOf(),
+                            contactDetails =
+                                SharedContactDetails(
+                                    displayName = normalizedDisplayName,
+                                    phoneNumber = normalizedPhoneNumber,
+                                ),
+                        ),
+                ).getOrThrow()
         }
-    }
 }

@@ -5,15 +5,13 @@ import com.cbgm.securechat.core.crypto.model.PublicIdentityKeySet
 import com.cbgm.securechat.core.crypto.util.ByteArrays
 
 class SafetyNumberGenerator(
-    private val cryptoHash: CryptoHash
+    private val cryptoHash: CryptoHash,
 ) {
-
     fun generate(
         firstIdentity: PublicIdentityKeySet,
-        secondIdentity: PublicIdentityKeySet
-    ): Result<SafetyNumber> {
-
-        return runCatching {
+        secondIdentity: PublicIdentityKeySet,
+    ): Result<SafetyNumber> =
+        runCatching {
             val firstEncoded = encodeIdentity(identity = firstIdentity)
 
             val secondEncoded = encodeIdentity(identity = secondIdentity)
@@ -22,17 +20,18 @@ class SafetyNumberGenerator(
                 if (ByteArrays.compareUnsigned(first = firstEncoded, second = secondEncoded) <= 0) {
                     OrderedIdentities(
                         first = firstEncoded,
-                        second = secondEncoded
+                        second = secondEncoded,
                     )
                 } else {
                     OrderedIdentities(first = secondEncoded, second = firstEncoded)
                 }
 
-            val input = ByteArrays.concatenate(
-                DOMAIN_SEPARATOR,
-                ordered.first,
-                ordered.second
-            )
+            val input =
+                ByteArrays.concatenate(
+                    DOMAIN_SEPARATOR,
+                    ordered.first,
+                    ordered.second,
+                )
 
             val digest = cryptoHash.sha256(input = input)
 
@@ -42,20 +41,14 @@ class SafetyNumberGenerator(
 
             SafetyNumber(groups = digest.toFiveDigitGroups())
         }
-    }
 
-    private fun encodeIdentity(
-        identity: PublicIdentityKeySet
-    ): ByteArray {
-
-        return ByteArrays.concatenate(
+    private fun encodeIdentity(identity: PublicIdentityKeySet): ByteArray =
+        ByteArrays.concatenate(
             ByteArrays.withLengthPrefix(value = identity.signingPublicKey),
-            ByteArrays.withLengthPrefix(value = identity.encryptionPublicKey)
+            ByteArrays.withLengthPrefix(value = identity.encryptionPublicKey),
         )
-    }
 
     private fun ByteArray.toFiveDigitGroups(): List<String> {
-
         require(size % 2 == 0) {
             "Digest byte count must be even"
         }
@@ -74,7 +67,7 @@ class SafetyNumberGenerator(
 
     private data class OrderedIdentities(
         val first: ByteArray,
-        val second: ByteArray
+        val second: ByteArray,
     ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

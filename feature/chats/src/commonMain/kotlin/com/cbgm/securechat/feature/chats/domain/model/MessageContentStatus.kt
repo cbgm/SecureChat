@@ -1,7 +1,6 @@
 package com.cbgm.securechat.feature.chats.domain.model
 
 enum class MessageContentStatus {
-
     /**
      * Content is available and can be displayed.
      */
@@ -20,5 +19,5 @@ enum class MessageContentStatus {
     /**
      * A sealed-box packet could not be decrypted.
      */
-    TRANSPORT_DECRYPTION_FAILED
+    TRANSPORT_DECRYPTION_FAILED,
 }

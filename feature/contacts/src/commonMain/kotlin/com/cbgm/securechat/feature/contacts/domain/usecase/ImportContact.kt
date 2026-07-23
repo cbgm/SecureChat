@@ -10,13 +10,10 @@ import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
  * Both public keys are validated before reaching persistence.
  */
 class ImportContact(
-    private val repository: ContactRepository
+    private val repository: ContactRepository,
 ) {
-
-    suspend operator fun invoke(
-        request: ImportContactRequest
-    ): Result<Contact> {
-        return runCatching {
+    suspend operator fun invoke(request: ImportContactRequest): Result<Contact> =
+        runCatching {
             require(request.encryptionPublicKey.isNotEmpty()) {
                 "Encryption public key must not be empty"
             }
@@ -25,16 +22,19 @@ class ImportContact(
                 "Signing public key must not be empty"
             }
 
-            repository.importContact(
-                    request = request.copy(
-                        displayName = request.displayName
-                            ?.trim()
-                            ?.takeIf { it.isNotEmpty() },
-                        phoneNumber = request.phoneNumber
-                            ?.trim()
-                            ?.takeIf { it.isNotEmpty() }
-                    )
+            repository
+                .importContact(
+                    request =
+                        request.copy(
+                            displayName =
+                                request.displayName
+                                    ?.trim()
+                                    ?.takeIf { it.isNotEmpty() },
+                            phoneNumber =
+                                request.phoneNumber
+                                    ?.trim()
+                                    ?.takeIf { it.isNotEmpty() },
+                        ),
                 ).getOrThrow()
         }
-    }
 }

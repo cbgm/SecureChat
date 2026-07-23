@@ -12,16 +12,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class AndroidDeviceContactWriter(
-    context: Context
+    context: Context,
 ) : DeviceContactWriter {
-
     private val applicationContext = context.applicationContext
 
     private val contentResolver: ContentResolver = applicationContext.contentResolver
 
-    override suspend fun addIfNotExists(
-        request: AddDeviceContactRequest
-    ): AddDeviceContactResult {
+    override suspend fun addIfNotExists(request: AddDeviceContactRequest): AddDeviceContactResult {
         val phoneNumber = request.phoneNumber.trim()
 
         if (!isValidPhoneNumber(phoneNumber)) {
@@ -38,98 +35,99 @@ class AndroidDeviceContactWriter(
                     AddDeviceContactResult.AlreadyExists
                 } else {
                     insertContact(
-                        request = request.copy(
-                            displayName = request.displayName
-                                ?.trim()
-                                ?.takeIf { it.isNotEmpty() },
-                            phoneNumber = phoneNumber,
-                            email = request.email
-                                ?.trim()
-                                ?.takeIf { it.isNotEmpty() },
-                            company = request.company
-                                ?.trim()
-                                ?.takeIf { it.isNotEmpty() }
-                        )
+                        request =
+                            request.copy(
+                                displayName =
+                                    request.displayName
+                                        ?.trim()
+                                        ?.takeIf { it.isNotEmpty() },
+                                phoneNumber = phoneNumber,
+                                email =
+                                    request.email
+                                        ?.trim()
+                                        ?.takeIf { it.isNotEmpty() },
+                                company =
+                                    request.company
+                                        ?.trim()
+                                        ?.takeIf { it.isNotEmpty() },
+                            ),
                     )
 
                     AddDeviceContactResult.Added
                 }
             }.getOrElse { throwable ->
                 AddDeviceContactResult.Failure(
-                    throwable = throwable
+                    throwable = throwable,
                 )
             }
         }
     }
 
-    private fun phoneNumberExists(
-        phoneNumber: String
-    ): Boolean {
-        val lookupUri = Uri.withAppendedPath(
-            ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
-            Uri.encode(phoneNumber)
-        )
+    private fun phoneNumberExists(phoneNumber: String): Boolean {
+        val lookupUri =
+            Uri.withAppendedPath(
+                ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                Uri.encode(phoneNumber),
+            )
 
-        contentResolver.query(
-            lookupUri,
-            arrayOf(
-                ContactsContract.PhoneLookup._ID
-            ),
-            null,
-            null,
-            null
-        )?.use { cursor ->
-            return cursor.moveToFirst()
-        }
+        contentResolver
+            .query(
+                lookupUri,
+                arrayOf(
+                    ContactsContract.PhoneLookup._ID,
+                ),
+                null,
+                null,
+                null,
+            )?.use { cursor ->
+                return cursor.moveToFirst()
+            }
 
         return false
     }
 
-    private fun insertContact(
-        request: AddDeviceContactRequest
-    ) {
+    private fun insertContact(request: AddDeviceContactRequest) {
         val operations = ArrayList<ContentProviderOperation>()
 
         val rawContactInsertIndex = operations.size
 
-        operations += ContentProviderOperation
-            .newInsert(ContactsContract.RawContacts.CONTENT_URI)
-            .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null)
-            .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null)
-            .build()
+        operations +=
+            ContentProviderOperation
+                .newInsert(ContactsContract.RawContacts.CONTENT_URI)
+                .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null)
+                .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null)
+                .build()
 
         request.displayName?.let { displayName ->
-            operations += ContentProviderOperation
+            operations +=
+                ContentProviderOperation
+                    .newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactInsertIndex)
+                    .withValue(
+                        ContactsContract.Data.MIMETYPE,
+                        ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE,
+                    ).withValue(
+                        ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME,
+                        displayName,
+                    ).build()
+        }
+
+        operations +=
+            ContentProviderOperation
                 .newInsert(ContactsContract.Data.CONTENT_URI)
                 .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactInsertIndex)
                 .withValue(
                     ContactsContract.Data.MIMETYPE,
-                    ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE
-                )
+                    ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE,
+                ).withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, request.phoneNumber)
                 .withValue(
-                    ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME,
-                    displayName
-                )
-                .build()
-        }
-
-        operations += ContentProviderOperation
-            .newInsert(ContactsContract.Data.CONTENT_URI)
-            .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactInsertIndex)
-            .withValue(
-                ContactsContract.Data.MIMETYPE,
-                ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE
-            )
-            .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, request.phoneNumber)
-            .withValue(
-                ContactsContract.CommonDataKinds.Phone.TYPE,
-                ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE
-            )
-            .build()
+                    ContactsContract.CommonDataKinds.Phone.TYPE,
+                    ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE,
+                ).build()
 
         contentResolver.applyBatch(
             ContactsContract.AUTHORITY,
-            operations
+            operations,
         )
     }
 
@@ -137,21 +135,17 @@ class AndroidDeviceContactWriter(
         val readGranted =
             ContextCompat.checkSelfPermission(
                 applicationContext,
-                Manifest.permission.READ_CONTACTS
+                Manifest.permission.READ_CONTACTS,
             ) == PackageManager.PERMISSION_GRANTED
 
         val writeGranted =
             ContextCompat.checkSelfPermission(
                 applicationContext,
-                Manifest.permission.WRITE_CONTACTS
+                Manifest.permission.WRITE_CONTACTS,
             ) == PackageManager.PERMISSION_GRANTED
 
         return readGranted && writeGranted
     }
 
-    private fun isValidPhoneNumber(
-        phoneNumber: String
-    ): Boolean {
-        return phoneNumber.count(Char::isDigit) >= 7
-    }
+    private fun isValidPhoneNumber(phoneNumber: String): Boolean = phoneNumber.count(Char::isDigit) >= 7
 }

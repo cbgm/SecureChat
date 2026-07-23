@@ -14,31 +14,30 @@ import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
  */
 class ImportSharedIdentity(
     private val identityShareCodec: IdentityShareCodec,
-    private val importContact: ImportContact
+    private val importContact: ImportContact,
 ) {
-
-    suspend operator fun invoke(
-        encodedIdentity: String
-    ): Result<Contact> {
-        return runCatching {
+    suspend operator fun invoke(encodedIdentity: String): Result<Contact> =
+        runCatching {
             val sharedIdentity = identityShareCodec.decode(encodedIdentity).getOrThrow()
 
-            val phoneNumber = sharedIdentity
+            val phoneNumber =
+                sharedIdentity
                     .contactDetails
                     .phoneNumber
                     .trim()
                     .takeIf { it.isNotEmpty() }
                     ?: error(
-                        "Shared identity does not contain a phone number"
+                        "Shared identity does not contain a phone number",
                     )
 
-            importContact(request = ImportContactRequest(
-                encryptionPublicKey = sharedIdentity.encryptionPublicKey.copyOf(),
-                signingPublicKey = sharedIdentity.signingPublicKey.copyOf(),
-                displayName = sharedIdentity.contactDetails.displayName,
-                phoneNumber = phoneNumber
-            )
+            importContact(
+                request =
+                    ImportContactRequest(
+                        encryptionPublicKey = sharedIdentity.encryptionPublicKey.copyOf(),
+                        signingPublicKey = sharedIdentity.signingPublicKey.copyOf(),
+                        displayName = sharedIdentity.contactDetails.displayName,
+                        phoneNumber = phoneNumber,
+                    ),
             ).getOrThrow()
         }
-    }
 }

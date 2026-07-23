@@ -1,8 +1,8 @@
 package com.cbgm.securechat.feature.settings.domain.model
 
 object DisclaimerContent {
-
-    val privacyPolicy = """
+    val privacyPolicy =
+        """
         # Privacy Policy
 
         _Last updated: [DATE]_
@@ -50,9 +50,10 @@ object DisclaimerContent {
         ## Contact
 
         Questions about this policy can be sent to [CONTACT EMAIL].
-    """.trimIndent()
+        """.trimIndent()
 
-    val dataDisclaimer = """
+    val dataDisclaimer =
+        """
         # Data Disclaimer
 
         This page explains, in plain terms, what SecureChat stores and
@@ -90,5 +91,5 @@ object DisclaimerContent {
         You can clear local data at any time from Settings. This is
         irreversible and will remove your local message history and
         stored keys from this device.
-    """.trimIndent()
+        """.trimIndent()
 }

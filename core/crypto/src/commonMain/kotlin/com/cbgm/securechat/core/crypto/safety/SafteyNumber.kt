@@ -1,18 +1,20 @@
 package com.cbgm.securechat.core.crypto.safety
 
 data class SafetyNumber(
-    val groups: List<String>
+    val groups: List<String>,
 ) {
     init {
         require(groups.size == EXPECTED_GROUP_COUNT) {
             "Safety number must contain $EXPECTED_GROUP_COUNT groups"
         }
 
-        require(groups.all { group ->
-            group.length == DIGITS_PER_GROUP && group.all { character ->
-                character.isDigit()
-            }
-        }
+        require(
+            groups.all { group ->
+                group.length == DIGITS_PER_GROUP &&
+                    group.all { character ->
+                        character.isDigit()
+                    }
+            },
         ) {
             "Every safety-number group must contain exactly five digits"
         }
@@ -22,11 +24,12 @@ data class SafetyNumber(
         get() = groups.joinToString(separator = " ")
 
     val formatted: String
-        get() = groups
-            .chunked(size = GROUPS_PER_LINE)
-            .joinToString(separator = "\n") { line ->
-                line.joinToString(separator = " ")
-            }
+        get() =
+            groups
+                .chunked(size = GROUPS_PER_LINE)
+                .joinToString(separator = "\n") { line ->
+                    line.joinToString(separator = " ")
+                }
 
     companion object {
         const val EXPECTED_GROUP_COUNT = 16

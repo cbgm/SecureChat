@@ -9,7 +9,6 @@ import kotlinx.serialization.Serializable
 data class ChatMessagePacket(
     override val packetId: String,
     override val version: Int = ProtocolVersion.CURRENT,
-
     /**
      * Stable ID of the logical chat message.
      *
@@ -18,9 +17,8 @@ data class ChatMessagePacket(
      */
     val messageId: String,
     val sentAtEpochMilliseconds: Long,
-    val text: String
+    val text: String,
 ) : SecureChatPacket {
-
     init {
         require(packetId.isNotBlank()) {
             "Packet ID must not be blank"

@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+
+set -e
+
+echo ""
+echo "Running SecureChat formatting before commit..."
+echo ""
+
+if [ -f "./gradlew" ]; then
+    ./gradlew ktlintFormat --console=plain
+elif [ -f "./gradlew.bat" ]; then
+    ./gradlew.bat ktlintFormat --console=plain
+else
+    echo "Gradle Wrapper was not found."
+    exit 1
+fi
+
+if ! git diff --quiet; then
+    echo ""
+    echo "KtLint modified files."
+    echo "Review and stage the changes, then commit again."
+    echo ""
+    exit 1
+fi
+
+echo ""
+echo "Formatting check passed."
+echo ""

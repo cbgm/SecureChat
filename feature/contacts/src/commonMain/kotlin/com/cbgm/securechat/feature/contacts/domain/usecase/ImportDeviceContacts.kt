@@ -14,27 +14,28 @@ import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
  */
 class ImportDeviceContacts(
     private val deviceContactsDataSource: DeviceContactsDataSource,
-    private val repository: ContactRepository
+    private val repository: ContactRepository,
 ) {
-
     suspend operator fun invoke(): Result<Unit> {
         return runCatching {
             val deviceContacts = deviceContactsDataSource.getContacts().getOrThrow()
 
             deviceContacts.forEach { deviceContact ->
-                val phoneNumbers = deviceContact.phoneNumbers.mapNotNull { phoneNumber ->
-                    val normalizedValue = phoneNumber.value.trim().takeIf { it.isNotEmpty() }
-                        ?: return@mapNotNull null
+                val phoneNumbers =
+                    deviceContact.phoneNumbers
+                        .mapNotNull { phoneNumber ->
+                            val normalizedValue =
+                                phoneNumber.value.trim().takeIf { it.isNotEmpty() }
+                                    ?: return@mapNotNull null
 
-                    ImportDevicePhoneNumber(
-                        value = normalizedValue,
-                        type = phoneNumber.type.toContactPhoneNumberType(),
-                        label = phoneNumber.label?.trim()?.takeIf { it.isNotEmpty() }
-                    )
-                }
-                    .distinctBy { phoneNumber ->
-                        phoneNumber.value to phoneNumber.type
-                    }
+                            ImportDevicePhoneNumber(
+                                value = normalizedValue,
+                                type = phoneNumber.type.toContactPhoneNumberType(),
+                                label = phoneNumber.label?.trim()?.takeIf { it.isNotEmpty() },
+                            )
+                        }.distinctBy { phoneNumber ->
+                            phoneNumber.value to phoneNumber.type
+                        }
 
                 /*
                  * The current SecureChat contact workflow is based on
@@ -45,20 +46,21 @@ class ImportDeviceContacts(
                     return@forEach
                 }
 
-                repository.importDeviceContact(
-                    request = ImportDeviceContactRequest(
-                        deviceContactId = deviceContact.id,
-                        displayName = deviceContact.displayName,
-                        phoneNumbers = phoneNumbers
-                    )
-                ).getOrThrow()
+                repository
+                    .importDeviceContact(
+                        request =
+                            ImportDeviceContactRequest(
+                                deviceContactId = deviceContact.id,
+                                displayName = deviceContact.displayName,
+                                phoneNumbers = phoneNumbers,
+                            ),
+                    ).getOrThrow()
             }
         }
     }
 
-    private fun DevicePhoneNumberType.toContactPhoneNumberType(): ContactPhoneNumberType {
-
-        return when (this) {
+    private fun DevicePhoneNumberType.toContactPhoneNumberType(): ContactPhoneNumberType =
+        when (this) {
             DevicePhoneNumberType.MOBILE ->
                 ContactPhoneNumberType.MOBILE
 
@@ -80,5 +82,4 @@ class ImportDeviceContacts(
             DevicePhoneNumberType.OTHER ->
                 ContactPhoneNumberType.OTHER
         }
-    }
 }

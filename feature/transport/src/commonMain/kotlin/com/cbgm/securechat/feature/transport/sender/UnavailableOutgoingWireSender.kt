@@ -8,17 +8,14 @@ import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
  * This deliberately returns failure so queued packets are not marked
  * SENT when they were never delivered.
  */
-class UnavailableOutgoingWireSender :
-    OutgoingWireSender {
-
+class UnavailableOutgoingWireSender : OutgoingWireSender {
     override suspend fun send(
         contactId: String,
-        encodedTransportPayload: String
-    ): Result<Unit> {
-        return Result.failure(
+        encodedTransportPayload: String,
+    ): Result<Unit> =
+        Result.failure(
             IllegalStateException(
-                "No outgoing SecureChat transport is configured"
-            )
+                "No outgoing SecureChat transport is configured",
+            ),
         )
-    }
 }

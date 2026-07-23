@@ -10,26 +10,26 @@ import com.cbgm.securechat.feature.settings.presentation.screen.SettingsViewMode
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
-val settingsModule = module {
+val settingsModule =
+    module {
 
+        single<SettingsRepository> {
+            SettingsRepositoryImpl(buildInfoProvider = get())
+        }
 
-    single<SettingsRepository> {
-        SettingsRepositoryImpl(buildInfoProvider = get())
+        single<LicensesRepository> {
+            LicencesRepositoryImpl()
+        }
+
+        viewModel {
+            SettingsViewModel(settingsRepository = get())
+        }
+
+        viewModel {
+            DeveloperMenuViewModel(settingsRepository = get())
+        }
+
+        viewModel {
+            LicensesViewModel(licensesRepository = get())
+        }
     }
-
-    single<LicensesRepository> {
-        LicencesRepositoryImpl()
-    }
-
-    viewModel {
-        SettingsViewModel(settingsRepository = get())
-    }
-
-    viewModel {
-        DeveloperMenuViewModel(settingsRepository = get())
-    }
-
-    viewModel {
-        LicensesViewModel(licensesRepository = get())
-    }
-}

@@ -14,19 +14,20 @@ fun ContactsRoute(
     onImportContact: () -> Unit,
     onContactClick: (
         contactId: String,
-        contactName: String
+        contactName: String,
     ) -> Unit,
-    viewModel: ContactsViewModel = koinViewModel()
+    viewModel: ContactsViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val requestDeviceContactsPermission = rememberDeviceContactsPermissionRequest(
+    val requestDeviceContactsPermission =
+        rememberDeviceContactsPermissionRequest(
             onPermissionGranted = {
                 viewModel.onImportDeviceContacts()
             },
             onPermissionDenied = {
                 viewModel.onDeviceContactsPermissionDenied()
-            }
+            },
         )
 
     ContactsScreen(
@@ -34,6 +35,6 @@ fun ContactsRoute(
         onBack = onBack,
         onImportContact = onImportContact,
         onImportDeviceContacts = requestDeviceContactsPermission,
-        onContactClick = onContactClick
+        onContactClick = onContactClick,
     )
 }

@@ -19,23 +19,22 @@ fun SecureChatApprovalButton(
     text: String = "",
     content: @Composable () -> Unit = {},
     enabled: Boolean = true,
-
-    ) {
+) {
     Button(
         onClick = onClick,
         enabled = enabled,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.secondary,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        ),
-        modifier = modifier.fillMaxWidth()
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ),
+        modifier = modifier.fillMaxWidth(),
     ) {
-
         if (text.isNotBlank()) {
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
         }
         if (content != {}) {
@@ -50,39 +49,37 @@ fun SecureChatSecondaryButton(
     text: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-
-    ) {
+) {
     Button(
         onClick = onClick,
         enabled = enabled,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        ),
-        modifier = modifier.fillMaxWidth()
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodySmall,
         )
     }
 }
 
 @Preview
 @Composable
-fun SecureChatButtonPreview() {
+private fun SecureChatButtonPreview() {
     SecureChatTheme {
         Column {
             SecureChatApprovalButton(
                 onClick = {},
-                text = "Continue"
+                text = "Continue",
             )
             SecureChatSecondaryButton(
                 onClick = {},
-                text = "Continue"
+                text = "Continue",
             )
         }
     }
 }
-
-
