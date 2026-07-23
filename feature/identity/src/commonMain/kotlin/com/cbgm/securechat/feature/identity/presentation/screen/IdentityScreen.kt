@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +51,9 @@ import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.identity.domain.model.PublicIdentity
 import com.cbgm.securechat.feature.identity.presentation.model.IdentityUiState
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.feature_identity_identity_ready
+import org.jetbrains.compose.resources.stringResource
 
 private val Field = Color(0xFF102A46)
 
@@ -269,7 +273,7 @@ private fun ReadyIdentityContent(
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
         Text(
-            text = "Identity ready",
+            text = stringResource(Res.string.feature_identity_identity_ready),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold,
@@ -326,7 +330,7 @@ private fun ReadyIdentityContent(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors =
-                        androidx.compose.material3.ButtonDefaults.buttonColors(
+                        ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondary,
                             contentColor = Color(0xFF071A2E),
                         ),

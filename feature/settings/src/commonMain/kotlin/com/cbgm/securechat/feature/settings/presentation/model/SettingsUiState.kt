@@ -1,6 +1,6 @@
 package com.cbgm.securechat.feature.settings.presentation.model
 
-import com.cbgm.securechat.feature.settings.domain.model.AppLanguage
+import com.cbgm.securechat.core.ui.locale.AppLanguage
 import com.cbgm.securechat.feature.settings.domain.model.BuildInfo
 
 data class SettingsUiState(

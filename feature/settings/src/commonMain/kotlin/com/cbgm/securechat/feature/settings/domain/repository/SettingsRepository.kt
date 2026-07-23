@@ -1,12 +1,14 @@
 package com.cbgm.securechat.feature.settings.domain.repository
 
-import com.cbgm.securechat.feature.settings.domain.model.AppLanguage
+import com.cbgm.securechat.core.ui.locale.AppLanguage
 import com.cbgm.securechat.feature.settings.domain.model.BuildInfo
 
 interface SettingsRepository {
     suspend fun getLanguage(): AppLanguage
 
-    suspend fun setLanguage(language: AppLanguage)
+    suspend fun setLanguage(
+        language: AppLanguage,
+    )
 
     suspend fun isDeveloperModeEnabled(): Boolean
 

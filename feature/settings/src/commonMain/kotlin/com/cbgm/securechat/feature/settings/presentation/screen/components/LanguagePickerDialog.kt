@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.cbgm.securechat.feature.settings.domain.model.AppLanguage
+import com.cbgm.securechat.core.ui.locale.AppLanguage
 
 private val AccentColor = Color(0xFF35E6FF)
 private val CardColor = Color(0xFF102A46)

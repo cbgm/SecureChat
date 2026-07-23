@@ -33,8 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.ui.locale.AppLanguage
 import com.cbgm.securechat.core.ui.theme.spacing
-import com.cbgm.securechat.feature.settings.domain.model.AppLanguage
 import com.cbgm.securechat.feature.settings.presentation.model.SettingsUiState
 import com.cbgm.securechat.feature.settings.presentation.screen.components.LanguagePickerDialog
 
