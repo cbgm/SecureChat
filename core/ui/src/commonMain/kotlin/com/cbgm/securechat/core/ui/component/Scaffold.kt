@@ -2,23 +2,34 @@ package com.cbgm.securechat.core.ui.component
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.scroll.BarsState
 import com.cbgm.securechat.core.ui.scroll.rememberBarsState
 
@@ -280,5 +291,112 @@ private fun SecureChatTabbedScaffoldContent(
             floatingActionButtonPosition = floatingActionButtonPosition,
             content = content,
         )
+    }
+}
+
+@Composable
+fun SecureChatOverlayLazyScaffold(
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+    barColor: Color = MaterialTheme.colorScheme.background,
+    fadedAlpha: Float = 0.97f,
+    containerColor: Color = Color.Transparent,
+    scrimColor: Color = Color.Black.copy(alpha = 0.32f),
+    horizontalPadding: Dp = 16.dp,
+    topPadding: Dp = 16.dp,
+    shape: Shape =
+        RoundedCornerShape(
+            topStart = 28.dp,
+            topEnd = 28.dp,
+        ),
+    tonalElevation: Dp = 8.dp,
+    shadowElevation: Dp = 12.dp,
+    snackbarHostState: SnackbarHostState? = null,
+    floatingActionButtonPosition: FabPosition = FabPosition.End,
+    background: @Composable BoxScope.() -> Unit = {},
+    topBar: @Composable (containerColor: Color) -> Unit = {},
+    floatingActionButton: @Composable () -> Unit = {},
+    content: @Composable (
+        innerPadding: PaddingValues,
+        listState: LazyListState,
+    ) -> Unit,
+) {
+    val listState = rememberLazyListState()
+
+    val barsState =
+        rememberBarsState(
+            state = listState,
+            fadedAlpha = fadedAlpha,
+        )
+
+    val topBarColor by animateColorAsState(
+        targetValue =
+            barColor.copy(
+                alpha = barsState.topBarAlpha,
+            ),
+        label = "SecureChatOverlayTopBarColor",
+    )
+
+    Box(
+        modifier = modifier.fillMaxSize(),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(scrimColor)
+                    .clickable(
+                        interactionSource =
+                            remember {
+                                MutableInteractionSource()
+                            },
+                        indication = null,
+                        onClick = onDismissRequest,
+                    ),
+        )
+
+        Surface(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(
+                        start = horizontalPadding,
+                        top = topPadding,
+                        end = horizontalPadding,
+                    ).align(Alignment.BottomCenter),
+            shape = shape,
+            color = containerColor,
+            tonalElevation = tonalElevation,
+            shadowElevation = shadowElevation,
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                background()
+
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    containerColor = Color.Transparent,
+                    topBar = {
+                        topBar(topBarColor)
+                    },
+                    floatingActionButton = floatingActionButton,
+                    floatingActionButtonPosition =
+                    floatingActionButtonPosition,
+                    snackbarHost = {
+                        snackbarHostState?.let { state ->
+                            SnackbarHost(
+                                hostState = state,
+                            )
+                        }
+                    },
+                ) { innerPadding ->
+                    content(
+                        innerPadding,
+                        listState,
+                    )
+                }
+            }
+        }
     }
 }

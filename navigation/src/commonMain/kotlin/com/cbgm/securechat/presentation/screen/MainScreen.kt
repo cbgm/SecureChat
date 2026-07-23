@@ -1,5 +1,12 @@
 package com.cbgm.securechat.presentation.screen
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -34,10 +41,10 @@ import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBa
 import com.cbgm.securechat.feature.identity.presentation.IdentityRoute
 import com.cbgm.securechat.feature.settings.presentation.SettingsRoute
 import com.cbgm.securechat.presentation.model.MainTab
-import com.cbgm.securechat.resources.Res
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
+@Suppress("UnusedContentLambdaTargetStateParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
@@ -82,17 +89,45 @@ fun MainScreen(
             )
         },
     ) { innerPadding, scrollStates ->
-        MainContent(
-            selectedTab = selectedTab,
-            innerPadding = innerPadding,
-            scrollStates = scrollStates,
-            onOpenChat = onOpenChat,
-            onShareIdentity = onShareIdentity,
-            onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
-            onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,
-            onNavigateToLicenses = onNavigateToLicenses,
-            onNavigateToDeveloperMenu = onNavigateToDeveloperMenu,
-        )
+        AnimatedContent(
+            targetState = selectedTab,
+            transitionSpec = {
+                val direction =
+                    if (targetState > initialState) {
+                        AnimatedContentTransitionScope.SlideDirection.Left
+                    } else {
+                        AnimatedContentTransitionScope.SlideDirection.Right
+                    }
+
+                slideIntoContainer(
+                    towards = direction,
+                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                ) +
+                    fadeIn(
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    ) togetherWith slideOutOfContainer(
+                        towards = direction,
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    ) +
+                    fadeOut(
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    )
+            },
+            modifier = Modifier.fillMaxSize(),
+            label = "TabTransition",
+        ) { target ->
+            MainContent(
+                selectedTab = selectedTab,
+                innerPadding = innerPadding,
+                scrollStates = scrollStates,
+                onOpenChat = onOpenChat,
+                onShareIdentity = onShareIdentity,
+                onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
+                onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,
+                onNavigateToLicenses = onNavigateToLicenses,
+                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu,
+            )
+        }
     }
 }
 

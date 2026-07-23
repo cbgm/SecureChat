@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.locale.AppLanguage
@@ -41,7 +42,6 @@ import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.base_developer
 import com.cbgm.securechat.resources.base_language
 import com.cbgm.securechat.resources.base_version
-import com.cbgm.securechat.resources.base_version_name
 import com.cbgm.securechat.resources.feature_settings_about
 import com.cbgm.securechat.resources.feature_settings_data_disclaimer
 import com.cbgm.securechat.resources.feature_settings_data_disclaimer_subtitle
@@ -53,7 +53,6 @@ import com.cbgm.securechat.resources.feature_settings_open_source_licenses
 import com.cbgm.securechat.resources.feature_settings_privacy_and_data
 import com.cbgm.securechat.resources.feature_settings_privacy_policy
 import com.cbgm.securechat.resources.feature_settings_privacy_policy_subtitle
-import com.cbgm.securechat.resources.feature_settings_version_value
 import org.jetbrains.compose.resources.stringResource
 
 private val CardColor = Color(0xFF102A46)
@@ -91,6 +90,7 @@ fun SettingsScreen(
                 title = stringResource(Res.string.base_language),
                 subtitle = uiState.currentLanguage.nativeName,
                 onClick = onOpenLanguagePicker,
+                showChevron = false,
             )
         }
 
@@ -166,7 +166,11 @@ private fun SettingsSection(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = MaterialTheme.spacing.base.div(2), bottom = MaterialTheme.spacing.base),
+            modifier =
+                Modifier.padding(
+                    start = MaterialTheme.spacing.base.div(2),
+                    bottom = MaterialTheme.spacing.base,
+                ),
         )
 
         Surface(
@@ -181,7 +185,7 @@ private fun SettingsSection(
 
 @Composable
 private fun SettingsRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     title: String,
     subtitle: String,
     onClick: () -> Unit,
@@ -193,10 +197,18 @@ private fun SettingsRow(
             Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
-                .padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.small),
+                .padding(
+                    horizontal = MaterialTheme.spacing.small,
+                    vertical = MaterialTheme.spacing.small,
+                ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(22.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = iconTint,
+            modifier = Modifier.size(22.dp),
+        )
 
         Spacer(modifier = Modifier.size(MaterialTheme.spacing.small))
 

@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Contacts
@@ -53,7 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
-import com.cbgm.securechat.core.ui.component.SecureChatLazyScaffold
+import com.cbgm.securechat.core.ui.component.SecureChatOverlayLazyScaffold
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
 import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
@@ -61,13 +60,11 @@ import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactsUiState
 import com.cbgm.securechat.resources.Res
-import com.cbgm.securechat.resources.base_close
 import com.cbgm.securechat.resources.base_contacts
 import com.cbgm.securechat.resources.base_import_contact
 import com.cbgm.securechat.resources.base_import_securechat_contact
 import com.cbgm.securechat.resources.base_missing
 import com.cbgm.securechat.resources.base_secure
-import com.cbgm.securechat.resources.feature_contacts_add_contact
 import com.cbgm.securechat.resources.feature_contacts_add_contact_title
 import com.cbgm.securechat.resources.feature_contacts_could_not_load_contacts
 import com.cbgm.securechat.resources.feature_contacts_import_from_device
@@ -97,8 +94,11 @@ fun ContactsScreen(
 ) {
     var showImportSheet by remember { mutableStateOf(false) }
 
-    SecureChatLazyScaffold(
+    SecureChatOverlayLazyScaffold(
         modifier = modifier,
+        onDismissRequest = {
+            showImportSheet = false
+        },
         background = {
             PatternBackground(
                 modifier = Modifier.fillMaxSize(),
@@ -173,10 +173,10 @@ private fun ContactsTopBar(
                 fontWeight = FontWeight.Bold,
             )
         },
-        navigationIcon = {
+        actions = {
             IconButton(onClick = onBack) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    imageVector = Icons.Default.Close,
                     contentDescription = null,
                 )
             }

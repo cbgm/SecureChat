@@ -1,11 +1,18 @@
 package com.cbgm.securechat.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -40,16 +47,79 @@ fun AppNavigation() {
         NavHost(
             navController = navController,
             startDestination = AppDestination.Startup,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        MaterialTheme.colorScheme.background,
+                    ),
         ) {
-            composable<AppDestination.Licences> {
+            composable<AppDestination.Licences>(
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+            ) {
                 LicensesRoute(onBack = { navController.popBackStack() })
             }
 
-            composable<AppDestination.DeveloperMenu> {
+            composable<AppDestination.DeveloperMenu>(
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+            ) {
                 DeveloperMenuRoute(onBack = { navController.popBackStack() })
             }
 
-            composable<AppDestination.Disclaimer> {
+            composable<AppDestination.Disclaimer>(
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+            ) {
                 val type =
                     navController
                         .currentBackStackEntry
@@ -94,7 +164,26 @@ fun AppNavigation() {
                 )
             }
 
-            composable<AppDestination.Contacts> {
+            composable<AppDestination.Contacts>(
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Up,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Down,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+            ) {
                 ContactsRoute(
                     onBack = {
                         navController.popBackStack()
@@ -153,7 +242,26 @@ fun AppNavigation() {
                 )
             }
 
-            composable<AppDestination.Chat> { backStackEntry ->
+            composable<AppDestination.Chat>(
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+            ) { backStackEntry ->
                 val destination = backStackEntry.toRoute<AppDestination.Chat>()
 
                 ChatRoute(
