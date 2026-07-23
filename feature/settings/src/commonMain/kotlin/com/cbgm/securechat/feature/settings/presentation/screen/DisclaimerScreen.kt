@@ -18,9 +18,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import com.cbgm.securechat.core.ui.component.SecureChatScrollScaffold
 import com.cbgm.securechat.core.ui.theme.spacing
+import com.cbgm.securechat.resources.Res
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
 import com.mikepenz.markdown.m3.markdownTypography
+import org.jetbrains.compose.resources.stringResource
 
 private val MarkdownCardColor = Color(0xFF102A46)
 
@@ -131,7 +133,7 @@ private fun MarkdownDisclaimerTopBar(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = null,
                 )
             }
         },

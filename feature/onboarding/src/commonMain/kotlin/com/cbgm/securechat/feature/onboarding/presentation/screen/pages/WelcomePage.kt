@@ -16,6 +16,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_continue_action
+import com.cbgm.securechat.resources.feature_onboarding_welcome_description
+import com.cbgm.securechat.resources.feature_onboarding_welcome_to_securechat
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -25,14 +30,14 @@ fun WelcomePage(onNext: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Welcome to SecureChat",
+            text = stringResource(Res.string.feature_onboarding_welcome_to_securechat),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onPrimary,
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(Modifier.height(MaterialTheme.spacing.small))
         Text(
-            text = "A private messenger built around end-to-end encryption and an identity that stays on your device.",
+            text = stringResource(Res.string.feature_onboarding_welcome_description),
             color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .74f),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
@@ -40,7 +45,7 @@ fun WelcomePage(onNext: () -> Unit) {
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
         SecureChatApprovalButton(
             onClick = onNext,
-            text = "Continue",
+            text = stringResource(Res.string.base_continue_action),
         )
     }
 }

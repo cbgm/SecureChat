@@ -26,7 +26,6 @@
     <string name="base_main">Main</string>
     <string name="base_missing">Missing</string>
     <string name="base_mobile">Mobile</string>
-    <string name="base_more_options">More options</string>
     <string name="base_not_verified">Not verified</string>
     <string name="base_notifications">Notifications</string>
     <string name="base_other">Other</string>
@@ -78,9 +77,7 @@
     <string name="feature_chats_numbers_match">Numbers match</string>
     <string name="feature_chats_queued">Queued</string>
     <string name="feature_chats_read">Read</string>
-    <string name="feature_chats_retry_message">Retry message</string>
     <string name="feature_chats_safety_number_unavailable">Safety number unavailable</string>
-    <string name="feature_chats_send_message">Send message</string>
     <string name="feature_chats_sending">Sending</string>
     <string name="feature_chats_sent">Sent</string>
     <string name="feature_chats_start_conversation_with">Start a conversation with %1$s</string>
@@ -163,7 +160,6 @@
     <string name="feature_identity_public_keys_always_included">Your public encryption and signing keys are always included. Your private keys never leave this device.</string>
     <string name="feature_identity_raw_identity">RAW IDENTITY</string>
     <string name="feature_identity_scan_to_add_you">Another SecureChat user can scan this QR code to add you.</string>
-    <string name="feature_identity_securechat_qr_code">SecureChat QR Code</string>
     <string name="feature_identity_share_identity">Share identity</string>
     <string name="feature_identity_share_my_identity">Share my identity</string>
     <string name="feature_identity_show_raw_identity">Show raw identity</string>
@@ -174,8 +170,10 @@
     <string name="feature_identity_your_phone_number">Your phone number</string>
     <string name="feature_identity_your_securechat_identity">Your SecureChat identity</string>
 
-    <!-- Feature: navigation -->
-    <string name="feature_navigation_start_new_chat">Start a new chat</string>
+    <!-- Feature: main (navigation) -->
+    <string name="main_title_and_nav_chats">Chats</string>
+    <string name="main_title_and_nav_identity">Me</string>
+    <string name="main_title_and_nav_settings">Settings</string>
 
     <!-- Feature: onboarding -->
     <string name="feature_onboarding_allow_and_continue">Allow and continue</string>

@@ -25,8 +25,11 @@ import com.cbgm.securechat.feature.settings.presentation.DisclaimerRoute
 import com.cbgm.securechat.feature.settings.presentation.LicensesRoute
 import com.cbgm.securechat.feature.settings.presentation.model.DisclaimerType
 import com.cbgm.securechat.presentation.screen.MainScreen
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_share_contact
 import com.cbgm.securechat.startup.presentation.StartupRoute
 import com.cbgm.securechat.startup.presentation.screen.component.SecureChatAppBackground
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 @Composable
@@ -175,7 +178,7 @@ fun AppNavigation() {
                 val shareContact =
                     rememberIdentityShareLauncher(
                         encodedIdentity = encodedContactToShare,
-                        shareTitle = "Share SecureChat contact",
+                        shareTitle = stringResource(Res.string.base_share_contact),
                     )
 
                 var shouldLaunchShare by remember { mutableStateOf(false) }

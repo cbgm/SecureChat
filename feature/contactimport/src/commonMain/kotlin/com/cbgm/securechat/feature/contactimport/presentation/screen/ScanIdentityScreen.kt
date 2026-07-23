@@ -32,6 +32,11 @@ import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.component.SecureChatStaticScaffold
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.contactimport.platform.QrScanner
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_back
+import com.cbgm.securechat.resources.feature_contactimport_scan_identity
+import com.cbgm.securechat.resources.feature_contactimport_scan_identity_instruction
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,7 +58,7 @@ fun ScanIdentityScreen(
                     ),
                 title = {
                     Text(
-                        text = "Scan identity",
+                        text = stringResource(Res.string.feature_contactimport_scan_identity),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -62,7 +67,7 @@ fun ScanIdentityScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = null,
                         )
                     }
                 },
@@ -85,7 +90,7 @@ fun ScanIdentityScreen(
             )
 
             Text(
-                text = "Point the camera at another person's SecureChat QR code.",
+                text = stringResource(Res.string.feature_contactimport_scan_identity_instruction),
                 modifier =
                     Modifier
                         .align(Alignment.BottomCenter)

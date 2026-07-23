@@ -12,6 +12,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,6 +20,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.locale.AppLanguage
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_cancel
+import com.cbgm.securechat.resources.base_language
+import org.jetbrains.compose.resources.stringResource
 
 private val AccentColor = Color(0xFF35E6FF)
 private val CardColor = Color(0xFF102A46)
@@ -34,7 +39,7 @@ fun LanguagePickerDialog(
         containerColor = CardColor,
         title = {
             Text(
-                text = "Language",
+                text = stringResource(Res.string.base_language),
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
             )
@@ -63,7 +68,7 @@ fun LanguagePickerDialog(
                             if (language.nativeName != language.displayName) {
                                 Text(
                                     text = language.displayName,
-                                    style = MaterialTheme.typography.labelSmall,
+                                    style = MaterialTheme.typography.labelMedium,
                                     color = Color.White.copy(alpha = 0.5f),
                                 )
                             }
@@ -83,8 +88,8 @@ fun LanguagePickerDialog(
         },
         confirmButton = {},
         dismissButton = {
-            androidx.compose.material3.TextButton(onClick = onDismiss) {
-                Text(text = "Cancel", color = Color.White.copy(alpha = 0.7f))
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(Res.string.base_cancel), color = Color.White.copy(alpha = 0.7f))
             }
         },
     )

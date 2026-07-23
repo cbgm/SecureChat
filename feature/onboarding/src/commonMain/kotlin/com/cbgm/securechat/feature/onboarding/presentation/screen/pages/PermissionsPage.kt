@@ -17,6 +17,20 @@ import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.onboarding.presentation.screen.pages.component.ListingRow
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_contacts
+import com.cbgm.securechat.resources.base_notifications
+import com.cbgm.securechat.resources.base_permissions
+import com.cbgm.securechat.resources.base_phone_number
+import com.cbgm.securechat.resources.feature_onboarding_allow_and_continue
+import com.cbgm.securechat.resources.feature_onboarding_camera
+import com.cbgm.securechat.resources.feature_onboarding_camera_description
+import com.cbgm.securechat.resources.feature_onboarding_contacts_permission_description
+import com.cbgm.securechat.resources.feature_onboarding_notifications_description
+import com.cbgm.securechat.resources.feature_onboarding_permissions_description
+import com.cbgm.securechat.resources.feature_onboarding_permissions_settings_hint
+import com.cbgm.securechat.resources.feature_onboarding_phone_number_permission_description
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun PermissionsPage(onRequestPermissions: () -> Unit) {
@@ -25,14 +39,14 @@ fun PermissionsPage(onRequestPermissions: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Permissions",
+            text = stringResource(Res.string.base_permissions),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onPrimary,
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(Modifier.height(MaterialTheme.spacing.base))
         Text(
-            text = "SecureChat asks only for features you choose to use.",
+            text = stringResource(Res.string.feature_onboarding_permissions_description),
             color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .74f),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
@@ -40,32 +54,32 @@ fun PermissionsPage(onRequestPermissions: () -> Unit) {
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
         ListingRow(
             index = "01",
-            title = "Notifications",
-            description = "Receive new-message alerts.",
+            title = stringResource(Res.string.base_notifications),
+            description = stringResource(Res.string.feature_onboarding_notifications_description),
         )
         ListingRow(
             index = "02",
-            title = "Contacts",
-            description = "Find existing phone-book contacts.",
+            title = stringResource(Res.string.base_contacts),
+            description = stringResource(Res.string.feature_onboarding_contacts_permission_description),
         )
         ListingRow(
             index = "03",
-            title = "Camera",
-            description = "Scan SecureChat identity QR codes.",
+            title = stringResource(Res.string.feature_onboarding_camera),
+            description = stringResource(Res.string.feature_onboarding_camera_description),
         )
         ListingRow(
             index = "04",
-            title = "Phone number",
-            description = "Try to fill your SIM number automatically without opening a picker.",
+            title = stringResource(Res.string.base_phone_number),
+            description = stringResource(Res.string.feature_onboarding_phone_number_permission_description),
         )
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
         SecureChatApprovalButton(
             onClick = onRequestPermissions,
-            text = "Allow and continue",
+            text = stringResource(Res.string.feature_onboarding_allow_and_continue),
         )
         Spacer(Modifier.height(MaterialTheme.spacing.base))
         Text(
-            text = "Denied permissions can be enabled later in system settings.",
+            text = stringResource(Res.string.feature_onboarding_permissions_settings_hint),
             style = MaterialTheme.typography.labelMedium,
             color = Color.White.copy(alpha = .58f),
             textAlign = TextAlign.Center,

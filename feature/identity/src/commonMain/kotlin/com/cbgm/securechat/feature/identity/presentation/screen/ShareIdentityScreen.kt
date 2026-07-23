@@ -58,6 +58,17 @@ import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.identity.platform.QrCode
 import com.cbgm.securechat.feature.identity.presentation.model.ShareIdentityUiState
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.feature_identity_create_qr_code
+import com.cbgm.securechat.resources.feature_identity_create_qr_description
+import com.cbgm.securechat.resources.feature_identity_hide_raw_identity
+import com.cbgm.securechat.resources.feature_identity_public_keys_always_included
+import com.cbgm.securechat.resources.feature_identity_raw_identity
+import com.cbgm.securechat.resources.feature_identity_scan_to_add_you
+import com.cbgm.securechat.resources.feature_identity_share_identity
+import com.cbgm.securechat.resources.feature_identity_show_raw_identity
+import com.cbgm.securechat.resources.feature_identity_your_securechat_identity
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ShareIdentityScreen(
@@ -159,7 +170,7 @@ private fun ShareIdentityTopBar(
             ),
         title = {
             Text(
-                text = "Share identity",
+                text = stringResource(Res.string.feature_identity_share_identity),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -169,7 +180,7 @@ private fun ShareIdentityTopBar(
                 IconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = null,
                     )
                 }
             }
@@ -184,7 +195,7 @@ private fun ShareIdentityTopBar(
                     ) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
-                            contentDescription = "More options",
+                            contentDescription = null,
                         )
                     }
 
@@ -200,9 +211,9 @@ private fun ShareIdentityTopBar(
                                 Text(
                                     text =
                                         if (showRawIdentity) {
-                                            "Hide raw identity"
+                                            stringResource(Res.string.feature_identity_hide_raw_identity)
                                         } else {
-                                            "Show raw identity"
+                                            stringResource(Res.string.feature_identity_show_raw_identity)
                                         },
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -265,7 +276,7 @@ private fun IdentityOptionsContent(
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
     Text(
-        text = "Create a QR code containing your SecureChat public identity.",
+        text = stringResource(Res.string.feature_identity_create_qr_description),
         style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.SemiBold,
         textAlign = TextAlign.Center,
@@ -274,7 +285,7 @@ private fun IdentityOptionsContent(
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
     Text(
-        text = "Your public encryption and signing keys are always included. Your private keys never leave this device.",
+        text = stringResource(Res.string.feature_identity_public_keys_always_included),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
         textAlign = TextAlign.Center,
@@ -293,7 +304,7 @@ private fun IdentityOptionsContent(
             if (uiState.isGenerating) {
                 ""
             } else {
-                "Create QR code"
+                stringResource(Res.string.feature_identity_create_qr_code)
             },
         content = {
             if (uiState.isGenerating) {
@@ -316,7 +327,7 @@ private fun GeneratedIdentityContent(
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
     Text(
-        text = "Your SecureChat identity",
+        text = stringResource(Res.string.feature_identity_your_securechat_identity),
         style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.SemiBold,
         textAlign = TextAlign.Center,
@@ -325,7 +336,7 @@ private fun GeneratedIdentityContent(
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
     Text(
-        text = "Another SecureChat user can scan this QR code to add you.",
+        text = stringResource(Res.string.feature_identity_scan_to_add_you),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
         textAlign = TextAlign.Center,
@@ -376,7 +387,7 @@ private fun GeneratedIdentityContent(
                 Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
 
                 Text(
-                    text = "Share identity",
+                    text = stringResource(Res.string.feature_identity_share_identity),
                     fontWeight = FontWeight.SemiBold,
                 )
             }
@@ -392,7 +403,7 @@ private fun GeneratedIdentityContent(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
             Text(
-                text = "RAW IDENTITY",
+                text = stringResource(Res.string.feature_identity_raw_identity),
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),

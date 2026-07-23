@@ -24,7 +24,6 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -52,7 +51,25 @@ import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.identity.domain.model.PublicIdentity
 import com.cbgm.securechat.feature.identity.presentation.model.IdentityUiState
 import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_retry
+import com.cbgm.securechat.resources.base_securechat
+import com.cbgm.securechat.resources.feature_identity_approve_number_create_identity
+import com.cbgm.securechat.resources.feature_identity_check_again
+import com.cbgm.securechat.resources.feature_identity_checking_secure_identity
+import com.cbgm.securechat.resources.feature_identity_choose_phone_number_from_device
+import com.cbgm.securechat.resources.feature_identity_encryption_public_key
+import com.cbgm.securechat.resources.feature_identity_encryption_public_key_description
+import com.cbgm.securechat.resources.feature_identity_identity_enter_phone_description
 import com.cbgm.securechat.resources.feature_identity_identity_ready
+import com.cbgm.securechat.resources.feature_identity_incomplete_identity
+import com.cbgm.securechat.resources.feature_identity_incomplete_identity_description
+import com.cbgm.securechat.resources.feature_identity_private_keys_protected
+import com.cbgm.securechat.resources.feature_identity_share_my_identity
+import com.cbgm.securechat.resources.feature_identity_signing_public_key
+import com.cbgm.securechat.resources.feature_identity_signing_public_key_description
+import com.cbgm.securechat.resources.feature_identity_something_went_wrong
+import com.cbgm.securechat.resources.feature_identity_stable_relay_address_description
+import com.cbgm.securechat.resources.feature_identity_your_phone_number
 import org.jetbrains.compose.resources.stringResource
 
 private val Field = Color(0xFF102A46)
@@ -129,7 +146,7 @@ private fun LoadingContent() {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
         Text(
-            text = "Checking secure identity…",
+            text = stringResource(Res.string.feature_identity_checking_secure_identity),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
         )
@@ -177,7 +194,7 @@ private fun NoIdentityContent(
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
         Text(
-            text = "SecureChat",
+            text = stringResource(Res.string.base_securechat),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
@@ -186,7 +203,7 @@ private fun NoIdentityContent(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "Enter your phone number and create your cryptographic identity.",
+            text = stringResource(Res.string.feature_identity_identity_enter_phone_description),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f),
@@ -200,7 +217,7 @@ private fun NoIdentityContent(
                     onClick = onRequestPhoneNumberHint,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(text = "Choose phone number from device")
+                    Text(text = stringResource(Res.string.feature_identity_choose_phone_number_from_device))
                 }
 
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
@@ -209,13 +226,13 @@ private fun NoIdentityContent(
                     value = phoneNumber,
                     onValueChange = onPhoneNumberChanged,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text(text = "Your phone number") },
+                    label = { Text(text = stringResource(Res.string.feature_identity_your_phone_number)) },
                     placeholder = { Text(text = "+491701234567") },
                     supportingText = {
                         Text(
                             text =
                                 phoneNumberError
-                                    ?: "This number becomes your stable SecureChat relay address.",
+                                    ?: stringResource(Res.string.feature_identity_stable_relay_address_description),
                             style = MaterialTheme.typography.labelLarge,
                         )
                     },
@@ -249,7 +266,7 @@ private fun NoIdentityContent(
                 SecureChatApprovalButton(
                     onClick = onCreateIdentity,
                     enabled = phoneNumber.isNotBlank(),
-                    text = "Approve number and create identity",
+                    text = stringResource(Res.string.feature_identity_approve_number_create_identity),
                 )
             }
         }
@@ -282,7 +299,7 @@ private fun ReadyIdentityContent(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "Your private keys are protected locally",
+            text = stringResource(Res.string.feature_identity_private_keys_protected),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f),
@@ -309,8 +326,8 @@ private fun ReadyIdentityContent(
             Column(modifier = Modifier.padding(MaterialTheme.spacing.medium)) {
                 PublicKeySection(
                     icon = Icons.Default.Lock,
-                    title = "Encryption public key",
-                    description = "Used for encrypted conversations.",
+                    title = stringResource(Res.string.feature_identity_encryption_public_key),
+                    description = stringResource(Res.string.feature_identity_encryption_public_key_description),
                     key = publicIdentity.encryptionPublicKey,
                 )
 
@@ -318,8 +335,8 @@ private fun ReadyIdentityContent(
 
                 PublicKeySection(
                     icon = Icons.Default.Key,
-                    title = "Signing public key",
-                    description = "Used to verify identity information.",
+                    title = stringResource(Res.string.feature_identity_signing_public_key),
+                    description = stringResource(Res.string.feature_identity_signing_public_key_description),
                     key = publicIdentity.signingPublicKey,
                 )
 
@@ -330,12 +347,12 @@ private fun ReadyIdentityContent(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors =
-                        ButtonDefaults.buttonColors(
+                        androidx.compose.material3.ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondary,
                             contentColor = Color(0xFF071A2E),
                         ),
                 ) {
-                    Text(text = "Share my identity", fontWeight = FontWeight.SemiBold)
+                    Text(text = stringResource(Res.string.feature_identity_share_my_identity), fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -405,7 +422,7 @@ private fun IncompleteIdentityContent(onRetry: () -> Unit) {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
         Text(
-            text = "Incomplete identity",
+            text = stringResource(Res.string.feature_identity_incomplete_identity),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
@@ -414,7 +431,7 @@ private fun IncompleteIdentityContent(onRetry: () -> Unit) {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
         Text(
-            text = "Only part of your identity is available. Replacement keys will not be generated automatically.",
+            text = stringResource(Res.string.feature_identity_incomplete_identity_description),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
             textAlign = TextAlign.Center,
@@ -422,7 +439,7 @@ private fun IncompleteIdentityContent(onRetry: () -> Unit) {
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
-        SecureChatApprovalButton(onClick = onRetry, text = "Check again")
+        SecureChatApprovalButton(onClick = onRetry, text = stringResource(Res.string.feature_identity_check_again))
     }
 }
 
@@ -442,7 +459,7 @@ private fun ErrorContent(
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
         Text(
-            text = "Something went wrong",
+            text = stringResource(Res.string.feature_identity_something_went_wrong),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold,
@@ -459,7 +476,7 @@ private fun ErrorContent(
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
-        SecureChatApprovalButton(onClick = onRetry, text = "Retry")
+        SecureChatApprovalButton(onClick = onRetry, text = stringResource(Res.string.base_retry))
     }
 }
 

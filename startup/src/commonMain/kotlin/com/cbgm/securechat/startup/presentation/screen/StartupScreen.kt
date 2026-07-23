@@ -40,7 +40,27 @@ import com.cbgm.securechat.core.ui.component.SecureChatCard
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.identity.presentation.model.IdentityUiState
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_app_name
+import com.cbgm.securechat.resources.base_choose_another_number
+import com.cbgm.securechat.resources.base_choose_phone_number
+import com.cbgm.securechat.resources.base_continue_action
+import com.cbgm.securechat.resources.base_generating_secure_identity
+import com.cbgm.securechat.resources.base_identity_ready_opening
+import com.cbgm.securechat.resources.base_phone_number
+import com.cbgm.securechat.resources.base_retry
+import com.cbgm.securechat.resources.base_tagline
+import com.cbgm.securechat.resources.feature_startup_choose_number_or_enter
+import com.cbgm.securechat.resources.feature_startup_contacts_find_by_phone
+import com.cbgm.securechat.resources.feature_startup_detected_edit_or_choose
+import com.cbgm.securechat.resources.feature_startup_keys_generated_after_approval
+import com.cbgm.securechat.resources.feature_startup_opening_securechat
+import com.cbgm.securechat.resources.feature_startup_partial_identity_no_replacement
+import com.cbgm.securechat.resources.feature_startup_preparing_securechat
+import com.cbgm.securechat.resources.feature_startup_setup_failed
+import com.cbgm.securechat.resources.feature_startup_verify_phone_number
 import com.cbgm.securechat.startup.presentation.model.StartupUiState
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun StartupScreen(
@@ -72,7 +92,7 @@ fun StartupScreen(
             Spacer(modifier = Modifier.height(18.dp))
 
             Text(
-                text = "SecureChat",
+                text = stringResource(Res.string.base_app_name),
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onPrimary,
                 fontWeight = FontWeight.Bold,
@@ -81,7 +101,7 @@ fun StartupScreen(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
 
             Text(
-                text = "Private. Encrypted. Yours.",
+                text = stringResource(Res.string.base_tagline),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.72f),
             )
@@ -132,11 +152,11 @@ private fun StartupStateContent(
 ) {
     when (uiState) {
         StartupUiState.Loading -> {
-            StartupProgress(message = "Preparing SecureChat…")
+            StartupProgress(message = stringResource(Res.string.feature_startup_preparing_securechat))
         }
 
         StartupUiState.Ready -> {
-            StartupProgress(message = "Opening SecureChat…")
+            StartupProgress(message = stringResource(Res.string.feature_startup_opening_securechat))
         }
 
         StartupUiState.IdentityRequired -> {
@@ -168,7 +188,7 @@ private fun StartupIdentityContent(
 ) {
     when (identityUiState) {
         IdentityUiState.Loading -> {
-            StartupProgress(message = "Generating secure identity…")
+            StartupProgress(message = stringResource(Res.string.base_generating_secure_identity))
         }
 
         is IdentityUiState.NoIdentity -> {
@@ -177,7 +197,7 @@ private fun StartupIdentityContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "Verify your phone number",
+                    text = stringResource(Res.string.feature_startup_verify_phone_number),
                     style = MaterialTheme.typography.titleSmall,
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
@@ -189,7 +209,7 @@ private fun StartupIdentityContent(
                 )
 
                 Text(
-                    text = "Your contacts use your phone number to securely find you on SecureChat.",
+                    text = stringResource(Res.string.feature_startup_contacts_find_by_phone),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
                     textAlign = TextAlign.Center,
@@ -204,7 +224,7 @@ private fun StartupIdentityContent(
                     onValueChange = onPhoneNumberChanged,
                     modifier = Modifier.fillMaxWidth(),
                     label = {
-                        Text(text = "Phone number")
+                        Text(text = stringResource(Res.string.base_phone_number))
                     },
                     placeholder = {
                         Text(text = "+491701234567", style = MaterialTheme.typography.bodyMedium)
@@ -214,9 +234,9 @@ private fun StartupIdentityContent(
                             text =
                                 identityUiState.phoneNumberError
                                     ?: if (identityUiState.phoneNumber.isBlank()) {
-                                        "Choose a number from your device or enter it manually."
+                                        stringResource(Res.string.feature_startup_choose_number_or_enter)
                                     } else {
-                                        "Detected automatically. You can edit it or choose another number."
+                                        stringResource(Res.string.feature_startup_detected_edit_or_choose)
                                     },
                         )
                     },
@@ -264,9 +284,9 @@ private fun StartupIdentityContent(
                     Text(
                         text =
                             if (identityUiState.phoneNumber.isBlank()) {
-                                "Choose phone number"
+                                stringResource(Res.string.base_choose_phone_number)
                             } else {
-                                "Choose another number"
+                                stringResource(Res.string.base_choose_another_number)
                             },
                     )
                 }
@@ -276,13 +296,13 @@ private fun StartupIdentityContent(
                 SecureChatApprovalButton(
                     onClick = onCreateIdentity,
                     enabled = identityUiState.phoneNumber.isNotBlank(),
-                    text = "Continue",
+                    text = stringResource(Res.string.base_continue_action),
                 )
 
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
 
                 Text(
-                    text = "Your encryption keys are generated only after you approve your number.",
+                    text = stringResource(Res.string.feature_startup_keys_generated_after_approval),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -291,12 +311,12 @@ private fun StartupIdentityContent(
         }
 
         is IdentityUiState.Ready -> {
-            StartupProgress(message = "Identity ready. Opening SecureChat…")
+            StartupProgress(message = stringResource(Res.string.base_identity_ready_opening))
         }
 
         IdentityUiState.IncompleteIdentity -> {
             StartupErrorContent(
-                message = "Only part of the local identity is available. SecureChat will not generate replacement keys automatically.",
+                message = stringResource(Res.string.feature_startup_partial_identity_no_replacement),
                 onRetry = onRetry,
             )
         }
@@ -320,7 +340,7 @@ private fun StartupErrorContent(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "SecureChat could not finish setup.",
+            text = stringResource(Res.string.feature_startup_setup_failed),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.SemiBold,
@@ -342,7 +362,7 @@ private fun StartupErrorContent(
 
         SecureChatApprovalButton(
             onClick = onRetry,
-            text = "Retry",
+            text = stringResource(Res.string.base_retry),
         )
     }
 }

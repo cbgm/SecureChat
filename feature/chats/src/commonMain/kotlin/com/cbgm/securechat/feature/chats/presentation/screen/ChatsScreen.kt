@@ -34,6 +34,10 @@ import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.feature_chats_no_conversations_hint
+import com.cbgm.securechat.resources.feature_chats_no_conversations_yet
+import org.jetbrains.compose.resources.stringResource
 
 data class ChatListItem(
     val contactId: String,
@@ -188,7 +192,7 @@ private fun EmptyChatsContent(modifier: Modifier = Modifier) {
         }
 
         Text(
-            text = "No conversations yet",
+            text = stringResource(Res.string.feature_chats_no_conversations_yet),
             modifier = Modifier.padding(top = MaterialTheme.spacing.medium),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.SemiBold,
@@ -196,7 +200,7 @@ private fun EmptyChatsContent(modifier: Modifier = Modifier) {
         )
 
         Text(
-            text = "Press + to choose a contact and start chatting.",
+            text = stringResource(Res.string.feature_chats_no_conversations_hint),
             modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.base.div(2)),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),

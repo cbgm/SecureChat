@@ -40,6 +40,17 @@ import com.cbgm.securechat.core.ui.component.SecureChatScrollScaffold
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
 import com.cbgm.securechat.feature.contactimport.presentation.model.ImportIdentityUiState
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_back
+import com.cbgm.securechat.resources.base_import_action
+import com.cbgm.securechat.resources.base_import_contact
+import com.cbgm.securechat.resources.feature_contactimport_import_identity
+import com.cbgm.securechat.resources.feature_contactimport_imported_name
+import com.cbgm.securechat.resources.feature_contactimport_or_paste_manually
+import com.cbgm.securechat.resources.feature_contactimport_paste_shared_identity_description
+import com.cbgm.securechat.resources.feature_contactimport_scan_qr_code
+import com.cbgm.securechat.resources.feature_contactimport_shared_identity
+import org.jetbrains.compose.resources.stringResource
 
 private val Field = Color(0xFF102A46)
 
@@ -82,14 +93,14 @@ fun ImportIdentityScreen(
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         ) {
             Text(
-                text = "Import contact",
+                text = stringResource(Res.string.base_import_contact),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
             )
 
             Text(
-                text = "Paste a shared SecureChat identity. Both public keys will be stored. Name and phone number are optional.",
+                text = stringResource(Res.string.feature_contactimport_paste_shared_identity_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
             )
@@ -107,7 +118,7 @@ fun ImportIdentityScreen(
 
                 Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
 
-                Text(text = "Scan QR code")
+                Text(text = stringResource(Res.string.feature_contactimport_scan_qr_code))
             }
 
             ManualInputDivider()
@@ -117,7 +128,7 @@ fun ImportIdentityScreen(
                 onValueChange = onEncodedIdentityChanged,
                 modifier = Modifier.fillMaxWidth(),
                 label = {
-                    Text(text = "Shared identity")
+                    Text(text = stringResource(Res.string.feature_contactimport_shared_identity))
                 },
                 minLines = 4,
                 enabled = !uiState.isImporting,
@@ -148,7 +159,7 @@ fun ImportIdentityScreen(
             uiState.importedContactName?.let { name ->
                 StatusBanner(
                     icon = Icons.Default.CheckCircle,
-                    text = "Imported: $name",
+                    text = stringResource(Res.string.feature_contactimport_imported_name, name),
                     color = MaterialTheme.colorScheme.secondary,
                 )
             }
@@ -180,7 +191,7 @@ private fun ImportIdentityTopBar(
             ),
         title = {
             Text(
-                text = "Import identity",
+                text = stringResource(Res.string.feature_contactimport_import_identity),
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleSmall,
             )
@@ -189,7 +200,7 @@ private fun ImportIdentityTopBar(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = null,
                 )
             }
         },
@@ -207,7 +218,7 @@ private fun ManualInputDivider() {
         )
 
         Text(
-            text = "OR PASTE MANUALLY",
+            text = stringResource(Res.string.feature_contactimport_or_paste_manually),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f),
             modifier =
@@ -250,7 +261,7 @@ private fun ImportButton(
             )
         } else {
             Text(
-                text = "Import",
+                text = stringResource(Res.string.base_import_action),
                 fontWeight = FontWeight.SemiBold,
             )
         }

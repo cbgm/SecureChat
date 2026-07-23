@@ -37,6 +37,24 @@ import com.cbgm.securechat.core.ui.locale.AppLanguage
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.settings.presentation.model.SettingsUiState
 import com.cbgm.securechat.feature.settings.presentation.screen.components.LanguagePickerDialog
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_developer
+import com.cbgm.securechat.resources.base_language
+import com.cbgm.securechat.resources.base_version
+import com.cbgm.securechat.resources.base_version_name
+import com.cbgm.securechat.resources.feature_settings_about
+import com.cbgm.securechat.resources.feature_settings_data_disclaimer
+import com.cbgm.securechat.resources.feature_settings_data_disclaimer_subtitle
+import com.cbgm.securechat.resources.feature_settings_developer_menu
+import com.cbgm.securechat.resources.feature_settings_developer_menu_subtitle
+import com.cbgm.securechat.resources.feature_settings_general
+import com.cbgm.securechat.resources.feature_settings_licenses_subtitle
+import com.cbgm.securechat.resources.feature_settings_open_source_licenses
+import com.cbgm.securechat.resources.feature_settings_privacy_and_data
+import com.cbgm.securechat.resources.feature_settings_privacy_policy
+import com.cbgm.securechat.resources.feature_settings_privacy_policy_subtitle
+import com.cbgm.securechat.resources.feature_settings_version_value
+import org.jetbrains.compose.resources.stringResource
 
 private val CardColor = Color(0xFF102A46)
 
@@ -67,20 +85,20 @@ fun SettingsScreen(
                 .padding(MaterialTheme.spacing.screenPadding),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
     ) {
-        SettingsSection(title = "General") {
+        SettingsSection(title = stringResource(Res.string.feature_settings_general)) {
             SettingsRow(
                 icon = Icons.Default.Language,
-                title = "Language",
+                title = stringResource(Res.string.base_language),
                 subtitle = uiState.currentLanguage.nativeName,
                 onClick = onOpenLanguagePicker,
             )
         }
 
-        SettingsSection(title = "Privacy & data") {
+        SettingsSection(title = stringResource(Res.string.feature_settings_privacy_and_data)) {
             SettingsRow(
                 icon = Icons.Default.PrivacyTip,
-                title = "Privacy policy",
-                subtitle = "How your data is handled",
+                title = stringResource(Res.string.feature_settings_privacy_policy),
+                subtitle = stringResource(Res.string.feature_settings_privacy_policy_subtitle),
                 onClick = onOpenPrivacyPolicy,
             )
 
@@ -88,17 +106,17 @@ fun SettingsScreen(
 
             SettingsRow(
                 icon = Icons.Default.Lock,
-                title = "Data disclaimer",
-                subtitle = "What SecureChat stores locally and on the relay",
+                title = stringResource(Res.string.feature_settings_data_disclaimer),
+                subtitle = stringResource(Res.string.feature_settings_data_disclaimer_subtitle),
                 onClick = onOpenDataDisclaimer,
             )
         }
 
-        SettingsSection(title = "About") {
+        SettingsSection(title = stringResource(Res.string.feature_settings_about)) {
             SettingsRow(
                 icon = Icons.Default.Code,
-                title = "Open source licenses",
-                subtitle = "Libraries used in this app",
+                title = stringResource(Res.string.feature_settings_open_source_licenses),
+                subtitle = stringResource(Res.string.feature_settings_licenses_subtitle),
                 onClick = onOpenLicenses,
             )
 
@@ -106,19 +124,19 @@ fun SettingsScreen(
 
             SettingsRow(
                 icon = Icons.Default.Description,
-                title = "Version",
-                subtitle = "${uiState.buildInfo.versionName} (${uiState.buildInfo.versionCode})",
+                title = stringResource(Res.string.base_version),
+                subtitle = "${uiState.buildInfo.versionName} (${uiState.buildInfo.versionCode}",
                 showChevron = false,
                 onClick = onVersionRowTapped,
             )
         }
 
         if (uiState.isDeveloperModeEnabled) {
-            SettingsSection(title = "Developer") {
+            SettingsSection(title = stringResource(Res.string.base_developer)) {
                 SettingsRow(
                     icon = Icons.Default.BugReport,
-                    title = "Developer menu",
-                    subtitle = "Build info, feature flags, diagnostics",
+                    title = stringResource(Res.string.feature_settings_developer_menu),
+                    subtitle = stringResource(Res.string.feature_settings_developer_menu_subtitle),
                     onClick = onOpenDeveloperMenu,
                     iconTint = MaterialTheme.colorScheme.secondary,
                 )

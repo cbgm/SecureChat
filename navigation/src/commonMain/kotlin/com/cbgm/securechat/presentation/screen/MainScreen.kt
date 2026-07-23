@@ -34,7 +34,9 @@ import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBa
 import com.cbgm.securechat.feature.identity.presentation.IdentityRoute
 import com.cbgm.securechat.feature.settings.presentation.SettingsRoute
 import com.cbgm.securechat.presentation.model.MainTab
+import com.cbgm.securechat.resources.Res
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,7 +115,7 @@ private fun MainTopBar(
     TopAppBar(
         title = {
             Text(
-                text = selectedTab.label,
+                text = stringResource(selectedTab.label),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
             )
@@ -123,7 +125,7 @@ private fun MainTopBar(
                 IconButton(onClick = onAddChat) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Start a new chat",
+                        contentDescription = "",
                     )
                 }
             }
@@ -166,13 +168,13 @@ private fun MainBottomBar(
                                     tab.resOutlined
                                 },
                             ),
-                        contentDescription = tab.label,
+                        contentDescription = null,
                         modifier = Modifier.size(28.dp),
                     )
                 },
                 label = {
                     Text(
-                        text = tab.label,
+                        text = stringResource(tab.label),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 },

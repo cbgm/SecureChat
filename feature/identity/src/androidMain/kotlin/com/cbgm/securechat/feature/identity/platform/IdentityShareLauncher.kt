@@ -61,13 +61,13 @@ actual fun rememberIdentityShareLauncher(
 
 private fun buildShareText(encodedIdentity: String): String =
     buildString {
-        appendLine("Add me on SecureChat.")
+        /*appendLine("Add me on SecureChat.")
 
         appendLine()
 
         appendLine("Open SecureChat and import this identity:")
 
-        appendLine()
+        appendLine()*/
 
         append(encodedIdentity)
     }

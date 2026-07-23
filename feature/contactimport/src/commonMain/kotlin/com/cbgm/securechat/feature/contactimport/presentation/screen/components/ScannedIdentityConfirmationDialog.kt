@@ -14,6 +14,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.feature.contactimport.presentation.model.ScannedIdentityPreview
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_cancel
+import com.cbgm.securechat.resources.base_import_action
+import com.cbgm.securechat.resources.base_import_securechat_contact
+import com.cbgm.securechat.resources.feature_contactimport_encryption_key
+import com.cbgm.securechat.resources.feature_contactimport_securechat_identity_found
+import com.cbgm.securechat.resources.feature_contactimport_signing_key
+import com.cbgm.securechat.resources.feature_contactimport_unnamed_securechat_contact
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ScannedIdentityConfirmationDialog(
@@ -24,7 +33,7 @@ fun ScannedIdentityConfirmationDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(text = "Import SecureChat contact")
+            Text(text = stringResource(Res.string.base_import_securechat_contact))
         },
         text = {
             Column(
@@ -32,7 +41,7 @@ fun ScannedIdentityConfirmationDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
-                    text = preview.displayName ?: "Unnamed SecureChat contact",
+                    text = preview.displayName ?: stringResource(Res.string.feature_contactimport_unnamed_securechat_contact),
                     style = MaterialTheme.typography.titleMedium,
                 )
 
@@ -46,7 +55,7 @@ fun ScannedIdentityConfirmationDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "SecureChat identity found",
+                    text = stringResource(Res.string.feature_contactimport_securechat_identity_found),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -54,12 +63,12 @@ fun ScannedIdentityConfirmationDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 FingerprintSection(
-                    title = "Signing key",
+                    title = stringResource(Res.string.feature_contactimport_signing_key),
                     fingerprint = preview.signingKeyFingerprint,
                 )
 
                 FingerprintSection(
-                    title = "Encryption key",
+                    title = stringResource(Res.string.feature_contactimport_encryption_key),
                     fingerprint = preview.encryptionKeyFingerprint,
                 )
             }
@@ -68,14 +77,14 @@ fun ScannedIdentityConfirmationDialog(
             TextButton(
                 onClick = onConfirm,
             ) {
-                Text("Import")
+                Text(stringResource(Res.string.base_import_action))
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
             ) {
-                Text("Cancel")
+                Text(stringResource(Res.string.base_cancel))
             }
         },
     )

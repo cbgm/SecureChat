@@ -60,6 +60,25 @@ import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBa
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactsUiState
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_close
+import com.cbgm.securechat.resources.base_contacts
+import com.cbgm.securechat.resources.base_import_contact
+import com.cbgm.securechat.resources.base_import_securechat_contact
+import com.cbgm.securechat.resources.base_missing
+import com.cbgm.securechat.resources.base_secure
+import com.cbgm.securechat.resources.feature_contacts_add_contact
+import com.cbgm.securechat.resources.feature_contacts_add_contact_title
+import com.cbgm.securechat.resources.feature_contacts_could_not_load_contacts
+import com.cbgm.securechat.resources.feature_contacts_import_from_device
+import com.cbgm.securechat.resources.feature_contacts_import_from_device_description
+import com.cbgm.securechat.resources.feature_contacts_import_securechat_contact_description
+import com.cbgm.securechat.resources.feature_contacts_no_contacts_hint
+import com.cbgm.securechat.resources.feature_contacts_no_contacts_yet
+import com.cbgm.securechat.resources.feature_contacts_no_phone_number
+import com.cbgm.securechat.resources.feature_contacts_securechat_contact
+import com.cbgm.securechat.resources.feature_contacts_unnamed_contact
+import org.jetbrains.compose.resources.stringResource
 
 private val SheetColor = Color(0xFF102A46)
 
@@ -149,7 +168,7 @@ private fun ContactsTopBar(
             ),
         title = {
             Text(
-                text = "Contacts",
+                text = stringResource(Res.string.base_contacts),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
             )
@@ -158,7 +177,7 @@ private fun ContactsTopBar(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = null,
                 )
             }
         },
@@ -174,7 +193,7 @@ private fun ContactsFloatingActionButton(onClick: () -> Unit) {
     ) {
         Icon(
             imageVector = Icons.Default.Add,
-            contentDescription = "Add contact",
+            contentDescription = null,
             modifier = Modifier.size(28.dp),
         )
     }
@@ -290,7 +309,7 @@ private fun ContactListItem(
             },
             headlineContent = {
                 Text(
-                    text = contact.displayName ?: "Unnamed contact",
+                    text = contact.displayName ?: stringResource(Res.string.feature_contacts_unnamed_contact),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyLarge,
@@ -303,9 +322,9 @@ private fun ContactListItem(
                     text =
                         contact.preferredPhoneNumber?.value
                             ?: if (contact.secureChatIdentity != null) {
-                                "SecureChat contact"
+                                stringResource(Res.string.feature_contacts_securechat_contact)
                             } else {
-                                "No phone number"
+                                stringResource(Res.string.feature_contacts_no_phone_number)
                             },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -335,7 +354,7 @@ private fun ContactStatus(contact: Contact) {
         contact.deviceContactLinkStatus ==
             DeviceContactLinkStatus.MISSING -> {
             StatusBadge(
-                text = "Missing",
+                text = stringResource(Res.string.base_missing),
                 icon = Icons.Default.Warning,
                 color = MaterialTheme.colorScheme.error,
             )
@@ -343,7 +362,7 @@ private fun ContactStatus(contact: Contact) {
 
         contact.secureChatIdentity != null -> {
             StatusBadge(
-                text = "Secure",
+                text = stringResource(Res.string.base_secure),
                 icon = Icons.Default.Verified,
                 color = MaterialTheme.colorScheme.secondary,
             )
@@ -426,7 +445,7 @@ private fun EmptyContactsContent(modifier: Modifier = Modifier) {
             }
 
             Text(
-                text = "No contacts yet",
+                text = stringResource(Res.string.feature_contacts_no_contacts_yet),
                 modifier = Modifier.padding(top = MaterialTheme.spacing.small),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
@@ -434,7 +453,7 @@ private fun EmptyContactsContent(modifier: Modifier = Modifier) {
             )
 
             Text(
-                text = "Tap + to import a SecureChat contact or add people from your device.",
+                text = stringResource(Res.string.feature_contacts_no_contacts_hint),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
@@ -458,7 +477,7 @@ private fun ErrorContent(
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         ) {
             Text(
-                text = "Could not load contacts",
+                text = stringResource(Res.string.feature_contacts_could_not_load_contacts),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -472,7 +491,7 @@ private fun ErrorContent(
 
             SecureChatApprovalButton(
                 onClick = onImportContact,
-                text = "Import contact",
+                text = stringResource(Res.string.base_import_contact),
             )
         }
     }
@@ -538,7 +557,7 @@ private fun ImportContactSheet(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Add contact",
+                text = stringResource(Res.string.feature_contacts_add_contact_title),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
@@ -548,7 +567,7 @@ private fun ImportContactSheet(
             IconButton(onClick = onClose) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Close",
+                    contentDescription = null,
                     tint = Color.White,
                 )
             }
@@ -556,16 +575,16 @@ private fun ImportContactSheet(
 
         ImportOptionRow(
             icon = Icons.Default.PersonAdd,
-            title = "Import SecureChat contact",
+            title = stringResource(Res.string.base_import_securechat_contact),
             description =
-                "Scan a QR code or paste a SecureChat identity",
+                stringResource(Res.string.feature_contacts_import_securechat_contact_description),
             onClick = onImportContact,
         )
 
         ImportOptionRow(
             icon = Icons.Default.Contacts,
-            title = "Import from device",
-            description = "Add people from your address book",
+            title = stringResource(Res.string.feature_contacts_import_from_device),
+            description = stringResource(Res.string.feature_contacts_import_from_device_description),
             onClick = onImportDeviceContacts,
         )
     }

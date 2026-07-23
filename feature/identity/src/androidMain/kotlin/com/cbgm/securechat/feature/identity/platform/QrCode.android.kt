@@ -13,9 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
+import com.cbgm.securechat.resources.Res
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 actual fun QrCode(
@@ -38,7 +40,7 @@ actual fun QrCode(
     ) {
         Image(
             bitmap = bitmap.asImageBitmap(),
-            contentDescription = "SecureChat QR Code",
+            contentDescription = null,
         )
     }
 }
