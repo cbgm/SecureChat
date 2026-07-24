@@ -372,14 +372,6 @@ private fun ContactsList(
                 group = group,
                 onContactClick = onContactClick,
             )
-            ContactGroup(
-                group = group,
-                onContactClick = onContactClick,
-            )
-            ContactGroup(
-                group = group,
-                onContactClick = onContactClick,
-            )
         }
     }
 }
