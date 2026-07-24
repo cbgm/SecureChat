@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -35,13 +37,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,9 +51,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
-import com.cbgm.securechat.core.ui.component.SecureChatOverlayLazyScaffold
+import com.cbgm.securechat.core.ui.component.SecureChatLazyScaffold
+import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
 import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
@@ -79,30 +82,29 @@ import org.jetbrains.compose.resources.stringResource
 
 private val SheetColor = Color(0xFF102A46)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContactsScreen(
     uiState: ContactsUiState,
     onBack: () -> Unit,
-    onImportContact: () -> Unit,
     onContactClick: (
         contactId: String,
         contactName: String,
     ) -> Unit,
+    onImportContact: () -> Unit,
     onImportDeviceContacts: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var showImportSheet by remember { mutableStateOf(false) }
+    var showImportSheet by rememberSaveable {
+        mutableStateOf(false)
+    }
 
-    SecureChatOverlayLazyScaffold(
+    SecureChatLazyScaffold(
         modifier = modifier,
-        onDismissRequest = {
-            showImportSheet = false
-        },
         background = {
             PatternBackground(
                 modifier = Modifier.fillMaxSize(),
-                backgroundColor = MaterialTheme.colorScheme.background,
+                backgroundColor =
+                    MaterialTheme.colorScheme.background,
                 alpha = 0.04f,
             )
         },
@@ -157,7 +159,8 @@ private fun ContactsTopBar(
     containerColor: Color,
     onBack: () -> Unit,
 ) {
-    TopAppBar(
+    CenterAlignedTopAppBar(
+        windowInsets = WindowInsets(0.dp),
         colors =
             TopAppBarDefaults.topAppBarColors(
                 containerColor = containerColor,
@@ -169,7 +172,7 @@ private fun ContactsTopBar(
         title = {
             Text(
                 text = stringResource(Res.string.base_contacts),
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
             )
         },
@@ -187,6 +190,7 @@ private fun ContactsTopBar(
 @Composable
 private fun ContactsFloatingActionButton(onClick: () -> Unit) {
     FloatingActionButton(
+        modifier = Modifier.size(50.dp),
         onClick = onClick,
         containerColor = MaterialTheme.colorScheme.secondary,
         contentColor = MaterialTheme.colorScheme.background,
@@ -288,6 +292,14 @@ private fun ContactsList(
                 },
             )
         }
+        items(28) { index ->
+
+            ContactListItem(
+                contact = contacts.first(),
+                onClick = {
+                },
+            )
+        }
     }
 }
 
@@ -309,7 +321,9 @@ private fun ContactListItem(
             },
             headlineContent = {
                 Text(
-                    text = contact.displayName ?: stringResource(Res.string.feature_contacts_unnamed_contact),
+                    text =
+                        contact.displayName
+                            ?: stringResource(Res.string.feature_contacts_unnamed_contact),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyLarge,
@@ -627,4 +641,19 @@ private fun ImportOptionRow(
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
     )
+}
+
+@Preview
+@Composable
+fun ContactsScreenPreview() {
+    SecureChatTheme {
+        ContactsScreen(
+            uiState = ContactsUiState.Empty,
+            onBack = {},
+            onContactClick = { _, _ -> },
+            onImportContact = {},
+            onImportDeviceContacts = {},
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
 }

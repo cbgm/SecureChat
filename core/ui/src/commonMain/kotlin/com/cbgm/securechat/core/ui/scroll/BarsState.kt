@@ -8,6 +8,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import com.cbgm.securechat.core.ui.theme.Alpha
 
 @Stable
 data class BarsState(
@@ -18,7 +19,7 @@ data class BarsState(
 @Composable
 fun rememberBarsState(
     state: LazyListState,
-    fadedAlpha: Float = 0.97f,
+    fadedAlpha: Float = Alpha.OpaqueBar,
 ): BarsState =
     rememberBarsState(
         canScrollBackward = {
@@ -33,7 +34,7 @@ fun rememberBarsState(
 @Composable
 fun rememberBarsState(
     state: ScrollState,
-    fadedAlpha: Float = 0.97f,
+    fadedAlpha: Float = Alpha.OpaqueBar,
 ): BarsState =
     rememberBarsState(
         canScrollBackward = {

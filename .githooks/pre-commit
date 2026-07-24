@@ -6,6 +6,9 @@ echo ""
 echo "Running SecureChat formatting before commit..."
 echo ""
 
+# Remember which files were staged before formatting.
+staged_files="$(git diff --cached --name-only --diff-filter=ACMR)"
+
 if [ -f "./gradlew" ]; then
     ./gradlew ktlintFormat --console=plain
 elif [ -f "./gradlew.bat" ]; then
@@ -15,14 +18,14 @@ else
     exit 1
 fi
 
-if ! git diff --quiet; then
-    echo ""
-    echo "KtLint modified files."
-    echo "Review and stage the changes, then commit again."
-    echo ""
-    exit 1
-fi
+# Re-stage files that were already part of the commit.
+printf '%s\n' "$staged_files" |
+while IFS= read -r file; do
+    if [ -n "$file" ] && [ -e "$file" ]; then
+        git add -- "$file"
+    fi
+done
 
 echo ""
-echo "Formatting check passed."
+echo "Formatting completed and formatted files were staged."
 echo ""

@@ -68,9 +68,22 @@ fun SecureChatCard(
                     }
                 },
         color = MaterialTheme.colorScheme.primaryContainer,
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = MaterialTheme.shapes.small,
         tonalElevation = 8.dp,
         shadowElevation = 12.dp,
+        content = content,
+    )
+}
+
+@Composable
+fun SecureChatCardNoAnimation(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.primaryContainer,
         content = content,
     )
 }

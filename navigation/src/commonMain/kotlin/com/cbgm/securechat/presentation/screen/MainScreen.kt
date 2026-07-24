@@ -1,12 +1,6 @@
 package com.cbgm.securechat.presentation.screen
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -34,10 +28,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.component.SecureChatMainScrollStates
 import com.cbgm.securechat.core.ui.component.SecureChatMainScrollTarget
+import com.cbgm.securechat.core.ui.component.SecureChatOverlayHost
 import com.cbgm.securechat.core.ui.component.SecureChatTabbedScaffold
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.feature.chats.presentation.ChatsRoute
 import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
+import com.cbgm.securechat.feature.contacts.presentation.ContactsRoute
 import com.cbgm.securechat.feature.identity.presentation.IdentityRoute
 import com.cbgm.securechat.feature.settings.presentation.SettingsRoute
 import com.cbgm.securechat.presentation.model.MainTab
@@ -48,7 +44,7 @@ import org.jetbrains.compose.resources.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    onAddChat: () -> Unit,
+    onImportContact: () -> Unit,
     onNavigateToPrivacyPolicy: () -> Unit,
     onNavigateToDataDisclaimer: () -> Unit,
     onNavigateToLicenses: () -> Unit,
@@ -61,61 +57,43 @@ fun MainScreen(
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.Chats) }
+    var showContactsOverlay by rememberSaveable {
+        mutableStateOf(false)
+    }
 
-    SecureChatTabbedScaffold(
-        modifier = modifier,
-        selectedScrollTarget = selectedTab.toScrollTarget(),
-        background = {
-            PatternBackground(
-                modifier = Modifier.fillMaxSize(),
-                backgroundColor = MaterialTheme.colorScheme.background,
-                alpha = 0.04f,
-            )
-        },
-        topBar = { containerColor ->
-            MainTopBar(
-                selectedTab = selectedTab,
-                containerColor = containerColor,
-                onAddChat = onAddChat,
-            )
-        },
-        bottomBar = { containerColor ->
-            MainBottomBar(
-                selectedTab = selectedTab,
-                containerColor = containerColor,
-                onTabSelected = { tab ->
-                    selectedTab = tab
-                },
-            )
-        },
-    ) { innerPadding, scrollStates ->
-        AnimatedContent(
-            targetState = selectedTab,
-            transitionSpec = {
-                val direction =
-                    if (targetState > initialState) {
-                        AnimatedContentTransitionScope.SlideDirection.Left
-                    } else {
-                        AnimatedContentTransitionScope.SlideDirection.Right
-                    }
-
-                slideIntoContainer(
-                    towards = direction,
-                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                ) +
-                    fadeIn(
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                    ) togetherWith slideOutOfContainer(
-                        towards = direction,
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                    ) +
-                    fadeOut(
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                    )
-            },
+    Box(
+        modifier = modifier.fillMaxSize(),
+    ) {
+        SecureChatTabbedScaffold(
             modifier = Modifier.fillMaxSize(),
-            label = "TabTransition",
-        ) { target ->
+            selectedScrollTarget = selectedTab.toScrollTarget(),
+            background = {
+                PatternBackground(
+                    modifier = Modifier.fillMaxSize(),
+                    backgroundColor =
+                        MaterialTheme.colorScheme.background,
+                    alpha = 0.04f,
+                )
+            },
+            topBar = { containerColor ->
+                MainTopBar(
+                    selectedTab = selectedTab,
+                    containerColor = containerColor,
+                    onAddChat = {
+                        showContactsOverlay = true
+                    },
+                )
+            },
+            bottomBar = { containerColor ->
+                MainBottomBar(
+                    selectedTab = selectedTab,
+                    containerColor = containerColor,
+                    onTabSelected = { tab ->
+                        selectedTab = tab
+                    },
+                )
+            },
+        ) { innerPadding, scrollStates ->
             MainContent(
                 selectedTab = selectedTab,
                 innerPadding = innerPadding,
@@ -126,6 +104,38 @@ fun MainScreen(
                 onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,
                 onNavigateToLicenses = onNavigateToLicenses,
                 onNavigateToDeveloperMenu = onNavigateToDeveloperMenu,
+            )
+        }
+
+        SecureChatOverlayHost(
+            visible = showContactsOverlay,
+            onDismissRequest = {
+                showContactsOverlay = false
+            },
+            horizontalPadding = 16.dp,
+            topPadding = 48.dp,
+            tonalElevation = 8.dp,
+            shadowElevation = 12.dp,
+        ) { dismissOverlay ->
+            ContactsRoute(
+                modifier = Modifier.fillMaxSize(),
+                onBack = dismissOverlay,
+                onImportContact = {
+                    dismissOverlay()
+                    onImportContact()
+                },
+                onContactClick = {
+                    contactId,
+                    contactName,
+                    ->
+
+                    dismissOverlay()
+
+                    onOpenChat(
+                        contactId,
+                        contactName,
+                    )
+                },
             )
         }
     }
@@ -277,7 +287,7 @@ private fun MainContent(
 private fun MainScreenPreview() {
     SecureChatTheme {
         MainScreen(
-            onAddChat = {},
+            onImportContact = {},
             onOpenChat = { _, _ -> },
             onShareIdentity = {},
             onNavigateToPrivacyPolicy = {},

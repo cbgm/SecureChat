@@ -204,9 +204,6 @@ fun AppNavigation() {
 
             composable<AppDestination.Main> {
                 MainScreen(
-                    onAddChat = {
-                        navController.navigate(AppDestination.Contacts)
-                    },
                     onOpenChat = { contactId, contactName ->
 
                         navController.navigate(
@@ -238,6 +235,9 @@ fun AppNavigation() {
                     },
                     onNavigateToDeveloperMenu = {
                         navController.navigate(AppDestination.DeveloperMenu)
+                    },
+                    onImportContact = {
+                        navController.navigate(AppDestination.ImportContact)
                     },
                 )
             }
