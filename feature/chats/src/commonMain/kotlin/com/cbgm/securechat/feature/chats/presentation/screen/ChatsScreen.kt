@@ -34,6 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
+import com.cbgm.securechat.feature.chats.domain.model.Conversation
 import com.cbgm.securechat.feature.chats.presentation.model.ChatsUiState
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
 import com.cbgm.securechat.resources.Res
@@ -52,7 +53,7 @@ data class ChatListItem(
 @Composable
 fun ChatsScreen(
     uiState: ChatsUiState,
-    onChatClick: (contactId: String) -> Unit,
+    onChatClick: (ChatListItem) -> Unit,
     listState: LazyListState,
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier,
@@ -94,7 +95,7 @@ fun ChatsScreen(
                     ChatItem(
                         chat = chat,
                         onClick = {
-                            onChatClick(chat.contactId)
+                            onChatClick(chat)
                         },
                     )
                 }
