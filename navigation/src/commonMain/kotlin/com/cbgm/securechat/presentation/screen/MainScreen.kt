@@ -29,7 +29,9 @@ import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.component.SecureChatMainScrollStates
 import com.cbgm.securechat.core.ui.component.SecureChatMainScrollTarget
 import com.cbgm.securechat.core.ui.component.SecureChatOverlayHost
+import com.cbgm.securechat.core.ui.component.SecureChatScrollStateType
 import com.cbgm.securechat.core.ui.component.SecureChatTabbedScaffold
+import com.cbgm.securechat.core.ui.component.SecureChatTabbedScrollStates
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.feature.chats.presentation.ChatsRoute
 import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
@@ -61,12 +63,23 @@ fun MainScreen(
         mutableStateOf(false)
     }
 
+    val MainScrollTargets =
+        mapOf(
+            MainTab.Chats to
+                SecureChatScrollStateType.LazyList,
+            MainTab.Me to
+                SecureChatScrollStateType.Scroll,
+            MainTab.Settings to
+                SecureChatScrollStateType.Scroll,
+        )
+
     Box(
         modifier = modifier.fillMaxSize(),
     ) {
         SecureChatTabbedScaffold(
             modifier = Modifier.fillMaxSize(),
-            selectedScrollTarget = selectedTab.toScrollTarget(),
+            selectedScrollTarget = selectedTab,
+            scrollTargets = MainScrollTargets,
             background = {
                 PatternBackground(
                     modifier = Modifier.fillMaxSize(),
@@ -100,10 +113,14 @@ fun MainScreen(
                 scrollStates = scrollStates,
                 onOpenChat = onOpenChat,
                 onShareIdentity = onShareIdentity,
-                onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
-                onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,
-                onNavigateToLicenses = onNavigateToLicenses,
-                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu,
+                onNavigateToPrivacyPolicy =
+                onNavigateToPrivacyPolicy,
+                onNavigateToDataDisclaimer =
+                onNavigateToDataDisclaimer,
+                onNavigateToLicenses =
+                onNavigateToLicenses,
+                onNavigateToDeveloperMenu =
+                onNavigateToDeveloperMenu,
             )
         }
 
@@ -242,7 +259,7 @@ private fun MainBottomBar(
 private fun MainContent(
     selectedTab: MainTab,
     innerPadding: PaddingValues,
-    scrollStates: SecureChatMainScrollStates,
+    scrollStates: SecureChatTabbedScrollStates<MainTab>,
     onOpenChat: (String, String) -> Unit,
     onShareIdentity: () -> Unit,
     onNavigateToPrivacyPolicy: () -> Unit,
@@ -254,7 +271,10 @@ private fun MainContent(
         MainTab.Chats -> {
             ChatsRoute(
                 onChatClick = onOpenChat,
-                listState = scrollStates.chats,
+                listState =
+                    scrollStates.lazyListState(
+                        MainTab.Chats,
+                    ),
                 innerPadding = innerPadding,
                 modifier = Modifier.fillMaxSize(),
             )
@@ -263,7 +283,10 @@ private fun MainContent(
         MainTab.Me -> {
             IdentityRoute(
                 onShareIdentity = onShareIdentity,
-                scrollState = scrollStates.identity,
+                scrollState =
+                    scrollStates.scrollState(
+                        MainTab.Me,
+                    ),
                 innerPadding = innerPadding,
                 modifier = Modifier.fillMaxSize(),
             )
@@ -271,7 +294,10 @@ private fun MainContent(
 
         MainTab.Settings -> {
             SettingsRoute(
-                scrollState = scrollStates.settings,
+                scrollState =
+                    scrollStates.scrollState(
+                        MainTab.Settings,
+                    ),
                 innerPadding = innerPadding,
                 onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
                 onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,

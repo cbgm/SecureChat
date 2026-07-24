@@ -17,6 +17,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.cbgm.securechat.core.ui.scroll.BarsState
@@ -174,9 +175,106 @@ enum class SecureChatMainScrollTarget {
     Settings,
 }
 
+@Stable
+sealed interface SecureChatScrollState {
+    @Stable
+    data class LazyList(
+        val state: LazyListState,
+    ) : SecureChatScrollState
+
+    @Stable
+    data class Scroll(
+        val state: ScrollState,
+    ) : SecureChatScrollState
+}
+
+@Stable
+class SecureChatTabbedScrollStates<T : Any> internal constructor(
+    private val states: Map<T, SecureChatScrollState>,
+) {
+    operator fun get(
+        target: T,
+    ): SecureChatScrollState =
+        requireNotNull(states[target]) {
+            "No scroll state registered for target: $target"
+        }
+
+    fun lazyListState(
+        target: T,
+    ): LazyListState =
+        when (val scrollState = get(target)) {
+            is SecureChatScrollState.LazyList -> {
+                scrollState.state
+            }
+
+            is SecureChatScrollState.Scroll -> {
+                error(
+                    "Target $target uses ScrollState, not LazyListState.",
+                )
+            }
+        }
+
+    fun scrollState(
+        target: T,
+    ): ScrollState =
+        when (val scrollState = get(target)) {
+            is SecureChatScrollState.Scroll -> {
+                scrollState.state
+            }
+
+            is SecureChatScrollState.LazyList -> {
+                error(
+                    "Target $target uses LazyListState, not ScrollState.",
+                )
+            }
+        }
+}
+
+enum class SecureChatScrollStateType {
+    LazyList,
+    Scroll,
+}
+
 @Composable
-fun SecureChatTabbedScaffold(
-    selectedScrollTarget: SecureChatMainScrollTarget,
+fun <T : Any> rememberSecureChatTabbedScrollStates(
+    targets: Map<T, SecureChatScrollStateType>,
+): SecureChatTabbedScrollStates<T> {
+    require(targets.isNotEmpty()) {
+        "At least one scroll target is required."
+    }
+
+    require(targets.size <= 5) {
+        "SecureChatTabbedScaffold supports at most 5 scroll targets."
+    }
+
+    val rememberedStates =
+        targets.mapValues { (_, type) ->
+            when (type) {
+                SecureChatScrollStateType.LazyList -> {
+                    SecureChatScrollState.LazyList(
+                        state = rememberLazyListState(),
+                    )
+                }
+
+                SecureChatScrollStateType.Scroll -> {
+                    SecureChatScrollState.Scroll(
+                        state = rememberScrollState(),
+                    )
+                }
+            }
+        }
+
+    return remember(rememberedStates) {
+        SecureChatTabbedScrollStates(
+            states = rememberedStates,
+        )
+    }
+}
+
+@Composable
+fun <T : Any> SecureChatTabbedScaffold(
+    selectedScrollTarget: T,
+    scrollTargets: Map<T, SecureChatScrollStateType>,
     modifier: Modifier = Modifier,
     barColor: Color = MaterialTheme.colorScheme.background,
     fadedAlpha: Float = Alpha.OpaqueBar,
@@ -188,35 +286,33 @@ fun SecureChatTabbedScaffold(
     floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (
         innerPadding: PaddingValues,
-        scrollStates: SecureChatMainScrollStates,
+        scrollStates: SecureChatTabbedScrollStates<T>,
     ) -> Unit,
 ) {
+    require(selectedScrollTarget in scrollTargets) {
+        "Selected target $selectedScrollTarget is not registered."
+    }
+
     val scrollStates =
-        SecureChatMainScrollStates(
-            chats = rememberLazyListState(),
-            identity = rememberScrollState(),
-            settings = rememberScrollState(),
+        rememberSecureChatTabbedScrollStates(
+            targets = scrollTargets,
         )
 
     val barsState =
-        when (selectedScrollTarget) {
-            SecureChatMainScrollTarget.Chats -> {
+        when (
+            val selectedState =
+                scrollStates[selectedScrollTarget]
+        ) {
+            is SecureChatScrollState.LazyList -> {
                 rememberBarsState(
-                    state = scrollStates.chats,
+                    state = selectedState.state,
                     fadedAlpha = fadedAlpha,
                 )
             }
 
-            SecureChatMainScrollTarget.Identity -> {
+            is SecureChatScrollState.Scroll -> {
                 rememberBarsState(
-                    state = scrollStates.identity,
-                    fadedAlpha = fadedAlpha,
-                )
-            }
-
-            SecureChatMainScrollTarget.Settings -> {
-                rememberBarsState(
-                    state = scrollStates.settings,
+                    state = selectedState.state,
                     fadedAlpha = fadedAlpha,
                 )
             }
@@ -227,11 +323,13 @@ fun SecureChatTabbedScaffold(
         barColor = barColor,
         containerColor = containerColor,
         modifier = modifier,
-        floatingActionButtonPosition = floatingActionButtonPosition,
+        floatingActionButtonPosition =
+        floatingActionButtonPosition,
         background = background,
         topBar = topBar,
         bottomBar = bottomBar,
-        floatingActionButton = floatingActionButton,
+        floatingActionButton =
+        floatingActionButton,
     ) { innerPadding ->
         content(
             innerPadding,
