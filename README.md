@@ -4,6 +4,8 @@
 
 **Modern end-to-end encrypted messaging built with Kotlin Multiplatform**
 
+![CI](https://github.com/cbgm/SecureChat/actions/workflows/ci.yml/badge.svg)
+[![Docs](https://img.shields.io/badge/Docs-Live-success?logo=github)](https://cbgm.github.io/SecureChat/)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.4.0-7F52FF?logo=kotlin&logoColor=white)
 ![Compose Multiplatform](https://img.shields.io/badge/Compose-Multiplatform-4285F4)
 ![Android](https://img.shields.io/badge/Android-API%2029+-3DDC84?logo=android&logoColor=white)
