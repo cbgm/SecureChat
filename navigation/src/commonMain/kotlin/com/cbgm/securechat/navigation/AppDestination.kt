@@ -1,5 +1,6 @@
 package com.cbgm.securechat.navigation
 
+import com.cbgm.securechat.feature.settings.presentation.model.DisclaimerType
 import kotlinx.serialization.Serializable
 
 sealed interface AppDestination {
@@ -22,7 +23,7 @@ sealed interface AppDestination {
 
     @Serializable
     data class Disclaimer(
-        val type: String,
+        val type: DisclaimerType,
     ) : AppDestination
 
     @Serializable
@@ -41,5 +42,7 @@ sealed interface AppDestination {
     data object Startup : AppDestination
 
     @Serializable
-    data object ImportContact : AppDestination
+    data class ImportContact(
+        val scannedIdentity: String? = null,
+    ) : AppDestination
 }

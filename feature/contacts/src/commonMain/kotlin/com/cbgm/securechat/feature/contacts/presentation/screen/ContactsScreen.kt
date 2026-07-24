@@ -292,14 +292,6 @@ private fun ContactsList(
                 },
             )
         }
-        items(28) { index ->
-
-            ContactListItem(
-                contact = contacts.first(),
-                onClick = {
-                },
-            )
-        }
     }
 }
 

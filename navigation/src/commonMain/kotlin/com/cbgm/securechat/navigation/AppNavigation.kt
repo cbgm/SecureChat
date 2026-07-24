@@ -119,19 +119,12 @@ fun AppNavigation() {
                             ),
                     )
                 },
-            ) {
-                val type =
-                    navController
-                        .currentBackStackEntry
-                        ?.savedStateHandle
-                        ?.get<String>(
-                            "type",
-                        )
+            ) { backStackEntry ->
+                val destination =
+                    backStackEntry.toRoute<AppDestination.Disclaimer>()
 
                 DisclaimerRoute(
-                    type =
-                        type?.let { DisclaimerType.valueOf(it) }
-                            ?: DisclaimerType.DATA_DISCLAIMER,
+                    type = destination.type,
                     onBack = { navController.popBackStack() },
                 )
             }
@@ -144,17 +137,11 @@ fun AppNavigation() {
                 )
             }
 
-            composable<AppDestination.ImportContact> {
-                val scannedIdentity =
-                    navController
-                        .currentBackStackEntry
-                        ?.savedStateHandle
-                        ?.get<String>(
-                            "scannedIdentity",
-                        )
+            composable<AppDestination.ImportContact> { backStackEntry ->
+                val scannedIdentity = backStackEntry.toRoute<AppDestination.ImportContact>()
 
                 ImportIdentityRoute(
-                    scannedIdentity = scannedIdentity,
+                    scannedIdentity = scannedIdentity.scannedIdentity,
                     onScanQrCode = {
                         navController.navigate(AppDestination.ScanIdentity)
                     },
@@ -219,14 +206,14 @@ fun AppNavigation() {
                     onNavigateToPrivacyPolicy = {
                         navController.navigate(
                             AppDestination.Disclaimer(
-                                type = DisclaimerType.PRIVACY_POLICY.name,
+                                type = DisclaimerType.PRIVACY_POLICY,
                             ),
                         )
                     },
                     onNavigateToDataDisclaimer = {
                         navController.navigate(
                             AppDestination.Disclaimer(
-                                type = DisclaimerType.DATA_DISCLAIMER.name,
+                                type = DisclaimerType.DATA_DISCLAIMER,
                             ),
                         )
                     },
