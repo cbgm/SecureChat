@@ -28,7 +28,7 @@ For read-only verification used by Git hooks and CI:
 - [Architecture](architecture/overview.md)
 - [Security](security/overview.md)
 - [Features](features/chats.md)
-- [Development](development/coding-style.md)
+- [Development](development/local-development.md)
 - [Build infrastructure](build/index.md)
 - [Protocol and relay APIs](api/protocol.md)
 
@@ -60,10 +60,7 @@ Local Python, MkDocs, and Docker installations are not required. GitHub Actions 
 
 ## Core principles
 
-> Convention plugins configure infrastructure.
-> Modules declare their actual dependencies.
-> Architecture and quality rules are automated.
+> Convention plugins configure infrastructure.  
+> Modules declare their actual dependencies.  
+> Architecture and quality rules are automated.  
 > Generated documentation is derived from the project itself.
-
-## Detailed implementation guides
-> Message sending and transport flow
