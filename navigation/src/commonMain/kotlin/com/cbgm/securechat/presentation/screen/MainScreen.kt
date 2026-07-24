@@ -80,14 +80,6 @@ fun MainScreen(
             modifier = Modifier.fillMaxSize(),
             selectedScrollTarget = selectedTab,
             scrollTargets = MainScrollTargets,
-            background = {
-                PatternBackground(
-                    modifier = Modifier.fillMaxSize(),
-                    backgroundColor =
-                        MaterialTheme.colorScheme.background,
-                    alpha = 0.04f,
-                )
-            },
             topBar = { containerColor ->
                 MainTopBar(
                     selectedTab = selectedTab,
@@ -129,7 +121,7 @@ fun MainScreen(
             onDismissRequest = {
                 showContactsOverlay = false
             },
-            horizontalPadding = 16.dp,
+            horizontalPadding = 0.dp,
             topPadding = 48.dp,
             tonalElevation = 8.dp,
             shadowElevation = 12.dp,

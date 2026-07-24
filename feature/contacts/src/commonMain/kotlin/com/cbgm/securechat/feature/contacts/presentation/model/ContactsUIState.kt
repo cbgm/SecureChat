@@ -8,7 +8,7 @@ sealed interface ContactsUiState {
     data object Empty : ContactsUiState
 
     data class Content(
-        val contacts: List<Contact>,
+        val groups: List<ContactGroupEntity>,
     ) : ContactsUiState
 
     data class Error(

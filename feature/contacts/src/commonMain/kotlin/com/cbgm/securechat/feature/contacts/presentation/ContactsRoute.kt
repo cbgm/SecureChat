@@ -21,6 +21,7 @@ fun ContactsRoute(
     viewModel: ContactsViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
     val requestDeviceContactsPermission =
         rememberDeviceContactsPermissionRequest(
@@ -39,5 +40,7 @@ fun ContactsRoute(
         onImportDeviceContacts = requestDeviceContactsPermission,
         onContactClick = onContactClick,
         modifier = modifier,
+        onSearchQueryChanged = viewModel::onUpdateSearchQuery,
+        searchQuery = searchQuery,
     )
 }

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -37,6 +38,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -58,9 +61,11 @@ import com.cbgm.securechat.core.ui.component.SecureChatLazyScaffold
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
-import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
+import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumber
+import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
+import com.cbgm.securechat.feature.contacts.presentation.model.ContactGroupEntity
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactsUiState
 import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.base_contacts
@@ -92,6 +97,8 @@ fun ContactsScreen(
     ) -> Unit,
     onImportContact: () -> Unit,
     onImportDeviceContacts: () -> Unit,
+    onSearchQueryChanged: (String) -> Unit,
+    searchQuery: String,
     modifier: Modifier = Modifier,
 ) {
     var showImportSheet by rememberSaveable {
@@ -100,18 +107,13 @@ fun ContactsScreen(
 
     SecureChatLazyScaffold(
         modifier = modifier,
-        background = {
-            PatternBackground(
-                modifier = Modifier.fillMaxSize(),
-                backgroundColor =
-                    MaterialTheme.colorScheme.background,
-                alpha = 0.04f,
-            )
-        },
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = { containerColor ->
             ContactsTopBar(
                 containerColor = containerColor,
                 onBack = onBack,
+                searchQuery = searchQuery,
+                onSearchQueryChanged = onSearchQueryChanged,
             )
         },
         floatingActionButton = {
@@ -157,33 +159,107 @@ fun ContactsScreen(
 @Composable
 private fun ContactsTopBar(
     containerColor: Color,
+    searchQuery: String,
+    onSearchQueryChanged: (String) -> Unit,
     onBack: () -> Unit,
 ) {
-    CenterAlignedTopAppBar(
-        windowInsets = WindowInsets(0.dp),
+    Column {
+        CenterAlignedTopAppBar(
+            windowInsets = WindowInsets(0.dp),
+            colors =
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = containerColor,
+                    scrolledContainerColor = containerColor,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                ),
+            title = {
+                Text(
+                    text = stringResource(Res.string.base_contacts),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            actions = {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = null,
+                    )
+                }
+            },
+        )
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            SearchField(
+                searchQuery = searchQuery,
+                onSearchQueryChanged = onSearchQueryChanged,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SearchField(
+    searchQuery: String,
+    onSearchQueryChanged: (String) -> Unit,
+) {
+    TextField(
+        value = searchQuery,
+        onValueChange = onSearchQueryChanged,
+        textStyle = MaterialTheme.typography.bodySmall,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    bottom = MaterialTheme.spacing.small,
+                    start = MaterialTheme.spacing.small,
+                    end = MaterialTheme.spacing.small,
+                ),
         colors =
-            TopAppBarDefaults.topAppBarColors(
-                containerColor = containerColor,
-                scrolledContainerColor = containerColor,
-                titleContentColor = MaterialTheme.colorScheme.onBackground,
-                actionIconContentColor = MaterialTheme.colorScheme.onBackground,
-                navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+            TextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                disabledContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent,
+                cursorColor = MaterialTheme.colorScheme.onPrimary,
             ),
-        title = {
-            Text(
-                text = stringResource(Res.string.base_contacts),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold,
+        singleLine = true,
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = null,
             )
         },
-        actions = {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = null,
-                )
+        trailingIcon = {
+            if (searchQuery.isNotEmpty()) {
+                IconButton(
+                    onClick = {
+                        onSearchQueryChanged("")
+                    },
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = null,
+                    )
+                }
             }
         },
+        placeholder = {
+            Text(
+                text = "Name, Phone",
+                /*stringResource(
+                                        Res.string.feature_contacts_search,
+                                    )*/
+            )
+        },
+        shape = MaterialTheme.shapes.extraSmall,
     )
 }
 
@@ -238,7 +314,7 @@ private fun ContactsScreenContent(
 
         is ContactsUiState.Content -> {
             ContactsList(
-                contacts = uiState.contacts,
+                groupedContacts = uiState.groups,
                 innerPadding = innerPadding,
                 listState = listState,
                 onContactClick = onContactClick,
@@ -264,7 +340,7 @@ private fun ContactsScreenContent(
 
 @Composable
 private fun ContactsList(
-    contacts: List<Contact>,
+    groupedContacts: List<ContactGroupEntity>,
     innerPadding: PaddingValues,
     listState: LazyListState,
     onContactClick: (
@@ -276,21 +352,79 @@ private fun ContactsList(
     LazyColumn(
         modifier = modifier,
         state = listState,
-        contentPadding = innerPadding,
+        contentPadding =
+            PaddingValues(
+                start = MaterialTheme.spacing.medium,
+                top = innerPadding.calculateTopPadding(),
+                end = MaterialTheme.spacing.medium,
+                bottom = innerPadding.calculateBottomPadding(),
+            ),
+        verticalArrangement =
+            Arrangement.spacedBy(
+                MaterialTheme.spacing.medium,
+            ),
     ) {
         items(
-            items = contacts,
-            key = Contact::id,
-        ) { contact ->
-            ContactListItem(
-                contact = contact,
-                onClick = {
-                    onContactClick(
-                        contact.id,
-                        contact.displayName.orEmpty(),
-                    )
-                },
+            items = groupedContacts,
+            key = ContactGroupEntity::title,
+        ) { group ->
+            ContactGroup(
+                group = group,
+                onContactClick = onContactClick,
             )
+            ContactGroup(
+                group = group,
+                onContactClick = onContactClick,
+            )
+            ContactGroup(
+                group = group,
+                onContactClick = onContactClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ContactGroup(
+    group: ContactGroupEntity,
+    onContactClick: (
+        contactId: String,
+        contactName: String,
+    ) -> Unit,
+) {
+    Column {
+        Text(
+            text = group.title,
+            modifier =
+                Modifier.padding(
+                    start = MaterialTheme.spacing.small,
+                    bottom = MaterialTheme.spacing.small,
+                ),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.secondary,
+        )
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.small,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            tonalElevation = 2.dp,
+            shadowElevation = 1.dp,
+        ) {
+            Column {
+                group.contacts.forEachIndexed { index, contact ->
+                    ContactListItem(
+                        contact = contact,
+                        onClick = {
+                            onContactClick(
+                                contact.id,
+                                contact.displayName.orEmpty(),
+                            )
+                        },
+                    )
+                }
+            }
         }
     }
 }
@@ -341,7 +475,7 @@ private fun ContactListItem(
             trailingContent = {
                 ContactStatus(contact = contact)
             },
-            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         )
 
         HorizontalDivider(
@@ -640,12 +774,126 @@ private fun ImportOptionRow(
 fun ContactsScreenPreview() {
     SecureChatTheme {
         ContactsScreen(
-            uiState = ContactsUiState.Empty,
+            uiState =
+                ContactsUiState.Content(
+                    groups =
+                        listOf(
+                            ContactGroupEntity(
+                                title = "A",
+                                contacts =
+                                    listOf(
+                                        Contact(
+                                            id = "1",
+                                            displayName = "abbb",
+                                            phoneNumbers =
+                                                listOf(
+                                                    ContactPhoneNumber(
+                                                        value = "123456789",
+                                                        label = "work",
+                                                        type = ContactPhoneNumberType.WORK_MOBILE,
+                                                        id = "1",
+                                                    ),
+                                                ),
+                                            preferredPhoneNumberId = "1",
+                                            secureChatIdentity = null,
+                                            deviceContactLinkStatus = DeviceContactLinkStatus.MISSING,
+                                            deviceContactId = "1",
+                                            createdAtEpochMilliseconds = System.currentTimeMillis(),
+                                            updatedAtEpochMilliseconds = System.currentTimeMillis(),
+                                        ),
+                                        Contact(
+                                            id = "6",
+                                            displayName = "af",
+                                            phoneNumbers =
+                                                listOf(
+                                                    ContactPhoneNumber(
+                                                        value = "123456789",
+                                                        label = "work",
+                                                        type = ContactPhoneNumberType.WORK_MOBILE,
+                                                        id = "1",
+                                                    ),
+                                                ),
+                                            preferredPhoneNumberId = "1",
+                                            secureChatIdentity = null,
+                                            deviceContactLinkStatus = DeviceContactLinkStatus.MISSING,
+                                            deviceContactId = "1",
+                                            createdAtEpochMilliseconds = System.currentTimeMillis(),
+                                            updatedAtEpochMilliseconds = System.currentTimeMillis(),
+                                        ),
+                                        Contact(
+                                            id = "2",
+                                            displayName = "abbb",
+                                            phoneNumbers =
+                                                listOf(
+                                                    ContactPhoneNumber(
+                                                        value = "123456789",
+                                                        label = "work",
+                                                        type = ContactPhoneNumberType.WORK_MOBILE,
+                                                        id = "1",
+                                                    ),
+                                                ),
+                                            preferredPhoneNumberId = "1",
+                                            secureChatIdentity = null,
+                                            deviceContactLinkStatus = DeviceContactLinkStatus.MISSING,
+                                            deviceContactId = "1",
+                                            createdAtEpochMilliseconds = System.currentTimeMillis(),
+                                            updatedAtEpochMilliseconds = System.currentTimeMillis(),
+                                        ),
+                                    ),
+                            ),
+                            ContactGroupEntity(
+                                title = "F",
+                                contacts =
+                                    listOf(
+                                        Contact(
+                                            id = "10",
+                                            displayName = "fg",
+                                            phoneNumbers =
+                                                listOf(
+                                                    ContactPhoneNumber(
+                                                        value = "123456789",
+                                                        label = "work",
+                                                        type = ContactPhoneNumberType.WORK_MOBILE,
+                                                        id = "1",
+                                                    ),
+                                                ),
+                                            preferredPhoneNumberId = "1",
+                                            secureChatIdentity = null,
+                                            deviceContactLinkStatus = DeviceContactLinkStatus.MISSING,
+                                            deviceContactId = "1",
+                                            createdAtEpochMilliseconds = System.currentTimeMillis(),
+                                            updatedAtEpochMilliseconds = System.currentTimeMillis(),
+                                        ),
+                                        Contact(
+                                            id = "17",
+                                            displayName = "fl",
+                                            phoneNumbers =
+                                                listOf(
+                                                    ContactPhoneNumber(
+                                                        value = "123456789",
+                                                        label = "work",
+                                                        type = ContactPhoneNumberType.WORK_MOBILE,
+                                                        id = "1",
+                                                    ),
+                                                ),
+                                            preferredPhoneNumberId = "1",
+                                            secureChatIdentity = null,
+                                            deviceContactLinkStatus = DeviceContactLinkStatus.MISSING,
+                                            deviceContactId = "1",
+                                            createdAtEpochMilliseconds = System.currentTimeMillis(),
+                                            updatedAtEpochMilliseconds = System.currentTimeMillis(),
+                                        ),
+                                    ),
+                            ),
+                        ),
+                ),
             onBack = {},
             onContactClick = { _, _ -> },
             onImportContact = {},
             onImportDeviceContacts = {},
             modifier = Modifier.fillMaxSize(),
+            onSearchQueryChanged = {},
+            searchQuery = "",
         )
     }
 }
