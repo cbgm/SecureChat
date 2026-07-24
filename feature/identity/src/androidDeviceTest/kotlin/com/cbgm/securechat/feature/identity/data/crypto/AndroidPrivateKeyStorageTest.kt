@@ -3,6 +3,7 @@ package com.cbgm.securechat.feature.identity.data.crypto
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.cbgm.securechat.core.crypto.SodiumRuntime
+import com.cbgm.securechat.core.crypto.identity.SodiumIdentityKeyGenerator
 import com.cbgm.securechat.feature.identity.data.storage.AndroidPrivateKeyStorage
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -25,15 +26,9 @@ class AndroidPrivateKeyStorageTest {
         runBlocking {
             SodiumRuntime.initialize().getOrThrow()
 
-            val context =
-                ApplicationProvider.getApplicationContext<
-                    Context,
-                >()
+            val context = ApplicationProvider.getApplicationContext<Context>()
 
-            val storage =
-                AndroidPrivateKeyStorage(
-                    context = context,
-                )
+            val storage = AndroidPrivateKeyStorage(context = context)
 
             /**
              * Start from a clean test state.
@@ -41,20 +36,15 @@ class AndroidPrivateKeyStorageTest {
              * This removes encrypted private-key blobs left by
              * an earlier test execution.
              */
-            storage
-                .deleteIdentityPrivateKeys()
-                .getOrThrow()
+            storage.deleteIdentityPrivateKeys().getOrThrow()
 
             try {
-                val identityCrypto = IdentityCrypto()
+                val identityKeyGenerator = SodiumIdentityKeyGenerator()
 
                 /**
                  * Generate real private keys.
                  */
-                val originalKeyPair =
-                    identityCrypto
-                        .generateIdentityKeyPair()
-                        .getOrThrow()
+                val originalKeyPair = identityKeyGenerator.generate().getOrThrow()
 
                 /**
                  * Save both private keys.
@@ -68,33 +58,24 @@ class AndroidPrivateKeyStorageTest {
                  */
                 val saveResult =
                     storage.saveIdentityPrivateKeys(
-                        encryptionPrivateKey =
-                            originalKeyPair.encryptionPrivateKey,
-                        signingPrivateKey =
-                            originalKeyPair.signingPrivateKey,
+                        encryptionPrivateKey = originalKeyPair.encryptionPrivateKey,
+                        signingPrivateKey = originalKeyPair.signingPrivateKey,
                     )
 
                 assertTrue(
                     saveResult.isSuccess,
-                    "Saving private keys failed: " +
-                        saveResult.exceptionOrNull()?.message,
+                    "Saving private keys failed: " + saveResult.exceptionOrNull()?.message,
                 )
 
                 /**
                  * Load and decrypt the X25519-side private key.
                  */
-                val loadedEncryptionPrivateKey =
-                    storage
-                        .loadEncryptionPrivateKey()
-                        .getOrThrow()
+                val loadedEncryptionPrivateKey = storage.loadEncryptionPrivateKey().getOrThrow()
 
                 /**
                  * Load and decrypt the Ed25519 signing private key.
                  */
-                val loadedSigningPrivateKey =
-                    storage
-                        .loadSigningPrivateKey()
-                        .getOrThrow()
+                val loadedSigningPrivateKey = storage.loadSigningPrivateKey().getOrThrow()
 
                 assertNotNull(
                     loadedEncryptionPrivateKey,
@@ -127,9 +108,7 @@ class AndroidPrivateKeyStorageTest {
                  *
                  * finally runs even if an assertion fails.
                  */
-                storage
-                    .deleteIdentityPrivateKeys()
-                    .getOrThrow()
+                storage.deleteIdentityPrivateKeys().getOrThrow()
             }
         }
 }

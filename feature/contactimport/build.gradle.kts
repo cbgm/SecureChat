@@ -39,6 +39,7 @@ kotlin {
             implementation(libs.bundles.android.device.testing)
             implementation(libs.bundles.room.runtime)
             implementation(projects.data.database)
+            implementation(projects.core.protocol)
         }
     }
 }
