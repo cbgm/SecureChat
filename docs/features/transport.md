@@ -10,6 +10,11 @@ The Transport feature deliberately has **no knowledge of plaintext message conte
 
 ---
 
+!!! info "Detailed implementation reference"
+    See [Message Sending and Transport Flow](message-transport-flow.md) for the complete implementation path with the actual production class names, database states, relay acknowledgements, delivery receipts, and retry behavior.
+
+---
+
 # Responsibilities
 
 The Transport feature is responsible for

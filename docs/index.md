@@ -60,7 +60,10 @@ Local Python, MkDocs, and Docker installations are not required. GitHub Actions 
 
 ## Core principles
 
-> Convention plugins configure infrastructure.  
-> Modules declare their actual dependencies.  
-> Architecture and quality rules are automated.  
+> Convention plugins configure infrastructure.
+> Modules declare their actual dependencies.
+> Architecture and quality rules are automated.
 > Generated documentation is derived from the project itself.
+
+## Detailed implementation guides
+> Message sending and transport flow

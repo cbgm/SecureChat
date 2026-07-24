@@ -62,6 +62,7 @@ nav:
       - Identity: features/identity.md
       - Onboarding: features/onboarding.md
       - Transport: features/transport.md
+      - Message Sending and Transport Flow: features/message-transport-flow.md
   - Development:
       - Coding Style: development/coding-style.md
       - Testing: development/testing.md
