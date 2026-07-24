@@ -141,7 +141,7 @@ Run using Android Studio.
 
 ---
 
-# iOS
+# iOS (CURRENTLY UNAVAILABLE!)
 
 Open
 
