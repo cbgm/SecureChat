@@ -21,7 +21,7 @@ fun ChatsRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     ChatsScreen(
-        chats = uiState.conversations,
+        uiState = uiState,
         onChatClick = { contactId ->
             val conversation = uiState.conversations.firstOrNull { it.contactId == contactId }
 

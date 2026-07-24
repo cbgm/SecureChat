@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -33,6 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
+import com.cbgm.securechat.feature.chats.presentation.model.ChatsUiState
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
 import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.feature_chats_no_conversations_hint
@@ -49,28 +51,53 @@ data class ChatListItem(
 
 @Composable
 fun ChatsScreen(
-    chats: List<ChatListItem>,
+    uiState: ChatsUiState,
     onChatClick: (contactId: String) -> Unit,
     listState: LazyListState,
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
-    if (chats.isEmpty()) {
-        EmptyChatsContent(modifier = modifier.fillMaxSize())
-    } else {
-        LazyColumn(
-            modifier = modifier.fillMaxSize(),
-            contentPadding = innerPadding,
-            state = listState,
-        ) {
-            items(
-                items = chats,
-                key = { chat -> chat.contactId },
-            ) { chat ->
-                ChatItem(
-                    chat = chat,
-                    onClick = { onChatClick(chat.contactId) },
+    when {
+        uiState.isLoading -> {
+            Box(
+                modifier =
+                    modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.onBackground,
                 )
+            }
+        }
+
+        uiState.conversations.isEmpty() -> {
+            EmptyChatsContent(
+                modifier =
+                    modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+            )
+        }
+
+        else -> {
+            LazyColumn(
+                modifier = modifier.fillMaxSize(),
+                contentPadding = innerPadding,
+                state = listState,
+            ) {
+                items(
+                    items = uiState.conversations,
+                    key = { chat -> chat.contactId },
+                ) { chat ->
+                    ChatItem(
+                        chat = chat,
+                        onClick = {
+                            onChatClick(chat.contactId)
+                        },
+                    )
+                }
             }
         }
     }
@@ -180,7 +207,10 @@ private fun EmptyChatsContent(modifier: Modifier = Modifier) {
             modifier =
                 Modifier
                     .size(80.dp)
-                    .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f), CircleShape),
+                    .background(
+                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
+                        CircleShape,
+                    ),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -213,21 +243,25 @@ private fun EmptyChatsContent(modifier: Modifier = Modifier) {
 private fun ChatsScreenPreview() {
     SecureChatTheme {
         ChatsScreen(
-            chats =
-                listOf(
-                    ChatListItem(
-                        contactId = "1",
-                        contactName = "Alice",
-                        lastMessage = "Hello!",
-                        timestamp = "10:00 AM",
-                        unreadCount = 3,
-                    ),
-                    ChatListItem(
-                        contactId = "2",
-                        contactName = "Bob",
-                        lastMessage = "Sounds good, see you then.",
-                        timestamp = "Yesterday",
-                    ),
+            uiState =
+                ChatsUiState(
+                    isLoading = true,
+                    conversations =
+                        listOf(
+                            ChatListItem(
+                                contactId = "1",
+                                contactName = "Alice",
+                                lastMessage = "Hello!",
+                                timestamp = "10:00 AM",
+                                unreadCount = 3,
+                            ),
+                            ChatListItem(
+                                contactId = "2",
+                                contactName = "Bob",
+                                lastMessage = "Sounds good, see you then.",
+                                timestamp = "Yesterday",
+                            ),
+                        ),
                 ),
             onChatClick = {},
             listState = LazyListState(),
