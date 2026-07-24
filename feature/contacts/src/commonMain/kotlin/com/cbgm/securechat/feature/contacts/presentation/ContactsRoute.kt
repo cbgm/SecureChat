@@ -1,6 +1,7 @@
 package com.cbgm.securechat.feature.contacts.presentation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,6 +33,10 @@ fun ContactsRoute(
                 viewModel.onDeviceContactsPermissionDenied()
             },
         )
+
+    LaunchedEffect(Unit) {
+        requestDeviceContactsPermission()
+    }
 
     ContactsScreen(
         uiState = uiState,
