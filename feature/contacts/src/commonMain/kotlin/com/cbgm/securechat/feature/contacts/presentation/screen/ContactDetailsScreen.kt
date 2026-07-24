@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.crypto.safety.SafetyNumber
 import com.cbgm.securechat.core.extensions.toHexString
 import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
+import com.cbgm.securechat.core.ui.component.SecureChatCard
+import com.cbgm.securechat.core.ui.component.SecureChatCardNoAnimation
 import com.cbgm.securechat.core.ui.component.SecureChatScrollScaffold
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
@@ -366,11 +368,7 @@ private fun ContactContent(
 
 @Composable
 private fun SectionCard(content: @Composable () -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = CardColor,
-    ) {
+    SecureChatCardNoAnimation {
         Column(modifier = Modifier.padding(MaterialTheme.spacing.medium)) {
             content()
         }
@@ -379,7 +377,8 @@ private fun SectionCard(content: @Composable () -> Unit) {
 
 @Composable
 private fun ContactHeader(contact: Contact) {
-    val isVerified = contact.secureChatIdentity?.verificationStatus == ContactVerificationStatus.VERIFIED
+    val isVerified =
+        contact.secureChatIdentity?.verificationStatus == ContactVerificationStatus.VERIFIED
     val hasNoIdentity = contact.secureChatIdentity == null
 
     Column(
@@ -440,7 +439,9 @@ private fun ContactHeader(contact: Contact) {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
         Text(
-            text = contact.displayName ?: stringResource(Res.string.feature_contacts_unnamed_contact),
+            text =
+                contact.displayName
+                    ?: stringResource(Res.string.feature_contacts_unnamed_contact),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold,
@@ -546,7 +547,10 @@ private fun PhoneNumberItem(
 
 @Composable
 private fun DeviceContactSection(status: DeviceContactLinkStatus) {
-    SectionTitle(icon = Icons.Default.ContactPhone, title = stringResource(Res.string.feature_contacts_device_contact))
+    SectionTitle(
+        icon = Icons.Default.ContactPhone,
+        title = stringResource(Res.string.feature_contacts_device_contact),
+    )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
@@ -583,8 +587,6 @@ private fun DeviceContactSection(status: DeviceContactLinkStatus) {
     }
 }
 
-// Single shared row for both device-link and identity status — the two
-// near-duplicate composables that existed before are consolidated here.
 @Composable
 private fun StatusRow(
     icon: ImageVector,
@@ -650,7 +652,10 @@ private fun SecureChatIdentitySection(
     safetyNumber: SafetyNumber?,
     onVerifyIdentity: () -> Unit,
 ) {
-    SectionTitle(icon = Icons.Default.Security, title = stringResource(Res.string.feature_contacts_securechat_identity))
+    SectionTitle(
+        icon = Icons.Default.Security,
+        title = stringResource(Res.string.feature_contacts_securechat_identity),
+    )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
@@ -693,7 +698,7 @@ private fun SecureChatIdentitySection(
             enabled = false,
             onValueChange = { },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.small,
             supportingText = {
                 Text(
                     text = stringResource(Res.string.feature_contacts_compare_entire_number),
@@ -731,11 +736,17 @@ private fun SecureChatIdentitySection(
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
     }
 
-    KeySection(title = stringResource(Res.string.feature_contacts_signing_fingerprint), key = identity.signingPublicKey)
+    KeySection(
+        title = stringResource(Res.string.feature_contacts_signing_fingerprint),
+        key = identity.signingPublicKey,
+    )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
-    KeySection(title = stringResource(Res.string.feature_contacts_encryption_fingerprint), key = identity.encryptionPublicKey)
+    KeySection(
+        title = stringResource(Res.string.feature_contacts_encryption_fingerprint),
+        key = identity.encryptionPublicKey,
+    )
 }
 
 @Composable
@@ -809,7 +820,10 @@ private fun NotFoundContent(
                 color = MaterialTheme.colorScheme.onBackground,
             )
 
-            SecureChatApprovalButton(onClick = onBack, text = stringResource(Res.string.feature_contacts_return_to_contacts))
+            SecureChatApprovalButton(
+                onClick = onBack,
+                text = stringResource(Res.string.feature_contacts_return_to_contacts),
+            )
         }
     }
 }
@@ -838,7 +852,10 @@ private fun ErrorContent(
                 textAlign = TextAlign.Center,
             )
 
-            SecureChatApprovalButton(onClick = onRetry, text = stringResource(Res.string.base_retry))
+            SecureChatApprovalButton(
+                onClick = onRetry,
+                text = stringResource(Res.string.base_retry),
+            )
         }
     }
 }

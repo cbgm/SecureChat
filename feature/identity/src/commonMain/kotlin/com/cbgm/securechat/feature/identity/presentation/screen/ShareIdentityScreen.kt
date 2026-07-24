@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -53,6 +52,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
 import com.cbgm.securechat.core.ui.component.SecureChatCard
+import com.cbgm.securechat.core.ui.component.SecureChatCardNoAnimation
 import com.cbgm.securechat.core.ui.component.SecureChatScrollScaffold
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
@@ -354,11 +354,11 @@ private fun GeneratedIdentityContent(
                     Modifier
                         .background(
                             color = Color.White,
-                            shape = RoundedCornerShape(16.dp),
+                            shape = MaterialTheme.shapes.small,
                         ).border(
                             width = 1.dp,
                             color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f),
-                            shape = RoundedCornerShape(16.dp),
+                            shape = MaterialTheme.shapes.small,
                         ).padding(16.dp),
             ) {
                 QrCode(
@@ -372,7 +372,7 @@ private fun GeneratedIdentityContent(
             Button(
                 onClick = onShareIdentity,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.extraSmall,
                 colors =
                     ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.secondary,
@@ -412,16 +412,9 @@ private fun GeneratedIdentityContent(
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(12.dp),
-                        ).padding(MaterialTheme.spacing.medium),
-            ) {
+            SecureChatCardNoAnimation {
                 Text(
+                    modifier = Modifier.padding(MaterialTheme.spacing.small),
                     text = encodedIdentity,
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = FontFamily.Monospace,

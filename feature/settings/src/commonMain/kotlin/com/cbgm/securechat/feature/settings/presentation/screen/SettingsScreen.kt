@@ -4,6 +4,7 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,9 +34,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.ui.component.SecureChatCardNoAnimation
 import com.cbgm.securechat.core.ui.locale.AppLanguage
+import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
+import com.cbgm.securechat.feature.settings.domain.model.BuildInfo
 import com.cbgm.securechat.feature.settings.presentation.model.SettingsUiState
 import com.cbgm.securechat.feature.settings.presentation.screen.components.LanguagePickerDialog
 import com.cbgm.securechat.resources.Res
@@ -158,7 +163,7 @@ fun SettingsScreen(
 @Composable
 private fun SettingsSection(
     title: String,
-    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Column {
         Text(
@@ -173,11 +178,7 @@ private fun SettingsSection(
                 ),
         )
 
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            color = CardColor,
-        ) {
+        SecureChatCardNoAnimation {
             Column(content = content)
         }
     }
@@ -240,7 +241,40 @@ private fun SettingsRow(
 @Composable
 private fun SettingsDivider() {
     HorizontalDivider(
-        modifier = Modifier.padding(start = 54.dp),
+        modifier = Modifier.padding(start = MaterialTheme.spacing.times(5)),
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.06f),
     )
+}
+
+@Preview
+@Composable
+fun SettingsScreenPreview() {
+    SecureChatTheme {
+        SettingsScreen(
+            uiState =
+                SettingsUiState(
+                    currentLanguage = AppLanguage.ENGLISH,
+                    showLanguagePicker = false,
+                    buildInfo =
+                        BuildInfo(
+                            versionName = "1.0.0",
+                            versionCode = 1,
+                            buildType = "debug",
+                            gitSha = null,
+                        ),
+                    isDeveloperModeEnabled = true,
+                ),
+            onOpenPrivacyPolicy = {},
+            onOpenDataDisclaimer = {},
+            onOpenLicenses = {},
+            onOpenDeveloperMenu = {},
+            onOpenLanguagePicker = {},
+            onDismissLanguagePicker = {},
+            onLanguageSelected = {},
+            onVersionRowTapped = {},
+            snackbarHostState = SnackbarHostState(),
+            scrollState = ScrollState(0),
+            innerPadding = PaddingValues(0.dp),
+        )
+    }
 }

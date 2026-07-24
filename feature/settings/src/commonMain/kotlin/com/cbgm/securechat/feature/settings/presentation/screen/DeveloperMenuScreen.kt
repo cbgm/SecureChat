@@ -30,8 +30,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.ui.component.SecureChatCardNoAnimation
 import com.cbgm.securechat.core.ui.component.SecureChatScrollScaffold
+import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.settings.domain.model.BuildInfo
 import com.cbgm.securechat.resources.Res
@@ -127,15 +130,10 @@ private fun DeveloperMenuTopBar(
 
 @Composable
 private fun BuildInfoCard(buildInfo: BuildInfo) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape =
-            RoundedCornerShape(
-                MaterialTheme.spacing.small,
-            ),
-        color = CardColor,
-    ) {
-        Column(modifier = Modifier.padding(MaterialTheme.spacing.small)) {
+    SecureChatCardNoAnimation {
+        Column(
+            modifier = Modifier.padding(MaterialTheme.spacing.small),
+        ) {
             Text(
                 text = stringResource(Res.string.feature_settings_build_info),
                 style = MaterialTheme.typography.titleSmall,
@@ -174,14 +172,7 @@ private fun DangerZoneCard(
     onClearLocalData: () -> Unit,
     onDisableDeveloperMode: () -> Unit,
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape =
-            RoundedCornerShape(
-                MaterialTheme.spacing.small,
-            ),
-        color = CardColor,
-    ) {
+    SecureChatCardNoAnimation {
         Column(
             modifier = Modifier.padding(MaterialTheme.spacing.small),
         ) {
@@ -207,7 +198,7 @@ private fun DangerZoneCard(
                 onClick = onClearLocalData,
                 enabled = !isClearingLocalData,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.extraSmall,
                 colors =
                     ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
@@ -264,6 +255,26 @@ private fun BuildInfoRow(
             style = MaterialTheme.typography.bodySmall,
             fontFamily = FontFamily.Monospace,
             color = MaterialTheme.colorScheme.onBackground,
+        )
+    }
+}
+
+@Preview
+@Composable
+fun DeveloperScreenPreview() {
+    SecureChatTheme {
+        DeveloperMenuScreen(
+            buildInfo =
+                BuildInfo(
+                    versionName = "1.0.0",
+                    versionCode = 1,
+                    buildType = "debug",
+                    gitSha = null,
+                ),
+            isClearingLocalData = false,
+            onBack = {},
+            onClearLocalData = {},
+            onDisableDeveloperMode = {},
         )
     }
 }

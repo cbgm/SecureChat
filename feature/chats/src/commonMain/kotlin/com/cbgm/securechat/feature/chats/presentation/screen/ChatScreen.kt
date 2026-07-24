@@ -118,7 +118,6 @@ fun ChatScreen(
     SecureChatLazyScaffold(
         modifier = modifier,
         barColor = MaterialTheme.colorScheme.background,
-        fadedAlpha = 0.97f,
         background = {
             PatternBackground(
                 modifier = Modifier.fillMaxSize(),
@@ -804,7 +803,7 @@ private fun MessageInput(
                     .weight(1f)
                     .background(
                         color = Field,
-                        shape = RoundedCornerShape(24.dp),
+                        shape = MaterialTheme.shapes.medium,
                     ).padding(
                         horizontal = MaterialTheme.spacing.small + 4.dp,
                         vertical = MaterialTheme.spacing.base,

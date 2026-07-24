@@ -308,7 +308,7 @@ private fun ReadyIdentityContent(
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
         Surface(
-            shape = RoundedCornerShape(8.dp),
+            shape = MaterialTheme.shapes.extraSmall,
             color = Field,
         ) {
             Text(
@@ -345,7 +345,7 @@ private fun ReadyIdentityContent(
                 Button(
                     onClick = onShareIdentity,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.extraSmall,
                     colors =
                         androidx.compose.material3.ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondary,
@@ -400,8 +400,10 @@ private fun PublicKeySection(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .background(color = Field, shape = MaterialTheme.shapes.medium)
-                    .padding(MaterialTheme.spacing.base),
+                    .background(
+                        color = Field,
+                        shape = MaterialTheme.shapes.medium,
+                    ).padding(MaterialTheme.spacing.base),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
             fontFamily = FontFamily.Monospace,

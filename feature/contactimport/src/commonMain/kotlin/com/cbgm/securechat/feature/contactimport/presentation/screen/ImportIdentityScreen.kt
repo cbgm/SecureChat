@@ -244,7 +244,7 @@ private fun ImportButton(
         onClick = onClick,
         enabled = !isImporting && enabled,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.extraSmall,
         colors =
             ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.secondary,
@@ -276,7 +276,7 @@ private fun StatusBanner(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.extraSmall,
         color = color.copy(alpha = 0.15f),
     ) {
         Row(
