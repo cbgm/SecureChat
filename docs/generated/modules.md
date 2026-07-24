@@ -16,7 +16,7 @@ Select a module to open its generated detail page with source sets, file counts,
 | [`:feature`](modules/feature.md) | `feature` | 0 | 0 | 0 | 0 | 0 |
 | [`:feature:chats`](modules/feature-chats.md) | `feature` | 25 | 0 | 1 | 6 | 3 |
 | [`:feature:contactimport`](modules/feature-contactimport.md) | `feature` | 15 | 1 | 1 | 4 | 2 |
-| [`:feature:contacts`](modules/feature-contacts.md) | `feature` | 53 | 2 | 1 | 6 | 5 |
+| [`:feature:contacts`](modules/feature-contacts.md) | `feature` | 52 | 1 | 1 | 6 | 5 |
 | [`:feature:identity`](modules/feature-identity.md) | `feature` | 45 | 4 | 1 | 4 | 6 |
 | [`:feature:onboarding`](modules/feature-onboarding.md) | `feature` | 13 | 0 | 1 | 2 | 3 |
 | [`:feature:settings`](modules/feature-settings.md) | `feature` | 32 | 0 | 2 | 1 | 3 |

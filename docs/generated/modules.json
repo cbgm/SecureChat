@@ -277,9 +277,9 @@
     "group": "feature",
     "directory": "feature/contacts",
     "buildFile": "feature/contacts/build.gradle.kts",
-    "kotlinSourceFileCount": 53,
+    "kotlinSourceFileCount": 52,
     "productionKotlinFileCount": 51,
-    "testKotlinFileCount": 2,
+    "testKotlinFileCount": 1,
     "resourceFileCount": 1,
     "sourceSets": [
       "androidDeviceTest",
