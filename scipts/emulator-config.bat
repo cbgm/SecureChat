@@ -1,10 +1,12 @@
 @echo off
 setlocal
+
 :skip
 This path has to be adapted for your windows machine
 The script starts two instances of emulators (one has to be named first and one second) and
 changes the phone numbers to unique for testing
 :skip
+
 set "EMU=%LOCALAPPDATA%\Android\Sdk\emulator.backup\emulator.exe"
 
 if not exist "%EMU%" (
