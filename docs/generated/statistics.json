@@ -7,8 +7,8 @@
   "maximumDirectDependencyCount": 13,
   "maximumDirectDependentCount": 9,
   "sourceSetCount": 8,
-  "kotlinSourceFileCount": 375,
-  "productionKotlinFileCount": 361,
+  "kotlinSourceFileCount": 379,
+  "productionKotlinFileCount": 365,
   "testKotlinFileCount": 14,
   "resourceFileCount": 53,
   "modulesByGroup": {

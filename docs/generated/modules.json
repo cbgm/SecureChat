@@ -124,8 +124,8 @@
     "group": "core",
     "directory": "core/ui",
     "buildFile": "core/ui/build.gradle.kts",
-    "kotlinSourceFileCount": 20,
-    "productionKotlinFileCount": 20,
+    "kotlinSourceFileCount": 22,
+    "productionKotlinFileCount": 22,
     "testKotlinFileCount": 0,
     "resourceFileCount": 16,
     "sourceSets": [
@@ -217,8 +217,8 @@
     "group": "feature",
     "directory": "feature/chats",
     "buildFile": "feature/chats/build.gradle.kts",
-    "kotlinSourceFileCount": 24,
-    "productionKotlinFileCount": 24,
+    "kotlinSourceFileCount": 25,
+    "productionKotlinFileCount": 25,
     "testKotlinFileCount": 0,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -277,8 +277,8 @@
     "group": "feature",
     "directory": "feature/contacts",
     "buildFile": "feature/contacts/build.gradle.kts",
-    "kotlinSourceFileCount": 52,
-    "productionKotlinFileCount": 50,
+    "kotlinSourceFileCount": 53,
+    "productionKotlinFileCount": 51,
     "testKotlinFileCount": 2,
     "resourceFileCount": 1,
     "sourceSets": [
