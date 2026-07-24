@@ -18,13 +18,14 @@ class ChatsViewModel(
         chatsRepository
             .observeConversations()
             .map { conversations ->
-                ChatsUiState(
-                    isLoading = false,
-                    conversations = conversations.map { it.toChatListItem() },
-                )
+                if (conversations.isEmpty()) {
+                    return@map ChatsUiState.Empty
+                } else {
+                    ChatsUiState.Content(conversations.map { it.toChatListItem() })
+                }
             }.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = ChatsUiState(isLoading = true),
+                initialValue = ChatsUiState.Loading,
             )
 }

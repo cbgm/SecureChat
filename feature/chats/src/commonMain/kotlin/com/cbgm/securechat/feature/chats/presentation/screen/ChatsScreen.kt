@@ -57,8 +57,8 @@ fun ChatsScreen(
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
-    when {
-        uiState.isLoading -> {
+    when (uiState) {
+        ChatsUiState.Loading -> {
             Box(
                 modifier =
                     modifier
@@ -72,7 +72,7 @@ fun ChatsScreen(
             }
         }
 
-        uiState.conversations.isEmpty() -> {
+        ChatsUiState.Empty -> {
             EmptyChatsContent(
                 modifier =
                     modifier
@@ -81,7 +81,7 @@ fun ChatsScreen(
             )
         }
 
-        else -> {
+        is ChatsUiState.Content -> {
             LazyColumn(
                 modifier = modifier.fillMaxSize(),
                 contentPadding = innerPadding,
@@ -100,6 +100,8 @@ fun ChatsScreen(
                 }
             }
         }
+
+        is ChatsUiState.Error -> {}
     }
 }
 
@@ -244,8 +246,7 @@ private fun ChatsScreenPreview() {
     SecureChatTheme {
         ChatsScreen(
             uiState =
-                ChatsUiState(
-                    isLoading = true,
+                ChatsUiState.Content(
                     conversations =
                         listOf(
                             ChatListItem(
