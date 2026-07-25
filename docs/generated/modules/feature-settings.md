@@ -10,8 +10,8 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `feature` |
 | Directory | `feature/settings` |
 | Build file | `feature/settings/build.gradle.kts` |
-| Kotlin files | 32 |
-| Production Kotlin files | 32 |
+| Kotlin files | 31 |
+| Production Kotlin files | 31 |
 | Test Kotlin files | 0 |
 | Resource files | 2 |
 | Direct dependencies | 1 |

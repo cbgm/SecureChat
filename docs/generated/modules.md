@@ -12,14 +12,14 @@ Select a module to open its generated detail page with source sets, file counts,
 | [`:core:protocol`](modules/core-protocol.md) | `core` | 35 | 1 | 1 | 0 | 6 |
 | [`:core:ui`](modules/core-ui.md) | `core` | 22 | 0 | 16 | 0 | 9 |
 | [`:data`](modules/data.md) | `data` | 0 | 0 | 0 | 0 | 0 |
-| [`:data:database`](modules/data-database.md) | `data` | 22 | 0 | 1 | 2 | 4 |
+| [`:data:database`](modules/data-database.md) | `data` | 26 | 0 | 1 | 2 | 4 |
 | [`:feature`](modules/feature.md) | `feature` | 0 | 0 | 0 | 0 | 0 |
-| [`:feature:chats`](modules/feature-chats.md) | `feature` | 25 | 0 | 1 | 6 | 3 |
+| [`:feature:chats`](modules/feature-chats.md) | `feature` | 33 | 0 | 1 | 6 | 3 |
 | [`:feature:contactimport`](modules/feature-contactimport.md) | `feature` | 15 | 1 | 1 | 4 | 2 |
 | [`:feature:contacts`](modules/feature-contacts.md) | `feature` | 52 | 1 | 1 | 6 | 5 |
 | [`:feature:identity`](modules/feature-identity.md) | `feature` | 45 | 4 | 1 | 4 | 6 |
 | [`:feature:onboarding`](modules/feature-onboarding.md) | `feature` | 13 | 0 | 1 | 2 | 3 |
-| [`:feature:settings`](modules/feature-settings.md) | `feature` | 32 | 0 | 2 | 1 | 3 |
+| [`:feature:settings`](modules/feature-settings.md) | `feature` | 31 | 0 | 2 | 1 | 3 |
 | [`:feature:transport`](modules/feature-transport.md) | `feature` | 31 | 0 | 1 | 6 | 1 |
 | [`:navigation`](modules/navigation.md) | `navigation` | 4 | 0 | 1 | 9 | 1 |
 | [`:quality`](modules/quality.md) | `quality` | 0 | 0 | 0 | 0 | 0 |

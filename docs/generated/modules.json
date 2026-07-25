@@ -172,8 +172,8 @@
     "group": "data",
     "directory": "data/database",
     "buildFile": "data/database/build.gradle.kts",
-    "kotlinSourceFileCount": 22,
-    "productionKotlinFileCount": 22,
+    "kotlinSourceFileCount": 26,
+    "productionKotlinFileCount": 26,
     "testKotlinFileCount": 0,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -217,8 +217,8 @@
     "group": "feature",
     "directory": "feature/chats",
     "buildFile": "feature/chats/build.gradle.kts",
-    "kotlinSourceFileCount": 25,
-    "productionKotlinFileCount": 25,
+    "kotlinSourceFileCount": 33,
+    "productionKotlinFileCount": 33,
     "testKotlinFileCount": 0,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -370,8 +370,8 @@
     "group": "feature",
     "directory": "feature/settings",
     "buildFile": "feature/settings/build.gradle.kts",
-    "kotlinSourceFileCount": 32,
-    "productionKotlinFileCount": 32,
+    "kotlinSourceFileCount": 31,
+    "productionKotlinFileCount": 31,
     "testKotlinFileCount": 0,
     "resourceFileCount": 2,
     "sourceSets": [
