@@ -109,7 +109,6 @@ fun ContactsScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState? = null,
     selectionMode: Boolean = false,
-    selectableContactIds: Set<String> = emptySet(),
     selectedContactIds: Set<String> = emptySet(),
     selectionConfirmEnabled: Boolean = false,
     selectionConfirming: Boolean = false,
@@ -161,7 +160,6 @@ fun ContactsScreen(
             onImportContact = onImportContact,
             onCreateGroup = onCreateGroup,
             selectionMode = selectionMode,
-            selectableContactIds = selectableContactIds,
             selectedContactIds = selectedContactIds,
             onContactSelected = onContactSelected
         )
@@ -370,7 +368,6 @@ private fun ContactsScreenContent(
     onImportContact: () -> Unit,
     onCreateGroup: () -> Unit,
     selectionMode: Boolean,
-    selectableContactIds: Set<String>,
     selectedContactIds: Set<String>,
     onContactSelected: (String) -> Unit
 ) {
@@ -404,7 +401,6 @@ private fun ContactsScreenContent(
                 onContactClick = onContactClick,
                 onCreateGroup = onCreateGroup,
                 selectionMode = selectionMode,
-                selectableContactIds = selectableContactIds,
                 selectedContactIds = selectedContactIds,
                 onContactSelected = onContactSelected,
                 modifier = Modifier.fillMaxSize()
@@ -433,7 +429,6 @@ private fun ContactsList(
     onContactClick: (contactId: String, contactName: String) -> Unit,
     onCreateGroup: () -> Unit,
     selectionMode: Boolean,
-    selectableContactIds: Set<String>,
     selectedContactIds: Set<String>,
     onContactSelected: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -464,7 +459,6 @@ private fun ContactsList(
                 group = group,
                 onContactClick = onContactClick,
                 selectionMode = selectionMode,
-                selectableContactIds = selectableContactIds,
                 selectedContactIds = selectedContactIds,
                 onContactSelected = onContactSelected
             )
@@ -517,7 +511,6 @@ private fun ContactGroup(
     group: ContactGroupEntity,
     onContactClick: (contactId: String, contactName: String) -> Unit,
     selectionMode: Boolean,
-    selectableContactIds: Set<String>,
     selectedContactIds: Set<String>,
     onContactSelected: (String) -> Unit
 ) {

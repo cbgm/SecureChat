@@ -10,12 +10,22 @@ data class GroupMemberPayload(
     val encryptionPublicKey: ByteArray,
     @Serializable(with = ByteArrayAsBase64Serializer::class)
     val signingPublicKey: ByteArray,
-    val role: String
+    val role: String,
+    val phoneNumber: String? = null
 ) {
     init {
-        require(encryptionPublicKey.isNotEmpty()) { "Encryption public key must not be empty" }
-        require(signingPublicKey.isNotEmpty()) { "Signing public key must not be empty" }
         require(role.isNotBlank()) { "Group member role must not be blank" }
+
+        val hasEncryptionKey = encryptionPublicKey.isNotEmpty()
+        val hasSigningKey = signingPublicKey.isNotEmpty()
+
+        require(hasEncryptionKey == hasSigningKey) {
+            "Group member must contain both public keys or neither"
+        }
+
+        require(hasSigningKey || !phoneNumber.isNullOrBlank()) {
+            "Group member requires public keys or a phone number"
+        }
     }
 
     override fun equals(other: Any?): Boolean {
@@ -25,7 +35,8 @@ data class GroupMemberPayload(
         return displayName == other.displayName &&
             encryptionPublicKey.contentEquals(other.encryptionPublicKey) &&
             signingPublicKey.contentEquals(other.signingPublicKey) &&
-            role == other.role
+            role == other.role &&
+            phoneNumber == other.phoneNumber
     }
 
     override fun hashCode(): Int {
@@ -33,6 +44,7 @@ data class GroupMemberPayload(
         result = 31 * result + encryptionPublicKey.contentHashCode()
         result = 31 * result + signingPublicKey.contentHashCode()
         result = 31 * result + role.hashCode()
+        result = 31 * result + (phoneNumber?.hashCode() ?: 0)
         return result
     }
 }

@@ -39,16 +39,21 @@ class DefaultIdentityExchangeStarter(
                     contactDao.findById(contactId = contactId)
                         ?: error("Contact was not found: $contactId")
 
-                val remoteIdentity = contact.publicIdentity ?: return@runCatching
+                val remoteIdentity = contact.publicIdentity
 
                 val currentStatus =
-                    KeyExchangeStatus.entries.firstOrNull { status ->
-                        status.name == remoteIdentity.keyExchangeStatus
+                    remoteIdentity?.let { identity ->
+                        KeyExchangeStatus.entries.firstOrNull { status ->
+                            status.name == identity.keyExchangeStatus
+                        }
                     } ?: KeyExchangeStatus.ONE_WAY
 
                 /*
                  * MUTUAL is persistent. Once reached, no new identity
                  * packet is needed unless the identity keys change.
+                 *
+                 * Contacts without remote keys still receive our identity
+                 * through their phone-number-derived relay address.
                  */
                 if (currentStatus == KeyExchangeStatus.MUTUAL) {
                     return@runCatching

@@ -13,6 +13,7 @@ import com.cbgm.securechat.core.protocol.packet.GroupChatMessagePacket
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
 import com.cbgm.securechat.core.protocol.packet.ReadReceiptPacket
+import com.cbgm.securechat.core.protocol.phone.LocalPhoneNumberProvider
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
 import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
@@ -46,6 +47,7 @@ class DefaultChatsRepository(
     private val messageRecipientStateDao: MessageRecipientStateDao,
     private val getContact: GetContact,
     private val localPublicIdentityProvider: LocalPublicIdentityProvider,
+    private val localPhoneNumberProvider: LocalPhoneNumberProvider,
     private val identityExchangeStarter: IdentityExchangeStarter,
     private val protocolOutbox: ProtocolOutbox,
     private val incomingTransportMessageDecoder: IncomingTransportMessageDecoder,
@@ -86,6 +88,7 @@ class DefaultChatsRepository(
                 getContact(contactId).getOrThrow() ?: error("Contact was not found: $contactId")
             }
         val localIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
+        val localPhoneNumber = localPhoneNumberProvider.getLocalPhoneNumber().getOrThrow()
         val now = SystemClock.nowEpochMilliseconds()
         val conversationId = createId(prefix = "group")
         val conversation =
@@ -113,17 +116,24 @@ class DefaultChatsRepository(
                         displayName = null,
                         encryptionPublicKey = localIdentity.encryptionPublicKey,
                         signingPublicKey = localIdentity.signingPublicKey,
-                        role = GROUP_OWNER_ROLE
+                        role = GROUP_OWNER_ROLE,
+                        phoneNumber = localPhoneNumber
                     )
                 )
                 contacts.forEach { contact ->
-                    val identity = contact.secureChatIdentity ?: error("Contact has no SecureChat identity: ${contact.id}")
+                    val phoneNumber =
+                        contact.preferredPhoneNumber?.value
+                            ?: contact.phoneNumbers.firstOrNull()?.value
+                            ?: error("Contact has no phone number: ${contact.id}")
+                    val identity = contact.secureChatIdentity
+
                     add(
                         GroupMemberPayload(
                             displayName = contact.displayName,
-                            encryptionPublicKey = identity.encryptionPublicKey,
-                            signingPublicKey = identity.signingPublicKey,
-                            role = GROUP_MEMBER_ROLE
+                            encryptionPublicKey = identity?.encryptionPublicKey ?: byteArrayOf(),
+                            signingPublicKey = identity?.signingPublicKey ?: byteArrayOf(),
+                            role = GROUP_MEMBER_ROLE,
+                            phoneNumber = phoneNumber
                         )
                     )
                 }

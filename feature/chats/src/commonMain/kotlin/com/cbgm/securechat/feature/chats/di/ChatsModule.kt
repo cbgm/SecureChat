@@ -83,6 +83,7 @@ val chatsModule =
                 messageRecipientStateDao = get(),
                 getContact = get(),
                 localPublicIdentityProvider = get(),
+                localPhoneNumberProvider = get(),
                 protocolOutbox = get(),
                 incomingTransportMessageDecoder = get(),
                 packetCodec = get(),
