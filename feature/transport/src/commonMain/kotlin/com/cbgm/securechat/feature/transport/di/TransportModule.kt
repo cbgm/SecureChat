@@ -7,6 +7,7 @@ import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.phone.LocalPhoneNumberProvider
 import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
+import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
 import com.cbgm.securechat.feature.chats.domain.repository.TypingIndicatorGateway
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
@@ -63,6 +64,7 @@ val transportModule =
         single<ContactRelayIdResolver> {
             DefaultContactRelayIdResolver(
                 getContact = get<GetContact>(),
+                contactRelayIdDao = get(),
                 relayIdGenerator = get<RelayIdGenerator>()
             )
         }
@@ -70,6 +72,8 @@ val transportModule =
         single<ContactByRelayIdResolver> {
             DefaultContactByRelayIdResolver(
                 contactRepository = get<ContactRepository>(),
+                contactDao = get<ContactDao>(),
+                contactRelayIdDao = get(),
                 relayIdGenerator = get<RelayIdGenerator>()
             )
         }

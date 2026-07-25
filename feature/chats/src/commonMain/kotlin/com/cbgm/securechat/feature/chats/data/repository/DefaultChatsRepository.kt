@@ -400,10 +400,7 @@ class DefaultChatsRepository(
             "Incoming transport payload must not be blank"
         }
 
-        val conversation = getOrCreateConversation(contactId = contactId)
-
         val receivedAt = SystemClock.nowEpochMilliseconds()
-
         val decodedTransport =
             incomingTransportMessageDecoder.decode(
                 encodedPayload = encodedTransportPayload,
@@ -415,7 +412,6 @@ class DefaultChatsRepository(
             is DecodedTransportMessage.Readable -> {
                 handleReadableTransportPacket(
                     contactId = contactId,
-                    conversation = conversation,
                     encodedTransportPayload = encodedTransportPayload,
                     decodedTransport = decodedTransport,
                     receivedAt = receivedAt
@@ -424,7 +420,7 @@ class DefaultChatsRepository(
 
             is DecodedTransportMessage.InvalidPacket -> {
                 storeFailedIncomingMessage(
-                    conversation = conversation,
+                    conversation = getOrCreateConversation(contactId),
                     encodedTransportPayload = encodedTransportPayload,
                     text = "Invalid transport packet",
                     transportMode = UNKNOWN_TRANSPORT_MODE,
@@ -435,7 +431,7 @@ class DefaultChatsRepository(
 
             is DecodedTransportMessage.InvalidPlaintext -> {
                 storeFailedIncomingMessage(
-                    conversation = conversation,
+                    conversation = getOrCreateConversation(contactId),
                     encodedTransportPayload = encodedTransportPayload,
                     text = "Unable to read plaintext message",
                     transportMode = TransportEncryptionMode.PLAINTEXT.name,
@@ -446,7 +442,7 @@ class DefaultChatsRepository(
 
             is DecodedTransportMessage.DecryptionFailed -> {
                 storeFailedIncomingMessage(
-                    conversation = conversation,
+                    conversation = getOrCreateConversation(contactId),
                     encodedTransportPayload = encodedTransportPayload,
                     text = "Unable to decrypt secure message",
                     transportMode = TransportEncryptionMode.SEALED_BOX.name,
@@ -459,7 +455,6 @@ class DefaultChatsRepository(
 
     private suspend fun handleReadableTransportPacket(
         contactId: String,
-        conversation: ConversationEntity,
         encodedTransportPayload: String,
         decodedTransport: DecodedTransportMessage.Readable,
         receivedAt: Long
@@ -470,7 +465,7 @@ class DefaultChatsRepository(
                     encodedPacket = decodedTransport.plaintext
                 ).getOrElse {
                     storeFailedIncomingMessage(
-                        conversation = conversation,
+                        conversation = getOrCreateConversation(contactId),
                         encodedTransportPayload = encodedTransportPayload,
                         text = "Invalid protocol packet",
                         transportMode = decodedTransport.mode.name,
@@ -480,27 +475,36 @@ class DefaultChatsRepository(
 
                     return
                 }
+        val conversationId =
+            when (packet) {
+                is ChatMessagePacket -> getOrCreateConversation(contactId).id
+                is GroupCreatedPacket -> packet.groupId
+                is GroupChatMessagePacket -> packet.groupId
+                else -> chatDao.findConversationByContactId(contactId)?.id ?: "control-${packet.packetId}"
+            }
 
         protocolPacketHandler
             .handle(
                 context =
                     IncomingPacketContext(
                         contactId = contactId,
-                        conversationId = conversation.id,
+                        conversationId = conversationId,
                         encodedTransportPayload = encodedTransportPayload,
                         transportMode = decodedTransport.mode.name,
                         receivedAtEpochMilliseconds = receivedAt
                     ),
                 packet = packet
             ).onFailure {
-                storeFailedIncomingMessage(
-                    conversation = conversation,
-                    encodedTransportPayload = encodedTransportPayload,
-                    text = "Unsupported or invalid protocol packet",
-                    transportMode = decodedTransport.mode.name,
-                    contentStatus = MessageContentStatus.INVALID_PACKET,
-                    receivedAt = receivedAt
-                )
+                if (packet is ChatMessagePacket) {
+                    storeFailedIncomingMessage(
+                        conversation = getOrCreateConversation(contactId),
+                        encodedTransportPayload = encodedTransportPayload,
+                        text = "Unsupported or invalid protocol packet",
+                        transportMode = decodedTransport.mode.name,
+                        contentStatus = MessageContentStatus.INVALID_PACKET,
+                        receivedAt = receivedAt
+                    )
+                }
             }
     }
 

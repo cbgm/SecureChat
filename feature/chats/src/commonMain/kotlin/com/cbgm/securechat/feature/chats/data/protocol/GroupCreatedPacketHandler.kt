@@ -20,12 +20,14 @@ import com.cbgm.securechat.feature.contacts.domain.identity.IdentityExchangeStar
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
 import com.cbgm.securechat.feature.contacts.domain.model.ImportContactRequest
+import com.cbgm.securechat.feature.contacts.domain.repository.ContactKeyExchangeStore
 import com.cbgm.securechat.feature.contacts.domain.usecase.ImportContact
 
 class GroupCreatedPacketHandler(
     private val chatDao: ChatDao,
     private val contactDao: ContactDao,
     private val importContact: ImportContact,
+    private val contactKeyExchangeStore: ContactKeyExchangeStore,
     private val localPublicIdentityProvider: LocalPublicIdentityProvider,
     private val localPhoneNumberProvider: LocalPhoneNumberProvider,
     private val phoneNumberNormalizer: PhoneNumberNormalizer,
@@ -54,7 +56,11 @@ class GroupCreatedPacketHandler(
                         } else {
                             ConversationParticipantEntity(
                                 conversationId = groupPacket.groupId,
-                                contactId = resolveMemberContact(member),
+                                contactId =
+                                    resolveMemberContact(
+                                        member = member,
+                                        senderContactId = context.contactId
+                                    ),
                                 role = member.role,
                                 joinedAtEpochMilliseconds = groupPacket.createdAtEpochMilliseconds
                             )
@@ -62,10 +68,6 @@ class GroupCreatedPacketHandler(
                     }.distinctBy { participant ->
                         participant.contactId
                     }
-
-            check(participants.any { it.contactId == context.contactId }) {
-                "Group creator is missing from the participant list"
-            }
 
             chatDao.createGroupConversation(
                 conversation =
@@ -85,7 +87,19 @@ class GroupCreatedPacketHandler(
             }
         }
 
-    private suspend fun resolveMemberContact(member: GroupMemberPayload): String {
+    private suspend fun resolveMemberContact(
+        member: GroupMemberPayload,
+        senderContactId: String
+    ): String {
+        if (member.role == GROUP_OWNER_ROLE) {
+            updateSenderContact(
+                contactId = senderContactId,
+                member = member
+            )
+
+            return senderContactId
+        }
+
         val hasIdentity =
             member.encryptionPublicKey.isNotEmpty() &&
                 member.signingPublicKey.isNotEmpty()
@@ -145,6 +159,56 @@ class GroupCreatedPacketHandler(
         return contactId
     }
 
+    private suspend fun updateSenderContact(
+        contactId: String,
+        member: GroupMemberPayload
+    ) {
+        val existing =
+            contactDao.findById(contactId)
+                ?: error("Group sender contact was not found")
+        val now = SystemClock.nowEpochMilliseconds()
+        val phoneNumber = member.phoneNumber?.trim()?.takeIf { it.isNotEmpty() }
+        val phoneNumberId =
+            if (phoneNumber != null) {
+                existing.contact.preferredPhoneNumberId ?: IdGenerator.generate()
+            } else {
+                existing.contact.preferredPhoneNumberId
+            }
+
+        contactDao.upsertContact(
+            existing.contact.copy(
+                displayName = member.displayName ?: existing.contact.displayName,
+                preferredPhoneNumberId = phoneNumberId,
+                updatedAtEpochMilliseconds = now
+            )
+        )
+
+        if (phoneNumber != null && phoneNumberId != null) {
+            contactDao.upsertPhoneNumbers(
+                listOf(
+                    ContactPhoneNumberEntity(
+                        id = phoneNumberId,
+                        contactId = contactId,
+                        value = phoneNumber,
+                        normalizedValue = phoneNumberNormalizer.normalize(phoneNumber).getOrThrow(),
+                        type = ContactPhoneNumberType.MOBILE.name,
+                        label = null,
+                        updatedAtEpochMilliseconds = now
+                    )
+                )
+            )
+        }
+
+        if (member.encryptionPublicKey.isNotEmpty() && member.signingPublicKey.isNotEmpty()) {
+            contactKeyExchangeStore
+                .storeRemoteIdentity(
+                    contactId = contactId,
+                    encryptionPublicKey = member.encryptionPublicKey,
+                    signingPublicKey = member.signingPublicKey
+                ).getOrThrow()
+        }
+    }
+
     private fun GroupMemberPayload.isLocalMember(
         localSigningPublicKey: ByteArray,
         normalizedLocalPhoneNumber: String
@@ -163,5 +227,6 @@ class GroupCreatedPacketHandler(
 
     private companion object {
         const val GROUP_CONVERSATION_TYPE = "GROUP"
+        const val GROUP_OWNER_ROLE = "OWNER"
     }
 }

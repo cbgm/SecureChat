@@ -27,6 +27,10 @@ val androidDatabaseModule =
         }
 
         single {
+            get<SecureChatDatabase>().contactRelayIdDao()
+        }
+
+        single {
             get<SecureChatDatabase>().protocolOutboxDao()
         }
 

@@ -165,7 +165,8 @@ interface ChatDao {
         conversations.updatedAtEpochMilliseconds AS updatedAtEpochMilliseconds
     FROM conversations
     LEFT JOIN contacts ON contacts.id = conversations.contactId
-    WHERE EXISTS (
+    WHERE conversations.type = 'GROUP'
+       OR EXISTS (
         SELECT 1
         FROM messages
         WHERE messages.conversationId = conversations.id

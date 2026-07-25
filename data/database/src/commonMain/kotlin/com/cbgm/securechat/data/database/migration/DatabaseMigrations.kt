@@ -129,4 +129,27 @@ object DatabaseMigrations {
                 )
             }
         }
+
+    val Migration11To12 =
+        object : Migration(11, 12) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS contact_relay_ids (
+                        contactId TEXT NOT NULL PRIMARY KEY,
+                        relayId TEXT NOT NULL,
+                        FOREIGN KEY(contactId) REFERENCES contacts(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                connection.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_contact_relay_ids_contactId " +
+                        "ON contact_relay_ids(contactId)"
+                )
+                connection.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_contact_relay_ids_relayId " +
+                        "ON contact_relay_ids(relayId)"
+                )
+            }
+        }
 }
