@@ -1,7 +1,9 @@
 package com.cbgm.securechat.feature.contacts.presentation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cbgm.securechat.feature.contacts.platform.rememberDeviceContactsPermissionRequest
 import com.cbgm.securechat.feature.contacts.presentation.screen.ContactsScreen
@@ -16,9 +18,11 @@ fun ContactsRoute(
         contactId: String,
         contactName: String,
     ) -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: ContactsViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
     val requestDeviceContactsPermission =
         rememberDeviceContactsPermissionRequest(
@@ -30,11 +34,18 @@ fun ContactsRoute(
             },
         )
 
+    LaunchedEffect(Unit) {
+        requestDeviceContactsPermission()
+    }
+
     ContactsScreen(
         uiState = uiState,
         onBack = onBack,
         onImportContact = onImportContact,
         onImportDeviceContacts = requestDeviceContactsPermission,
         onContactClick = onContactClick,
+        modifier = modifier,
+        onSearchQueryChanged = viewModel::onUpdateSearchQuery,
+        searchQuery = searchQuery,
     )
 }

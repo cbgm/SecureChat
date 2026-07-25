@@ -29,6 +29,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.crypto.safety.SafetyNumber
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_cancel
+import com.cbgm.securechat.resources.base_verify_contact
+import com.cbgm.securechat.resources.feature_contacts_both_devices_same_number
+import com.cbgm.securechat.resources.feature_contacts_compare_complete_safety_number
+import com.cbgm.securechat.resources.feature_contacts_confirm_verification
+import com.cbgm.securechat.resources.feature_contacts_verification_confirmation
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SafetyNumberVerificationDialog(
@@ -54,7 +62,7 @@ fun SafetyNumberVerificationDialog(
             )
         },
         title = {
-            Text(text = "Verify $contactName")
+            Text(text = stringResource(Res.string.base_verify_contact, contactName))
         },
         text = {
             // Hier rufen wir die neue Inhalts-Komponente auf
@@ -75,7 +83,7 @@ fun SafetyNumberVerificationDialog(
                 if (isSaving) {
                     CircularProgressIndicator()
                 } else {
-                    Text(text = "Confirm verification")
+                    Text(text = stringResource(Res.string.feature_contacts_confirm_verification))
                 }
             }
         },
@@ -84,7 +92,7 @@ fun SafetyNumberVerificationDialog(
                 onClick = onDismiss,
                 enabled = !isSaving,
             ) {
-                Text(text = "Cancel")
+                Text(text = stringResource(Res.string.base_cancel))
             }
         },
     )
@@ -103,14 +111,14 @@ fun SafetyNumberVerificationContent(
 ) {
     Column(modifier = modifier) {
         Text(
-            text = "Compare the complete safety number with $contactName through a trusted phone or video call.",
+            text = stringResource(Res.string.feature_contacts_compare_complete_safety_number, contactName),
             style = MaterialTheme.typography.bodyMedium,
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Both devices must display exactly the same number.",
+            text = stringResource(Res.string.feature_contacts_both_devices_same_number),
             style = MaterialTheme.typography.bodyMedium,
         )
 
@@ -152,7 +160,7 @@ fun SafetyNumberVerificationContent(
             )
 
             Text(
-                text = "We compared the entire safety number through a trusted channel, and it matched.",
+                text = stringResource(Res.string.feature_contacts_verification_confirmation),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyMedium,
             )

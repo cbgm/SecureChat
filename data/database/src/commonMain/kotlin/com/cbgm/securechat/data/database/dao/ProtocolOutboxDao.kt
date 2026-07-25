@@ -114,6 +114,28 @@ interface ProtocolOutboxDao {
 
     @Query(
         """
+        UPDATE protocol_outbox
+        SET status = 'PENDING',
+            lastError = NULL,
+            updatedAtEpochMilliseconds = :updatedAt
+        WHERE status = 'PROCESSING'
+        """,
+    )
+    suspend fun requeueInterrupted(updatedAt: Long)
+
+    @Query(
+        """
+        UPDATE protocol_outbox
+        SET status = 'PENDING',
+            lastError = NULL,
+            updatedAtEpochMilliseconds = :updatedAt
+        WHERE status = 'FAILED'
+        """,
+    )
+    suspend fun retryFailed(updatedAt: Long)
+
+    @Query(
+        """
         DELETE FROM protocol_outbox
         WHERE status = 'SENT'
           AND updatedAtEpochMilliseconds < :beforeTimestamp

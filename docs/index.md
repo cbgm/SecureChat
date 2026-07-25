@@ -28,7 +28,7 @@ For read-only verification used by Git hooks and CI:
 - [Architecture](architecture/overview.md)
 - [Security](security/overview.md)
 - [Features](features/chats.md)
-- [Development](development/coding-style.md)
+- [Development](development/local-development.md)
 - [Build infrastructure](build/index.md)
 - [Protocol and relay APIs](api/protocol.md)
 

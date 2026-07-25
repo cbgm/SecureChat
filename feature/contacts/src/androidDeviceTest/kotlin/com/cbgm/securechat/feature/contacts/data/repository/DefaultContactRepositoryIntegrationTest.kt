@@ -4,9 +4,15 @@ import android.content.Context
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.test.core.app.ApplicationProvider
+import com.cbgm.securechat.core.protocol.phone.DefaultPhoneNumberNormalizer
 import com.cbgm.securechat.data.database.SecureChatDatabase
 import com.cbgm.securechat.data.database.entity.ContactEntity
 import com.cbgm.securechat.data.database.entity.ContactPhoneNumberEntity
+import com.cbgm.securechat.feature.contacts.data.merge.DefaultContactMergeService
+import com.cbgm.securechat.feature.contacts.devicecontacts.AddDeviceContactRequest
+import com.cbgm.securechat.feature.contacts.devicecontacts.AddDeviceContactResult
+import com.cbgm.securechat.feature.contacts.devicecontacts.DeviceContactWriter
+import com.cbgm.securechat.feature.contacts.domain.identity.IdentityExchangeStarter
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
 import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
@@ -33,21 +39,31 @@ class DefaultContactRepositoryIntegrationTest {
 
     @BeforeTest
     fun setUp() {
-        val context =
-            ApplicationProvider
-                .getApplicationContext<Context>()
+        val context = ApplicationProvider.getApplicationContext<Context>()
 
         database =
             Room
-                .inMemoryDatabaseBuilder<SecureChatDatabase>(
-                    context = context,
-                ).setDriver(
-                    BundledSQLiteDriver(),
-                ).setQueryCoroutineContext(
-                    Dispatchers.IO,
-                ).build()
+                .inMemoryDatabaseBuilder<SecureChatDatabase>(context = context)
+                .setDriver(BundledSQLiteDriver())
+                .setQueryCoroutineContext(Dispatchers.IO)
+                .build()
 
-        repository = DefaultContactRepository(contactDao = database.contactDao())
+        val contactDao = database.contactDao()
+        val phoneNumberNormalizer = DefaultPhoneNumberNormalizer()
+
+        repository =
+            DefaultContactRepository(
+                contactDao = contactDao,
+                mergeService =
+                    DefaultContactMergeService(
+                        contactDao = contactDao,
+                        phoneNumberNormalizer = phoneNumberNormalizer,
+                    ),
+                contactKeyExchangeStore = DefaultContactKeyExchangeStore(contactDao = contactDao),
+                identityExchangeStarter = TestIdentityExchangeStarter,
+                phoneNumberNormalizer = phoneNumberNormalizer,
+                deviceContactWriter = TestDeviceContactWriter,
+            )
     }
 
     @AfterTest
@@ -58,20 +74,16 @@ class DefaultContactRepositoryIntegrationTest {
     @Test
     fun importKeysOnlyStoresValidContact() =
         runBlocking {
-            val encryptionPublicKey =
-                testKey(seed = 1)
+            val encryptionPublicKey = testKey(seed = 1)
 
-            val signingPublicKey =
-                testKey(seed = 101)
+            val signingPublicKey = testKey(seed = 101)
 
             val result =
                 repository.importContact(
                     request =
                         ImportContactRequest(
-                            encryptionPublicKey =
-                            encryptionPublicKey,
-                            signingPublicKey =
-                            signingPublicKey,
+                            encryptionPublicKey = encryptionPublicKey,
+                            signingPublicKey = signingPublicKey,
                             displayName = null,
                             phoneNumber = null,
                         ),
@@ -79,84 +91,58 @@ class DefaultContactRepositoryIntegrationTest {
 
             assertTrue(
                 actual = result.isSuccess,
-                message =
-                    "Import failed: " +
-                        result.exceptionOrNull()?.message,
+                message = "Import failed: " + result.exceptionOrNull()?.message,
             )
 
-            val contact =
-                result.getOrThrow()
+            val contact = result.getOrThrow()
 
-            assertNull(
-                actual = contact.displayName,
-            )
+            assertNull(actual = contact.displayName)
 
-            assertTrue(
-                actual = contact.phoneNumbers.isEmpty(),
-            )
+            assertTrue(actual = contact.phoneNumbers.isEmpty())
 
-            assertNull(
-                actual = contact.preferredPhoneNumber,
-            )
+            assertNull(actual = contact.preferredPhoneNumber)
 
-            assertNull(
-                actual = contact.deviceContactId,
-            )
+            assertNull(actual = contact.deviceContactId)
 
             assertEquals(
-                expected =
-                    DeviceContactLinkStatus.NOT_LINKED,
-                actual =
-                    contact.deviceContactLinkStatus,
+                expected = DeviceContactLinkStatus.NOT_LINKED,
+                actual = contact.deviceContactLinkStatus,
             )
 
-            val secureChatIdentity =
-                requireSecureChatIdentity(
-                    contact.secureChatIdentity,
-                )
+            val secureChatIdentity = requireSecureChatIdentity(contact.secureChatIdentity)
 
             assertContentEquals(
                 expected = encryptionPublicKey,
-                actual =
-                    secureChatIdentity.encryptionPublicKey,
+                actual = secureChatIdentity.encryptionPublicKey,
             )
 
             assertContentEquals(
                 expected = signingPublicKey,
-                actual =
-                    secureChatIdentity.signingPublicKey,
+                actual = secureChatIdentity.signingPublicKey,
             )
 
             assertEquals(
-                expected =
-                    ContactVerificationStatus.UNVERIFIED,
-                actual =
-                    secureChatIdentity.verificationStatus,
+                expected = ContactVerificationStatus.UNVERIFIED,
+                actual = secureChatIdentity.verificationStatus,
             )
         }
 
     @Test
     fun importKeysAndContactDetailsStoresAllFields() =
         runBlocking {
-            val encryptionPublicKey =
-                testKey(seed = 2)
+            val encryptionPublicKey = testKey(seed = 2)
 
-            val signingPublicKey =
-                testKey(seed = 102)
+            val signingPublicKey = testKey(seed = 102)
 
             val contact =
                 repository
                     .importContact(
                         request =
                             ImportContactRequest(
-                                encryptionPublicKey =
-                                encryptionPublicKey,
-                                signingPublicKey =
-                                signingPublicKey,
-                                displayName =
-                                    "Alice",
-                                phoneNumber =
-                                    "+49123456789",
+                                encryptionPublicKey = encryptionPublicKey,
+                                signingPublicKey = signingPublicKey,
+                                displayName = "Alice",
+                                phoneNumber = "+49123456789",
                             ),
                     ).getOrThrow()
 
@@ -167,8 +153,7 @@ class DefaultContactRepositoryIntegrationTest {
 
             assertEquals(
                 expected = "+49123456789",
-                actual =
-                    contact.preferredPhoneNumber?.value,
+                actual = contact.preferredPhoneNumber?.value,
             )
 
             assertEquals(
@@ -176,58 +161,43 @@ class DefaultContactRepositoryIntegrationTest {
                 actual = contact.phoneNumbers.size,
             )
 
-            assertNull(
-                actual = contact.deviceContactId,
-            )
+            assertNull(actual = contact.deviceContactId)
 
             assertEquals(
-                expected =
-                    DeviceContactLinkStatus.NOT_LINKED,
-                actual =
-                    contact.deviceContactLinkStatus,
+                expected = DeviceContactLinkStatus.NOT_LINKED,
+                actual = contact.deviceContactLinkStatus,
             )
 
-            val secureChatIdentity =
-                requireSecureChatIdentity(
-                    contact.secureChatIdentity,
-                )
+            val secureChatIdentity = requireSecureChatIdentity(contact.secureChatIdentity)
 
             assertContentEquals(
                 expected = encryptionPublicKey,
-                actual =
-                    secureChatIdentity.encryptionPublicKey,
+                actual = secureChatIdentity.encryptionPublicKey,
             )
 
             assertContentEquals(
                 expected = signingPublicKey,
-                actual =
-                    secureChatIdentity.signingPublicKey,
+                actual = secureChatIdentity.signingPublicKey,
             )
         }
 
     @Test
     fun importingSameSigningKeyTwiceUpdatesExistingContact() =
         runBlocking {
-            val signingPublicKey =
-                testKey(seed = 103)
+            val signingPublicKey = testKey(seed = 103)
 
-            val firstEncryptionPublicKey =
-                testKey(seed = 3)
+            val firstEncryptionPublicKey = testKey(seed = 3)
 
-            val secondEncryptionPublicKey =
-                testKey(seed = 4)
+            val secondEncryptionPublicKey = testKey(seed = 4)
 
             val firstContact =
                 repository
                     .importContact(
                         request =
                             ImportContactRequest(
-                                encryptionPublicKey =
-                                firstEncryptionPublicKey,
-                                signingPublicKey =
-                                signingPublicKey,
-                                displayName =
-                                    "Alice",
+                                encryptionPublicKey = firstEncryptionPublicKey,
+                                signingPublicKey = signingPublicKey,
+                                displayName = "Alice",
                                 phoneNumber = null,
                             ),
                     ).getOrThrow()
@@ -237,14 +207,10 @@ class DefaultContactRepositoryIntegrationTest {
                     .importContact(
                         request =
                             ImportContactRequest(
-                                encryptionPublicKey =
-                                secondEncryptionPublicKey,
-                                signingPublicKey =
-                                signingPublicKey,
-                                displayName =
-                                    "Alice Updated",
-                                phoneNumber =
-                                    "+49111111111",
+                                encryptionPublicKey = secondEncryptionPublicKey,
+                                signingPublicKey = signingPublicKey,
+                                displayName = "Alice Updated",
+                                phoneNumber = "+49111111111",
                             ),
                     ).getOrThrow()
 
@@ -260,34 +226,22 @@ class DefaultContactRepositoryIntegrationTest {
 
             assertEquals(
                 expected = "+49111111111",
-                actual =
-                    secondContact
-                        .preferredPhoneNumber
-                        ?.value,
+                actual = secondContact.preferredPhoneNumber?.value,
             )
 
-            val secureChatIdentity =
-                requireSecureChatIdentity(
-                    secondContact.secureChatIdentity,
-                )
+            val secureChatIdentity = requireSecureChatIdentity(secondContact.secureChatIdentity)
 
             assertContentEquals(
-                expected =
-                secondEncryptionPublicKey,
-                actual =
-                    secureChatIdentity.encryptionPublicKey,
+                expected = secondEncryptionPublicKey,
+                actual = secureChatIdentity.encryptionPublicKey,
             )
 
             assertContentEquals(
                 expected = signingPublicKey,
-                actual =
-                    secureChatIdentity.signingPublicKey,
+                actual = secureChatIdentity.signingPublicKey,
             )
 
-            val contacts =
-                repository
-                    .observeContacts()
-                    .first()
+            val contacts = repository.observeContacts().first()
 
             assertEquals(
                 expected = 1,
@@ -298,21 +252,16 @@ class DefaultContactRepositoryIntegrationTest {
     @Test
     fun reimportWithoutMetadataDoesNotEraseExistingDetails() =
         runBlocking {
-            val signingPublicKey =
-                testKey(seed = 104)
+            val signingPublicKey = testKey(seed = 104)
 
             repository
                 .importContact(
                     request =
                         ImportContactRequest(
-                            encryptionPublicKey =
-                                testKey(seed = 5),
-                            signingPublicKey =
-                            signingPublicKey,
-                            displayName =
-                                "Bob",
-                            phoneNumber =
-                                "+49222222222",
+                            encryptionPublicKey = testKey(seed = 5),
+                            signingPublicKey = signingPublicKey,
+                            displayName = "Bob",
+                            phoneNumber = "+49222222222",
                         ),
                 ).getOrThrow()
 
@@ -321,10 +270,8 @@ class DefaultContactRepositoryIntegrationTest {
                     .importContact(
                         request =
                             ImportContactRequest(
-                                encryptionPublicKey =
-                                    testKey(seed = 6),
-                                signingPublicKey =
-                                signingPublicKey,
+                                encryptionPublicKey = testKey(seed = 6),
+                                signingPublicKey = signingPublicKey,
                                 displayName = null,
                                 phoneNumber = null,
                             ),
@@ -337,21 +284,14 @@ class DefaultContactRepositoryIntegrationTest {
 
             assertEquals(
                 expected = "+49222222222",
-                actual =
-                    updatedContact
-                        .preferredPhoneNumber
-                        ?.value,
+                actual = updatedContact.preferredPhoneNumber?.value,
             )
 
-            val secureChatIdentity =
-                requireSecureChatIdentity(
-                    updatedContact.secureChatIdentity,
-                )
+            val secureChatIdentity = requireSecureChatIdentity(updatedContact.secureChatIdentity)
 
             assertContentEquals(
                 expected = testKey(seed = 6),
-                actual =
-                    secureChatIdentity.encryptionPublicKey,
+                actual = secureChatIdentity.encryptionPublicKey,
             )
         }
 
@@ -363,25 +303,18 @@ class DefaultContactRepositoryIntegrationTest {
                     .importContact(
                         request =
                             ImportContactRequest(
-                                encryptionPublicKey =
-                                    testKey(seed = 7),
-                                signingPublicKey =
-                                    testKey(seed = 107),
+                                encryptionPublicKey = testKey(seed = 7),
+                                signingPublicKey = testKey(seed = 107),
                                 displayName = null,
                                 phoneNumber = null,
                             ),
                     ).getOrThrow()
 
-            val secureChatIdentity =
-                requireSecureChatIdentity(
-                    contact.secureChatIdentity,
-                )
+            val secureChatIdentity = requireSecureChatIdentity(contact.secureChatIdentity)
 
             assertEquals(
-                expected =
-                    ContactVerificationStatus.UNVERIFIED,
-                actual =
-                    secureChatIdentity.verificationStatus,
+                expected = ContactVerificationStatus.UNVERIFIED,
+                actual = secureChatIdentity.verificationStatus,
             )
         }
 
@@ -393,56 +326,31 @@ class DefaultContactRepositoryIntegrationTest {
                     .importContact(
                         request =
                             ImportContactRequest(
-                                encryptionPublicKey =
-                                    testKey(seed = 8),
-                                signingPublicKey =
-                                    testKey(seed = 108),
-                                displayName =
-                                    "Charlie",
+                                encryptionPublicKey = testKey(seed = 8),
+                                signingPublicKey = testKey(seed = 108),
+                                displayName = "Charlie",
                                 phoneNumber = null,
                             ),
                     ).getOrThrow()
 
-            val verifiedContact =
-                repository
-                    .markVerified(
-                        contactId =
-                            importedContact.id,
-                    ).getOrThrow()
+            val verifiedContact = repository.markVerified(contactId = importedContact.id).getOrThrow()
 
-            val verifiedIdentity =
-                requireSecureChatIdentity(
-                    verifiedContact.secureChatIdentity,
-                )
+            val verifiedIdentity = requireSecureChatIdentity(verifiedContact.secureChatIdentity)
 
             assertEquals(
-                expected =
-                    ContactVerificationStatus.VERIFIED,
-                actual =
-                    verifiedIdentity.verificationStatus,
+                expected = ContactVerificationStatus.VERIFIED,
+                actual = verifiedIdentity.verificationStatus,
             )
 
-            val loadedContact =
-                repository
-                    .getContact(
-                        contactId =
-                            importedContact.id,
-                    ).getOrThrow()
+            val loadedContact = repository.getContact(contactId = importedContact.id).getOrThrow()
 
-            assertNotNull(
-                actual = loadedContact,
-            )
+            assertNotNull(actual = loadedContact)
 
-            val loadedIdentity =
-                requireSecureChatIdentity(
-                    loadedContact.secureChatIdentity,
-                )
+            val loadedIdentity = requireSecureChatIdentity(loadedContact.secureChatIdentity)
 
             assertEquals(
-                expected =
-                    ContactVerificationStatus.VERIFIED,
-                actual =
-                    loadedIdentity.verificationStatus,
+                expected = ContactVerificationStatus.VERIFIED,
+                actual = loadedIdentity.verificationStatus,
             )
         }
 
@@ -454,17 +362,9 @@ class DefaultContactRepositoryIntegrationTest {
                     .importDeviceContact(
                         request =
                             ImportDeviceContactRequest(
-                                deviceContactId =
-                                    "device-contact-42",
-                                displayName =
-                                    "Dana",
-                                phoneNumbers =
-                                    listOf(
-                                        devicePhoneNumber(
-                                            value =
-                                                "+49333333333",
-                                        ),
-                                    ),
+                                deviceContactId = "device-contact-42",
+                                displayName = "Dana",
+                                phoneNumbers = listOf(devicePhoneNumber(value = "+49333333333")),
                             ),
                     ).getOrThrow()
 
@@ -475,8 +375,7 @@ class DefaultContactRepositoryIntegrationTest {
 
             assertEquals(
                 expected = "+49333333333",
-                actual =
-                    contact.preferredPhoneNumber?.value,
+                actual = contact.preferredPhoneNumber?.value,
             )
 
             assertEquals(
@@ -490,15 +389,11 @@ class DefaultContactRepositoryIntegrationTest {
             )
 
             assertEquals(
-                expected =
-                    DeviceContactLinkStatus.LINKED,
-                actual =
-                    contact.deviceContactLinkStatus,
+                expected = DeviceContactLinkStatus.LINKED,
+                actual = contact.deviceContactLinkStatus,
             )
 
-            assertNull(
-                actual = contact.secureChatIdentity,
-            )
+            assertNull(actual = contact.secureChatIdentity)
         }
 
     @Test
@@ -509,29 +404,21 @@ class DefaultContactRepositoryIntegrationTest {
                     .importDeviceContact(
                         request =
                             ImportDeviceContactRequest(
-                                deviceContactId =
-                                    "device-contact-multiple",
-                                displayName =
-                                    "Multiple Numbers",
+                                deviceContactId = "device-contact-multiple",
+                                displayName = "Multiple Numbers",
                                 phoneNumbers =
                                     listOf(
                                         devicePhoneNumber(
-                                            value =
-                                                "+49111111111",
-                                            type =
-                                                ContactPhoneNumberType.HOME,
+                                            value = "+49111111111",
+                                            type = ContactPhoneNumberType.HOME,
                                         ),
                                         devicePhoneNumber(
-                                            value =
-                                                "+49222222222",
-                                            type =
-                                                ContactPhoneNumberType.MOBILE,
+                                            value = "+49222222222",
+                                            type = ContactPhoneNumberType.MOBILE,
                                         ),
                                         devicePhoneNumber(
-                                            value =
-                                                "+49333333333",
-                                            type =
-                                                ContactPhoneNumberType.WORK,
+                                            value = "+49333333333",
+                                            type = ContactPhoneNumberType.WORK,
                                         ),
                                     ),
                             ),
@@ -544,15 +431,12 @@ class DefaultContactRepositoryIntegrationTest {
 
             assertEquals(
                 expected = "+49222222222",
-                actual =
-                    contact.preferredPhoneNumber?.value,
+                actual = contact.preferredPhoneNumber?.value,
             )
 
             assertEquals(
-                expected =
-                    ContactPhoneNumberType.MOBILE,
-                actual =
-                    contact.preferredPhoneNumber?.type,
+                expected = ContactPhoneNumberType.MOBILE,
+                actual = contact.preferredPhoneNumber?.type,
             )
         }
 
@@ -564,10 +448,8 @@ class DefaultContactRepositoryIntegrationTest {
                     .importDeviceContact(
                         request =
                             ImportDeviceContactRequest(
-                                deviceContactId =
-                                    "device-contact-43",
-                                displayName =
-                                    "Erin",
+                                deviceContactId = "device-contact-43",
+                                displayName = "Erin",
                                 phoneNumbers =
                                     listOf(
                                         devicePhoneNumber(
@@ -986,15 +868,11 @@ class DefaultContactRepositoryIntegrationTest {
                             DeviceContactLinkStatus.LINKED,
                     ).getOrThrow()
 
-            assertNotNull(
-                actual = linkedAgain,
-            )
+            assertNotNull(actual = linkedAgain)
 
             assertEquals(
-                expected =
-                    DeviceContactLinkStatus.LINKED,
-                actual =
-                    linkedAgain.deviceContactLinkStatus,
+                expected = DeviceContactLinkStatus.LINKED,
+                actual = linkedAgain.deviceContactLinkStatus,
             )
         }
 
@@ -1010,36 +888,27 @@ class DefaultContactRepositoryIntegrationTest {
                             DeviceContactLinkStatus.MISSING,
                     ).getOrThrow()
 
-            assertNull(
-                actual = result,
-            )
+            assertNull(actual = result)
         }
 
     @Test
     fun differentSigningKeyDoesNotReplaceExistingIdentity() =
         runBlocking {
-            val phoneNumber =
-                "+49111112222"
+            val phoneNumber = "+49111112222"
 
-            val firstSigningKey =
-                testKey(seed = 111)
+            val firstSigningKey = testKey(seed = 111)
 
-            val secondSigningKey =
-                testKey(seed = 112)
+            val secondSigningKey = testKey(seed = 112)
 
             val firstContact =
                 repository
                     .importContact(
                         request =
                             ImportContactRequest(
-                                encryptionPublicKey =
-                                    testKey(seed = 11),
-                                signingPublicKey =
-                                firstSigningKey,
-                                displayName =
-                                    "Karl",
-                                phoneNumber =
-                                phoneNumber,
+                                encryptionPublicKey = testKey(seed = 11),
+                                signingPublicKey = firstSigningKey,
+                                displayName = "Karl",
+                                phoneNumber = phoneNumber,
                             ),
                     ).getOrThrow()
 
@@ -1047,31 +916,19 @@ class DefaultContactRepositoryIntegrationTest {
                 repository.importContact(
                     request =
                         ImportContactRequest(
-                            encryptionPublicKey =
-                                testKey(seed = 12),
-                            signingPublicKey =
-                            secondSigningKey,
-                            displayName =
-                                "Karl",
-                            phoneNumber =
-                            phoneNumber,
+                            encryptionPublicKey = testKey(seed = 12),
+                            signingPublicKey = secondSigningKey,
+                            displayName = "Karl",
+                            phoneNumber = phoneNumber,
                         ),
                 )
 
-            assertTrue(
-                actual = replacementResult.isFailure,
-            )
+            assertTrue(actual = replacementResult.isFailure)
 
             val loadedContact =
-                repository
-                    .getContact(
-                        contactId =
-                            firstContact.id,
-                    ).getOrThrow()
+                repository.getContact(contactId = firstContact.id).getOrThrow()
 
-            assertNotNull(
-                actual = loadedContact,
-            )
+            assertNotNull(actual = loadedContact)
 
             val secureChatIdentity =
                 requireSecureChatIdentity(
@@ -1080,8 +937,7 @@ class DefaultContactRepositoryIntegrationTest {
 
             assertContentEquals(
                 expected = firstSigningKey,
-                actual =
-                    secureChatIdentity.signingPublicKey,
+                actual = secureChatIdentity.signingPublicKey,
             )
         }
 
@@ -1093,23 +949,17 @@ class DefaultContactRepositoryIntegrationTest {
                     .importDeviceContact(
                         request =
                             ImportDeviceContactRequest(
-                                deviceContactId =
-                                    "device-contact-edit",
-                                displayName =
-                                    "Laura",
+                                deviceContactId = "device-contact-edit",
+                                displayName = "Laura",
                                 phoneNumbers =
                                     listOf(
                                         devicePhoneNumber(
-                                            value =
-                                                "+49131313131",
-                                            type =
-                                                ContactPhoneNumberType.HOME,
+                                            value = "+49131313131",
+                                            type = ContactPhoneNumberType.HOME,
                                         ),
                                         devicePhoneNumber(
-                                            value =
-                                                "+49141414141",
-                                            type =
-                                                ContactPhoneNumberType.MOBILE,
+                                            value = "+49141414141",
+                                            type = ContactPhoneNumberType.MOBILE,
                                         ),
                                     ),
                             ),
@@ -1117,8 +967,7 @@ class DefaultContactRepositoryIntegrationTest {
 
             assertEquals(
                 expected = "+49141414141",
-                actual =
-                    contact.preferredPhoneNumber?.value,
+                actual = contact.preferredPhoneNumber?.value,
             )
 
             val updated =
@@ -1149,33 +998,22 @@ class DefaultContactRepositoryIntegrationTest {
     @Test
     fun manuallyInsertedLinkedDeviceContactIsMappedCorrectly() =
         runBlocking {
-            val contactId =
-                "manually-inserted-contact"
+            val contactId = "manually-inserted-contact"
 
-            val phoneNumberId =
-                "manually-inserted-phone"
+            val phoneNumberId = "manually-inserted-phone"
 
             database
                 .contactDao()
                 .upsertContact(
                     contact =
                         ContactEntity(
-                            id =
-                            contactId,
-                            displayName =
-                                "Laura",
-                            deviceContactId =
-                                "device-contact-49",
-                            deviceContactLinkStatus =
-                                DeviceContactLinkStatus
-                                    .LINKED
-                                    .name,
-                            preferredPhoneNumberId =
-                            phoneNumberId,
-                            createdAtEpochMilliseconds =
-                            1_000L,
-                            updatedAtEpochMilliseconds =
-                            1_000L,
+                            id = contactId,
+                            displayName = "Laura",
+                            deviceContactId = "device-contact-49",
+                            deviceContactLinkStatus = DeviceContactLinkStatus.LINKED.name,
+                            preferredPhoneNumberId = phoneNumberId,
+                            createdAtEpochMilliseconds = 1_000L,
+                            updatedAtEpochMilliseconds = 1_000L,
                         ),
                 )
 
@@ -1185,29 +1023,18 @@ class DefaultContactRepositoryIntegrationTest {
                     phoneNumbers =
                         listOf(
                             ContactPhoneNumberEntity(
-                                id =
-                                phoneNumberId,
-                                contactId =
-                                contactId,
-                                value =
-                                    "+49131313131",
-                                type =
-                                    ContactPhoneNumberType
-                                        .MOBILE
-                                        .name,
-                                label =
-                                null,
-                                updatedAtEpochMilliseconds =
-                                1_000L,
+                                id = phoneNumberId,
+                                contactId = contactId,
+                                value = "+49131313131",
+                                normalizedValue = "+491701234567",
+                                type = ContactPhoneNumberType.MOBILE.name,
+                                label = null,
+                                updatedAtEpochMilliseconds = 1_000L,
                             ),
                         ),
                 )
 
-            val loadedContact =
-                repository
-                    .getContact(
-                        contactId = contactId,
-                    ).getOrThrow()
+            val loadedContact = repository.getContact(contactId = contactId).getOrThrow()
 
             assertNotNull(
                 actual = loadedContact,
@@ -1215,35 +1042,25 @@ class DefaultContactRepositoryIntegrationTest {
 
             assertEquals(
                 expected = "device-contact-49",
-                actual =
-                    loadedContact.deviceContactId,
+                actual = loadedContact.deviceContactId,
             )
 
             assertEquals(
-                expected =
-                    DeviceContactLinkStatus.LINKED,
-                actual =
-                    loadedContact.deviceContactLinkStatus,
+                expected = DeviceContactLinkStatus.LINKED,
+                actual = loadedContact.deviceContactLinkStatus,
             )
 
             assertEquals(
                 expected = "+49131313131",
-                actual =
-                    loadedContact
-                        .preferredPhoneNumber
-                        ?.value,
+                actual = loadedContact.preferredPhoneNumber?.value,
             )
 
-            assertNull(
-                actual =
-                    loadedContact.secureChatIdentity,
-            )
+            assertNull(actual = loadedContact.secureChatIdentity)
         }
 
     private fun devicePhoneNumber(
         value: String,
-        type: ContactPhoneNumberType =
-            ContactPhoneNumberType.MOBILE,
+        type: ContactPhoneNumberType = ContactPhoneNumberType.MOBILE,
         label: String? = null,
     ): ImportDevicePhoneNumber =
         ImportDevicePhoneNumber(
@@ -1255,17 +1072,19 @@ class DefaultContactRepositoryIntegrationTest {
     private fun requireSecureChatIdentity(secureChatIdentity: SecureChatIdentity?): SecureChatIdentity =
         assertNotNull(
             actual = secureChatIdentity,
-            message =
-                "Expected contact to have a SecureChat identity",
+            message = "Expected contact to have a SecureChat identity",
         )
 
     private fun testKey(seed: Int): ByteArray =
-        ByteArray(
-            size = 32,
-        ) { index ->
-            (
-                seed + index
-            ).mod(256)
-                .toByte()
+        ByteArray(size = 32) { index ->
+            (seed + index).mod(256).toByte()
         }
+}
+
+private object TestIdentityExchangeStarter : IdentityExchangeStarter {
+    override suspend fun ensureStarted(contactId: String): Result<Unit> = Result.success(Unit)
+}
+
+private object TestDeviceContactWriter : DeviceContactWriter {
+    override suspend fun addIfNotExists(request: AddDeviceContactRequest): AddDeviceContactResult = AddDeviceContactResult.AlreadyExists
 }

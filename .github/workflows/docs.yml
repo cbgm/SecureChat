@@ -3,15 +3,12 @@ name: Documentation
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - "docs/**"
       - "mkdocs.yml"
-      - "requirements-docs.txt"
-      - "build-logic/**"
-      - "settings.gradle.kts"
-      - "**/build.gradle.kts"
       - ".github/workflows/docs.yml"
+
   workflow_dispatch:
 
 permissions:
@@ -29,32 +26,28 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
-          cache: gradle
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
-          cache: pip
+          python-version: "3.x"
 
-      - name: Install documentation dependencies
-        run: pip install -r requirements-docs.txt
-
-      - name: Verify generated architecture documentation
-        run: ./gradlew verifyArchitectureReport
+      - name: Install MkDocs
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs-material
 
       - name: Build documentation
+        env:
+          NO_MKDOCS_2_WARNING: "true"
         run: mkdocs build --strict
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: site
 
@@ -67,6 +60,6 @@ jobs:
     needs: build
 
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v4

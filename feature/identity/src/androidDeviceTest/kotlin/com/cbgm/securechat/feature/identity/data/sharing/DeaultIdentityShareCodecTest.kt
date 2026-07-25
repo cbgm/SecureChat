@@ -5,7 +5,6 @@ import com.cbgm.securechat.feature.identity.domain.model.SharedIdentityPayload
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DefaultIdentityShareCodecTest {
@@ -31,22 +30,18 @@ class DefaultIdentityShareCodecTest {
                         12,
                         13,
                     ),
-                contactDetails = null,
+                contactDetails =
+                    SharedContactDetails(
+                        displayName = null,
+                        phoneNumber = "+491701234567",
+                    ),
             )
 
-        val encoded =
-            codec
-                .encode(original)
-                .getOrThrow()
+        val encoded = codec.encode(original).getOrThrow()
 
-        assertTrue(
-            encoded.startsWith("sc1|"),
-        )
+        assertTrue(encoded.startsWith("sc1|"))
 
-        val decoded =
-            codec
-                .decode(encoded)
-                .getOrThrow()
+        val decoded = codec.decode(encoded).getOrThrow()
 
         assertEquals(
             original.version,
@@ -63,7 +58,8 @@ class DefaultIdentityShareCodecTest {
             decoded.signingPublicKey,
         )
 
-        assertNull(
+        assertEquals(
+            original.contactDetails,
             decoded.contactDetails,
         )
     }
@@ -94,15 +90,9 @@ class DefaultIdentityShareCodecTest {
                     ),
             )
 
-        val encoded =
-            codec
-                .encode(original)
-                .getOrThrow()
+        val encoded = codec.encode(original).getOrThrow()
 
-        val decoded =
-            codec
-                .decode(encoded)
-                .getOrThrow()
+        val decoded = codec.decode(encoded).getOrThrow()
 
         assertContentEquals(
             original.encryptionPublicKey,
@@ -121,22 +111,9 @@ class DefaultIdentityShareCodecTest {
     }
 
     @Test
-    fun payloadWithoutRequiredKeysFails() {
-        val invalidPayload =
-            SharedIdentityPayload(
-                version = 1,
-                encryptionPublicKey = byteArrayOf(),
-                signingPublicKey = byteArrayOf(1),
-                contactDetails = null,
-            )
+    fun invalidEncodedPayloadFails() {
+        val result = codec.decode("not-a-securechat-identity")
 
-        val result =
-            codec.encode(
-                invalidPayload,
-            )
-
-        assertTrue(
-            result.isFailure,
-        )
+        assertTrue(result.isFailure)
     }
 }

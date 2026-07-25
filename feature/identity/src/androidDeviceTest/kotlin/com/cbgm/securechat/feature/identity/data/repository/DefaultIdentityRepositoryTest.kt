@@ -3,6 +3,7 @@ package com.cbgm.securechat.feature.identity.data.repository
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.cbgm.securechat.core.crypto.SodiumRuntime
+import com.cbgm.securechat.core.crypto.identity.SodiumIdentityKeyGenerator
 import com.cbgm.securechat.feature.identity.data.storage.AndroidPrivateKeyStorage
 import com.cbgm.securechat.feature.identity.data.storage.AndroidPublicIdentityStorage
 import kotlinx.coroutines.runBlocking
@@ -41,22 +42,14 @@ class DefaultIdentityRepositoryTest {
              * Because this is an Android device test, this is a real
              * Android Context from the emulator or physical device.
              */
-            val context =
-                ApplicationProvider
-                    .getApplicationContext<Context>()
+            val context = ApplicationProvider.getApplicationContext<Context>()
 
             /**
              * Create the real Android storage implementations.
              */
-            val privateKeyStorage =
-                AndroidPrivateKeyStorage(
-                    context = context,
-                )
+            val privateKeyStorage = AndroidPrivateKeyStorage(context = context)
 
-            val publicIdentityStorage =
-                AndroidPublicIdentityStorage(
-                    context = context,
-                )
+            val publicIdentityStorage = AndroidPublicIdentityStorage(context = context)
 
             /**
              * Start with a clean state.
@@ -64,13 +57,9 @@ class DefaultIdentityRepositoryTest {
              * Device-test data can survive between test executions,
              * so tests should never assume storage is empty.
              */
-            privateKeyStorage
-                .deleteIdentityPrivateKeys()
-                .getOrThrow()
+            privateKeyStorage.deleteIdentityPrivateKeys().getOrThrow()
 
-            publicIdentityStorage
-                .delete()
-                .getOrThrow()
+            publicIdentityStorage.delete().getOrThrow()
 
             try {
                 /**
@@ -81,7 +70,7 @@ class DefaultIdentityRepositoryTest {
                  */
                 val repository =
                     DefaultIdentityRepository(
-                        identityCrypto = IdentityCrypto(),
+                        identityKeyGenerator = SodiumIdentityKeyGenerator(),
                         privateKeyStorage = privateKeyStorage,
                         publicIdentityStorage = publicIdentityStorage,
                     )
@@ -102,10 +91,7 @@ class DefaultIdentityRepositoryTest {
                 /**
                  * Create a completely new identity.
                  */
-                val createdIdentity =
-                    repository
-                        .createIdentity()
-                        .getOrThrow()
+                val createdIdentity = repository.createIdentity().getOrThrow()
 
                 /**
                  * Verify that public key material was returned.
@@ -124,10 +110,7 @@ class DefaultIdentityRepositoryTest {
                  * After creation, both public and private identity
                  * storage should exist.
                  */
-                val existsAfterCreation =
-                    repository
-                        .hasIdentity()
-                        .getOrThrow()
+                val existsAfterCreation = repository.hasIdentity().getOrThrow()
 
                 assertTrue(
                     existsAfterCreation,
@@ -137,10 +120,7 @@ class DefaultIdentityRepositoryTest {
                 /**
                  * Load the public identity through the repository.
                  */
-                val loadedIdentity =
-                    repository
-                        .getIdentity()
-                        .getOrThrow()
+                val loadedIdentity = repository.getIdentity().getOrThrow()
 
                 assertNotNull(
                     loadedIdentity,
@@ -170,14 +150,9 @@ class DefaultIdentityRepositoryTest {
                  * We do not expose these through IdentityRepository.
                  */
                 val loadedEncryptionPrivateKey =
-                    privateKeyStorage
-                        .loadEncryptionPrivateKey()
-                        .getOrThrow()
+                    privateKeyStorage.loadEncryptionPrivateKey().getOrThrow()
 
-                val loadedSigningPrivateKey =
-                    privateKeyStorage
-                        .loadSigningPrivateKey()
-                        .getOrThrow()
+                val loadedSigningPrivateKey = privateKeyStorage.loadSigningPrivateKey().getOrThrow()
 
                 assertNotNull(
                     loadedEncryptionPrivateKey,
@@ -194,13 +169,9 @@ class DefaultIdentityRepositoryTest {
                  *
                  * This runs even if an assertion fails.
                  */
-                privateKeyStorage
-                    .deleteIdentityPrivateKeys()
-                    .getOrThrow()
+                privateKeyStorage.deleteIdentityPrivateKeys().getOrThrow()
 
-                publicIdentityStorage
-                    .delete()
-                    .getOrThrow()
+                publicIdentityStorage.delete().getOrThrow()
             }
         }
 
@@ -211,39 +182,25 @@ class DefaultIdentityRepositoryTest {
             /**
              * Initialize libsodium through our shared runtime.
              */
-            SodiumRuntime
-                .initialize()
-                .getOrThrow()
+            SodiumRuntime.initialize().getOrThrow()
 
-            val context =
-                ApplicationProvider
-                    .getApplicationContext<Context>()
+            val context = ApplicationProvider.getApplicationContext<Context>()
 
-            val privateKeyStorage =
-                AndroidPrivateKeyStorage(
-                    context = context,
-                )
+            val privateKeyStorage = AndroidPrivateKeyStorage(context = context)
 
-            val publicIdentityStorage =
-                AndroidPublicIdentityStorage(
-                    context = context,
-                )
+            val publicIdentityStorage = AndroidPublicIdentityStorage(context = context)
 
             /**
              * Start from a clean state.
              */
-            privateKeyStorage
-                .deleteIdentityPrivateKeys()
-                .getOrThrow()
+            privateKeyStorage.deleteIdentityPrivateKeys().getOrThrow()
 
-            publicIdentityStorage
-                .delete()
-                .getOrThrow()
+            publicIdentityStorage.delete().getOrThrow()
 
             try {
                 val repository =
                     DefaultIdentityRepository(
-                        identityCrypto = IdentityCrypto(),
+                        identityKeyGenerator = SodiumIdentityKeyGenerator(),
                         privateKeyStorage = privateKeyStorage,
                         publicIdentityStorage = publicIdentityStorage,
                     )
@@ -251,10 +208,7 @@ class DefaultIdentityRepositoryTest {
                 /**
                  * First creation should succeed.
                  */
-                val firstIdentity =
-                    repository
-                        .createIdentity()
-                        .getOrThrow()
+                val firstIdentity = repository.createIdentity().getOrThrow()
 
                 /**
                  * Save copies of the original private keys.
@@ -287,9 +241,7 @@ class DefaultIdentityRepositoryTest {
                 /**
                  * Second creation must fail.
                  */
-                val secondCreationResult =
-                    repository
-                        .createIdentity()
+                val secondCreationResult = repository.createIdentity()
 
                 assertTrue(
                     secondCreationResult.isFailure,
@@ -299,10 +251,7 @@ class DefaultIdentityRepositoryTest {
                 /**
                  * Load the public identity again.
                  */
-                val identityAfterSecondAttempt =
-                    repository
-                        .getIdentity()
-                        .getOrThrow()
+                val identityAfterSecondAttempt = repository.getIdentity().getOrThrow()
 
                 assertNotNull(
                     identityAfterSecondAttempt,
@@ -365,13 +314,9 @@ class DefaultIdentityRepositoryTest {
                 /**
                  * Always clean up test data.
                  */
-                privateKeyStorage
-                    .deleteIdentityPrivateKeys()
-                    .getOrThrow()
+                privateKeyStorage.deleteIdentityPrivateKeys().getOrThrow()
 
-                publicIdentityStorage
-                    .delete()
-                    .getOrThrow()
+                publicIdentityStorage.delete().getOrThrow()
             }
         }
 }

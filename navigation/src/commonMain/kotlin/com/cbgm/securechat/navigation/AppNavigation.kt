@@ -1,11 +1,18 @@
 package com.cbgm.securechat.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -25,8 +32,11 @@ import com.cbgm.securechat.feature.settings.presentation.DisclaimerRoute
 import com.cbgm.securechat.feature.settings.presentation.LicensesRoute
 import com.cbgm.securechat.feature.settings.presentation.model.DisclaimerType
 import com.cbgm.securechat.presentation.screen.MainScreen
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_share_contact
 import com.cbgm.securechat.startup.presentation.StartupRoute
 import com.cbgm.securechat.startup.presentation.screen.component.SecureChatAppBackground
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 @Composable
@@ -37,28 +47,84 @@ fun AppNavigation() {
         NavHost(
             navController = navController,
             startDestination = AppDestination.Startup,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        MaterialTheme.colorScheme.background,
+                    ),
         ) {
-            composable<AppDestination.Licences> {
+            composable<AppDestination.Licences>(
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+            ) {
                 LicensesRoute(onBack = { navController.popBackStack() })
             }
 
-            composable<AppDestination.DeveloperMenu> {
+            composable<AppDestination.DeveloperMenu>(
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+            ) {
                 DeveloperMenuRoute(onBack = { navController.popBackStack() })
             }
 
-            composable<AppDestination.Disclaimer> {
-                val type =
-                    navController
-                        .currentBackStackEntry
-                        ?.savedStateHandle
-                        ?.get<String>(
-                            "type",
-                        )
+            composable<AppDestination.Disclaimer>(
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+            ) { backStackEntry ->
+                val destination =
+                    backStackEntry.toRoute<AppDestination.Disclaimer>()
 
                 DisclaimerRoute(
-                    type =
-                        type?.let { DisclaimerType.valueOf(it) }
-                            ?: DisclaimerType.DATA_DISCLAIMER,
+                    type = destination.type,
                     onBack = { navController.popBackStack() },
                 )
             }
@@ -71,17 +137,11 @@ fun AppNavigation() {
                 )
             }
 
-            composable<AppDestination.ImportContact> {
-                val scannedIdentity =
-                    navController
-                        .currentBackStackEntry
-                        ?.savedStateHandle
-                        ?.get<String>(
-                            "scannedIdentity",
-                        )
+            composable<AppDestination.ImportContact> { backStackEntry ->
+                val scannedIdentity = backStackEntry.toRoute<AppDestination.ImportContact>()
 
                 ImportIdentityRoute(
-                    scannedIdentity = scannedIdentity,
+                    scannedIdentity = scannedIdentity.scannedIdentity,
                     onScanQrCode = {
                         navController.navigate(AppDestination.ScanIdentity)
                     },
@@ -91,7 +151,26 @@ fun AppNavigation() {
                 )
             }
 
-            composable<AppDestination.Contacts> {
+            composable<AppDestination.Contacts>(
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Up,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Down,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+            ) {
                 ContactsRoute(
                     onBack = {
                         navController.popBackStack()
@@ -112,9 +191,6 @@ fun AppNavigation() {
 
             composable<AppDestination.Main> {
                 MainScreen(
-                    onAddChat = {
-                        navController.navigate(AppDestination.Contacts)
-                    },
                     onOpenChat = { contactId, contactName ->
 
                         navController.navigate(
@@ -130,14 +206,14 @@ fun AppNavigation() {
                     onNavigateToPrivacyPolicy = {
                         navController.navigate(
                             AppDestination.Disclaimer(
-                                type = DisclaimerType.PRIVACY_POLICY.name,
+                                type = DisclaimerType.PRIVACY_POLICY,
                             ),
                         )
                     },
                     onNavigateToDataDisclaimer = {
                         navController.navigate(
                             AppDestination.Disclaimer(
-                                type = DisclaimerType.DATA_DISCLAIMER.name,
+                                type = DisclaimerType.DATA_DISCLAIMER,
                             ),
                         )
                     },
@@ -147,10 +223,32 @@ fun AppNavigation() {
                     onNavigateToDeveloperMenu = {
                         navController.navigate(AppDestination.DeveloperMenu)
                     },
+                    onImportContact = {
+                        navController.navigate(AppDestination.ImportContact)
+                    },
                 )
             }
 
-            composable<AppDestination.Chat> { backStackEntry ->
+            composable<AppDestination.Chat>(
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                    )
+                },
+            ) { backStackEntry ->
                 val destination = backStackEntry.toRoute<AppDestination.Chat>()
 
                 ChatRoute(
@@ -175,7 +273,7 @@ fun AppNavigation() {
                 val shareContact =
                     rememberIdentityShareLauncher(
                         encodedIdentity = encodedContactToShare,
-                        shareTitle = "Share SecureChat contact",
+                        shareTitle = stringResource(Res.string.base_share_contact),
                     )
 
                 var shouldLaunchShare by remember { mutableStateOf(false) }

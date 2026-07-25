@@ -8,7 +8,7 @@
     "kotlinSourceFileCount": 4,
     "productionKotlinFileCount": 4,
     "testKotlinFileCount": 0,
-    "resourceFileCount": 20,
+    "resourceFileCount": 21,
     "sourceSets": [
       "main"
     ],
@@ -124,10 +124,10 @@
     "group": "core",
     "directory": "core/ui",
     "buildFile": "core/ui/build.gradle.kts",
-    "kotlinSourceFileCount": 15,
-    "productionKotlinFileCount": 15,
+    "kotlinSourceFileCount": 22,
+    "productionKotlinFileCount": 22,
     "testKotlinFileCount": 0,
-    "resourceFileCount": 14,
+    "resourceFileCount": 16,
     "sourceSets": [
       "androidDeviceTest",
       "androidHostTest",
@@ -217,8 +217,8 @@
     "group": "feature",
     "directory": "feature/chats",
     "buildFile": "feature/chats/build.gradle.kts",
-    "kotlinSourceFileCount": 24,
-    "productionKotlinFileCount": 24,
+    "kotlinSourceFileCount": 25,
+    "productionKotlinFileCount": 25,
     "testKotlinFileCount": 0,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -278,8 +278,8 @@
     "directory": "feature/contacts",
     "buildFile": "feature/contacts/build.gradle.kts",
     "kotlinSourceFileCount": 52,
-    "productionKotlinFileCount": 50,
-    "testKotlinFileCount": 2,
+    "productionKotlinFileCount": 51,
+    "testKotlinFileCount": 1,
     "resourceFileCount": 1,
     "sourceSets": [
       "androidDeviceTest",
@@ -370,8 +370,8 @@
     "group": "feature",
     "directory": "feature/settings",
     "buildFile": "feature/settings/build.gradle.kts",
-    "kotlinSourceFileCount": 26,
-    "productionKotlinFileCount": 26,
+    "kotlinSourceFileCount": 32,
+    "productionKotlinFileCount": 32,
     "testKotlinFileCount": 0,
     "resourceFileCount": 2,
     "sourceSets": [
@@ -386,7 +386,8 @@
     ],
     "dependents": [
       ":androidApp",
-      ":navigation"
+      ":navigation",
+      ":shared"
     ]
   },
   {
@@ -514,8 +515,8 @@
     "group": "shared",
     "directory": "shared",
     "buildFile": "shared/build.gradle.kts",
-    "kotlinSourceFileCount": 8,
-    "productionKotlinFileCount": 6,
+    "kotlinSourceFileCount": 9,
+    "productionKotlinFileCount": 7,
     "testKotlinFileCount": 2,
     "resourceFileCount": 0,
     "sourceSets": [
@@ -530,6 +531,7 @@
     "dependencies": [
       ":core",
       ":core:ui",
+      ":feature:settings",
       ":navigation"
     ],
     "dependents": [

@@ -16,6 +16,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_cancel
+import com.cbgm.securechat.resources.base_verify_contact
+import com.cbgm.securechat.resources.feature_chats_compare_safety_number_contact
+import com.cbgm.securechat.resources.feature_chats_confirm_matching_numbers_only
+import com.cbgm.securechat.resources.feature_chats_numbers_match
+import com.cbgm.securechat.resources.feature_chats_safety_number_unavailable
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun VerifyIdentityDialog(
@@ -35,12 +43,12 @@ fun VerifyIdentityDialog(
             }
         },
         title = {
-            Text(text = "Verify $contactName")
+            Text(text = stringResource(Res.string.base_verify_contact, contactName))
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(
-                    text = "Compare this safety number with $contactName through a trusted channel, such as a phone call or in person.",
+                    text = stringResource(Res.string.feature_chats_compare_safety_number_contact, contactName),
                 )
 
                 when {
@@ -50,7 +58,7 @@ fun VerifyIdentityDialog(
 
                     safetyNumber.isBlank() -> {
                         Text(
-                            text = "Safety number unavailable",
+                            text = stringResource(Res.string.feature_chats_safety_number_unavailable),
                             modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                             color = MaterialTheme.colorScheme.error,
                             textAlign = TextAlign.Center,
@@ -69,7 +77,7 @@ fun VerifyIdentityDialog(
                 }
 
                 Text(
-                    text = "Only confirm when both devices display exactly the same number.",
+                    text = stringResource(Res.string.feature_chats_confirm_matching_numbers_only),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -84,7 +92,7 @@ fun VerifyIdentityDialog(
                     CircularProgressIndicator()
                 } else {
                     Text(
-                        text = "Numbers match",
+                        text = stringResource(Res.string.feature_chats_numbers_match),
                     )
                 }
             }
@@ -94,7 +102,7 @@ fun VerifyIdentityDialog(
                 onClick = onDismiss,
                 enabled = !isVerifying,
             ) {
-                Text(text = "Cancel")
+                Text(text = stringResource(Res.string.base_cancel))
             }
         },
     )

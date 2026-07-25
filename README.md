@@ -1,31 +1,192 @@
-This is a Kotlin Multiplatform project targeting Android, iOS.
+<div align="center">
 
-* [/iosApp](./iosApp/iosApp) contains an iOS application. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+# 🔐 SecureChat
 
-* [/shared](./shared/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./shared/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./shared/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./shared/src/jvmMain/kotlin)
-    folder is the appropriate location.
+**Modern end-to-end encrypted messaging built with Kotlin Multiplatform**
 
-### Running the apps
+![CI](https://github.com/cbgm/SecureChat/actions/workflows/ci.yml/badge.svg)
+[![Docs](https://img.shields.io/badge/Docs-Live-success?logo=github)](https://cbgm.github.io/SecureChat/)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.4.0-7F52FF?logo=kotlin&logoColor=white)
+![Compose Multiplatform](https://img.shields.io/badge/Compose-Multiplatform-4285F4)
+![Android](https://img.shields.io/badge/Android-API%2029+-3DDC84?logo=android&logoColor=white)
+![iOS](https://img.shields.io/badge/iOS-Supported-black?logo=apple)
+![Material 3](https://img.shields.io/badge/Material-3-6750A4)
+![Architecture](https://img.shields.io/badge/Architecture-Clean-success)
+![Compose UI](https://img.shields.io/badge/UI-Compose_Multiplatform-blue)
+![Detekt](https://img.shields.io/badge/Quality-Detekt-success)
+![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
-Use the run configurations provided by the run widget in your IDE's toolbar. You can also use these commands and options:
-
-- Android app: `./gradlew :androidApp:assembleDebug`
-- iOS app: open the [/iosApp](./iosApp) directory in Xcode and run it from there.
-
-### Running tests
-
-Use the run button in your IDE's editor gutter, or run tests using Gradle tasks:
-
-- Android tests: `./gradlew :shared:testAndroidHostTest`
-- iOS tests: `./gradlew :shared:iosSimulatorArm64Test`
+</div>
 
 ---
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+# Overview
+
+SecureChat is a modular **Kotlin Multiplatform** secure messaging application built with **Compose Multiplatform**, **Material 3**, **Koin**, **Room**, **Ktor**, and **LibSodium**.
+
+The project follows a feature-based **Clean Architecture** with centralized Gradle convention plugins, automated quality verification, generated architecture documentation, and custom static analysis rules.
+
+---
+
+# Project Structure
+
+```text
+androidApp/        Android application
+iosApp/            iOS application
+
+core/              Shared reusable libraries
+feature/           Feature modules
+navigation/        Navigation layer
+data/              Database & repositories
+relay/             Relay server
+
+build-logic/       Convention plugins
+quality/           Custom Detekt rules
+docs/              Project documentation
+```
+
+---
+
+# Documentation
+
+## Main Documentation
+
+- 📘 [Documentation Index](docs/index.md)
+
+## Generated Documentation
+
+Generated automatically by the architecture tooling.
+
+- 🏗️ [Architecture Overview](docs/generated/architecture.md)
+- 📦 [Module Documentation](docs/generated/modules.md)
+- 🔗 [Dependency Matrix](docs/generated/dependencies.md)
+- 📊 [Project Statistics](docs/generated/statistics.md)
+- 📈 `docs/generated/module-graph.mmd`
+- 🗂️ `docs/generated/architecture.json`
+
+---
+
+# Getting Started
+
+Run once after cloning:
+
+```bash
+./gradlew setup
+```
+
+---
+
+# Build
+
+```bash
+./gradlew build
+```
+
+---
+
+# Code Quality
+
+Automatically formats source code and runs all quality tools.
+
+```bash
+./gradlew quality
+```
+
+Verification only (CI-safe):
+
+```bash
+./gradlew qualityCheck
+```
+
+Included checks:
+
+- ktlint
+- Detekt
+- Custom Detekt Rules
+- Architecture Verification
+
+---
+
+# Architecture Documentation
+
+Generate documentation whenever module dependencies change:
+
+```bash
+./gradlew architectureReport
+```
+
+Verify generated documentation:
+
+```bash
+./gradlew verifyArchitectureReport
+```
+
+Generated files are written to:
+
+```text
+docs/generated/
+```
+
+---
+
+# Android
+
+Build:
+
+```bash
+./gradlew :androidApp:assembleDebug
+```
+
+Run using Android Studio.
+
+---
+
+# iOS (CURRENTLY UNAVAILABLE!)
+
+Open
+
+```text
+iosApp/
+```
+
+in Xcode and run the application.
+
+---
+
+# Technology Stack
+
+- Kotlin Multiplatform
+- Compose Multiplatform
+- Material 3
+- Kotlin Coroutines
+- Kotlin Serialization
+- Koin
+- Room
+- Ktor
+- LibSodium
+- Gradle Convention Plugins
+- Detekt
+- Ktlint
+- MkDocs
+
+---
+
+# Architecture
+
+SecureChat follows a modular architecture consisting of:
+
+- Feature modules
+- Shared core libraries
+- Convention plugins
+- Automated dependency verification
+- Generated architecture documentation
+- Custom Detekt rules
+- Feature-based Clean Architecture
+
+The generated architecture documentation is considered the source of truth for the project's dependency graph.
+
+---
+
+# License
+
+Licensed under the Apache 2.0 License.

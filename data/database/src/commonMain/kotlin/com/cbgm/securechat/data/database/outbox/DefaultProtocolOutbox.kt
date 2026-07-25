@@ -100,6 +100,20 @@ class DefaultProtocolOutbox(
             )
         }
 
+    override suspend fun requeueInterrupted(): Result<Unit> =
+        runCatching {
+            outboxDao.requeueInterrupted(
+                updatedAt = SystemClock.nowEpochMilliseconds(),
+            )
+        }
+
+    override suspend fun retryFailed(): Result<Unit> =
+        runCatching {
+            outboxDao.retryFailed(
+                updatedAt = SystemClock.nowEpochMilliseconds(),
+            )
+        }
+
     override suspend fun findByPacketId(packetId: String): Result<ProtocolOutboxItem?> =
         runCatching {
             require(packetId.isNotBlank()) {

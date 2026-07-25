@@ -18,6 +18,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.feature.contactimport.platform.rememberQrScannerPermissionRequest
 import com.cbgm.securechat.feature.contactimport.presentation.screen.ScanIdentityScreen
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_back
+import com.cbgm.securechat.resources.feature_contactimport_camera_permission_required
+import com.cbgm.securechat.resources.feature_contactimport_grant_camera_permission
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ScanIdentityRoute(
@@ -58,14 +63,14 @@ fun ScanIdentityRoute(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                Text(text = "Camera permission is required to scan a QR code.")
+                Text(text = stringResource(Res.string.feature_contactimport_camera_permission_required))
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
                     onClick = requestCameraPermission,
                 ) {
-                    Text("Grant camera permission")
+                    Text(stringResource(Res.string.feature_contactimport_grant_camera_permission))
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -73,7 +78,7 @@ fun ScanIdentityRoute(
                 Button(
                     onClick = onBack,
                 ) {
-                    Text("Back")
+                    Text(stringResource(Res.string.base_back))
                 }
             }
         }

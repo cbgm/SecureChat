@@ -15,6 +15,16 @@ import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.onboarding.presentation.screen.pages.component.ListingRow
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_continue_action
+import com.cbgm.securechat.resources.feature_onboarding_contacts_stay_local
+import com.cbgm.securechat.resources.feature_onboarding_contacts_stay_local_description
+import com.cbgm.securechat.resources.feature_onboarding_e2ee_description
+import com.cbgm.securechat.resources.feature_onboarding_end_to_end_encryption
+import com.cbgm.securechat.resources.feature_onboarding_identity_belongs_to_you
+import com.cbgm.securechat.resources.feature_onboarding_identity_belongs_to_you_description
+import com.cbgm.securechat.resources.feature_onboarding_privacy_first
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun PrivacyPage(onNext: () -> Unit) {
@@ -23,7 +33,7 @@ fun PrivacyPage(onNext: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Your privacy comes first",
+            text = stringResource(Res.string.feature_onboarding_privacy_first),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onPrimary,
             fontWeight = FontWeight.SemiBold,
@@ -31,23 +41,23 @@ fun PrivacyPage(onNext: () -> Unit) {
         Spacer(Modifier.height(MaterialTheme.spacing.small))
         ListingRow(
             index = "01",
-            title = "End-to-end encryption",
-            description = "Messages are encrypted automatically when both identities are available.",
+            title = stringResource(Res.string.feature_onboarding_end_to_end_encryption),
+            description = stringResource(Res.string.feature_onboarding_e2ee_description),
         )
         ListingRow(
             index = "02",
-            title = "Your contacts stay local",
-            description = "Contacts are used to match people by phone number on your device.",
+            title = stringResource(Res.string.feature_onboarding_contacts_stay_local),
+            description = stringResource(Res.string.feature_onboarding_contacts_stay_local_description),
         )
         ListingRow(
             index = "03",
-            title = "Your identity belongs to you",
-            description = "Private identity keys remain protected on this device.",
+            title = stringResource(Res.string.feature_onboarding_identity_belongs_to_you),
+            description = stringResource(Res.string.feature_onboarding_identity_belongs_to_you_description),
         )
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
         SecureChatApprovalButton(
             onClick = onNext,
-            text = "Continue",
+            text = stringResource(Res.string.base_continue_action),
         )
     }
 }

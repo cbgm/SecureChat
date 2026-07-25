@@ -26,6 +26,23 @@ import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.identity.domain.model.PublicIdentity
 import com.cbgm.securechat.feature.identity.presentation.model.IdentityUiState
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_choose_another_number
+import com.cbgm.securechat.resources.base_choose_phone_number
+import com.cbgm.securechat.resources.base_generating_secure_identity
+import com.cbgm.securechat.resources.base_identity_ready_opening
+import com.cbgm.securechat.resources.base_phone_number
+import com.cbgm.securechat.resources.feature_onboarding_approve_create_identity
+import com.cbgm.securechat.resources.feature_onboarding_approve_phone_number
+import com.cbgm.securechat.resources.feature_onboarding_detected_automatically_confirm
+import com.cbgm.securechat.resources.feature_onboarding_input_your_name
+import com.cbgm.securechat.resources.feature_onboarding_local_identity_incomplete
+import com.cbgm.securechat.resources.feature_onboarding_no_automatic_number
+import com.cbgm.securechat.resources.feature_onboarding_phone_routing_description
+import com.cbgm.securechat.resources.feature_onboarding_preparing_phone_setup
+import com.cbgm.securechat.resources.feature_onboarding_try_sim_number_again
+import com.cbgm.securechat.resources.feature_onboarding_your_name
+import org.jetbrains.compose.resources.stringResource
 
 private val Field = Color(0xFF102A46)
 
@@ -49,7 +66,7 @@ fun PhonePage(
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
                 Spacer(Modifier.height(MaterialTheme.spacing.small))
                 Text(
-                    text = if (isCreating) "Generating secure identity…" else "Preparing phone setup…",
+                    text = if (isCreating) stringResource(Res.string.base_generating_secure_identity) else stringResource(Res.string.feature_onboarding_preparing_phone_setup),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -57,14 +74,14 @@ fun PhonePage(
 
             is IdentityUiState.NoIdentity -> {
                 Text(
-                    text = "Approve phone number",
+                    text = stringResource(Res.string.feature_onboarding_approve_phone_number),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onPrimary,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Spacer(Modifier.height(MaterialTheme.spacing.base))
                 Text(
-                    text = "We use it as your stable contact and routing identity. You can edit it before continuing.",
+                    text = stringResource(Res.string.feature_onboarding_phone_routing_description),
                     color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .74f),
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
@@ -75,7 +92,7 @@ fun PhonePage(
                     onValueChange = onPhoneNumberChanged,
                     modifier = Modifier.fillMaxWidth(),
                     label = {
-                        Text("Phone number")
+                        Text(stringResource(Res.string.base_phone_number))
                     },
                     placeholder = {
                         Text("+491701234567")
@@ -84,7 +101,7 @@ fun PhonePage(
                         Text(
                             text =
                                 identityState.phoneNumberError
-                                    ?: if (identityState.phoneNumber.isBlank()) "No automatic number found. Enter it manually or choose one." else "Detected automatically. Confirm or change it.",
+                                    ?: if (identityState.phoneNumber.isBlank()) stringResource(Res.string.feature_onboarding_no_automatic_number) else stringResource(Res.string.feature_onboarding_detected_automatically_confirm),
                             style = MaterialTheme.typography.labelLarge,
                         )
                     },
@@ -115,14 +132,14 @@ fun PhonePage(
                     onValueChange = onNameChanged,
                     modifier = Modifier.fillMaxWidth(),
                     label = {
-                        Text("Your name")
+                        Text(stringResource(Res.string.feature_onboarding_your_name))
                     },
                     placeholder = {
-                        Text("Your name")
+                        Text(stringResource(Res.string.feature_onboarding_your_name))
                     },
                     supportingText = {
                         Text(
-                            text = "Input your Name",
+                            text = stringResource(Res.string.feature_onboarding_input_your_name),
                             style = MaterialTheme.typography.labelLarge,
                         )
                     },
@@ -150,19 +167,19 @@ fun PhonePage(
                 if (canRetryAutomatic) {
                     SecureChatSecondaryButton(
                         onClick = onRetryAutomaticNumber,
-                        text = "Try SIM number again",
+                        text = stringResource(Res.string.feature_onboarding_try_sim_number_again),
                     )
                     Spacer(Modifier.height(MaterialTheme.spacing.base))
                 }
                 SecureChatSecondaryButton(
                     onClick = onChooseAnotherNumber,
-                    text = if (identityState.phoneNumber.isBlank()) "Choose phone number" else "Choose another number",
+                    text = if (identityState.phoneNumber.isBlank()) stringResource(Res.string.base_choose_phone_number) else stringResource(Res.string.base_choose_another_number),
                 )
                 Spacer(Modifier.height(MaterialTheme.spacing.small))
                 SecureChatApprovalButton(
                     onClick = onApproveAndCreate,
                     enabled = identityState.phoneNumber.isNotBlank() && identityState.name.isNotBlank(),
-                    text = "Approve and create identity",
+                    text = stringResource(Res.string.feature_onboarding_approve_create_identity),
                 )
             }
 
@@ -170,7 +187,7 @@ fun PhonePage(
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
                 Spacer(Modifier.height(MaterialTheme.spacing.medium))
                 Text(
-                    text = "Identity ready. Opening SecureChat…",
+                    text = stringResource(Res.string.base_identity_ready_opening),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.bodyMedium,
@@ -179,7 +196,7 @@ fun PhonePage(
 
             IdentityUiState.IncompleteIdentity -> {
                 Text(
-                    text = "The local identity is incomplete. SecureChat will not silently replace existing keys.",
+                    text = stringResource(Res.string.feature_onboarding_local_identity_incomplete),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,

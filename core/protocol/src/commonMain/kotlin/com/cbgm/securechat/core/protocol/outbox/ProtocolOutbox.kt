@@ -29,5 +29,9 @@ interface ProtocolOutbox {
 
     suspend fun retry(itemId: String): Result<Unit>
 
+    suspend fun requeueInterrupted(): Result<Unit>
+
+    suspend fun retryFailed(): Result<Unit>
+
     suspend fun findByPacketId(packetId: String): Result<ProtocolOutboxItem?>
 }

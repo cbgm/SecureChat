@@ -8,20 +8,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.cbgm.securechat.feature.settings.domain.model.AppLanguage
-
-private val AccentColor = Color(0xFF35E6FF)
-private val CardColor = Color(0xFF102A46)
+import com.cbgm.securechat.core.ui.component.SecureChatAlertDialog
+import com.cbgm.securechat.core.ui.locale.AppLanguage
+import com.cbgm.securechat.core.ui.theme.spacing
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_cancel
+import com.cbgm.securechat.resources.base_language
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun LanguagePickerDialog(
@@ -29,16 +31,8 @@ fun LanguagePickerDialog(
     onLanguageSelected: (AppLanguage) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = CardColor,
-        title = {
-            Text(
-                text = "Language",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-            )
-        },
+    SecureChatAlertDialog(
+        title = stringResource(Res.string.base_language),
         text = {
             Column {
                 AppLanguage.entries.forEach { language ->
@@ -49,7 +43,7 @@ fun LanguagePickerDialog(
                             Modifier
                                 .fillMaxWidth()
                                 .clickable { onLanguageSelected(language) }
-                                .padding(vertical = 12.dp),
+                                .padding(vertical = MaterialTheme.spacing.base),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
@@ -57,14 +51,14 @@ fun LanguagePickerDialog(
                                 text = language.nativeName,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) AccentColor else Color.White,
+                                color = if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onBackground,
                             )
 
                             if (language.nativeName != language.displayName) {
                                 Text(
                                     text = language.displayName,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White.copy(alpha = 0.5f),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.73f),
                                 )
                             }
                         }
@@ -73,7 +67,7 @@ fun LanguagePickerDialog(
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
-                                tint = AccentColor,
+                                tint = MaterialTheme.colorScheme.secondary,
                                 modifier = Modifier.size(20.dp),
                             )
                         }
@@ -83,9 +77,13 @@ fun LanguagePickerDialog(
         },
         confirmButton = {},
         dismissButton = {
-            androidx.compose.material3.TextButton(onClick = onDismiss) {
-                Text(text = "Cancel", color = Color.White.copy(alpha = 0.7f))
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = stringResource(Res.string.base_cancel),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                )
             }
         },
+        onDismissRequest = onDismiss,
     )
 }

@@ -36,6 +36,10 @@ import com.cbgm.securechat.feature.onboarding.presentation.screen.pages.Permissi
 import com.cbgm.securechat.feature.onboarding.presentation.screen.pages.PhonePage
 import com.cbgm.securechat.feature.onboarding.presentation.screen.pages.PrivacyPage
 import com.cbgm.securechat.feature.onboarding.presentation.screen.pages.WelcomePage
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_app_name
+import com.cbgm.securechat.resources.base_tagline
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalFoundationStyleApi::class)
 @Composable
@@ -65,13 +69,13 @@ fun OnboardingScreen(
             PulsingLogo(modifier = Modifier.size(200.dp))
             Spacer(Modifier.height(MaterialTheme.spacing.small))
             Text(
-                text = "SecureChat",
+                text = stringResource(Res.string.base_app_name),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onPrimary,
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = "Private. Encrypted. Yours.",
+                text = stringResource(Res.string.base_tagline),
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .72f),
                 style = MaterialTheme.typography.bodyLarge,
             )

@@ -37,6 +37,7 @@ kotlin {
             implementation(projects.core)
             implementation(projects.core.ui)
             implementation(projects.navigation)
+            implementation(projects.feature.settings)
 
             implementation(libs.bundles.compose)
             implementation(libs.bundles.coroutines)

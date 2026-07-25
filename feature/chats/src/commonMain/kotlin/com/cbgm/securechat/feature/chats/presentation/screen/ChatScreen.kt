@@ -68,6 +68,37 @@ import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
 import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_verify
+import com.cbgm.securechat.resources.feature_chats_chat_key_exchange_incomplete_description
+import com.cbgm.securechat.resources.feature_chats_chat_key_exchange_incomplete_title
+import com.cbgm.securechat.resources.feature_chats_chat_no_keys_description
+import com.cbgm.securechat.resources.feature_chats_chat_one_way_keys_description
+import com.cbgm.securechat.resources.feature_chats_chat_typing
+import com.cbgm.securechat.resources.feature_chats_chat_unencrypted_description
+import com.cbgm.securechat.resources.feature_chats_chat_unencrypted_title
+import com.cbgm.securechat.resources.feature_chats_chat_unverified_description
+import com.cbgm.securechat.resources.feature_chats_chat_unverified_keys_description
+import com.cbgm.securechat.resources.feature_chats_chat_unverified_title
+import com.cbgm.securechat.resources.feature_chats_chat_verified_e2ee
+import com.cbgm.securechat.resources.feature_chats_chat_verified_keys_description
+import com.cbgm.securechat.resources.feature_chats_decryption_failed
+import com.cbgm.securechat.resources.feature_chats_delivered
+import com.cbgm.securechat.resources.feature_chats_encrypted
+import com.cbgm.securechat.resources.feature_chats_failed
+import com.cbgm.securechat.resources.feature_chats_invalid_message_packet
+import com.cbgm.securechat.resources.feature_chats_invalid_packet
+import com.cbgm.securechat.resources.feature_chats_invalid_plaintext
+import com.cbgm.securechat.resources.feature_chats_loading_chat
+import com.cbgm.securechat.resources.feature_chats_not_encrypted
+import com.cbgm.securechat.resources.feature_chats_queued
+import com.cbgm.securechat.resources.feature_chats_read
+import com.cbgm.securechat.resources.feature_chats_sending
+import com.cbgm.securechat.resources.feature_chats_sent
+import com.cbgm.securechat.resources.feature_chats_start_conversation_with
+import com.cbgm.securechat.resources.feature_chats_unable_decrypt_secure_message
+import com.cbgm.securechat.resources.feature_chats_unable_read_plaintext
+import org.jetbrains.compose.resources.stringResource
 
 private val Field = Color(0xFF102A46)
 private val IncomingBubbleColor = Color(0xFF17324D)
@@ -87,7 +118,6 @@ fun ChatScreen(
     SecureChatLazyScaffold(
         modifier = modifier,
         barColor = MaterialTheme.colorScheme.background,
-        fadedAlpha = 0.97f,
         background = {
             PatternBackground(
                 modifier = Modifier.fillMaxSize(),
@@ -178,7 +208,7 @@ private fun ChatTopBar(
                     Icon(
                         imageVector =
                             Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = null,
                     )
                 }
             },
@@ -211,7 +241,7 @@ private fun ChatBottomBar(
         Text(
             text =
                 if (uiState.isContactTyping) {
-                    "${uiState.contactName} is typing…"
+                    stringResource(Res.string.feature_chats_chat_typing, uiState.contactName)
                 } else {
                     ""
                 },
@@ -302,8 +332,8 @@ private fun SecurityBanner(
             ContactSecurityState.NO_REMOTE_PUBLIC_KEYS ->
                 CombinedState(
                     icon = Icons.Default.LockOpen,
-                    title = "Messages are not end-to-end encrypted",
-                    description = "You do not have this contact's SecureChat public keys.",
+                    title = stringResource(Res.string.feature_chats_chat_unencrypted_title),
+                    description = stringResource(Res.string.feature_chats_chat_unencrypted_description),
                     containerColor = MaterialTheme.colorScheme.errorContainer,
                     contentColor = MaterialTheme.colorScheme.onErrorContainer,
                 )
@@ -311,8 +341,8 @@ private fun SecurityBanner(
             ContactSecurityState.ONE_WAY_KEYS ->
                 CombinedState(
                     icon = Icons.Default.LockOpen,
-                    title = "Key exchange is incomplete",
-                    description = "Both parties have not completed the identity exchange.",
+                    title = stringResource(Res.string.feature_chats_chat_key_exchange_incomplete_title),
+                    description = stringResource(Res.string.feature_chats_chat_key_exchange_incomplete_description),
                     containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f),
                     contentColor = MaterialTheme.colorScheme.onErrorContainer,
                 )
@@ -320,8 +350,8 @@ private fun SecurityBanner(
             ContactSecurityState.MUTUAL_KEYS_UNVERIFIED ->
                 CombinedState(
                     icon = Icons.Default.Warning,
-                    title = "Encrypted using an unverified identity",
-                    description = "Compare the safety number through another trusted channel.",
+                    title = stringResource(Res.string.feature_chats_chat_unverified_title),
+                    description = stringResource(Res.string.feature_chats_chat_unverified_description),
                     containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
                     contentColor = MaterialTheme.colorScheme.onErrorContainer,
                 )
@@ -369,7 +399,7 @@ private fun SecurityBanner(
             if (securityState == ContactSecurityState.MUTUAL_KEYS_UNVERIFIED) {
                 TextButton(onClick = onVerifyIdentity) {
                     Text(
-                        text = "Verify",
+                        text = stringResource(Res.string.base_verify),
                         style = MaterialTheme.typography.bodySmall,
                         color = combinedState.contentColor,
                         fontWeight = FontWeight.Bold,
@@ -401,7 +431,7 @@ private fun VerifiedSecurityIndicator(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.width(6.dp))
 
             Text(
-                text = "Verified end-to-end encrypted",
+                text = stringResource(Res.string.feature_chats_chat_verified_e2ee),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.secondary,
@@ -474,7 +504,7 @@ private fun MessageBubble(
 
             MessageContentStatus.INVALID_PACKET ->
                 MessageBubbleState(
-                    text = "Invalid message packet",
+                    text = stringResource(Res.string.feature_chats_invalid_message_packet),
                     isContentFailed = true,
                     bubbleColor = MaterialTheme.colorScheme.errorContainer,
                     contentColor = MaterialTheme.colorScheme.onErrorContainer,
@@ -482,7 +512,7 @@ private fun MessageBubble(
 
             MessageContentStatus.INVALID_PLAINTEXT_PACKET ->
                 MessageBubbleState(
-                    text = "Unable to read plaintext message",
+                    text = stringResource(Res.string.feature_chats_unable_read_plaintext),
                     isContentFailed = true,
                     bubbleColor = MaterialTheme.colorScheme.errorContainer,
                     contentColor = MaterialTheme.colorScheme.onErrorContainer,
@@ -490,7 +520,7 @@ private fun MessageBubble(
 
             MessageContentStatus.TRANSPORT_DECRYPTION_FAILED ->
                 MessageBubbleState(
-                    text = "Unable to decrypt secure message",
+                    text = stringResource(Res.string.feature_chats_unable_decrypt_secure_message),
                     isContentFailed = true,
                     bubbleColor = MaterialTheme.colorScheme.errorContainer,
                     contentColor = MaterialTheme.colorScheme.onErrorContainer,
@@ -568,13 +598,13 @@ private fun MessageMetadata(
 private fun MessageSecurityIndicator(message: ChatMessage) {
     val text =
         when (message.contentStatus) {
-            MessageContentStatus.INVALID_PACKET -> "Invalid packet"
-            MessageContentStatus.INVALID_PLAINTEXT_PACKET -> "Invalid plaintext"
-            MessageContentStatus.TRANSPORT_DECRYPTION_FAILED -> "Decryption failed"
+            MessageContentStatus.INVALID_PACKET -> stringResource(Res.string.feature_chats_invalid_packet)
+            MessageContentStatus.INVALID_PLAINTEXT_PACKET -> stringResource(Res.string.feature_chats_invalid_plaintext)
+            MessageContentStatus.TRANSPORT_DECRYPTION_FAILED -> stringResource(Res.string.feature_chats_decryption_failed)
             MessageContentStatus.READABLE ->
                 when (message.security) {
-                    MessageSecurity.INSECURE -> "Not encrypted"
-                    MessageSecurity.END_TO_END_ENCRYPTED -> "Encrypted"
+                    MessageSecurity.INSECURE -> stringResource(Res.string.feature_chats_not_encrypted)
+                    MessageSecurity.END_TO_END_ENCRYPTED -> stringResource(Res.string.feature_chats_encrypted)
                 }
         }
 
@@ -613,7 +643,7 @@ private fun OutgoingDeliveryIndicator(
 
         MessageDeliveryStatus.QUEUED -> {
             DeliveryLabel(
-                text = "Queued",
+                text = stringResource(Res.string.feature_chats_queued),
                 icon = {
                     Icon(
                         imageVector = Icons.Default.Schedule,
@@ -626,7 +656,7 @@ private fun OutgoingDeliveryIndicator(
 
         MessageDeliveryStatus.SENDING -> {
             DeliveryLabel(
-                text = "Sending",
+                text = stringResource(Res.string.feature_chats_sending),
                 icon = {
                     CircularProgressIndicator(
                         modifier = Modifier.size(12.dp),
@@ -638,7 +668,7 @@ private fun OutgoingDeliveryIndicator(
 
         MessageDeliveryStatus.SENT -> {
             DeliveryLabel(
-                text = "Sent",
+                text = stringResource(Res.string.feature_chats_sent),
                 icon = {
                     Icon(
                         imageVector = Icons.Default.Check,
@@ -651,7 +681,7 @@ private fun OutgoingDeliveryIndicator(
 
         MessageDeliveryStatus.DELIVERED -> {
             DeliveryLabel(
-                text = "Delivered",
+                text = stringResource(Res.string.feature_chats_delivered),
                 icon = {
                     Row {
                         Icon(
@@ -671,7 +701,7 @@ private fun OutgoingDeliveryIndicator(
 
         MessageDeliveryStatus.READ -> {
             DeliveryLabel(
-                text = "Read",
+                text = stringResource(Res.string.feature_chats_read),
                 textColor = MaterialTheme.colorScheme.secondary,
                 icon = {
                     Row {
@@ -704,7 +734,7 @@ private fun OutgoingDeliveryIndicator(
                 Spacer(modifier = Modifier.width(3.dp))
 
                 Text(
-                    text = "Failed",
+                    text = stringResource(Res.string.feature_chats_failed),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -715,7 +745,7 @@ private fun OutgoingDeliveryIndicator(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
-                        contentDescription = "Retry message",
+                        contentDescription = null,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.error,
                     )
@@ -773,7 +803,7 @@ private fun MessageInput(
                     .weight(1f)
                     .background(
                         color = Field,
-                        shape = RoundedCornerShape(24.dp),
+                        shape = MaterialTheme.shapes.medium,
                     ).padding(
                         horizontal = MaterialTheme.spacing.small + 4.dp,
                         vertical = MaterialTheme.spacing.base,
@@ -797,7 +827,7 @@ private fun MessageInput(
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Send,
-                contentDescription = "Send message",
+                contentDescription = null,
                 tint =
                     if (enabled && value.isNotBlank()) {
                         MaterialTheme.colorScheme.secondary
@@ -821,7 +851,7 @@ private fun EmptyChatContent(
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "Start a conversation with $contactName",
+                text = stringResource(Res.string.feature_chats_start_conversation_with, contactName),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -832,16 +862,16 @@ private fun EmptyChatContent(
                 text =
                     when (securityState) {
                         ContactSecurityState.NO_REMOTE_PUBLIC_KEYS ->
-                            "This contact has no SecureChat public keys. Messages use plaintext transport."
+                            stringResource(Res.string.feature_chats_chat_no_keys_description)
 
                         ContactSecurityState.ONE_WAY_KEYS ->
-                            "You have this contact's public keys, but they do not have yours yet. Messages remain plaintext."
+                            stringResource(Res.string.feature_chats_chat_one_way_keys_description)
 
                         ContactSecurityState.MUTUAL_KEYS_UNVERIFIED ->
-                            "Messages are encrypted. Compare the safety number through a trusted channel."
+                            stringResource(Res.string.feature_chats_chat_unverified_keys_description)
 
                         ContactSecurityState.MUTUAL_KEYS_VERIFIED ->
-                            "Messages use the verified SecureChat identity."
+                            stringResource(Res.string.feature_chats_chat_verified_keys_description)
                     },
                 modifier = Modifier.padding(top = MaterialTheme.spacing.base),
                 style = MaterialTheme.typography.bodyMedium,
@@ -864,7 +894,7 @@ private fun LoadingChatContent(modifier: Modifier = Modifier) {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
         Text(
-            text = "Loading chat…",
+            text = stringResource(Res.string.feature_chats_loading_chat),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

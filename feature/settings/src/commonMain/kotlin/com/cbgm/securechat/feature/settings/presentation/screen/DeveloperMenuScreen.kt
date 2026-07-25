@@ -30,10 +30,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.ui.component.SecureChatCardNoAnimation
 import com.cbgm.securechat.core.ui.component.SecureChatScrollScaffold
+import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.settings.domain.model.BuildInfo
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_build_type
+import com.cbgm.securechat.resources.base_clear_local_data
+import com.cbgm.securechat.resources.base_git_sha
+import com.cbgm.securechat.resources.base_unknown
+import com.cbgm.securechat.resources.base_version_code
+import com.cbgm.securechat.resources.base_version_name
+import com.cbgm.securechat.resources.feature_settings_build_info
+import com.cbgm.securechat.resources.feature_settings_danger_zone
+import com.cbgm.securechat.resources.feature_settings_danger_zone_description
+import com.cbgm.securechat.resources.feature_settings_developer_menu
+import com.cbgm.securechat.resources.feature_settings_disable_developer_mode
+import org.jetbrains.compose.resources.stringResource
 
 private val CardColor = Color(0xFF102A46)
 
@@ -96,7 +112,7 @@ private fun DeveloperMenuTopBar(
             ),
         title = {
             Text(
-                text = "Developer menu",
+                text = stringResource(Res.string.feature_settings_developer_menu),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -105,7 +121,7 @@ private fun DeveloperMenuTopBar(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = null,
                 )
             }
         },
@@ -114,17 +130,12 @@ private fun DeveloperMenuTopBar(
 
 @Composable
 private fun BuildInfoCard(buildInfo: BuildInfo) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape =
-            RoundedCornerShape(
-                MaterialTheme.spacing.small,
-            ),
-        color = CardColor,
-    ) {
-        Column(modifier = Modifier.padding(MaterialTheme.spacing.small)) {
+    SecureChatCardNoAnimation {
+        Column(
+            modifier = Modifier.padding(MaterialTheme.spacing.small),
+        ) {
             Text(
-                text = "Build info",
+                text = stringResource(Res.string.feature_settings_build_info),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -133,23 +144,23 @@ private fun BuildInfoCard(buildInfo: BuildInfo) {
             Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
 
             BuildInfoRow(
-                label = "Version name",
+                label = stringResource(Res.string.base_version_name),
                 value = buildInfo.versionName,
             )
 
             BuildInfoRow(
-                label = "Version code",
+                label = stringResource(Res.string.base_version_code),
                 value = buildInfo.versionCode.toString(),
             )
 
             BuildInfoRow(
-                label = "Build type",
+                label = stringResource(Res.string.base_build_type),
                 value = buildInfo.buildType,
             )
 
             BuildInfoRow(
-                label = "Git SHA",
-                value = buildInfo.gitSha ?: "unknown",
+                label = stringResource(Res.string.base_git_sha),
+                value = buildInfo.gitSha ?: stringResource(Res.string.base_unknown),
             )
         }
     }
@@ -161,26 +172,19 @@ private fun DangerZoneCard(
     onClearLocalData: () -> Unit,
     onDisableDeveloperMode: () -> Unit,
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape =
-            RoundedCornerShape(
-                MaterialTheme.spacing.small,
-            ),
-        color = CardColor,
-    ) {
+    SecureChatCardNoAnimation {
         Column(
             modifier = Modifier.padding(MaterialTheme.spacing.small),
         ) {
             Text(
-                text = "Danger zone",
+                text = stringResource(Res.string.feature_settings_danger_zone),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.error,
             )
 
             Text(
-                text = "These actions are destructive and only intended for local debugging.",
+                text = stringResource(Res.string.feature_settings_danger_zone_description),
                 modifier =
                     Modifier.padding(
                         top = MaterialTheme.spacing.base.div(2),
@@ -194,7 +198,7 @@ private fun DangerZoneCard(
                 onClick = onClearLocalData,
                 enabled = !isClearingLocalData,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.extraSmall,
                 colors =
                     ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
@@ -209,7 +213,7 @@ private fun DangerZoneCard(
                     )
                 } else {
                     Text(
-                        text = "Clear local data",
+                        text = stringResource(Res.string.base_clear_local_data),
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
@@ -221,7 +225,7 @@ private fun DangerZoneCard(
                 onClick = onDisableDeveloperMode,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(text = "Disable developer mode")
+                Text(text = stringResource(Res.string.feature_settings_disable_developer_mode))
             }
         }
     }
@@ -251,6 +255,26 @@ private fun BuildInfoRow(
             style = MaterialTheme.typography.bodySmall,
             fontFamily = FontFamily.Monospace,
             color = MaterialTheme.colorScheme.onBackground,
+        )
+    }
+}
+
+@Preview
+@Composable
+fun DeveloperScreenPreview() {
+    SecureChatTheme {
+        DeveloperMenuScreen(
+            buildInfo =
+                BuildInfo(
+                    versionName = "1.0.0",
+                    versionCode = 1,
+                    buildType = "debug",
+                    gitSha = null,
+                ),
+            isClearingLocalData = false,
+            onBack = {},
+            onClearLocalData = {},
+            onDisableDeveloperMode = {},
         )
     }
 }

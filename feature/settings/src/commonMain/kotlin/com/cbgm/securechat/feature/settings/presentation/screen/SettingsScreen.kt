@@ -4,6 +4,7 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,12 +32,33 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.ui.component.SecureChatCardNoAnimation
+import com.cbgm.securechat.core.ui.locale.AppLanguage
+import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
-import com.cbgm.securechat.feature.settings.domain.model.AppLanguage
+import com.cbgm.securechat.feature.settings.domain.model.BuildInfo
 import com.cbgm.securechat.feature.settings.presentation.model.SettingsUiState
 import com.cbgm.securechat.feature.settings.presentation.screen.components.LanguagePickerDialog
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_developer
+import com.cbgm.securechat.resources.base_language
+import com.cbgm.securechat.resources.base_version
+import com.cbgm.securechat.resources.feature_settings_about
+import com.cbgm.securechat.resources.feature_settings_data_disclaimer
+import com.cbgm.securechat.resources.feature_settings_data_disclaimer_subtitle
+import com.cbgm.securechat.resources.feature_settings_developer_menu
+import com.cbgm.securechat.resources.feature_settings_developer_menu_subtitle
+import com.cbgm.securechat.resources.feature_settings_general
+import com.cbgm.securechat.resources.feature_settings_licenses_subtitle
+import com.cbgm.securechat.resources.feature_settings_open_source_licenses
+import com.cbgm.securechat.resources.feature_settings_privacy_and_data
+import com.cbgm.securechat.resources.feature_settings_privacy_policy
+import com.cbgm.securechat.resources.feature_settings_privacy_policy_subtitle
+import org.jetbrains.compose.resources.stringResource
 
 private val CardColor = Color(0xFF102A46)
 
@@ -67,20 +89,21 @@ fun SettingsScreen(
                 .padding(MaterialTheme.spacing.screenPadding),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
     ) {
-        SettingsSection(title = "General") {
+        SettingsSection(title = stringResource(Res.string.feature_settings_general)) {
             SettingsRow(
                 icon = Icons.Default.Language,
-                title = "Language",
+                title = stringResource(Res.string.base_language),
                 subtitle = uiState.currentLanguage.nativeName,
                 onClick = onOpenLanguagePicker,
+                showChevron = false,
             )
         }
 
-        SettingsSection(title = "Privacy & data") {
+        SettingsSection(title = stringResource(Res.string.feature_settings_privacy_and_data)) {
             SettingsRow(
                 icon = Icons.Default.PrivacyTip,
-                title = "Privacy policy",
-                subtitle = "How your data is handled",
+                title = stringResource(Res.string.feature_settings_privacy_policy),
+                subtitle = stringResource(Res.string.feature_settings_privacy_policy_subtitle),
                 onClick = onOpenPrivacyPolicy,
             )
 
@@ -88,17 +111,17 @@ fun SettingsScreen(
 
             SettingsRow(
                 icon = Icons.Default.Lock,
-                title = "Data disclaimer",
-                subtitle = "What SecureChat stores locally and on the relay",
+                title = stringResource(Res.string.feature_settings_data_disclaimer),
+                subtitle = stringResource(Res.string.feature_settings_data_disclaimer_subtitle),
                 onClick = onOpenDataDisclaimer,
             )
         }
 
-        SettingsSection(title = "About") {
+        SettingsSection(title = stringResource(Res.string.feature_settings_about)) {
             SettingsRow(
                 icon = Icons.Default.Code,
-                title = "Open source licenses",
-                subtitle = "Libraries used in this app",
+                title = stringResource(Res.string.feature_settings_open_source_licenses),
+                subtitle = stringResource(Res.string.feature_settings_licenses_subtitle),
                 onClick = onOpenLicenses,
             )
 
@@ -106,19 +129,19 @@ fun SettingsScreen(
 
             SettingsRow(
                 icon = Icons.Default.Description,
-                title = "Version",
-                subtitle = "${uiState.buildInfo.versionName} (${uiState.buildInfo.versionCode})",
+                title = stringResource(Res.string.base_version),
+                subtitle = "${uiState.buildInfo.versionName} (${uiState.buildInfo.versionCode}",
                 showChevron = false,
                 onClick = onVersionRowTapped,
             )
         }
 
         if (uiState.isDeveloperModeEnabled) {
-            SettingsSection(title = "Developer") {
+            SettingsSection(title = stringResource(Res.string.base_developer)) {
                 SettingsRow(
                     icon = Icons.Default.BugReport,
-                    title = "Developer menu",
-                    subtitle = "Build info, feature flags, diagnostics",
+                    title = stringResource(Res.string.feature_settings_developer_menu),
+                    subtitle = stringResource(Res.string.feature_settings_developer_menu_subtitle),
                     onClick = onOpenDeveloperMenu,
                     iconTint = MaterialTheme.colorScheme.secondary,
                 )
@@ -140,7 +163,7 @@ fun SettingsScreen(
 @Composable
 private fun SettingsSection(
     title: String,
-    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Column {
         Text(
@@ -148,14 +171,14 @@ private fun SettingsSection(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = MaterialTheme.spacing.base.div(2), bottom = MaterialTheme.spacing.base),
+            modifier =
+                Modifier.padding(
+                    start = MaterialTheme.spacing.base.div(2),
+                    bottom = MaterialTheme.spacing.base,
+                ),
         )
 
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            color = CardColor,
-        ) {
+        SecureChatCardNoAnimation {
             Column(content = content)
         }
     }
@@ -163,7 +186,7 @@ private fun SettingsSection(
 
 @Composable
 private fun SettingsRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     title: String,
     subtitle: String,
     onClick: () -> Unit,
@@ -175,10 +198,18 @@ private fun SettingsRow(
             Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
-                .padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.small),
+                .padding(
+                    horizontal = MaterialTheme.spacing.small,
+                    vertical = MaterialTheme.spacing.small,
+                ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(22.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = iconTint,
+            modifier = Modifier.size(22.dp),
+        )
 
         Spacer(modifier = Modifier.size(MaterialTheme.spacing.small))
 
@@ -210,7 +241,40 @@ private fun SettingsRow(
 @Composable
 private fun SettingsDivider() {
     HorizontalDivider(
-        modifier = Modifier.padding(start = 54.dp),
+        modifier = Modifier.padding(start = MaterialTheme.spacing.times(5)),
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.06f),
     )
+}
+
+@Preview
+@Composable
+fun SettingsScreenPreview() {
+    SecureChatTheme {
+        SettingsScreen(
+            uiState =
+                SettingsUiState(
+                    currentLanguage = AppLanguage.ENGLISH,
+                    showLanguagePicker = false,
+                    buildInfo =
+                        BuildInfo(
+                            versionName = "1.0.0",
+                            versionCode = 1,
+                            buildType = "debug",
+                            gitSha = null,
+                        ),
+                    isDeveloperModeEnabled = true,
+                ),
+            onOpenPrivacyPolicy = {},
+            onOpenDataDisclaimer = {},
+            onOpenLicenses = {},
+            onOpenDeveloperMenu = {},
+            onOpenLanguagePicker = {},
+            onDismissLanguagePicker = {},
+            onLanguageSelected = {},
+            onVersionRowTapped = {},
+            snackbarHostState = SnackbarHostState(),
+            scrollState = ScrollState(0),
+            innerPadding = PaddingValues(0.dp),
+        )
+    }
 }

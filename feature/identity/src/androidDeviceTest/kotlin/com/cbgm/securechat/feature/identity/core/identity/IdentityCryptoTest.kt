@@ -1,90 +1,43 @@
 package com.cbgm.securechat.feature.identity.core.identity
 
 import com.cbgm.securechat.core.crypto.SodiumRuntime
-import kotlinx.coroutines.runBlocking
+import com.cbgm.securechat.core.crypto.identity.SodiumIdentityKeyGenerator
+import kotlinx.coroutines.test.runTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalUnsignedTypes::class)
 class IdentityCryptoTest {
-    @OptIn(ExperimentalUnsignedTypes::class)
-    @Test
-    fun generatedIdentityContainsRealKeyMaterial() =
-        runBlocking {
+    private val generator = SodiumIdentityKeyGenerator()
+
+    @BeforeTest
+    fun initializeSodium() =
+        runTest {
             SodiumRuntime.initialize().getOrThrow()
-
-            val identityCrypto = IdentityCrypto()
-
-            val result = identityCrypto.generateIdentityKeyPair()
-
-            assertTrue(
-                result.isSuccess,
-                "Identity generation failed: ${result.exceptionOrNull()?.message}",
-            )
-
-            val keyPair = result.getOrThrow()
-
-            assertTrue(
-                keyPair.encryptionPublicKey.isNotEmpty(),
-                "Encryption public key must not be empty",
-            )
-
-            assertTrue(
-                keyPair.encryptionPrivateKey.isNotEmpty(),
-                "Encryption private key must not be empty",
-            )
-
-            assertTrue(
-                keyPair.signingPublicKey.isNotEmpty(),
-                "Signing public key must not be empty",
-            )
-
-            assertTrue(
-                keyPair.signingPrivateKey.isNotEmpty(),
-                "Signing private key must not be empty",
-            )
-
-            assertFalse(
-                keyPair.encryptionPublicKey.all { it == 0.toUByte() },
-                "Encryption public key must not contain only zeros",
-            )
-
-            assertFalse(
-                keyPair.signingPublicKey.all { it == 0.toUByte() },
-                "Signing public key must not contain only zeros",
-            )
         }
 
-    @OptIn(ExperimentalUnsignedTypes::class)
+    @Test
+    fun generatedIdentityContainsRealKeyMaterial() =
+        runTest {
+            val keyPair = generator.generate().getOrThrow()
+
+            assertTrue(keyPair.encryptionPublicKey.isNotEmpty())
+            assertTrue(keyPair.encryptionPrivateKey.isNotEmpty())
+            assertTrue(keyPair.signingPublicKey.isNotEmpty())
+            assertTrue(keyPair.signingPrivateKey.isNotEmpty())
+            assertFalse(keyPair.encryptionPublicKey.all { it == 0.toUByte() })
+            assertFalse(keyPair.signingPublicKey.all { it == 0.toUByte() })
+        }
+
     @Test
     fun separatelyGeneratedIdentitiesAreDifferent() =
-        runBlocking {
-            SodiumRuntime.initialize().getOrThrow()
+        runTest {
+            val first = generator.generate().getOrThrow()
+            val second = generator.generate().getOrThrow()
 
-            val identityCrypto = IdentityCrypto()
-
-            val first =
-                identityCrypto
-                    .generateIdentityKeyPair()
-                    .getOrThrow()
-
-            val second =
-                identityCrypto
-                    .generateIdentityKeyPair()
-                    .getOrThrow()
-
-            assertFalse(
-                first.encryptionPublicKey.contentEquals(
-                    second.encryptionPublicKey,
-                ),
-                "Encryption public keys should differ",
-            )
-
-            assertFalse(
-                first.signingPublicKey.contentEquals(
-                    second.signingPublicKey,
-                ),
-                "Signing public keys should differ",
-            )
+            assertFalse(first.encryptionPublicKey.contentEquals(second.encryptionPublicKey))
+            assertFalse(first.signingPublicKey.contentEquals(second.signingPublicKey))
         }
 }

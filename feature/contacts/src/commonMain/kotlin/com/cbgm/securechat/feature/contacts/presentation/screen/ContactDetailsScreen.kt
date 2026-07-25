@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.crypto.safety.SafetyNumber
 import com.cbgm.securechat.core.extensions.toHexString
 import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
+import com.cbgm.securechat.core.ui.component.SecureChatCard
+import com.cbgm.securechat.core.ui.component.SecureChatCardNoAnimation
 import com.cbgm.securechat.core.ui.component.SecureChatScrollScaffold
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
@@ -67,6 +69,50 @@ import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.model.SecureChatIdentity
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactDetailsUiState
 import com.cbgm.securechat.feature.contacts.presentation.screen.components.SafetyNumberVerificationDialog
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.base_contact
+import com.cbgm.securechat.resources.base_custom
+import com.cbgm.securechat.resources.base_home
+import com.cbgm.securechat.resources.base_linked
+import com.cbgm.securechat.resources.base_main
+import com.cbgm.securechat.resources.base_mobile
+import com.cbgm.securechat.resources.base_not_verified
+import com.cbgm.securechat.resources.base_other
+import com.cbgm.securechat.resources.base_phone_numbers
+import com.cbgm.securechat.resources.base_preferred
+import com.cbgm.securechat.resources.base_retry
+import com.cbgm.securechat.resources.base_securechat
+import com.cbgm.securechat.resources.base_share_contact
+import com.cbgm.securechat.resources.base_verified
+import com.cbgm.securechat.resources.base_work
+import com.cbgm.securechat.resources.base_work_mobile
+import com.cbgm.securechat.resources.feature_contacts_compare_before_trusting
+import com.cbgm.securechat.resources.feature_contacts_compare_entire_number
+import com.cbgm.securechat.resources.feature_contacts_contact_details
+import com.cbgm.securechat.resources.feature_contacts_contact_not_found
+import com.cbgm.securechat.resources.feature_contacts_could_not_load_contact
+import com.cbgm.securechat.resources.feature_contacts_device_contact
+import com.cbgm.securechat.resources.feature_contacts_device_contact_linked_description
+import com.cbgm.securechat.resources.feature_contacts_device_contact_missing
+import com.cbgm.securechat.resources.feature_contacts_device_contact_missing_description
+import com.cbgm.securechat.resources.feature_contacts_device_contact_not_linked_description
+import com.cbgm.securechat.resources.feature_contacts_encryption_fingerprint
+import com.cbgm.securechat.resources.feature_contacts_identity_verified_description
+import com.cbgm.securechat.resources.feature_contacts_no_phone_numbers_stored
+import com.cbgm.securechat.resources.feature_contacts_no_securechat_identity
+import com.cbgm.securechat.resources.feature_contacts_not_linked
+import com.cbgm.securechat.resources.feature_contacts_return_to_contacts
+import com.cbgm.securechat.resources.feature_contacts_safety_number
+import com.cbgm.securechat.resources.feature_contacts_securechat_contact_not_verified
+import com.cbgm.securechat.resources.feature_contacts_securechat_identity
+import com.cbgm.securechat.resources.feature_contacts_securechat_keys_attach_later
+import com.cbgm.securechat.resources.feature_contacts_securechat_not_enabled
+import com.cbgm.securechat.resources.feature_contacts_share_contact_missing_keys
+import com.cbgm.securechat.resources.feature_contacts_signing_fingerprint
+import com.cbgm.securechat.resources.feature_contacts_unnamed_contact
+import com.cbgm.securechat.resources.feature_contacts_verified_securechat_contact
+import com.cbgm.securechat.resources.feature_contacts_verify_safety_number
+import org.jetbrains.compose.resources.stringResource
 
 private val CardColor = Color(0xFF102A46)
 
@@ -85,10 +131,10 @@ fun ContactDetailsScreen(
     val title =
         when (uiState) {
             is ContactDetailsUiState.Content ->
-                uiState.contact.displayName ?: "Contact"
+                uiState.contact.displayName ?: stringResource(Res.string.base_contact)
 
             else ->
-                "Contact details"
+                stringResource(Res.string.feature_contacts_contact_details)
         }
 
     SecureChatScrollScaffold(
@@ -125,7 +171,7 @@ fun ContactDetailsScreen(
         uiState.safetyNumber != null
     ) {
         SafetyNumberVerificationDialog(
-            contactName = uiState.contact.displayName ?: "Contact",
+            contactName = uiState.contact.displayName ?: stringResource(Res.string.base_contact),
             safetyNumber = uiState.safetyNumber,
             hasConfirmedComparison = uiState.hasConfirmedComparison,
             isSaving = uiState.isSavingVerification,
@@ -164,7 +210,7 @@ private fun ContactDetailsTopBar(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = null,
                 )
             }
         },
@@ -273,7 +319,7 @@ private fun ContactContent(
                 )
                 Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
                 Text(
-                    text = "Share contact",
+                    text = stringResource(Res.string.base_share_contact),
                     color = MaterialTheme.colorScheme.onBackground,
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -282,7 +328,7 @@ private fun ContactContent(
 
         if (contact.secureChatIdentity == null) {
             Text(
-                text = "SecureChat keys are required before this contact can be shared.",
+                text = stringResource(Res.string.feature_contacts_share_contact_missing_keys),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
@@ -322,11 +368,7 @@ private fun ContactContent(
 
 @Composable
 private fun SectionCard(content: @Composable () -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = CardColor,
-    ) {
+    SecureChatCardNoAnimation {
         Column(modifier = Modifier.padding(MaterialTheme.spacing.medium)) {
             content()
         }
@@ -335,7 +377,8 @@ private fun SectionCard(content: @Composable () -> Unit) {
 
 @Composable
 private fun ContactHeader(contact: Contact) {
-    val isVerified = contact.secureChatIdentity?.verificationStatus == ContactVerificationStatus.VERIFIED
+    val isVerified =
+        contact.secureChatIdentity?.verificationStatus == ContactVerificationStatus.VERIFIED
     val hasNoIdentity = contact.secureChatIdentity == null
 
     Column(
@@ -369,7 +412,7 @@ private fun ContactHeader(contact: Contact) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "Verified",
+                            contentDescription = null,
                             tint = Color(0xFF071A2E),
                             modifier = Modifier.size(16.dp),
                         )
@@ -384,7 +427,7 @@ private fun ContactHeader(contact: Contact) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.Warning,
-                            contentDescription = "Not verified",
+                            contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(14.dp),
                         )
@@ -396,7 +439,9 @@ private fun ContactHeader(contact: Contact) {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
         Text(
-            text = contact.displayName ?: "Unnamed contact",
+            text =
+                contact.displayName
+                    ?: stringResource(Res.string.feature_contacts_unnamed_contact),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold,
@@ -407,9 +452,9 @@ private fun ContactHeader(contact: Contact) {
 
         val statusText =
             when {
-                hasNoIdentity -> "No SecureChat identity"
-                isVerified -> "Verified SecureChat contact"
-                else -> "SecureChat contact · not verified"
+                hasNoIdentity -> stringResource(Res.string.feature_contacts_no_securechat_identity)
+                isVerified -> stringResource(Res.string.feature_contacts_verified_securechat_contact)
+                else -> stringResource(Res.string.feature_contacts_securechat_contact_not_verified)
             }
 
         val statusColor =
@@ -433,13 +478,13 @@ private fun PhoneNumbersSection(
     phoneNumbers: List<ContactPhoneNumber>,
     preferredPhoneNumberId: String?,
 ) {
-    SectionTitle(icon = Icons.Default.Phone, title = "Phone numbers")
+    SectionTitle(icon = Icons.Default.Phone, title = stringResource(Res.string.base_phone_numbers))
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
     if (phoneNumbers.isEmpty()) {
         Text(
-            text = "No phone numbers stored.",
+            text = stringResource(Res.string.feature_contacts_no_phone_numbers_stored),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
         )
@@ -483,7 +528,7 @@ private fun PhoneNumberItem(
                     color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
                 ) {
                     Text(
-                        text = "Preferred",
+                        text = stringResource(Res.string.base_preferred),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -502,7 +547,10 @@ private fun PhoneNumberItem(
 
 @Composable
 private fun DeviceContactSection(status: DeviceContactLinkStatus) {
-    SectionTitle(icon = Icons.Default.ContactPhone, title = "Device contact")
+    SectionTitle(
+        icon = Icons.Default.ContactPhone,
+        title = stringResource(Res.string.feature_contacts_device_contact),
+    )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
@@ -511,9 +559,9 @@ private fun DeviceContactSection(status: DeviceContactLinkStatus) {
             StatusRow(
                 icon = Icons.Default.LinkOff,
                 iconColor = MaterialTheme.colorScheme.error,
-                title = "Not linked",
+                title = stringResource(Res.string.feature_contacts_not_linked),
                 titleColor = MaterialTheme.colorScheme.error,
-                description = "This SecureChat contact is not connected to your device address book.",
+                description = stringResource(Res.string.feature_contacts_device_contact_not_linked_description),
             )
         }
 
@@ -521,9 +569,9 @@ private fun DeviceContactSection(status: DeviceContactLinkStatus) {
             StatusRow(
                 icon = Icons.Default.Link,
                 iconColor = MaterialTheme.colorScheme.secondary,
-                title = "Linked",
+                title = stringResource(Res.string.base_linked),
                 titleColor = MaterialTheme.colorScheme.secondary,
-                description = "This contact is connected to your device address book.",
+                description = stringResource(Res.string.feature_contacts_device_contact_linked_description),
             )
         }
 
@@ -531,16 +579,14 @@ private fun DeviceContactSection(status: DeviceContactLinkStatus) {
             StatusRow(
                 icon = Icons.Default.LinkOff,
                 iconColor = MaterialTheme.colorScheme.error.copy(alpha = 0.74f),
-                title = "Device contact missing",
+                title = stringResource(Res.string.feature_contacts_device_contact_missing),
                 titleColor = MaterialTheme.colorScheme.error.copy(alpha = 0.74f),
-                description = "The linked device contact no longer exists. SecureChat kept its keys and conversation history.",
+                description = stringResource(Res.string.feature_contacts_device_contact_missing_description),
             )
         }
     }
 }
 
-// Single shared row for both device-link and identity status — the two
-// near-duplicate composables that existed before are consolidated here.
 @Composable
 private fun StatusRow(
     icon: ImageVector,
@@ -580,12 +626,12 @@ private fun StatusRow(
 
 @Composable
 private fun NoSecureChatIdentityContent() {
-    SectionTitle(icon = Icons.Default.Security, title = "SecureChat")
+    SectionTitle(icon = Icons.Default.Security, title = stringResource(Res.string.base_securechat))
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
     Text(
-        text = "SecureChat is not yet enabled for this contact.",
+        text = stringResource(Res.string.feature_contacts_securechat_not_enabled),
         style = MaterialTheme.typography.bodyMedium,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.error,
@@ -594,7 +640,7 @@ private fun NoSecureChatIdentityContent() {
     Spacer(modifier = Modifier.height(4.dp))
 
     Text(
-        text = "Public encryption and signing keys can be attached later by importing the contact's SecureChat identity.",
+        text = stringResource(Res.string.feature_contacts_securechat_keys_attach_later),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
     )
@@ -606,7 +652,10 @@ private fun SecureChatIdentitySection(
     safetyNumber: SafetyNumber?,
     onVerifyIdentity: () -> Unit,
 ) {
-    SectionTitle(icon = Icons.Default.Security, title = "SecureChat identity")
+    SectionTitle(
+        icon = Icons.Default.Security,
+        title = stringResource(Res.string.feature_contacts_securechat_identity),
+    )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
@@ -615,9 +664,9 @@ private fun SecureChatIdentitySection(
             StatusRow(
                 icon = Icons.Default.LinkOff,
                 iconColor = MaterialTheme.colorScheme.error,
-                title = "Not verified",
+                title = stringResource(Res.string.base_not_verified),
                 titleColor = MaterialTheme.colorScheme.error,
-                description = "Compare the safety number with the contact before trusting this identity.",
+                description = stringResource(Res.string.feature_contacts_compare_before_trusting),
             )
         }
 
@@ -625,9 +674,9 @@ private fun SecureChatIdentitySection(
             StatusRow(
                 icon = Icons.Default.Link,
                 iconColor = MaterialTheme.colorScheme.secondary,
-                title = "Verified",
+                title = stringResource(Res.string.base_verified),
                 titleColor = MaterialTheme.colorScheme.secondary,
-                description = "This identity has been verified.",
+                description = stringResource(Res.string.feature_contacts_identity_verified_description),
             )
         }
     }
@@ -636,7 +685,7 @@ private fun SecureChatIdentitySection(
 
     if (safetyNumber != null) {
         Text(
-            text = "Safety number",
+            text = stringResource(Res.string.feature_contacts_safety_number),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.SemiBold,
@@ -649,10 +698,10 @@ private fun SecureChatIdentitySection(
             enabled = false,
             onValueChange = { },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.small,
             supportingText = {
                 Text(
-                    text = "Compare the entire number with this contact through a trusted phone or video call.",
+                    text = stringResource(Res.string.feature_contacts_compare_entire_number),
                     style = MaterialTheme.typography.labelMedium,
                 )
             },
@@ -679,7 +728,7 @@ private fun SecureChatIdentitySection(
                 content = {
                     Icon(imageVector = Icons.Default.Security, contentDescription = null)
                     Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
-                    Text(text = "Verify safety number")
+                    Text(text = stringResource(Res.string.feature_contacts_verify_safety_number))
                 },
             )
         }
@@ -687,11 +736,17 @@ private fun SecureChatIdentitySection(
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
     }
 
-    KeySection(title = "Signing fingerprint", key = identity.signingPublicKey)
+    KeySection(
+        title = stringResource(Res.string.feature_contacts_signing_fingerprint),
+        key = identity.signingPublicKey,
+    )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
-    KeySection(title = "Encryption fingerprint", key = identity.encryptionPublicKey)
+    KeySection(
+        title = stringResource(Res.string.feature_contacts_encryption_fingerprint),
+        key = identity.encryptionPublicKey,
+    )
 }
 
 @Composable
@@ -760,12 +815,15 @@ private fun NotFoundContent(
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         ) {
             Text(
-                text = "Contact not found",
+                text = stringResource(Res.string.feature_contacts_contact_not_found),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
 
-            SecureChatApprovalButton(onClick = onBack, text = "Return to contacts")
+            SecureChatApprovalButton(
+                onClick = onBack,
+                text = stringResource(Res.string.feature_contacts_return_to_contacts),
+            )
         }
     }
 }
@@ -782,7 +840,7 @@ private fun ErrorContent(
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         ) {
             Text(
-                text = "Could not load contact",
+                text = stringResource(Res.string.feature_contacts_could_not_load_contact),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -794,7 +852,10 @@ private fun ErrorContent(
                 textAlign = TextAlign.Center,
             )
 
-            SecureChatApprovalButton(onClick = onRetry, text = "Retry")
+            SecureChatApprovalButton(
+                onClick = onRetry,
+                text = stringResource(Res.string.base_retry),
+            )
         }
     }
 }
@@ -810,16 +871,17 @@ private fun Contact.initials(): String =
         ?.takeIf { it.isNotBlank() }
         ?: "?"
 
+@Composable
 private fun ContactPhoneNumber.displayLabel(): String {
     val typeLabel =
         when (type) {
-            ContactPhoneNumberType.MOBILE -> "Mobile"
-            ContactPhoneNumberType.WORK_MOBILE -> "Work mobile"
-            ContactPhoneNumberType.HOME -> "Home"
-            ContactPhoneNumberType.WORK -> "Work"
-            ContactPhoneNumberType.MAIN -> "Main"
-            ContactPhoneNumberType.CUSTOM -> "Custom"
-            ContactPhoneNumberType.OTHER -> "Other"
+            ContactPhoneNumberType.MOBILE -> stringResource(Res.string.base_mobile)
+            ContactPhoneNumberType.WORK_MOBILE -> stringResource(Res.string.base_work_mobile)
+            ContactPhoneNumberType.HOME -> stringResource(Res.string.base_home)
+            ContactPhoneNumberType.WORK -> stringResource(Res.string.base_work)
+            ContactPhoneNumberType.MAIN -> stringResource(Res.string.base_main)
+            ContactPhoneNumberType.CUSTOM -> stringResource(Res.string.base_custom)
+            ContactPhoneNumberType.OTHER -> stringResource(Res.string.base_other)
         }
     return label?.takeIf { it.isNotBlank() } ?: typeLabel
 }

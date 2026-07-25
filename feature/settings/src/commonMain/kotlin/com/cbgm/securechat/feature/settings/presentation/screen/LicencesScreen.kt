@@ -18,10 +18,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import com.cbgm.securechat.core.ui.component.SecureChatStaticScaffold
 import com.cbgm.securechat.feature.settings.presentation.model.LicensesUiState
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.feature_settings_open_source_licenses
 import com.mikepenz.aboutlibraries.ui.compose.DefaultChipColors
 import com.mikepenz.aboutlibraries.ui.compose.DefaultLibraryColors
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 import com.mikepenz.aboutlibraries.ui.compose.produceLibraries
+import org.jetbrains.compose.resources.stringResource
 
 private val CardColor = Color(0xFF102A46)
 
@@ -65,7 +68,7 @@ private fun LicensesTopBar(onBack: () -> Unit) {
             ),
         title = {
             Text(
-                text = "Open source licenses",
+                text = stringResource(Res.string.feature_settings_open_source_licenses),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -74,7 +77,7 @@ private fun LicensesTopBar(onBack: () -> Unit) {
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = null,
                 )
             }
         },

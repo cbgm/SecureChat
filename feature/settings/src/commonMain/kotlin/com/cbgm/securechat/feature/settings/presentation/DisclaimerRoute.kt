@@ -5,6 +5,10 @@ import androidx.compose.ui.Modifier
 import com.cbgm.securechat.feature.settings.domain.model.DisclaimerContent
 import com.cbgm.securechat.feature.settings.presentation.model.DisclaimerType
 import com.cbgm.securechat.feature.settings.presentation.screen.MarkdownDisclaimerScreen
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.feature_settings_data_disclaimer
+import com.cbgm.securechat.resources.feature_settings_privacy_policy
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun DisclaimerRoute(
@@ -15,8 +19,8 @@ fun DisclaimerRoute(
     MarkdownDisclaimerScreen(
         title =
             when (type) {
-                DisclaimerType.PRIVACY_POLICY -> "Privacy policy"
-                DisclaimerType.DATA_DISCLAIMER -> "Data disclaimer"
+                DisclaimerType.PRIVACY_POLICY -> stringResource(Res.string.feature_settings_privacy_policy)
+                DisclaimerType.DATA_DISCLAIMER -> stringResource(Res.string.feature_settings_data_disclaimer)
             },
         markdownContent =
             when (type) {

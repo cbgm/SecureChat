@@ -9,6 +9,7 @@ import com.cbgm.securechat.feature.onboarding.presentation.OnboardingRoute
 import com.cbgm.securechat.startup.presentation.model.StartupUiState
 import com.cbgm.securechat.startup.presentation.screen.StartupScreen
 import com.cbgm.securechat.startup.presentation.screen.StartupViewModel
+import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -19,7 +20,11 @@ fun StartupRoute(
     val startupUiState by startupViewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(startupUiState) {
-        if (startupUiState == StartupUiState.Ready) onStartupComplete()
+        if (startupUiState == StartupUiState.Ready) {
+            delay(1000)
+            // here goes loading of data
+            onStartupComplete()
+        }
     }
 
     when (val state = startupUiState) {

@@ -8,7 +8,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -25,22 +24,39 @@ class DefaultOutboxRunner(
     private var observationJob: Job? = null
 
     override fun start() {
-        if (observationJob?.isActive == true) {
-            return
+        if (observationJob?.isActive != true) {
+            observationJob =
+                runnerScope.launch {
+                    protocolOutbox
+                        .observePending()
+                        .collect { pendingItems ->
+                            if (pendingItems.isNotEmpty()) {
+                                processAvailableItems()
+                            }
+                        }
+                }
         }
 
-        observationJob =
-            runnerScope.launch {
-                protocolOutbox
-                    .observePending()
-                    .collect { pendingItems ->
-                        if (
-                            pendingItems.isNotEmpty()
-                        ) {
-                            processAvailableItems()
-                        }
-                    }
+        /*
+         * start() is also the connection-available signal. It is called for
+         * every successful relay connection, not only on process startup.
+         *
+         * Recover packets left in PROCESSING by a cancelled send/process
+         * death and retry packets that failed while the relay was offline.
+         */
+        runnerScope.launch {
+            runCatching {
+                protocolOutbox.requeueInterrupted().getOrThrow()
+                protocolOutbox.retryFailed().getOrThrow()
+                processAvailableItems()
+            }.onFailure { error ->
+                if (error is CancellationException) {
+                    throw error
+                }
+
+                println("Outbox recovery failed: ${error.message}")
             }
+        }
     }
 
     override fun stop() {
@@ -60,27 +76,15 @@ class DefaultOutboxRunner(
                         throw error
                     }
 
-                    /*
-                     * Stop this processing cycle.
-                     *
-                     * Another Room emission or an explicit retry will
-                     * trigger another cycle later.
-                     */
                     return
                 }
 
                 val processingResult = result.getOrThrow()
 
-                /*
-                 * No pending items remain.
-                 */
                 if (processingResult.processedCount == 0) {
                     return
                 }
 
-                /*
-                 * A smaller batch means the queue was exhausted.
-                 */
                 if (processingResult.processedCount < PROCESSING_BATCH_SIZE) {
                     return
                 }
