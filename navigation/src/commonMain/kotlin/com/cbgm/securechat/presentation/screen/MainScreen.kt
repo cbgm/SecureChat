@@ -47,6 +47,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun MainScreen(
     onImportContact: () -> Unit,
+    onCreateGroup: () -> Unit,
     onNavigateToPrivacyPolicy: () -> Unit,
     onNavigateToDataDisclaimer: () -> Unit,
     onNavigateToLicenses: () -> Unit,
@@ -132,6 +133,10 @@ fun MainScreen(
                 onImportContact = {
                     dismissOverlay()
                     onImportContact()
+                },
+                onCreateGroup = {
+                    dismissOverlay()
+                    onCreateGroup()
                 },
                 onContactClick = {
                     contactId,
@@ -306,6 +311,7 @@ private fun MainScreenPreview() {
     SecureChatTheme {
         MainScreen(
             onImportContact = {},
+            onCreateGroup = {},
             onOpenChat = { _, _ -> },
             onShareIdentity = {},
             onNavigateToPrivacyPolicy = {},

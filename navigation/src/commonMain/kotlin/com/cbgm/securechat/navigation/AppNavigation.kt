@@ -18,6 +18,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.cbgm.securechat.feature.chats.presentation.ChatRoute
+import com.cbgm.securechat.feature.chats.presentation.CreateGroupRoute
+import com.cbgm.securechat.feature.chats.presentation.GroupConversationRoute
 import com.cbgm.securechat.feature.contactimport.presentation.ImportIdentityRoute
 import com.cbgm.securechat.feature.contactimport.presentation.ScanIdentityRoute
 import com.cbgm.securechat.feature.contacts.presentation.ContactDetailsRoute
@@ -129,6 +131,25 @@ fun AppNavigation() {
                 )
             }
 
+            composable<AppDestination.CreateGroup> {
+                CreateGroupRoute(
+                    onBack = { navController.popBackStack() },
+                    onGroupCreated = { conversationId ->
+                        navController.navigate(AppDestination.GroupConversation(conversationId)) {
+                            popUpTo(AppDestination.CreateGroup) { inclusive = true }
+                        }
+                    },
+                )
+            }
+
+            composable<AppDestination.GroupConversation> { backStackEntry ->
+                val destination = backStackEntry.toRoute<AppDestination.GroupConversation>()
+                GroupConversationRoute(
+                    conversationId = destination.conversationId,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
             composable<AppDestination.ShareIdentity> {
                 ShareIdentityRoute(
                     onBack = {
@@ -178,6 +199,9 @@ fun AppNavigation() {
                     onImportContact = {
                         navController.navigate(AppDestination.ImportContact)
                     },
+                    onCreateGroup = {
+                        navController.navigate(AppDestination.CreateGroup)
+                    },
                     onContactClick = { contactId, contactName ->
                         navController.navigate(
                             AppDestination.Chat(
@@ -225,6 +249,9 @@ fun AppNavigation() {
                     },
                     onImportContact = {
                         navController.navigate(AppDestination.ImportContact)
+                    },
+                    onCreateGroup = {
+                        navController.navigate(AppDestination.CreateGroup)
                     },
                 )
             }

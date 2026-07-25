@@ -1,6 +1,7 @@
 package com.cbgm.securechat.feature.contacts.presentation.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,8 +20,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Contacts
+import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Verified
@@ -73,6 +76,8 @@ import com.cbgm.securechat.resources.base_import_contact
 import com.cbgm.securechat.resources.base_import_securechat_contact
 import com.cbgm.securechat.resources.base_missing
 import com.cbgm.securechat.resources.base_secure
+import com.cbgm.securechat.resources.feature_chats_create_group
+import com.cbgm.securechat.resources.feature_chats_group_name
 import com.cbgm.securechat.resources.feature_contacts_add_contact_title
 import com.cbgm.securechat.resources.feature_contacts_could_not_load_contacts
 import com.cbgm.securechat.resources.feature_contacts_import_from_device
@@ -96,10 +101,19 @@ fun ContactsScreen(
         contactName: String,
     ) -> Unit,
     onImportContact: () -> Unit,
+    onCreateGroup: () -> Unit,
     onImportDeviceContacts: () -> Unit,
     onSearchQueryChanged: (String) -> Unit,
     searchQuery: String,
     modifier: Modifier = Modifier,
+    selectionMode: Boolean = false,
+    selectedContactIds: Set<String> = emptySet(),
+    selectionConfirmEnabled: Boolean = false,
+    selectionConfirming: Boolean = false,
+    onContactSelected: (String) -> Unit = {},
+    onSelectionConfirmed: () -> Unit = {},
+    selectionTitle: String = "",
+    onSelectionTitleChanged: (String) -> Unit = {},
 ) {
     var showImportSheet by rememberSaveable {
         mutableStateOf(false)
@@ -114,12 +128,18 @@ fun ContactsScreen(
                 onBack = onBack,
                 searchQuery = searchQuery,
                 onSearchQueryChanged = onSearchQueryChanged,
+                selectionMode = selectionMode,
+                selectionConfirmEnabled = selectionConfirmEnabled,
+                selectionConfirming = selectionConfirming,
+                onSelectionConfirmed = onSelectionConfirmed,
+                selectionTitle = selectionTitle,
+                onSelectionTitleChanged = onSelectionTitleChanged,
             )
         },
         floatingActionButton = {
             if (
-                uiState is ContactsUiState.Empty ||
-                uiState is ContactsUiState.Content
+                !selectionMode &&
+                (uiState is ContactsUiState.Empty || uiState is ContactsUiState.Content)
             ) {
                 ContactsFloatingActionButton(
                     onClick = {
@@ -135,6 +155,10 @@ fun ContactsScreen(
             listState = listState,
             onContactClick = onContactClick,
             onImportContact = onImportContact,
+            onCreateGroup = onCreateGroup,
+            selectionMode = selectionMode,
+            selectedContactIds = selectedContactIds,
+            onContactSelected = onContactSelected,
         )
     }
 
@@ -162,6 +186,12 @@ private fun ContactsTopBar(
     searchQuery: String,
     onSearchQueryChanged: (String) -> Unit,
     onBack: () -> Unit,
+    selectionMode: Boolean,
+    selectionConfirmEnabled: Boolean,
+    selectionConfirming: Boolean,
+    onSelectionConfirmed: () -> Unit,
+    selectionTitle: String,
+    onSelectionTitleChanged: (String) -> Unit,
 ) {
     Column {
         CenterAlignedTopAppBar(
@@ -175,25 +205,72 @@ private fun ContactsTopBar(
                     navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
                 ),
             title = {
-                Text(
-                    text = stringResource(Res.string.base_contacts),
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                )
+                if (selectionMode) {
+                    TextField(
+                        value = selectionTitle,
+                        onValueChange = onSelectionTitleChanged,
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                        placeholder = {
+                            Text(
+                                text = stringResource(Res.string.feature_chats_group_name),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        },
+                        singleLine = true,
+                        colors =
+                            TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                disabledContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                disabledIndicatorColor = Color.Transparent,
+                            ),
+                    )
+                } else {
+                    Text(
+                        text = stringResource(Res.string.base_contacts),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            },
+            navigationIcon = {
+                if (selectionMode) {
+                    IconButton(onClick = onBack) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = null)
+                    }
+                }
             },
             actions = {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = null,
-                    )
+                if (selectionMode) {
+                    IconButton(
+                        onClick = onSelectionConfirmed,
+                        enabled = selectionConfirmEnabled && !selectionConfirming,
+                    ) {
+                        if (selectionConfirming) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                            )
+                        } else {
+                            Icon(imageVector = Icons.Default.Check, contentDescription = null)
+                        }
+                    }
+                } else {
+                    IconButton(onClick = onBack) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = null)
+                    }
                 }
             },
         )
         Box(
-            Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.background),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background),
         ) {
             SearchField(
                 searchQuery = searchQuery,
@@ -284,11 +361,12 @@ private fun ContactsScreenContent(
     uiState: ContactsUiState,
     innerPadding: PaddingValues,
     listState: LazyListState,
-    onContactClick: (
-        contactId: String,
-        contactName: String,
-    ) -> Unit,
+    onContactClick: (contactId: String, contactName: String) -> Unit,
     onImportContact: () -> Unit,
+    onCreateGroup: () -> Unit,
+    selectionMode: Boolean,
+    selectedContactIds: Set<String>,
+    onContactSelected: (String) -> Unit,
 ) {
     when (uiState) {
         ContactsUiState.Loading -> {
@@ -296,7 +374,9 @@ private fun ContactsScreenContent(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .padding(innerPadding),
+                        .padding(
+                            innerPadding,
+                        ),
             )
         }
 
@@ -306,9 +386,7 @@ private fun ContactsScreenContent(
                     Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(
-                            MaterialTheme.spacing.medium,
-                        ),
+                        .padding(MaterialTheme.spacing.medium),
             )
         }
 
@@ -318,6 +396,10 @@ private fun ContactsScreenContent(
                 innerPadding = innerPadding,
                 listState = listState,
                 onContactClick = onContactClick,
+                onCreateGroup = onCreateGroup,
+                selectionMode = selectionMode,
+                selectedContactIds = selectedContactIds,
+                onContactSelected = onContactSelected,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -330,9 +412,7 @@ private fun ContactsScreenContent(
                     Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(
-                            MaterialTheme.spacing.medium,
-                        ),
+                        .padding(MaterialTheme.spacing.medium),
             )
         }
     }
@@ -343,10 +423,11 @@ private fun ContactsList(
     groupedContacts: List<ContactGroupEntity>,
     innerPadding: PaddingValues,
     listState: LazyListState,
-    onContactClick: (
-        contactId: String,
-        contactName: String,
-    ) -> Unit,
+    onContactClick: (contactId: String, contactName: String) -> Unit,
+    onCreateGroup: () -> Unit,
+    selectionMode: Boolean,
+    selectedContactIds: Set<String>,
+    onContactSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -359,11 +440,14 @@ private fun ContactsList(
                 end = MaterialTheme.spacing.medium,
                 bottom = innerPadding.calculateBottomPadding(),
             ),
-        verticalArrangement =
-            Arrangement.spacedBy(
-                MaterialTheme.spacing.medium,
-            ),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
     ) {
+        if (!selectionMode) {
+            item(key = "create_group") {
+                CreateGroupListItem(onClick = onCreateGroup)
+            }
+        }
+
         items(
             items = groupedContacts,
             key = ContactGroupEntity::title,
@@ -371,18 +455,61 @@ private fun ContactsList(
             ContactGroup(
                 group = group,
                 onContactClick = onContactClick,
+                selectionMode = selectionMode,
+                selectedContactIds = selectedContactIds,
+                onContactSelected = onContactSelected,
             )
         }
     }
 }
 
 @Composable
+private fun CreateGroupListItem(onClick: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.primaryContainer,
+        tonalElevation = 2.dp,
+        shadowElevation = 1.dp,
+    ) {
+        ListItem(
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+            leadingContent = {
+                Box(
+                    modifier =
+                        Modifier.size(40.dp).background(
+                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
+                            shape = CircleShape,
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.GroupAdd,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary,
+                    )
+                }
+            },
+            headlineContent = {
+                Text(
+                    text = stringResource(Res.string.feature_chats_create_group),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        )
+    }
+}
+
+@Composable
 private fun ContactGroup(
     group: ContactGroupEntity,
-    onContactClick: (
-        contactId: String,
-        contactName: String,
-    ) -> Unit,
+    onContactClick: (contactId: String, contactName: String) -> Unit,
+    selectionMode: Boolean,
+    selectedContactIds: Set<String>,
+    onContactSelected: (String) -> Unit,
 ) {
     Column {
         Text(
@@ -408,11 +535,14 @@ private fun ContactGroup(
                 group.contacts.forEachIndexed { index, contact ->
                     ContactListItem(
                         contact = contact,
+                        selected = contact.id in selectedContactIds,
+                        selectionMode = selectionMode,
                         onClick = {
-                            onContactClick(
-                                contact.id,
-                                contact.displayName.orEmpty(),
-                            )
+                            if (selectionMode) {
+                                onContactSelected(contact.id)
+                            } else {
+                                onContactClick(contact.id, contact.displayName.orEmpty())
+                            }
                         },
                     )
                 }
@@ -424,6 +554,8 @@ private fun ContactGroup(
 @Composable
 private fun ContactListItem(
     contact: Contact,
+    selected: Boolean = false,
+    selectionMode: Boolean = false,
     onClick: () -> Unit,
 ) {
     Column(
@@ -465,7 +597,11 @@ private fun ContactListItem(
                 )
             },
             trailingContent = {
-                ContactStatus(contact = contact)
+                if (selectionMode) {
+                    ContactSelectionCircle(selected = selected)
+                } else {
+                    ContactStatus(contact = contact)
+                }
             },
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         )
@@ -477,6 +613,33 @@ private fun ContactListItem(
                     .padding(start = 80.dp),
             color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.05f),
         )
+    }
+}
+
+@Composable
+private fun ContactSelectionCircle(selected: Boolean) {
+    Box(
+        modifier =
+            Modifier
+                .size(24.dp)
+                .border(
+                    width = 2.dp,
+                    color = if (selected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
+                    shape = CircleShape,
+                ).background(
+                    color = if (selected) MaterialTheme.colorScheme.secondary else Color.Transparent,
+                    shape = CircleShape,
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (selected) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.background,
+            )
+        }
     }
 }
 
@@ -882,6 +1045,7 @@ fun ContactsScreenPreview() {
             onBack = {},
             onContactClick = { _, _ -> },
             onImportContact = {},
+            onCreateGroup = {},
             onImportDeviceContacts = {},
             modifier = Modifier.fillMaxSize(),
             onSearchQueryChanged = {},

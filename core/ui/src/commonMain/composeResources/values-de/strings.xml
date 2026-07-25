@@ -205,6 +205,11 @@
     <string name="feature_onboarding_welcome_to_securechat">Willkommen bei SecureChat</string>
     <string name="feature_onboarding_your_name">Dein Name</string>
 
+    <string name="feature_chats_create_group">Gruppe erstellen</string>
+    <string name="feature_chats_group_name">Gruppenname</string>
+    <string name="feature_chats_group_members">Mitglieder</string>
+    <string name="feature_chats_group_member_count">%1$d Mitglieder</string>
+
     <!-- Feature: settings -->
     <string name="feature_settings_about">Über</string>
     <string name="feature_settings_build_info">Build-Informationen</string>

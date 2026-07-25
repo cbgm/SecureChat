@@ -30,6 +30,24 @@ interface ChatDao {
     @Upsert
     suspend fun upsertConversationParticipant(participant: ConversationParticipantEntity)
 
+    @Upsert
+    suspend fun upsertConversationParticipants(participants: List<ConversationParticipantEntity>)
+
+    @Transaction
+    suspend fun createGroupConversation(
+        conversation: ConversationEntity,
+        participants: List<ConversationParticipantEntity>,
+    ) {
+        upsertConversation(conversation)
+        upsertConversationParticipants(participants)
+    }
+
+    @Query("SELECT * FROM conversations WHERE id = :conversationId LIMIT 1")
+    fun observeConversationById(conversationId: String): Flow<ConversationEntity?>
+
+    @Query("SELECT * FROM conversation_participants WHERE conversationId = :conversationId")
+    fun observeConversationParticipants(conversationId: String): Flow<List<ConversationParticipantEntity>>
+
     @Query("SELECT * FROM conversation_participants WHERE conversationId = :conversationId")
     suspend fun findConversationParticipants(conversationId: String): List<ConversationParticipantEntity>
 

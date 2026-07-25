@@ -13,11 +13,13 @@ import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
 import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
 import com.cbgm.securechat.data.database.entity.ConversationEntity
+import com.cbgm.securechat.data.database.entity.ConversationParticipantEntity
 import com.cbgm.securechat.data.database.entity.MessageEntity
 import com.cbgm.securechat.data.database.model.ConversationSummary
 import com.cbgm.securechat.data.database.model.ConversationWithMessages
 import com.cbgm.securechat.feature.chats.domain.model.ChatMessage
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
+import com.cbgm.securechat.feature.chats.domain.model.GroupConversation
 import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
@@ -27,6 +29,7 @@ import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlin.random.Random
 
@@ -56,6 +59,55 @@ class DefaultChatsRepository(
         getOrCreateConversation(contactId = contactId)
     }
 
+    override suspend fun createGroupConversation(
+        title: String,
+        contactIds: Set<String>,
+    ): String {
+        val normalizedTitle = title.trim()
+        require(normalizedTitle.isNotEmpty()) { "Group title must not be blank" }
+        require(contactIds.size >= MIN_GROUP_PARTICIPANT_COUNT) { "A group requires at least two contacts" }
+
+        val now = SystemClock.nowEpochMilliseconds()
+        val conversationId = createId(prefix = "group")
+        val conversation =
+            ConversationEntity(
+                id = conversationId,
+                contactId = null,
+                type = GROUP_CONVERSATION_TYPE,
+                title = normalizedTitle,
+                createdAtEpochMilliseconds = now,
+                updatedAtEpochMilliseconds = now,
+            )
+        val participants =
+            contactIds.map { contactId ->
+                ConversationParticipantEntity(
+                    conversationId = conversationId,
+                    contactId = contactId,
+                    role = GROUP_MEMBER_ROLE,
+                    joinedAtEpochMilliseconds = now,
+                )
+            }
+
+        chatDao.createGroupConversation(conversation, participants)
+        return conversationId
+    }
+
+    override fun observeGroupConversation(conversationId: String): Flow<GroupConversation?> =
+        combine(
+            chatDao.observeConversationById(conversationId),
+            chatDao.observeConversationParticipants(conversationId),
+        ) { conversation, participants ->
+            if (conversation == null || conversation.type != GROUP_CONVERSATION_TYPE) {
+                null
+            } else {
+                GroupConversation(
+                    id = conversation.id,
+                    title = conversation.title.orEmpty(),
+                    participantContactIds = participants.map { it.contactId },
+                )
+            }
+        }
+
     override suspend fun sendMessage(
         contactId: String,
         text: String,
@@ -71,8 +123,7 @@ class DefaultChatsRepository(
 
         identityExchangeStarter.ensureStarted(contactId = contactId).getOrThrow()
 
-        val conversation =
-            getOrCreateConversation(contactId = contactId)
+        val conversation = getOrCreateConversation(contactId = contactId)
 
         val now = SystemClock.nowEpochMilliseconds()
         val messageId = createId(prefix = "message")
@@ -506,6 +557,9 @@ class DefaultChatsRepository(
 
     private companion object {
         const val DIRECT_CONVERSATION_TYPE = "DIRECT"
+        const val GROUP_CONVERSATION_TYPE = "GROUP"
+        const val GROUP_MEMBER_ROLE = "MEMBER"
+        const val MIN_GROUP_PARTICIPANT_COUNT = 2
         const val UNKNOWN_TRANSPORT_MODE = "UNKNOWN"
     }
 }

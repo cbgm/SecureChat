@@ -1,6 +1,7 @@
 package com.cbgm.securechat.feature.chats.domain.repository
 
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
+import com.cbgm.securechat.feature.chats.domain.model.GroupConversation
 import kotlinx.coroutines.flow.Flow
 
 interface ChatsRepository {
@@ -9,6 +10,13 @@ interface ChatsRepository {
     fun observeConversation(contactId: String): Flow<Conversation?>
 
     suspend fun createConversation(contactId: String)
+
+    suspend fun createGroupConversation(
+        title: String,
+        contactIds: Set<String>,
+    ): String
+
+    fun observeGroupConversation(conversationId: String): Flow<GroupConversation?>
 
     suspend fun sendMessage(
         contactId: String,

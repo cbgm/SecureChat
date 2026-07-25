@@ -14,6 +14,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun ContactsRoute(
     onBack: () -> Unit,
     onImportContact: () -> Unit,
+    onCreateGroup: () -> Unit,
     onContactClick: (
         contactId: String,
         contactName: String,
@@ -42,6 +43,7 @@ fun ContactsRoute(
         uiState = uiState,
         onBack = onBack,
         onImportContact = onImportContact,
+        onCreateGroup = onCreateGroup,
         onImportDeviceContacts = requestDeviceContactsPermission,
         onContactClick = onContactClick,
         modifier = modifier,

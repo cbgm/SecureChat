@@ -13,6 +13,14 @@ sealed interface AppDestination {
     ) : AppDestination
 
     @Serializable
+    data object CreateGroup : AppDestination
+
+    @Serializable
+    data class GroupConversation(
+        val conversationId: String,
+    ) : AppDestination
+
+    @Serializable
     data object ShareIdentity : AppDestination
 
     @Serializable

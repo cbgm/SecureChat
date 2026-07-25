@@ -12,6 +12,8 @@ import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
 import com.cbgm.securechat.feature.chats.domain.usecase.GetContactSafetyNumber
 import com.cbgm.securechat.feature.chats.presentation.screen.ChatViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.ChatsViewModel
+import com.cbgm.securechat.feature.chats.presentation.screen.CreateGroupViewModel
+import com.cbgm.securechat.feature.chats.presentation.screen.GroupConversationViewModel
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
@@ -61,6 +63,14 @@ val chatsModule =
 
         viewModel {
             ChatsViewModel(chatsRepository = get())
+        }
+
+        viewModel {
+            CreateGroupViewModel(observeContacts = get(), chatsRepository = get())
+        }
+
+        viewModel { parameters ->
+            GroupConversationViewModel(conversationId = parameters.get(), chatsRepository = get())
         }
 
         viewModel { parameters ->
