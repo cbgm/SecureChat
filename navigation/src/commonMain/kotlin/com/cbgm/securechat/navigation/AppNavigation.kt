@@ -55,13 +55,18 @@ fun AppNavigation() {
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
+                    .background(
+                        MaterialTheme.colorScheme.background
+                    )
         ) {
             composable<AppDestination.Licences>(
                 enterTransition = {
                     slideIntoContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 },
                 exitTransition = {
@@ -90,7 +95,10 @@ fun AppNavigation() {
                 exitTransition = {
                     slideOutOfContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 }
             ) {
@@ -101,13 +109,19 @@ fun AppNavigation() {
                 enterTransition = {
                     slideIntoContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 },
                 exitTransition = {
                     slideOutOfContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 }
             ) { backStackEntry ->
@@ -165,13 +179,19 @@ fun AppNavigation() {
                 enterTransition = {
                     slideIntoContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.Up,
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 },
                 exitTransition = {
                     slideOutOfContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.Down,
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 }
             ) {
@@ -205,14 +225,18 @@ fun AppNavigation() {
 
             composable<AppDestination.Main> {
                 MainRoute(
-                    onOpenChat = { conversationId, contactId, contactName ->
-                        navController.navigate(
-                            AppDestination.Chat(
-                                conversationId = conversationId,
-                                contactId = contactId,
-                                contactName = contactName
+                    onOpenChat = { conversationId, contactId, contactName, isGroup ->
+                        if (isGroup) {
+                            navController.navigate(AppDestination.GroupConversation(conversationId))
+                        } else {
+                            navController.navigate(
+                                AppDestination.Chat(
+                                    conversationId = conversationId,
+                                    contactId = contactId,
+                                    contactName = contactName
+                                )
                             )
-                        )
+                        }
                     },
                     onShareIdentity = {
                         navController.navigate(AppDestination.ShareIdentity)
@@ -250,13 +274,19 @@ fun AppNavigation() {
                 enterTransition = {
                     slideIntoContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 },
                 exitTransition = {
                     slideOutOfContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 }
             ) { backStackEntry ->
@@ -346,7 +376,8 @@ fun AppNavigation() {
                          * Return to the import screen and provide the scanned
                          * payload through the saved-state handle.
                          */
-                        navController.previousBackStackEntry
+                        navController
+                            .previousBackStackEntry
                             ?.savedStateHandle
                             ?.set(
                                 "scannedIdentity",

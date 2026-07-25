@@ -56,7 +56,8 @@ fun MainScreen(
     onOpenChat: (
         conversationId: String,
         contactId: String,
-        contactName: String
+        contactName: String,
+        isGroup: Boolean
     ) -> Unit,
     onShareIdentity: () -> Unit,
     modifier: Modifier = Modifier
@@ -143,7 +144,7 @@ fun MainScreen(
                     coroutineScope.launch {
                         val conversationId = getOrCreateDirectConversation(contactId)
                         dismissOverlay()
-                        onOpenChat(conversationId, contactId, contactName)
+                        onOpenChat(conversationId, contactId, contactName, false)
                     }
                 }
             )
@@ -244,7 +245,7 @@ private fun MainContent(
     selectedTab: MainTab,
     innerPadding: PaddingValues,
     scrollStates: SecureChatTabbedScrollStates<MainTab>,
-    onOpenChat: (String, String, String) -> Unit,
+    onOpenChat: (String, String, String, Boolean) -> Unit,
     onShareIdentity: () -> Unit,
     onNavigateToPrivacyPolicy: () -> Unit,
     onNavigateToDataDisclaimer: () -> Unit,
@@ -299,7 +300,7 @@ private fun MainScreenPreview() {
         MainScreen(
             onImportContact = {},
             onCreateGroup = {},
-            onOpenChat = { _, _, _ -> },
+            onOpenChat = { _, _, _, _ -> },
             onShareIdentity = {},
             onNavigateToPrivacyPolicy = {},
             onNavigateToDataDisclaimer = {},

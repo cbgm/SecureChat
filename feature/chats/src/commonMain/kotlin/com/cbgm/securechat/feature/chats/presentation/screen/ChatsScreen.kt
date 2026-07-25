@@ -34,6 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
+import com.cbgm.securechat.feature.chats.domain.model.Conversation
 import com.cbgm.securechat.feature.chats.presentation.model.ChatsUiState
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
 import com.cbgm.securechat.resources.Res
@@ -47,7 +48,8 @@ data class ChatListItem(
     val contactName: String,
     val lastMessage: String,
     val timestamp: String,
-    val unreadCount: Int = 0
+    val unreadCount: Int = 0,
+    val isGroup: Boolean = false
 )
 
 @Composable
@@ -90,7 +92,7 @@ fun ChatsScreen(
             ) {
                 items(
                     items = uiState.conversations,
-                    key = { chat -> chat.contactId }
+                    key = { chat -> chat.conversationId }
                 ) { chat ->
                     ChatItem(
                         chat = chat,
@@ -183,7 +185,10 @@ private fun ChatItem(
                     }
                 }
             },
-            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background)
+            colors =
+                ListItemDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
         )
 
         HorizontalDivider(
@@ -253,15 +258,14 @@ private fun ChatsScreenPreview() {
                                 lastMessage = "Hello!",
                                 timestamp = "10:00 AM",
                                 unreadCount = 3,
-                                conversationId = "3"
+                                conversationId = "5"
                             ),
                             ChatListItem(
                                 contactId = "2",
                                 contactName = "Bob",
                                 lastMessage = "Sounds good, see you then.",
                                 timestamp = "Yesterday",
-                                unreadCount = 0,
-                                conversationId = "4"
+                                conversationId = "6"
                             )
                         )
                 ),

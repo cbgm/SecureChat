@@ -5,11 +5,10 @@ data class Conversation(
     val contactId: String,
     val contactName: String,
     val messages: List<ChatMessage>,
-    val unreadCount: Int
+    val unreadCount: Int,
+    val isGroup: Boolean = false,
+    val participantContactIds: List<String> = emptyList()
 ) {
     val lastMessage: ChatMessage?
-        get() =
-            messages.maxByOrNull {
-                it.timestamp
-            }
+        get() = messages.maxByOrNull { it.timestamp }
 }

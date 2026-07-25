@@ -14,7 +14,9 @@ data class ChatUiState(
     val isLoadingContact: Boolean = true,
     val isLoadingSafetyNumber: Boolean = false,
     val isVerifyingIdentity: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isGroup: Boolean = false,
+    val subtitle: String = ""
 ) {
     val isEndToEndEncrypted: Boolean
         get() {

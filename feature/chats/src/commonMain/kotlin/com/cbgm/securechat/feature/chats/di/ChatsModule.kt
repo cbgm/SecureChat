@@ -62,7 +62,8 @@ val chatsModule =
 
         single<OutboxDeliveryStateListener> {
             ChatOutboxDeliveryStateListener(
-                messageDeliveryStatusDao = get()
+                messageDeliveryStatusDao = get(),
+                messageRecipientStateDao = get()
             )
         }
 
@@ -79,6 +80,7 @@ val chatsModule =
             DefaultChatsRepository(
                 chatDao = get(),
                 messageDeliveryStatusDao = get(),
+                messageRecipientStateDao = get(),
                 getContact = get(),
                 localPublicIdentityProvider = get(),
                 protocolOutbox = get(),
@@ -98,7 +100,14 @@ val chatsModule =
         }
 
         viewModel { parameters ->
-            GroupConversationViewModel(conversationId = parameters.get(), observeGroupConversation = get())
+            GroupConversationViewModel(
+                conversationId = parameters.get(),
+                observeConversation = get(),
+                sendGroupMessage = get(),
+                markConversationReadUseCase = get(),
+                retryMessageUseCase = get(),
+                contactRepository = get()
+            )
         }
 
         viewModel { parameters ->

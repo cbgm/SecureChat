@@ -133,27 +133,27 @@ interface ChatDao {
         conversations.id AS conversationId,
         conversations.contactId AS contactId,
         contacts.displayName AS contactName,
-
+        conversations.type AS conversationType,
+        conversations.title AS conversationTitle,
+        (
+            SELECT COUNT(*)
+            FROM conversation_participants
+            WHERE conversation_participants.conversationId = conversations.id
+        ) AS participantCount,
         (
             SELECT messages.text
             FROM messages
             WHERE messages.conversationId = conversations.id
-            ORDER BY
-                messages.createdAtEpochMilliseconds DESC,
-                messages.id DESC
+            ORDER BY messages.createdAtEpochMilliseconds DESC, messages.id DESC
             LIMIT 1
         ) AS lastMessageText,
-
         (
             SELECT messages.createdAtEpochMilliseconds
             FROM messages
             WHERE messages.conversationId = conversations.id
-            ORDER BY
-                messages.createdAtEpochMilliseconds DESC,
-                messages.id DESC
+            ORDER BY messages.createdAtEpochMilliseconds DESC, messages.id DESC
             LIMIT 1
         ) AS lastMessageTimestamp,
-
         (
             SELECT COUNT(*)
             FROM messages
@@ -162,21 +162,14 @@ interface ChatDao {
               AND messages.readReceiptSent = 0
               AND messages.contentStatus = 'READABLE'
         ) AS unreadCount,
-
-        conversations.updatedAtEpochMilliseconds
-            AS updatedAtEpochMilliseconds
-
+        conversations.updatedAtEpochMilliseconds AS updatedAtEpochMilliseconds
     FROM conversations
-
-    INNER JOIN contacts
-        ON contacts.id = conversations.contactId
-
+    LEFT JOIN contacts ON contacts.id = conversations.contactId
     WHERE EXISTS (
         SELECT 1
         FROM messages
         WHERE messages.conversationId = conversations.id
     )
-
     ORDER BY conversations.updatedAtEpochMilliseconds DESC
     """
     )

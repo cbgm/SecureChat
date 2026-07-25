@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Refresh
@@ -183,24 +184,35 @@ private fun ChatTopBar(
                         ),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    ContactAvatar(
-                        name = uiState.contactName,
-                        size = 36.dp
-                    )
+                    if (uiState.isGroup) {
+                        GroupAvatar()
+                    } else {
+                        ContactAvatar(
+                            name = uiState.contactName,
+                            size = 36.dp
+                        )
+                    }
 
-                    Spacer(
-                        modifier =
-                            Modifier.width(
-                                MaterialTheme.spacing.small
+                    Spacer(modifier = Modifier.width(MaterialTheme.spacing.small))
+
+                    Column {
+                        Text(
+                            text = uiState.contactName,
+                            style = MaterialTheme.typography.titleSmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+
+                        if (uiState.subtitle.isNotBlank()) {
+                            Text(
+                                text = uiState.subtitle,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
-                    )
-
-                    Text(
-                        text = uiState.contactName,
-                        style = MaterialTheme.typography.titleSmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                        }
+                    }
                 }
             },
             navigationIcon = {
@@ -214,10 +226,12 @@ private fun ChatTopBar(
             }
         )
 
-        SecurityBanner(
-            securityState = uiState.contactSecurityState,
-            onVerifyIdentity = onVerifyIdentity
-        )
+        if (!uiState.isGroup) {
+            SecurityBanner(
+                securityState = uiState.contactSecurityState,
+                onVerifyIdentity = onVerifyIdentity
+            )
+        }
 
         uiState.errorMessage?.let { message ->
             ErrorMessage(message = message)
@@ -303,6 +317,24 @@ private fun ChatContent(
                 topPadding = innerPadding.calculateTopPadding(),
                 bottomPadding = innerPadding.calculateBottomPadding(),
                 modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+@Composable
+private fun GroupAvatar() {
+    Surface(
+        modifier = Modifier.size(36.dp),
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = Icons.Default.Group,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.size(20.dp)
             )
         }
     }
@@ -535,6 +567,16 @@ private fun MessageBubble(
             modifier = Modifier.fillMaxWidth(fraction = 0.78f),
             horizontalAlignment = if (message.isMine) Alignment.End else Alignment.Start
         ) {
+            if (!message.isMine && !message.senderName.isNullOrBlank()) {
+                Text(
+                    text = message.senderName,
+                    modifier = Modifier.padding(start = 8.dp, bottom = 3.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+
             Surface(
                 color = bubbleState.bubbleColor,
                 contentColor = bubbleState.contentColor,
@@ -590,6 +632,24 @@ private fun MessageMetadata(
                 deliveryStatus = message.deliveryStatus,
                 onRetryClick = onRetryClick
             )
+
+            val progress = message.deliveryProgress
+            if (progress.recipientCount > 1) {
+                val progressText =
+                    if (progress.readCount > 0) {
+                        "Read ${progress.readCount}/${progress.recipientCount}"
+                    } else if (progress.deliveredCount > 0) {
+                        "Delivered ${progress.deliveredCount}/${progress.recipientCount}"
+                    } else {
+                        "Sending…"
+                    }
+
+                Text(
+                    text = progressText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                )
+            }
         }
     }
 }

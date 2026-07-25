@@ -34,6 +34,10 @@ val androidDatabaseModule =
             get<SecureChatDatabase>().messageDeliveryStatusDao()
         }
 
+        single {
+            get<SecureChatDatabase>().messageRecipientStateDao()
+        }
+
         single<ProtocolOutbox> {
             DefaultProtocolOutbox(
                 outboxDao = get(),

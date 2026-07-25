@@ -16,6 +16,7 @@ import com.cbgm.securechat.core.protocol.packet.ReadReceiptPacket
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
 import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
+import com.cbgm.securechat.data.database.dao.MessageRecipientStateDao
 import com.cbgm.securechat.data.database.entity.ConversationEntity
 import com.cbgm.securechat.data.database.entity.ConversationParticipantEntity
 import com.cbgm.securechat.data.database.entity.MessageEntity
@@ -26,6 +27,7 @@ import com.cbgm.securechat.feature.chats.domain.model.ChatMessage
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
 import com.cbgm.securechat.feature.chats.domain.model.GroupConversation
 import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
+import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryProgress
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
 import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
@@ -41,6 +43,7 @@ import kotlin.random.Random
 class DefaultChatsRepository(
     private val chatDao: ChatDao,
     private val messageDeliveryStatusDao: MessageDeliveryStatusDao,
+    private val messageRecipientStateDao: MessageRecipientStateDao,
     private val getContact: GetContact,
     private val localPublicIdentityProvider: LocalPublicIdentityProvider,
     private val identityExchangeStarter: IdentityExchangeStarter,
@@ -57,8 +60,15 @@ class DefaultChatsRepository(
         }
 
     override fun observeConversation(conversationId: String): Flow<Conversation?> =
-        chatDao.observeConversationWithMessagesById(conversationId).map { result ->
-            result?.toDomain()
+        combine(
+            chatDao.observeConversationWithMessagesById(conversationId),
+            chatDao.observeConversationParticipants(conversationId),
+            messageRecipientStateDao.observeByConversationId(conversationId)
+        ) { result, participants, recipientStates ->
+            result?.toDomain(
+                participantContactIds = participants.map { it.contactId },
+                recipientStates = recipientStates
+            )
         }
 
     override suspend fun getOrCreateDirectConversation(contactId: String): String = getOrCreateConversation(contactId).id
@@ -285,46 +295,46 @@ class DefaultChatsRepository(
         messageId: String
     ): Result<Unit> =
         runCatching {
-            require(messageId.isNotBlank()) {
-                "Message ID must not be blank"
+            require(messageId.isNotBlank()) { "Message ID must not be blank" }
+
+            val message = chatDao.findMessageById(messageId) ?: error("Message was not found")
+            check(message.isMine) { "Only outgoing messages can be retried" }
+            check(message.deliveryStatus == MessageDeliveryStatus.FAILED.name) { "Only failed messages can be retried" }
+
+            val recipientStates = messageRecipientStateDao.findByMessageId(messageId)
+            if (recipientStates.isNotEmpty()) {
+                recipientStates
+                    .filter { it.deliveryStatus == MessageDeliveryStatus.FAILED.name }
+                    .forEach { state ->
+                        val packetId = state.packetId ?: error("Recipient state has no packet")
+                        val outboxItem =
+                            protocolOutbox.findByPacketId(packetId).getOrThrow()
+                                ?: error("Linked outbox item was not found")
+                        protocolOutbox.retry(outboxItem.id).getOrThrow()
+                        messageRecipientStateDao.updateDeliveryStatus(
+                            messageId = messageId,
+                            contactId = state.contactId,
+                            deliveryStatus = MessageDeliveryStatus.QUEUED.name,
+                            lastError = null,
+                            updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+                        )
+                    }
+            } else {
+                val packetId =
+                    message.packetId?.takeIf(String::isNotBlank)
+                        ?: error("Message has no linked protocol packet")
+                val outboxItem =
+                    protocolOutbox.findByPacketId(packetId).getOrThrow()
+                        ?: error("Linked outbox item was not found")
+                protocolOutbox.retry(outboxItem.id).getOrThrow()
             }
-
-            val message =
-                chatDao.findMessageById(messageId = messageId)
-                    ?: error("Message was not found")
-
-            check(message.isMine) {
-                "Only outgoing messages can be retried"
-            }
-
-            check(message.deliveryStatus == MessageDeliveryStatus.FAILED.name) {
-                "Only failed messages can be retried"
-            }
-
-            val packetId =
-                message.packetId
-                    ?.takeIf(String::isNotBlank)
-                    ?: error("Message has no linked protocol packet")
-
-            val outboxItem =
-                protocolOutbox
-                    .findByPacketId(packetId = packetId)
-                    .getOrThrow()
-                    ?: error("Linked outbox item was not found")
-
-            protocolOutbox
-                .retry(itemId = outboxItem.id)
-                .getOrThrow()
 
             val updatedRows =
                 messageDeliveryStatusDao.updateDeliveryStatusByMessageId(
                     messageId = messageId,
                     deliveryStatus = MessageDeliveryStatus.QUEUED.name
                 )
-
-            check(updatedRows == 1) {
-                "Message delivery status could not be updated"
-            }
+            check(updatedRows == 1) { "Message delivery status could not be updated" }
         }
 
     override suspend fun markConversationRead(
@@ -562,36 +572,51 @@ class DefaultChatsRepository(
         }
     }
 
-    private fun ConversationWithMessages.toDomain(): Conversation {
-        val contactId =
-            requireNotNull(conversation.contactId) {
-                "Direct conversation ${conversation.id} " +
-                    "has no contactId"
-            }
+    private fun ConversationWithMessages.toDomain(
+        participantContactIds: List<String> = emptyList(),
+        recipientStates: List<MessageRecipientStateEntity> = emptyList()
+    ): Conversation {
+        val isGroup = conversation.type == GROUP_CONVERSATION_TYPE
+        val contactId = conversation.contactId.orEmpty()
+        val statesByMessageId = recipientStates.groupBy { it.messageId }
 
         return Conversation(
             id = conversation.id,
             contactId = contactId,
-            contactName = "",
+            contactName = if (isGroup) conversation.title.orEmpty() else "",
             messages =
                 messages
                     .sortedBy(MessageEntity::createdAtEpochMilliseconds)
                     .map { entity ->
-                        entity.toDomain(contactId = contactId)
+                        entity.toDomain(
+                            contactId = contactId,
+                            recipientStates = statesByMessageId[entity.id].orEmpty()
+                        )
                     },
             unreadCount =
                 messages.count { message ->
                     !message.isMine &&
                         !message.readReceiptSent &&
                         message.contentStatus == MessageContentStatus.READABLE.name
-                }
+                },
+            isGroup = isGroup,
+            participantContactIds = participantContactIds
         )
     }
 
     private fun MessageEntity.toDomain(
-        contactId: String
-    ): ChatMessage =
-        ChatMessage(
+        contactId: String,
+        recipientStates: List<MessageRecipientStateEntity> = emptyList()
+    ): ChatMessage {
+        val deliveryProgress = recipientStates.toDeliveryProgress()
+        val aggregatedDeliveryStatus =
+            if (recipientStates.isEmpty()) {
+                deliveryStatus.toMessageDeliveryStatus()
+            } else {
+                recipientStates.toAggregatedDeliveryStatus()
+            }
+
+        return ChatMessage(
             id = id,
             contactId = contactId,
             text = text,
@@ -600,24 +625,29 @@ class DefaultChatsRepository(
             security = transportMode.toMessageSecurity(),
             contentStatus = contentStatus.toMessageContentStatus(),
             deliveryStatus =
-                if (isMine) {
-                    deliveryStatus.toMessageDeliveryStatus()
-                } else {
-                    MessageDeliveryStatus.NOT_APPLICABLE
-                }
+                if (isMine) aggregatedDeliveryStatus else MessageDeliveryStatus.NOT_APPLICABLE,
+            senderContactId = senderContactId,
+            deliveryProgress = deliveryProgress
         )
+    }
 
     private fun ConversationSummary.toDomain(): Conversation {
+        val isGroup = conversationType == GROUP_CONVERSATION_TYPE
+        val resolvedContactId = contactId.orEmpty()
+        val resolvedName =
+            if (isGroup) {
+                conversationTitle.orEmpty()
+            } else {
+                contactName?.takeIf(String::isNotBlank) ?: "Unknown contact"
+            }
         val lastMessage =
             lastMessageText?.let { text ->
                 ChatMessage(
                     id = "summary-$conversationId",
-                    contactId = contactId,
+                    contactId = resolvedContactId,
                     text = text,
                     isMine = true,
-                    timestamp =
-                        lastMessageTimestamp
-                            ?: updatedAtEpochMilliseconds,
+                    timestamp = lastMessageTimestamp ?: updatedAtEpochMilliseconds,
                     security = MessageSecurity.INSECURE,
                     contentStatus = MessageContentStatus.READABLE,
                     deliveryStatus = MessageDeliveryStatus.NOT_APPLICABLE
@@ -626,14 +656,38 @@ class DefaultChatsRepository(
 
         return Conversation(
             id = conversationId,
-            contactId = contactId,
-            contactName =
-                contactName
-                    ?.takeIf(String::isNotBlank)
-                    ?: "Unknown contact",
+            contactId = resolvedContactId,
+            contactName = resolvedName,
             messages = listOfNotNull(lastMessage),
-            unreadCount = unreadCount
+            unreadCount = unreadCount,
+            isGroup = isGroup,
+            participantContactIds = if (isGroup) List(participantCount) { "" } else emptyList()
         )
+    }
+
+    private fun List<MessageRecipientStateEntity>.toDeliveryProgress(): MessageDeliveryProgress =
+        MessageDeliveryProgress(
+            recipientCount = size,
+            deliveredCount =
+                count { state ->
+                    state.deliveryStatus == MessageDeliveryStatus.DELIVERED.name ||
+                        state.deliveryStatus == MessageDeliveryStatus.READ.name
+                },
+            readCount = count { state -> state.deliveryStatus == MessageDeliveryStatus.READ.name }
+        )
+
+    private fun List<MessageRecipientStateEntity>.toAggregatedDeliveryStatus(): MessageDeliveryStatus {
+        if (isEmpty()) return MessageDeliveryStatus.NOT_APPLICABLE
+        if (all { it.deliveryStatus == MessageDeliveryStatus.READ.name }) return MessageDeliveryStatus.READ
+        if (all { it.deliveryStatus == MessageDeliveryStatus.DELIVERED.name || it.deliveryStatus == MessageDeliveryStatus.READ.name }) {
+            return MessageDeliveryStatus.DELIVERED
+        }
+        if (all { it.deliveryStatus == MessageDeliveryStatus.FAILED.name }) return MessageDeliveryStatus.FAILED
+        if (any { it.deliveryStatus == MessageDeliveryStatus.SENDING.name }) return MessageDeliveryStatus.SENDING
+        if (all { it.deliveryStatus == MessageDeliveryStatus.SENT.name || it.deliveryStatus == MessageDeliveryStatus.DELIVERED.name || it.deliveryStatus == MessageDeliveryStatus.READ.name }) {
+            return MessageDeliveryStatus.SENT
+        }
+        return MessageDeliveryStatus.QUEUED
     }
 
     private fun String.toMessageSecurity(): MessageSecurity =

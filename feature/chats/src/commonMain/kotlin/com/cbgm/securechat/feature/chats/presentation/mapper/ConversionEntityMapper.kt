@@ -11,6 +11,7 @@ object ConversionEntityMapper {
             contactName = contactName,
             lastMessage = lastMessage?.text ?: "No messages yet",
             timestamp = lastMessage?.timestamp?.toString().orEmpty(),
-            unreadCount = unreadCount
+            unreadCount = unreadCount,
+            isGroup = isGroup
         )
 }

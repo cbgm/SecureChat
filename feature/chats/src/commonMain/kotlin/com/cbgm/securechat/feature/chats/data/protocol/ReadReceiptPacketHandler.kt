@@ -4,10 +4,14 @@ import com.cbgm.securechat.core.protocol.handler.IncomingPacketContext
 import com.cbgm.securechat.core.protocol.handler.TypedProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.packet.ReadReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
+import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
+import com.cbgm.securechat.data.database.dao.MessageRecipientStateDao
+import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 
 class ReadReceiptPacketHandler(
-    private val messageDeliveryStatusDao: MessageDeliveryStatusDao
+    private val messageDeliveryStatusDao: MessageDeliveryStatusDao,
+    private val messageRecipientStateDao: MessageRecipientStateDao
 ) : TypedProtocolPacketHandler {
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is ReadReceiptPacket
 
@@ -16,26 +20,31 @@ class ReadReceiptPacketHandler(
         packet: SecureChatPacket
     ): Result<Unit> =
         runCatching {
-            val receipt =
-                packet as? ReadReceiptPacket
-                    ?: error(
-                        "ReadReceiptPacketHandler received an incompatible packet"
-                    )
+            val receipt = packet as? ReadReceiptPacket ?: error("ReadReceiptPacketHandler received an incompatible packet")
+            val state =
+                messageRecipientStateDao
+                    .findByMessageId(receipt.messageId)
+                    .firstOrNull { it.contactId == context.contactId }
 
-            val updatedRows =
-                messageDeliveryStatusDao
-                    .markOutgoingMessageRead(
-                        messageId =
-                            receipt.messageId,
-                        contactId =
-                            context.contactId
-                    )
+            if (state == null) {
+                messageDeliveryStatusDao.markOutgoingMessageRead(receipt.messageId, context.contactId)
+                return@runCatching
+            }
 
-            println(
-                "Read receipt handled: " +
-                    "messageId=${receipt.messageId}, " +
-                    "contactId=${context.contactId}, " +
-                    "updatedRows=$updatedRows"
+            messageRecipientStateDao.updateDeliveryStatus(
+                messageId = receipt.messageId,
+                contactId = context.contactId,
+                deliveryStatus = MessageDeliveryStatus.READ.name,
+                lastError = null,
+                updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
             )
+            val states = messageRecipientStateDao.findByMessageId(receipt.messageId)
+            val aggregated =
+                when {
+                    states.all { it.deliveryStatus == MessageDeliveryStatus.READ.name } -> MessageDeliveryStatus.READ
+                    states.all { it.deliveryStatus == MessageDeliveryStatus.DELIVERED.name || it.deliveryStatus == MessageDeliveryStatus.READ.name } -> MessageDeliveryStatus.DELIVERED
+                    else -> MessageDeliveryStatus.SENT
+                }
+            messageDeliveryStatusDao.updateDeliveryStatusByMessageId(receipt.messageId, aggregated.name)
         }
 }

@@ -8,5 +8,8 @@ data class ChatMessage(
     val timestamp: Long,
     val security: MessageSecurity,
     val contentStatus: MessageContentStatus,
-    val deliveryStatus: MessageDeliveryStatus
+    val deliveryStatus: MessageDeliveryStatus,
+    val senderContactId: String? = null,
+    val senderName: String? = null,
+    val deliveryProgress: MessageDeliveryProgress = MessageDeliveryProgress()
 )
