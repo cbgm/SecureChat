@@ -41,6 +41,8 @@ data class MessageEntity(
     val transportMode: String,
     val contentStatus: String,
     val deliveryStatus: String,
+    /** Contact that authored an incoming group/direct message. Null for local messages. */
+    val senderContactId: String?,
     /**
      * True after this device has queued a ReadReceiptPacket for this
      * incoming message.

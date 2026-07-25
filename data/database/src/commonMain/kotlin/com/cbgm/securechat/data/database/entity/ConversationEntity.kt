@@ -20,13 +20,20 @@ import androidx.room.PrimaryKey
             value = ["contactId"],
             unique = true,
         ),
+        Index(value = ["type"]),
         Index(value = ["updatedAtEpochMilliseconds"]),
     ],
 )
 data class ConversationEntity(
     @PrimaryKey
     val id: String,
-    val contactId: String,
+    /**
+     * Kept for direct-conversation lookup and migration compatibility.
+     * Group conversations leave this null and use conversation_participants.
+     */
+    val contactId: String?,
+    val type: String,
+    val title: String?,
     val createdAtEpochMilliseconds: Long,
     val updatedAtEpochMilliseconds: Long,
 )

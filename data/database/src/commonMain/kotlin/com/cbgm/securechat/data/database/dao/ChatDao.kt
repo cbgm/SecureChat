@@ -5,6 +5,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
 import com.cbgm.securechat.data.database.entity.ConversationEntity
+import com.cbgm.securechat.data.database.entity.ConversationParticipantEntity
 import com.cbgm.securechat.data.database.entity.MessageEntity
 import com.cbgm.securechat.data.database.model.ConversationSummary
 import com.cbgm.securechat.data.database.model.ConversationWithMessages
@@ -27,6 +28,12 @@ interface ChatDao {
     suspend fun upsertConversation(conversation: ConversationEntity)
 
     @Upsert
+    suspend fun upsertConversationParticipant(participant: ConversationParticipantEntity)
+
+    @Query("SELECT * FROM conversation_participants WHERE conversationId = :conversationId")
+    suspend fun findConversationParticipants(conversationId: String): List<ConversationParticipantEntity>
+
+    @Upsert
     suspend fun upsertMessage(message: MessageEntity)
 
     /**
@@ -39,10 +46,13 @@ interface ChatDao {
         conversation: ConversationEntity,
         message: MessageEntity,
         timestamp: Long,
+        participant: ConversationParticipantEntity? = null,
     ) {
         upsertConversation(
             conversation = conversation,
         )
+
+        participant?.let { upsertConversationParticipant(it) }
 
         upsertMessage(
             message = message,

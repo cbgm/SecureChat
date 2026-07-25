@@ -11,6 +11,7 @@ import com.cbgm.securechat.data.database.entity.ContactEntity
 import com.cbgm.securechat.data.database.entity.ContactPhoneNumberEntity
 import com.cbgm.securechat.data.database.entity.ContactPublicIdentityEntity
 import com.cbgm.securechat.data.database.entity.ConversationEntity
+import com.cbgm.securechat.data.database.entity.ConversationParticipantEntity
 import com.cbgm.securechat.data.database.entity.MessageEntity
 import com.cbgm.securechat.data.database.entity.ProtocolOutboxEntity
 
@@ -20,10 +21,11 @@ import com.cbgm.securechat.data.database.entity.ProtocolOutboxEntity
         ContactPhoneNumberEntity::class,
         ContactPublicIdentityEntity::class,
         ConversationEntity::class,
+        ConversationParticipantEntity::class,
         MessageEntity::class,
         ProtocolOutboxEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 @ConstructedBy(SecureChatDatabaseConstructor::class)

@@ -9,6 +9,7 @@ import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
 import com.cbgm.securechat.data.database.entity.ConversationEntity
+import com.cbgm.securechat.data.database.entity.ConversationType
 import com.cbgm.securechat.data.database.entity.MessageEntity
 import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
@@ -43,6 +44,8 @@ class ChatMessagePacketHandler(
                     ?: ConversationEntity(
                         id = context.conversationId,
                         contactId = context.contactId,
+                        type = ConversationType.DIRECT.name,
+                        title = null,
                         createdAtEpochMilliseconds = context.receivedAtEpochMilliseconds,
                         updatedAtEpochMilliseconds = context.receivedAtEpochMilliseconds,
                     )
@@ -58,6 +61,7 @@ class ChatMessagePacketHandler(
                     contentStatus = MessageContentStatus.READABLE.name,
                     deliveryStatus = MessageDeliveryStatus.NOT_APPLICABLE.name,
                     isMine = false,
+                    senderContactId = context.contactId,
                     createdAtEpochMilliseconds = chatPacket.sentAtEpochMilliseconds,
                 )
 
