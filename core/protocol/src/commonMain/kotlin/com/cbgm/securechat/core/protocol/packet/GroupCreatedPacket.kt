@@ -20,6 +20,6 @@ data class GroupCreatedPacket(
         require(groupId.isNotBlank()) { "Group ID must not be blank" }
         require(title.isNotBlank()) { "Group title must not be blank" }
         require(createdAtEpochMilliseconds >= 0L) { "Group timestamp must not be negative" }
-        require(members.size >= 3) { "A group packet requires at least three identities" }
+        require(members.size >= 2) { "A group packet requires at least two identities" }
     }
 }

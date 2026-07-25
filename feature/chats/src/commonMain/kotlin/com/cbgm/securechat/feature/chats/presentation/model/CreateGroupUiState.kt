@@ -11,5 +11,5 @@ data class CreateGroupUiState(
     val errorMessage: String? = null
 ) {
     val canCreate: Boolean
-        get() = title.isNotBlank() && selectedContactIds.size >= 2 && !isCreating
+        get() = title.isNotBlank() && selectedContactIds.isNotEmpty() && !isCreating
 }

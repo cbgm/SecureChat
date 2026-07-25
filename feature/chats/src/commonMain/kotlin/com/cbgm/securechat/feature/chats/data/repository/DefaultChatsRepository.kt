@@ -79,7 +79,7 @@ class DefaultChatsRepository(
     ): String {
         val normalizedTitle = title.trim()
         require(normalizedTitle.isNotEmpty()) { "Group title must not be blank" }
-        require(contactIds.size >= MIN_GROUP_PARTICIPANT_COUNT) { "A group requires at least two contacts" }
+        require(contactIds.size >= MIN_GROUP_PARTICIPANT_COUNT) { "A group requires at least one contact" }
 
         val contacts =
             contactIds.map { contactId ->
@@ -724,7 +724,7 @@ class DefaultChatsRepository(
         const val GROUP_CONVERSATION_TYPE = "GROUP"
         const val GROUP_OWNER_ROLE = "OWNER"
         const val GROUP_MEMBER_ROLE = "MEMBER"
-        const val MIN_GROUP_PARTICIPANT_COUNT = 2
+        const val MIN_GROUP_PARTICIPANT_COUNT = 1
         const val UNKNOWN_TRANSPORT_MODE = "UNKNOWN"
     }
 }

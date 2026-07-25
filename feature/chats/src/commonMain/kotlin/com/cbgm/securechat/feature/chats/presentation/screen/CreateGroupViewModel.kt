@@ -7,13 +7,12 @@ import com.cbgm.securechat.feature.chats.presentation.model.CreateGroupUiState
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContacts
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactGroupEntity
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -24,8 +23,8 @@ class CreateGroupViewModel(
     private val _uiState = MutableStateFlow(CreateGroupUiState())
     val uiState: StateFlow<CreateGroupUiState> = _uiState.asStateFlow()
 
-    private val _groupCreated = MutableSharedFlow<String>()
-    val groupCreated: SharedFlow<String> = _groupCreated.asSharedFlow()
+    private val groupCreatedChannel = Channel<String>(capacity = Channel.BUFFERED)
+    val groupCreated = groupCreatedChannel.receiveAsFlow()
 
     private var contacts: List<Contact> = emptyList()
 
@@ -52,7 +51,11 @@ class CreateGroupViewModel(
                 state.selectedContactIds.toMutableSet().apply {
                     if (!add(contactId)) remove(contactId)
                 }
-            state.copy(selectedContactIds = selectedContactIds, errorMessage = null)
+
+            state.copy(
+                selectedContactIds = selectedContactIds,
+                errorMessage = null
+            )
         }
     }
 
@@ -65,7 +68,8 @@ class CreateGroupViewModel(
             runCatching {
                 createGroupConversation(state.title, state.selectedContactIds).getOrThrow()
             }.onSuccess { conversationId ->
-                _groupCreated.emit(conversationId)
+                _uiState.update { it.copy(isCreating = false) }
+                groupCreatedChannel.send(conversationId)
             }.onFailure { error ->
                 _uiState.update {
                     it.copy(isCreating = false, errorMessage = error.message ?: "Group could not be created")
@@ -82,7 +86,13 @@ class CreateGroupViewModel(
                 }.collect { observedContacts ->
                     contacts = observedContacts
                     _uiState.update { state ->
-                        state.copy(contactGroups = contacts.filterByQuery(state.searchQuery).groupByLetter())
+                        state.copy(
+                            contactGroups = contacts.filterByQuery(state.searchQuery).groupByLetter(),
+                            selectedContactIds =
+                                state.selectedContactIds.filterTo(mutableSetOf()) { contactId ->
+                                    contacts.any { it.id == contactId }
+                                }
+                        )
                     }
                 }
         }

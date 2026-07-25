@@ -39,6 +39,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -106,7 +107,9 @@ fun ContactsScreen(
     onSearchQueryChanged: (String) -> Unit,
     searchQuery: String,
     modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState? = null,
     selectionMode: Boolean = false,
+    selectableContactIds: Set<String> = emptySet(),
     selectedContactIds: Set<String> = emptySet(),
     selectionConfirmEnabled: Boolean = false,
     selectionConfirming: Boolean = false,
@@ -121,6 +124,7 @@ fun ContactsScreen(
 
     SecureChatLazyScaffold(
         modifier = modifier,
+        snackbarHostState = snackbarHostState,
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { containerColor ->
             ContactsTopBar(
@@ -157,6 +161,7 @@ fun ContactsScreen(
             onImportContact = onImportContact,
             onCreateGroup = onCreateGroup,
             selectionMode = selectionMode,
+            selectableContactIds = selectableContactIds,
             selectedContactIds = selectedContactIds,
             onContactSelected = onContactSelected
         )
@@ -365,6 +370,7 @@ private fun ContactsScreenContent(
     onImportContact: () -> Unit,
     onCreateGroup: () -> Unit,
     selectionMode: Boolean,
+    selectableContactIds: Set<String>,
     selectedContactIds: Set<String>,
     onContactSelected: (String) -> Unit
 ) {
@@ -398,6 +404,7 @@ private fun ContactsScreenContent(
                 onContactClick = onContactClick,
                 onCreateGroup = onCreateGroup,
                 selectionMode = selectionMode,
+                selectableContactIds = selectableContactIds,
                 selectedContactIds = selectedContactIds,
                 onContactSelected = onContactSelected,
                 modifier = Modifier.fillMaxSize()
@@ -426,6 +433,7 @@ private fun ContactsList(
     onContactClick: (contactId: String, contactName: String) -> Unit,
     onCreateGroup: () -> Unit,
     selectionMode: Boolean,
+    selectableContactIds: Set<String>,
     selectedContactIds: Set<String>,
     onContactSelected: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -456,6 +464,7 @@ private fun ContactsList(
                 group = group,
                 onContactClick = onContactClick,
                 selectionMode = selectionMode,
+                selectableContactIds = selectableContactIds,
                 selectedContactIds = selectedContactIds,
                 onContactSelected = onContactSelected
             )
@@ -508,6 +517,7 @@ private fun ContactGroup(
     group: ContactGroupEntity,
     onContactClick: (contactId: String, contactName: String) -> Unit,
     selectionMode: Boolean,
+    selectableContactIds: Set<String>,
     selectedContactIds: Set<String>,
     onContactSelected: (String) -> Unit
 ) {
@@ -537,6 +547,7 @@ private fun ContactGroup(
                         contact = contact,
                         selected = contact.id in selectedContactIds,
                         selectionMode = selectionMode,
+                        selectionEnabled = true,
                         onClick = {
                             if (selectionMode) {
                                 onContactSelected(contact.id)
@@ -556,6 +567,7 @@ private fun ContactListItem(
     contact: Contact,
     selected: Boolean = false,
     selectionMode: Boolean = false,
+    selectionEnabled: Boolean = true,
     onClick: () -> Unit
 ) {
     Column(
@@ -565,7 +577,7 @@ private fun ContactListItem(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .clickable(onClick = onClick),
+                    .clickable(enabled = selectionEnabled, onClick = onClick),
             leadingContent = {
                 ContactAvatar(name = contact.displayName ?: "?")
             },
@@ -598,7 +610,7 @@ private fun ContactListItem(
             },
             trailingContent = {
                 if (selectionMode) {
-                    ContactSelectionCircle(selected = selected)
+                    ContactSelectionCircle(selected = selected, enabled = selectionEnabled)
                 } else {
                     ContactStatus(contact = contact)
                 }
@@ -617,14 +629,22 @@ private fun ContactListItem(
 }
 
 @Composable
-private fun ContactSelectionCircle(selected: Boolean) {
+private fun ContactSelectionCircle(
+    selected: Boolean,
+    enabled: Boolean
+) {
     Box(
         modifier =
             Modifier
                 .size(24.dp)
                 .border(
                     width = 2.dp,
-                    color = if (selected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
+                    color =
+                        when {
+                            selected -> MaterialTheme.colorScheme.secondary
+                            enabled -> MaterialTheme.colorScheme.outline
+                            else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+                        },
                     shape = CircleShape
                 ).background(
                     color = if (selected) MaterialTheme.colorScheme.secondary else Color.Transparent,
