@@ -13,8 +13,13 @@ import com.cbgm.securechat.feature.chats.data.repository.DefaultChatsRepository
 import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
 import com.cbgm.securechat.feature.chats.domain.usecase.CreateGroupConversation
 import com.cbgm.securechat.feature.chats.domain.usecase.GetContactSafetyNumber
+import com.cbgm.securechat.feature.chats.domain.usecase.GetOrCreateDirectConversation
+import com.cbgm.securechat.feature.chats.domain.usecase.MarkConversationRead
+import com.cbgm.securechat.feature.chats.domain.usecase.ObserveConversation
 import com.cbgm.securechat.feature.chats.domain.usecase.ObserveGroupConversation
+import com.cbgm.securechat.feature.chats.domain.usecase.RetryMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SendGroupMessage
+import com.cbgm.securechat.feature.chats.domain.usecase.SendMessage
 import com.cbgm.securechat.feature.chats.presentation.screen.ChatViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.ChatsViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.CreateGroupViewModel
@@ -62,7 +67,12 @@ val chatsModule =
         }
 
         single { CreateGroupConversation(repository = get()) }
+        single { GetOrCreateDirectConversation(repository = get()) }
+        single { MarkConversationRead(repository = get()) }
+        single { ObserveConversation(repository = get()) }
         single { ObserveGroupConversation(repository = get()) }
+        single { RetryMessage(repository = get()) }
+        single { SendMessage(repository = get()) }
         single { SendGroupMessage(repository = get()) }
 
         single<ChatsRepository> {
@@ -93,9 +103,13 @@ val chatsModule =
 
         viewModel { parameters ->
             ChatViewModel(
+                conversationId = parameters.get(),
                 contactId = parameters.get(),
                 fallbackContactName = parameters.get(),
-                chatsRepository = get<ChatsRepository>(),
+                observeConversation = get(),
+                sendMessageUseCase = get(),
+                markConversationReadUseCase = get(),
+                retryFailedMessage = get(),
                 contactRepository = get<ContactRepository>(),
                 getContactSafetyNumber = get<GetContactSafetyNumber>(),
                 typingIndicatorGateway = get()

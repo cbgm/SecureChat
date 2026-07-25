@@ -19,6 +19,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -31,13 +32,16 @@ import com.cbgm.securechat.core.ui.component.SecureChatScrollStateType
 import com.cbgm.securechat.core.ui.component.SecureChatTabbedScaffold
 import com.cbgm.securechat.core.ui.component.SecureChatTabbedScrollStates
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
+import com.cbgm.securechat.feature.chats.domain.usecase.GetOrCreateDirectConversation
 import com.cbgm.securechat.feature.chats.presentation.ChatsRoute
 import com.cbgm.securechat.feature.contacts.presentation.ContactsRoute
 import com.cbgm.securechat.feature.identity.presentation.IdentityRoute
 import com.cbgm.securechat.feature.settings.presentation.SettingsRoute
 import com.cbgm.securechat.presentation.model.MainTab
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 
 @Suppress("UnusedContentLambdaTargetStateParameter")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,12 +54,16 @@ fun MainScreen(
     onNavigateToLicenses: () -> Unit,
     onNavigateToDeveloperMenu: () -> Unit,
     onOpenChat: (
+        conversationId: String,
         contactId: String,
         contactName: String
     ) -> Unit,
     onShareIdentity: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    val getOrCreateDirectConversation = koinInject<GetOrCreateDirectConversation>()
+
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.Chats) }
     var showContactsOverlay by rememberSaveable {
         mutableStateOf(false)
@@ -131,17 +139,12 @@ fun MainScreen(
                     dismissOverlay()
                     onCreateGroup()
                 },
-                onContactClick = {
-                    contactId,
-                    contactName
-                    ->
-
-                    dismissOverlay()
-
-                    onOpenChat(
-                        contactId,
-                        contactName
-                    )
+                onContactClick = { contactId, contactName ->
+                    coroutineScope.launch {
+                        val conversationId = getOrCreateDirectConversation(contactId)
+                        dismissOverlay()
+                        onOpenChat(conversationId, contactId, contactName)
+                    }
                 }
             )
         }
@@ -241,7 +244,7 @@ private fun MainContent(
     selectedTab: MainTab,
     innerPadding: PaddingValues,
     scrollStates: SecureChatTabbedScrollStates<MainTab>,
-    onOpenChat: (String, String) -> Unit,
+    onOpenChat: (String, String, String) -> Unit,
     onShareIdentity: () -> Unit,
     onNavigateToPrivacyPolicy: () -> Unit,
     onNavigateToDataDisclaimer: () -> Unit,
@@ -296,7 +299,7 @@ private fun MainScreenPreview() {
         MainScreen(
             onImportContact = {},
             onCreateGroup = {},
-            onOpenChat = { _, _ -> },
+            onOpenChat = { _, _, _ -> },
             onShareIdentity = {},
             onNavigateToPrivacyPolicy = {},
             onNavigateToDataDisclaimer = {},

@@ -42,6 +42,7 @@ import com.cbgm.securechat.resources.feature_chats_no_conversations_yet
 import org.jetbrains.compose.resources.stringResource
 
 data class ChatListItem(
+    val conversationId: String,
     val contactId: String,
     val contactName: String,
     val lastMessage: String,
@@ -182,10 +183,7 @@ private fun ChatItem(
                     }
                 }
             },
-            colors =
-                ListItemDefaults.colors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background)
         )
 
         HorizontalDivider(
@@ -254,13 +252,16 @@ private fun ChatsScreenPreview() {
                                 contactName = "Alice",
                                 lastMessage = "Hello!",
                                 timestamp = "10:00 AM",
-                                unreadCount = 3
+                                unreadCount = 3,
+                                conversationId = "3"
                             ),
                             ChatListItem(
                                 contactId = "2",
                                 contactName = "Bob",
                                 lastMessage = "Sounds good, see you then.",
-                                timestamp = "Yesterday"
+                                timestamp = "Yesterday",
+                                unreadCount = 0,
+                                conversationId = "4"
                             )
                         )
                 ),

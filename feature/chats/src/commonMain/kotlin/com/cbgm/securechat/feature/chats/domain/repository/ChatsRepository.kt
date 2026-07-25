@@ -7,9 +7,9 @@ import kotlinx.coroutines.flow.Flow
 interface ChatsRepository {
     fun observeConversations(): Flow<List<Conversation>>
 
-    fun observeConversation(contactId: String): Flow<Conversation?>
+    fun observeConversation(conversationId: String): Flow<Conversation?>
 
-    suspend fun createConversation(contactId: String)
+    suspend fun getOrCreateDirectConversation(contactId: String): String
 
     suspend fun createGroupConversation(
         title: String,
@@ -24,16 +24,10 @@ interface ChatsRepository {
     ): Result<Unit>
 
     suspend fun sendMessage(
-        contactId: String,
+        conversationId: String,
         text: String
     )
 
-    /**
-     * Stores one packet received from the transport layer.
-     *
-     * The local encryption key pair is supplied by the transport or
-     * identity integration layer.
-     */
     suspend fun receiveMessage(
         contactId: String,
         encodedTransportPayload: String,
@@ -43,9 +37,5 @@ interface ChatsRepository {
 
     suspend fun retryMessage(messageId: String): Result<Unit>
 
-    /**
-     * Marks all currently unread incoming messages in this conversation as
-     * read by queueing one deterministic ReadReceiptPacket per message.
-     */
-    suspend fun markConversationRead(contactId: String): Result<Unit>
+    suspend fun markConversationRead(conversationId: String): Result<Unit>
 }

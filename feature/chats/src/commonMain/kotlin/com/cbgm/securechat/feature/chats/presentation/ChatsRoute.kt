@@ -12,7 +12,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun ChatsRoute(
-    onChatClick: (contactId: String, contactName: String) -> Unit,
+    onChatClick: (conversationId: String, contactId: String, contactName: String) -> Unit,
     modifier: Modifier = Modifier,
     listState: LazyListState,
     innerPadding: PaddingValues,
@@ -23,8 +23,7 @@ fun ChatsRoute(
     ChatsScreen(
         uiState = uiState,
         onChatClick = { chat ->
-
-            onChatClick(chat.contactId, chat.contactName)
+            onChatClick(chat.conversationId, chat.contactId, chat.contactName)
         },
         listState = listState,
         innerPadding = innerPadding,

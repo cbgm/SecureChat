@@ -25,6 +25,7 @@ sealed interface AppDestination {
 
     @Serializable
     data class Chat(
+        val conversationId: String,
         val contactId: String,
         val contactName: String
     ) : AppDestination

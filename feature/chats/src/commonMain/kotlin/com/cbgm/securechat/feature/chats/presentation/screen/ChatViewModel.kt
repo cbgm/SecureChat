@@ -4,9 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cbgm.securechat.feature.chats.domain.model.ContactSecurityState
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
-import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
 import com.cbgm.securechat.feature.chats.domain.repository.TypingIndicatorGateway
 import com.cbgm.securechat.feature.chats.domain.usecase.GetContactSafetyNumber
+import com.cbgm.securechat.feature.chats.domain.usecase.MarkConversationRead
+import com.cbgm.securechat.feature.chats.domain.usecase.ObserveConversation
+import com.cbgm.securechat.feature.chats.domain.usecase.RetryMessage
+import com.cbgm.securechat.feature.chats.domain.usecase.SendMessage
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
@@ -23,12 +26,17 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlin.collections.orEmpty
 import kotlin.time.Duration.Companion.milliseconds
 
 class ChatViewModel(
+    private val conversationId: String,
     private val contactId: String,
     private val fallbackContactName: String,
-    private val chatsRepository: ChatsRepository,
+    private val observeConversation: ObserveConversation,
+    private val sendMessageUseCase: SendMessage,
+    private val markConversationReadUseCase: MarkConversationRead,
+    private val retryFailedMessage: RetryMessage,
     private val contactRepository: ContactRepository,
     private val getContactSafetyNumber: GetContactSafetyNumber,
     private val typingIndicatorGateway: TypingIndicatorGateway
@@ -61,10 +69,7 @@ class ChatViewModel(
             }.distinctUntilChanged()
 
     private val conversationFlow: Flow<Conversation?> =
-        chatsRepository
-            .observeConversation(
-                contactId = contactId
-            )
+        observeConversation(conversationId)
 
     private val chatContentFlow: Flow<ChatContentState> =
         combine(
@@ -161,10 +166,6 @@ class ChatViewModel(
         )
 
     init {
-        viewModelScope.launch {
-            chatsRepository.createConversation(contactId = contactId)
-        }
-
         observeContactSecurity()
         observeIncomingTypingEvents()
     }
@@ -218,8 +219,8 @@ class ChatViewModel(
 
         viewModelScope.launch {
             runCatching {
-                chatsRepository.sendMessage(
-                    contactId = contactId,
+                sendMessageUseCase(
+                    conversationId = conversationId,
                     text = normalizedText
                 )
             }.onFailure { error ->
@@ -237,8 +238,7 @@ class ChatViewModel(
         errorMessage.value = null
 
         viewModelScope.launch {
-            chatsRepository
-                .retryMessage(messageId = messageId)
+            retryFailedMessage(messageId)
                 .onFailure { error ->
                     errorMessage.value = error.message ?: "Message could not be queued again"
                 }
@@ -247,8 +247,7 @@ class ChatViewModel(
 
     fun markConversationRead() {
         viewModelScope.launch {
-            chatsRepository
-                .markConversationRead(contactId = contactId)
+            markConversationReadUseCase(conversationId)
                 .onFailure { error ->
                     println(
                         "Could not mark conversation as read: " + error.message

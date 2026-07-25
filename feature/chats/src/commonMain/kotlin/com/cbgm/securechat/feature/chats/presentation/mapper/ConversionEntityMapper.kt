@@ -6,6 +6,7 @@ import com.cbgm.securechat.feature.chats.presentation.screen.ChatListItem
 object ConversionEntityMapper {
     fun Conversation.toChatListItem() =
         ChatListItem(
+            conversationId = id,
             contactId = contactId,
             contactName = contactName,
             lastMessage = lastMessage?.text ?: "No messages yet",

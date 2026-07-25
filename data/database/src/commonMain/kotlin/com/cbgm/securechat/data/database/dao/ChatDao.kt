@@ -46,6 +46,10 @@ interface ChatDao {
     @Query("SELECT * FROM conversations WHERE id = :conversationId LIMIT 1")
     fun observeConversationById(conversationId: String): Flow<ConversationEntity?>
 
+    @Transaction
+    @Query("SELECT * FROM conversations WHERE id = :conversationId LIMIT 1")
+    fun observeConversationWithMessagesById(conversationId: String): Flow<ConversationWithMessages?>
+
     @Query("SELECT * FROM conversation_participants WHERE conversationId = :conversationId")
     fun observeConversationParticipants(conversationId: String): Flow<List<ConversationParticipantEntity>>
 
@@ -201,18 +205,18 @@ interface ChatDao {
     SELECT
         messages.id AS messageId,
         messages.conversationId AS conversationId,
-        conversations.contactId AS contactId
+        COALESCE(messages.senderContactId, conversations.contactId) AS contactId
     FROM messages
     INNER JOIN conversations
         ON conversations.id = messages.conversationId
-    WHERE conversations.contactId = :contactId
+    WHERE messages.conversationId = :conversationId
       AND messages.isMine = 0
       AND messages.readReceiptSent = 0
       AND messages.contentStatus = 'READABLE'
     ORDER BY messages.createdAtEpochMilliseconds ASC
     """
     )
-    suspend fun findMessagesAwaitingReadReceipt(contactId: String): List<UnreadIncomingMessage>
+    suspend fun findMessagesAwaitingReadReceipt(conversationId: String): List<UnreadIncomingMessage>
 
     @Query(
         """

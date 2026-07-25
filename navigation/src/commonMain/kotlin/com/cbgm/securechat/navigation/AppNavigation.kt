@@ -11,12 +11,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.cbgm.securechat.feature.chats.domain.usecase.GetOrCreateDirectConversation
 import com.cbgm.securechat.feature.chats.presentation.ChatRoute
 import com.cbgm.securechat.feature.chats.presentation.CreateGroupRoute
 import com.cbgm.securechat.feature.chats.presentation.GroupConversationRoute
@@ -38,6 +40,7 @@ import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.base_share_contact
 import com.cbgm.securechat.startup.presentation.StartupRoute
 import com.cbgm.securechat.startup.presentation.screen.component.SecureChatAppBackground
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
@@ -52,18 +55,13 @@ fun AppNavigation() {
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(
-                        MaterialTheme.colorScheme.background
-                    )
+                    .background(MaterialTheme.colorScheme.background)
         ) {
             composable<AppDestination.Licences>(
                 enterTransition = {
                     slideIntoContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec =
-                            spring(
-                                stiffness = Spring.StiffnessMediumLow
-                            )
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
                     )
                 },
                 exitTransition = {
@@ -92,10 +90,7 @@ fun AppNavigation() {
                 exitTransition = {
                     slideOutOfContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec =
-                            spring(
-                                stiffness = Spring.StiffnessMediumLow
-                            )
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
                     )
                 }
             ) {
@@ -106,19 +101,13 @@ fun AppNavigation() {
                 enterTransition = {
                     slideIntoContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec =
-                            spring(
-                                stiffness = Spring.StiffnessMediumLow
-                            )
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
                     )
                 },
                 exitTransition = {
                     slideOutOfContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec =
-                            spring(
-                                stiffness = Spring.StiffnessMediumLow
-                            )
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
                     )
                 }
             ) { backStackEntry ->
@@ -176,22 +165,19 @@ fun AppNavigation() {
                 enterTransition = {
                     slideIntoContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.Up,
-                        animationSpec =
-                            spring(
-                                stiffness = Spring.StiffnessMediumLow
-                            )
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
                     )
                 },
                 exitTransition = {
                     slideOutOfContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.Down,
-                        animationSpec =
-                            spring(
-                                stiffness = Spring.StiffnessMediumLow
-                            )
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
                     )
                 }
             ) {
+                val coroutineScope = rememberCoroutineScope()
+                val getOrCreateDirectConversation = koinInject<GetOrCreateDirectConversation>()
+
                 ContactsRoute(
                     onBack = {
                         navController.popBackStack()
@@ -203,22 +189,26 @@ fun AppNavigation() {
                         navController.navigate(AppDestination.CreateGroup)
                     },
                     onContactClick = { contactId, contactName ->
-                        navController.navigate(
-                            AppDestination.Chat(
-                                contactId = contactId,
-                                contactName = contactName
+                        coroutineScope.launch {
+                            val conversationId = getOrCreateDirectConversation(contactId)
+                            navController.navigate(
+                                AppDestination.Chat(
+                                    conversationId = conversationId,
+                                    contactId = contactId,
+                                    contactName = contactName
+                                )
                             )
-                        )
+                        }
                     }
                 )
             }
 
             composable<AppDestination.Main> {
                 MainRoute(
-                    onOpenChat = { contactId, contactName ->
-
+                    onOpenChat = { conversationId, contactId, contactName ->
                         navController.navigate(
                             AppDestination.Chat(
+                                conversationId = conversationId,
                                 contactId = contactId,
                                 contactName = contactName
                             )
@@ -260,25 +250,20 @@ fun AppNavigation() {
                 enterTransition = {
                     slideIntoContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec =
-                            spring(
-                                stiffness = Spring.StiffnessMediumLow
-                            )
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
                     )
                 },
                 exitTransition = {
                     slideOutOfContainer(
                         towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec =
-                            spring(
-                                stiffness = Spring.StiffnessMediumLow
-                            )
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
                     )
                 }
             ) { backStackEntry ->
                 val destination = backStackEntry.toRoute<AppDestination.Chat>()
 
                 ChatRoute(
+                    conversationId = destination.conversationId,
                     contactId = destination.contactId,
                     contactName = destination.contactName,
                     onBack = {
@@ -361,8 +346,7 @@ fun AppNavigation() {
                          * Return to the import screen and provide the scanned
                          * payload through the saved-state handle.
                          */
-                        navController
-                            .previousBackStackEntry
+                        navController.previousBackStackEntry
                             ?.savedStateHandle
                             ?.set(
                                 "scannedIdentity",

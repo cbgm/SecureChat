@@ -56,14 +56,12 @@ class DefaultChatsRepository(
             }
         }
 
-    override fun observeConversation(contactId: String): Flow<Conversation?> =
-        chatDao.observeConversationByContactId(contactId = contactId).map { result ->
+    override fun observeConversation(conversationId: String): Flow<Conversation?> =
+        chatDao.observeConversationWithMessagesById(conversationId).map { result ->
             result?.toDomain()
         }
 
-    override suspend fun createConversation(contactId: String) {
-        getOrCreateConversation(contactId = contactId)
-    }
+    override suspend fun getOrCreateDirectConversation(contactId: String): String = getOrCreateConversation(contactId).id
 
     override suspend fun createGroupConversation(
         title: String,
@@ -224,7 +222,7 @@ class DefaultChatsRepository(
         }
 
     override suspend fun sendMessage(
-        contactId: String,
+        conversationId: String,
         text: String
     ) {
         val normalizedText = text.trim()
@@ -233,12 +231,14 @@ class DefaultChatsRepository(
             return
         }
 
-        val contact =
-            getContact(contactId = contactId).getOrThrow() ?: error("Contact was not found")
+        val conversation =
+            chatDao.findConversationById(conversationId)
+                ?: error("Conversation was not found")
+        check(conversation.type == DIRECT_CONVERSATION_TYPE) { "Conversation is not direct" }
+        val contactId = requireNotNull(conversation.contactId) { "Direct conversation has no contact" }
+        val contact = getContact(contactId).getOrThrow() ?: error("Contact was not found")
 
-        identityExchangeStarter.ensureStarted(contactId = contactId).getOrThrow()
-
-        val conversation = getOrCreateConversation(contactId = contactId)
+        identityExchangeStarter.ensureStarted(contactId).getOrThrow()
 
         val now = SystemClock.nowEpochMilliseconds()
         val messageId = createId(prefix = "message")
@@ -262,7 +262,7 @@ class DefaultChatsRepository(
         chatDao.upsertMessage(
             MessageEntity(
                 id = messageId,
-                conversationId = conversation.id,
+                conversationId = conversationId,
                 packetId = packet.packetId,
                 text = normalizedText,
                 transportPayload = null,
@@ -276,7 +276,7 @@ class DefaultChatsRepository(
         )
 
         chatDao.updateConversationTimestamp(
-            conversationId = conversation.id,
+            conversationId = conversationId,
             timestamp = now
         )
     }
@@ -328,17 +328,12 @@ class DefaultChatsRepository(
         }
 
     override suspend fun markConversationRead(
-        contactId: String
+        conversationId: String
     ): Result<Unit> =
         runCatching {
-            require(contactId.isNotBlank()) {
-                "Contact ID must not be blank"
-            }
+            require(conversationId.isNotBlank()) { "Conversation ID must not be blank" }
 
-            val messages =
-                chatDao.findMessagesAwaitingReadReceipt(
-                    contactId = contactId
-                )
+            val messages = chatDao.findMessagesAwaitingReadReceipt(conversationId)
 
             messages.forEach { message ->
                 val receipt =
@@ -353,7 +348,7 @@ class DefaultChatsRepository(
 
                 protocolOutbox
                     .enqueue(
-                        contactId = contactId,
+                        contactId = message.contactId,
                         packet = receipt
                     ).getOrThrow()
 
@@ -366,7 +361,7 @@ class DefaultChatsRepository(
                 println(
                     "Read receipt queued: " +
                         "messageId=${message.messageId}, " +
-                        "contactId=$contactId"
+                        "contactId=${message.contactId}"
                 )
             }
         }

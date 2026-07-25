@@ -18,6 +18,7 @@ import org.koin.core.parameter.parametersOf
 
 @Composable
 fun ChatRoute(
+    conversationId: String,
     contactId: String,
     contactName: String,
     onBack: () -> Unit,
@@ -26,6 +27,7 @@ fun ChatRoute(
     viewModel: ChatViewModel =
         koinViewModel {
             parametersOf(
+                conversationId,
                 contactId,
                 contactName
             )

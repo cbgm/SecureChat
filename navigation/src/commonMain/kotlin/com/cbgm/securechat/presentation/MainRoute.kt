@@ -11,7 +11,7 @@ fun MainRoute(
     onNavigateToDataDisclaimer: () -> Unit,
     onNavigateToLicenses: () -> Unit,
     onNavigateToDeveloperMenu: () -> Unit,
-    onOpenChat: (String, String) -> Unit,
+    onOpenChat: (String, String, String) -> Unit,
     onShareIdentity: () -> Unit
 ) {
     MainScreen(
