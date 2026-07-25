@@ -2,8 +2,8 @@ name: Android PR Check
 
 on:
   pull_request:
-    branches: [ "dev" ]
-
+    branches: [ "develop" ]
+  workflow_dispatch:
 jobs:
   android-build:
     name: Build Android App
@@ -22,5 +22,10 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
 
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
     - name: Build Android Debug APK
-      run: ./gradlew :androidApp:assembleDebug --stacktrace
+      run: |
+        ./gradlew :androidApp:generateDebugBuildConfig
+        ./gradlew :androidApp:assembleDebug
