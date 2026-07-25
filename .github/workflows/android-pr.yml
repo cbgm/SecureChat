@@ -27,6 +27,5 @@ jobs:
 
     - name: Build Android Debug APK
       run: |
-        ./gradlew :androidApp:prepareKotlinIdeaImport
         ./gradlew :androidApp:generateDebugBuildConfig
         ./gradlew :androidApp:assembleDebug
