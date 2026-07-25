@@ -17,5 +17,5 @@ data class DeviceContact(
      */
     val id: String,
     val displayName: String?,
-    val phoneNumbers: List<DevicePhoneNumber>,
+    val phoneNumbers: List<DevicePhoneNumber>
 )

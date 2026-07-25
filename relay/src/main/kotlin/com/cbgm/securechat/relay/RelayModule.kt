@@ -43,7 +43,7 @@ fun Application.relayModule() {
         DefaultRelayEnvelopeRouter(
             connectionRegistry = connectionRegistry,
             pendingEnvelopeStore = pendingEnvelopeStore,
-            json = json,
+            json = json
         )
 
     val handler =
@@ -51,13 +51,13 @@ fun Application.relayModule() {
             connectionRegistry = connectionRegistry,
             envelopeRouter = envelopeRouter,
             pendingEnvelopeStore = pendingEnvelopeStore,
-            json = json,
+            json = json
         )
 
     routing {
         get("/") {
             call.respondText(
-                "SecureChat relay is running",
+                "SecureChat relay is running"
             )
         }
 

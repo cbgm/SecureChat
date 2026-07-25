@@ -33,7 +33,6 @@ import com.cbgm.securechat.core.ui.component.SecureChatStaticScaffold
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.contactimport.platform.QrScanner
 import com.cbgm.securechat.resources.Res
-import com.cbgm.securechat.resources.base_back
 import com.cbgm.securechat.resources.feature_contactimport_scan_identity
 import com.cbgm.securechat.resources.feature_contactimport_scan_identity_instruction
 import org.jetbrains.compose.resources.stringResource
@@ -43,7 +42,7 @@ import org.jetbrains.compose.resources.stringResource
 fun ScanIdentityScreen(
     onQrCodeScanned: (String) -> Unit,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     SecureChatStaticScaffold(
         modifier = modifier,
@@ -54,39 +53,39 @@ fun ScanIdentityScreen(
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.background,
                         titleContentColor = MaterialTheme.colorScheme.onBackground,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground
                     ),
                 title = {
                     Text(
                         text = stringResource(Res.string.feature_contactimport_scan_identity),
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.SemiBold
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null,
+                            contentDescription = null
                         )
                     }
-                },
+                }
             )
-        },
+        }
     ) { innerPadding ->
         Box(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(innerPadding)
         ) {
             QrScanner(
                 onQrCodeScanned = onQrCodeScanned,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize()
             )
 
             ScannerOverlay(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize()
             )
 
             Text(
@@ -97,12 +96,12 @@ fun ScanIdentityScreen(
                         .fillMaxWidth()
                         .padding(
                             horizontal = MaterialTheme.spacing.screenPadding,
-                            vertical = MaterialTheme.spacing.times(5),
+                            vertical = MaterialTheme.spacing.times(5)
                         ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White,
                 textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Medium
             )
         }
     }
@@ -129,10 +128,10 @@ private fun ScannerOverlay(modifier: Modifier = Modifier) {
                         rect =
                             Rect(
                                 offset = Offset(left, top),
-                                size = Size(frameSize, frameSize),
+                                size = Size(frameSize, frameSize)
                             ),
-                        cornerRadius = CornerRadius(24.dp.toPx()),
-                    ),
+                        cornerRadius = CornerRadius(24.dp.toPx())
+                    )
                 )
                 fillType = PathFillType.EvenOdd
             }
@@ -146,7 +145,7 @@ private fun ScannerOverlay(modifier: Modifier = Modifier) {
                 Offset(left, top) to Pair(1, 1),
                 Offset(left + frameSize, top) to Pair(-1, 1),
                 Offset(left, top + frameSize) to Pair(1, -1),
-                Offset(left + frameSize, top + frameSize) to Pair(-1, -1),
+                Offset(left + frameSize, top + frameSize) to Pair(-1, -1)
             )
 
         corners.forEach { (corner, direction) ->
@@ -156,14 +155,14 @@ private fun ScannerOverlay(modifier: Modifier = Modifier) {
                 start = corner,
                 end = Offset(corner.x + cornerLength * dx, corner.y),
                 strokeWidth = strokeWidth,
-                cap = StrokeCap.Round,
+                cap = StrokeCap.Round
             )
             drawLine(
                 color = accentColor,
                 start = corner,
                 end = Offset(corner.x, corner.y + cornerLength * dy),
                 strokeWidth = strokeWidth,
-                cap = StrokeCap.Round,
+                cap = StrokeCap.Round
             )
         }
     }

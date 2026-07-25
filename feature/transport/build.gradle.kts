@@ -3,7 +3,7 @@ val isMacOs =
         .getProperty("os.name")
         .startsWith(
             prefix = "Mac",
-            ignoreCase = true,
+            ignoreCase = true
         )
 
 plugins {

@@ -8,17 +8,17 @@ sealed interface IdentityUiState {
     data class NoIdentity(
         val phoneNumber: String = "",
         val name: String = "",
-        val phoneNumberError: String? = null,
+        val phoneNumberError: String? = null
     ) : IdentityUiState
 
     data class Ready(
         val publicIdentity: PublicIdentity,
-        val localPhoneNumber: String,
+        val localPhoneNumber: String
     ) : IdentityUiState
 
     data object IncompleteIdentity : IdentityUiState
 
     data class Error(
-        val message: String,
+        val message: String
     ) : IdentityUiState
 }

@@ -15,12 +15,12 @@ val FontNAme @Composable get() =
     FontFamily(
         Font(
             resource = Res.font.AppleGaramond,
-            weight = FontWeight.Normal,
+            weight = FontWeight.Normal
         ),
         Font(
             resource = Res.font.AppleGaramond_Bold,
-            weight = FontWeight.Bold,
-        ),
+            weight = FontWeight.Bold
+        )
     /*Font(
         resource = Res.font.roboto_medium,
         weight = FontWeight.Medium
@@ -35,7 +35,7 @@ val Typography @Composable get() =
                 fontWeight = FontWeight.Normal,
                 fontSize = 21.sp,
                 lineHeight = 24.sp,
-                letterSpacing = 0.5.sp,
+                letterSpacing = 0.5.sp
             ),
         bodyMedium =
             TextStyle(
@@ -43,7 +43,7 @@ val Typography @Composable get() =
                 fontWeight = FontWeight.Normal,
                 fontSize = 19.sp,
                 lineHeight = 24.sp,
-                letterSpacing = 0.5.sp,
+                letterSpacing = 0.5.sp
             ),
         bodySmall =
             TextStyle(
@@ -51,7 +51,7 @@ val Typography @Composable get() =
                 fontWeight = FontWeight.Normal,
                 fontSize = 17.sp,
                 lineHeight = 24.sp,
-                letterSpacing = 0.5.sp,
+                letterSpacing = 0.5.sp
             ),
         titleLarge =
             TextStyle(
@@ -59,7 +59,7 @@ val Typography @Composable get() =
                 fontWeight = FontWeight.Normal,
                 fontSize = 60.sp,
                 lineHeight = 50.sp,
-                letterSpacing = 0.sp,
+                letterSpacing = 0.sp
             ),
         titleMedium =
             TextStyle(
@@ -67,7 +67,7 @@ val Typography @Composable get() =
                 fontWeight = FontWeight.Normal,
                 fontSize = 40.sp,
                 lineHeight = 30.sp,
-                letterSpacing = 0.sp,
+                letterSpacing = 0.sp
             ),
         titleSmall =
             TextStyle(
@@ -75,7 +75,7 @@ val Typography @Composable get() =
                 fontWeight = FontWeight.Normal,
                 fontSize = 28.sp,
                 lineHeight = 28.sp,
-                letterSpacing = 0.sp,
+                letterSpacing = 0.sp
             ),
         labelLarge =
             TextStyle(
@@ -83,7 +83,7 @@ val Typography @Composable get() =
                 fontWeight = FontWeight.Normal,
                 fontSize = 15.sp,
                 lineHeight = 24.sp,
-                letterSpacing = 0.5.sp,
+                letterSpacing = 0.5.sp
             ),
         labelMedium =
             TextStyle(
@@ -91,7 +91,7 @@ val Typography @Composable get() =
                 fontWeight = FontWeight.Normal,
                 fontSize = 12.sp,
                 lineHeight = 24.sp,
-                letterSpacing = 0.5.sp,
+                letterSpacing = 0.5.sp
             ),
         labelSmall =
             TextStyle(
@@ -99,7 +99,7 @@ val Typography @Composable get() =
                 fontWeight = FontWeight.Normal,
                 fontSize = 10.sp,
                 lineHeight = 24.sp,
-                letterSpacing = 0.5.sp,
+                letterSpacing = 0.5.sp
             ),
         headlineLarge =
             TextStyle(
@@ -107,7 +107,7 @@ val Typography @Composable get() =
                 fontWeight = FontWeight.Normal,
                 fontSize = 30.sp,
                 lineHeight = 50.sp,
-                letterSpacing = 0.sp,
+                letterSpacing = 0.sp
             ),
         headlineMedium =
             TextStyle(
@@ -115,8 +115,8 @@ val Typography @Composable get() =
                 fontWeight = FontWeight.Normal,
                 fontSize = 40.sp,
                 lineHeight = 28.sp,
-                letterSpacing = 0.sp,
-            ),
+                letterSpacing = 0.sp
+            )
     )
 
 // MaterialTheme.typography..bodysmall

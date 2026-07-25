@@ -17,20 +17,20 @@ import androidx.room.PrimaryKey
             entity = ContactEntity::class,
             parentColumns = ["id"],
             childColumns = ["contactId"],
-            onDelete = ForeignKey.CASCADE,
-        ),
+            onDelete = ForeignKey.CASCADE
+        )
     ],
     indices = [
         Index(
             value = ["contactId"],
-            unique = true,
+            unique = true
         ),
 
         Index(
             value = ["signingPublicKey"],
-            unique = true,
-        ),
-    ],
+            unique = true
+        )
+    ]
 )
 data class ContactPublicIdentityEntity(
     @PrimaryKey
@@ -48,7 +48,7 @@ data class ContactPublicIdentityEntity(
      * MUTUAL
      */
     val keyExchangeStatus: String,
-    val updatedAtEpochMilliseconds: Long,
+    val updatedAtEpochMilliseconds: Long
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

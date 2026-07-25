@@ -8,10 +8,10 @@ sealed interface ChatsUiState {
     data object Empty : ChatsUiState
 
     data class Content(
-        val conversations: List<ChatListItem>,
+        val conversations: List<ChatListItem>
     ) : ChatsUiState
 
     data class Error(
-        val message: String,
+        val message: String
     ) : ChatsUiState
 }

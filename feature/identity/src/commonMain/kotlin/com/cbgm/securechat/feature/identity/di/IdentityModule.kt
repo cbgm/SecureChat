@@ -34,7 +34,7 @@ val identityModule =
             DefaultIdentityRepository(
                 identityKeyGenerator = get(),
                 privateKeyStorage = get(),
-                publicIdentityStorage = get(),
+                publicIdentityStorage = get()
             )
         }
 
@@ -53,7 +53,7 @@ val identityModule =
         single<LocalPhoneNumberProvider> {
             IdentityLocalPhoneNumberProvider(
                 localPhoneNameStorage = get<LocalPhoneNameStorage>(),
-                phoneNumberNormalizer = get<PhoneNumberNormalizer>(),
+                phoneNumberNormalizer = get<PhoneNumberNormalizer>()
             )
         }
 
@@ -86,7 +86,7 @@ val identityModule =
                 getPublicIdentity = get<GetPublicIdentity>(),
                 localPhoneNameStorage = get<LocalPhoneNameStorage>(),
                 phoneNumberNormalizer = get<PhoneNumberNormalizer>(),
-                identityShareCodec = get<IdentityShareCodec>(),
+                identityShareCodec = get<IdentityShareCodec>()
             )
         }
 
@@ -96,13 +96,13 @@ val identityModule =
                 getPublicIdentity = get<GetPublicIdentity>(),
                 createIdentity = get<CreateIdentity>(),
                 localPhoneNameStorage = get<LocalPhoneNameStorage>(),
-                phoneNumberNormalizer = get<PhoneNumberNormalizer>(),
+                phoneNumberNormalizer = get<PhoneNumberNormalizer>()
             )
         }
 
         viewModel {
             ShareIdentityViewModel(
-                createSharedIdentity = get<CreateSharedIdentity>(),
+                createSharedIdentity = get<CreateSharedIdentity>()
             )
         }
     }

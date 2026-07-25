@@ -23,7 +23,7 @@ val settingsModule =
         single<SettingsRepository> {
             SettingsRepositoryImpl(
                 buildInfoProvider = get(),
-                settingsStorage = get(),
+                settingsStorage = get()
             )
         }
 
@@ -65,7 +65,7 @@ val settingsModule =
                 getAppLanguageUseCase = get(),
                 getDeveloperEnabledUseCase = get(),
                 getBuildInfoUseCase = get(),
-                setDeveloperModeEnabledUseCase = get(),
+                setDeveloperModeEnabledUseCase = get()
             )
         }
 

@@ -6,13 +6,13 @@ interface ContactKeyExchangeStore {
     suspend fun storeRemoteIdentity(
         contactId: String,
         encryptionPublicKey: ByteArray,
-        signingPublicKey: ByteArray,
+        signingPublicKey: ByteArray
     ): Result<RemoteIdentityUpdate>
 
     suspend fun markMutual(
         contactId: String,
         expectedRemoteEncryptionPublicKey: ByteArray,
-        expectedRemoteSigningPublicKey: ByteArray,
+        expectedRemoteSigningPublicKey: ByteArray
     ): Result<Unit>
 
     suspend fun resetAllAfterLocalIdentityChange(): Result<Unit>

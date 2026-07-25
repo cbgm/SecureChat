@@ -42,8 +42,8 @@ fun SecureChatOverlayHost(
     tonalElevation: Dp = 8.dp,
     shadowElevation: Dp = 12.dp,
     content: @Composable (
-        dismissOverlay: () -> Unit,
-    ) -> Unit,
+        dismissOverlay: () -> Unit
+    ) -> Unit
 ) {
     val scope = rememberCoroutineScope()
 
@@ -52,7 +52,7 @@ fun SecureChatOverlayHost(
 
     val sheetState =
         rememberModalBottomSheetState(
-            skipPartiallyExpanded = true,
+            skipPartiallyExpanded = true
         )
 
     var mounted by remember {
@@ -135,9 +135,9 @@ fun SecureChatOverlayHost(
                 left = 0,
                 top = 0,
                 right = 0,
-                bottom = 0,
+                bottom = 0
             )
-        },
+        }
     ) {
         Box(
             modifier =
@@ -146,15 +146,15 @@ fun SecureChatOverlayHost(
                     .padding(
                         start = horizontalPadding,
                         top = topPadding,
-                        end = horizontalPadding,
-                    ),
+                        end = horizontalPadding
+                    )
         ) {
             Surface(
                 modifier = Modifier.fillMaxSize(),
                 shape = shape,
                 color = containerColor,
                 tonalElevation = tonalElevation,
-                shadowElevation = shadowElevation,
+                shadowElevation = shadowElevation
             ) {
                 content(::dismissOverlay)
             }

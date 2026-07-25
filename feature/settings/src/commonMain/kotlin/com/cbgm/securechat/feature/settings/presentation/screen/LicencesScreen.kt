@@ -33,7 +33,7 @@ private val CardColor = Color(0xFF102A46)
 fun LicensesScreen(
     uiState: LicensesUiState,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     val libraries by produceLibraries { uiState.libraries }
 
@@ -42,7 +42,7 @@ fun LicensesScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             LicensesTopBar(onBack = onBack)
-        },
+        }
     ) { innerPadding ->
         LibrariesContainer(
             libraries = libraries,
@@ -50,7 +50,7 @@ fun LicensesScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-            colors = licensesColors(),
+            colors = licensesColors()
         )
     }
 }
@@ -64,23 +64,23 @@ private fun LicensesTopBar(onBack: () -> Unit) {
                 containerColor = MaterialTheme.colorScheme.background,
                 scrolledContainerColor = MaterialTheme.colorScheme.background,
                 titleContentColor = MaterialTheme.colorScheme.onBackground,
-                navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                navigationIconContentColor = MaterialTheme.colorScheme.onBackground
             ),
         title = {
             Text(
                 text = stringResource(Res.string.feature_settings_open_source_licenses),
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.SemiBold
             )
         },
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = null,
+                    contentDescription = null
                 )
             }
-        },
+        }
     )
 }
 
@@ -91,7 +91,7 @@ private fun licensesColors(): DefaultLibraryColors {
     val chipColors =
         DefaultChipColors(
             containerColor = accentColor.copy(alpha = 0.15f),
-            contentColor = accentColor,
+            contentColor = accentColor
         )
 
     return DefaultLibraryColors(
@@ -102,6 +102,6 @@ private fun licensesColors(): DefaultLibraryColors {
         fundingChipColors = chipColors,
         dialogBackgroundColor = CardColor,
         dialogContentColor = MaterialTheme.colorScheme.onBackground,
-        dialogConfirmButtonColor = accentColor,
+        dialogConfirmButtonColor = accentColor
     )
 }

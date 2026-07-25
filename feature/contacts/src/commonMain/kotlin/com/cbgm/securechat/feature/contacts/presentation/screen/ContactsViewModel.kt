@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 
 class ContactsViewModel(
     private val observeContacts: ObserveContacts,
-    private val importDeviceContacts: ImportDeviceContacts,
+    private val importDeviceContacts: ImportDeviceContacts
 ) : ViewModel() {
     private val _searchQuery =
         MutableStateFlow("")
@@ -37,7 +37,7 @@ class ContactsViewModel(
     val uiState: StateFlow<ContactsUiState> =
         combine(
             observeContacts(),
-            searchQuery,
+            searchQuery
         ) { contacts, query ->
             contacts.toUiState(query)
         }.catch { error ->
@@ -45,16 +45,16 @@ class ContactsViewModel(
                 ContactsUiState.Error(
                     message =
                         error.message
-                            ?: "Failed to load contacts",
-                ),
+                            ?: "Failed to load contacts"
+                )
             )
         }.stateIn(
             scope = viewModelScope,
             started =
                 SharingStarted.WhileSubscribed(
-                    stopTimeoutMillis = 5_000,
+                    stopTimeoutMillis = 5_000
                 ),
-            initialValue = ContactsUiState.Loading,
+            initialValue = ContactsUiState.Loading
         )
 
     fun onImportDeviceContacts() {
@@ -63,7 +63,7 @@ class ContactsViewModel(
                 .onFailure { error ->
                     _errorMessages.emit(
                         error.message
-                            ?: "Failed to import contacts",
+                            ?: "Failed to import contacts"
                     )
                 }
         }
@@ -76,13 +76,13 @@ class ContactsViewModel(
     fun onDeviceContactsPermissionDenied() {
         viewModelScope.launch {
             _errorMessages.emit(
-                "Contacts permission is required to import device contacts.",
+                "Contacts permission is required to import device contacts."
             )
         }
     }
 
     private fun List<Contact>.toUiState(
-        query: String,
+        query: String
     ): ContactsUiState {
         if (isEmpty()) {
             return ContactsUiState.Empty
@@ -91,12 +91,12 @@ class ContactsViewModel(
         return ContactsUiState.Content(
             groups =
                 filterByQuery(query)
-                    .groupByLetter(),
+                    .groupByLetter()
         )
     }
 
     private fun List<Contact>.filterByQuery(
-        query: String,
+        query: String
     ): List<Contact> {
         val trimmedQuery = query.trim()
 
@@ -111,7 +111,7 @@ class ContactsViewModel(
             val matchesName =
                 contact.displayName?.contains(
                     other = trimmedQuery,
-                    ignoreCase = true,
+                    ignoreCase = true
                 ) == true
 
             val matchesPhone =
@@ -142,7 +142,7 @@ class ContactsViewModel(
         }.map { (title, contacts) ->
             ContactGroupEntity(
                 title = title,
-                contacts = contacts,
+                contacts = contacts
             )
         }
 }

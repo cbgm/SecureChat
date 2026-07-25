@@ -10,7 +10,7 @@ import com.cbgm.securechat.feature.contacts.domain.model.Contact
 @Composable
 actual fun rememberContactShareLauncher(
     encodedIdentity: String,
-    shareTitle: String,
+    shareTitle: String
 ): (Contact) -> Unit {
     val context = LocalContext.current
 
@@ -28,14 +28,14 @@ actual fun rememberContactShareLauncher(
                         type = "text/plain"
                         putExtra(
                             Intent.EXTRA_SUBJECT,
-                            "SecureChat: ${contact.displayName ?: "Contact"}",
+                            "SecureChat: ${contact.displayName ?: "Contact"}"
                         )
                         putExtra(
                             Intent.EXTRA_TEXT,
                             buildShareText(
                                 displayName = contact.displayName,
-                                encodedIdentity = payload,
-                            ),
+                                encodedIdentity = payload
+                            )
                         )
                     }
 
@@ -56,7 +56,7 @@ actual fun rememberContactShareLauncher(
 
 private fun buildShareText(
     displayName: String?,
-    encodedIdentity: String,
+    encodedIdentity: String
 ): String =
     buildString {
         if (displayName != null) {

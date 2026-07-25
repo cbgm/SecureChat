@@ -10,7 +10,7 @@ import android.provider.ContactsContract
  * of how many phone numbers belong to that person.
  */
 class AndroidDeviceContactsDataSource(
-    private val contentResolver: ContentResolver,
+    private val contentResolver: ContentResolver
 ) : DeviceContactsDataSource {
     override suspend fun getContacts(): Result<List<DeviceContact>> =
         runCatching {
@@ -22,11 +22,11 @@ class AndroidDeviceContactsDataSource(
                     arrayOf(
                         ContactsContract.Contacts._ID,
                         ContactsContract.Contacts.DISPLAY_NAME,
-                        ContactsContract.Contacts.HAS_PHONE_NUMBER,
+                        ContactsContract.Contacts.HAS_PHONE_NUMBER
                     ),
                     null,
                     null,
-                    ContactsContract.Contacts.DISPLAY_NAME,
+                    ContactsContract.Contacts.DISPLAY_NAME
                 )?.use { cursor ->
 
                     val idColumn = cursor.getColumnIndexOrThrow(ContactsContract.Contacts._ID)
@@ -64,7 +64,7 @@ class AndroidDeviceContactsDataSource(
                             DeviceContact(
                                 id = deviceContactId,
                                 displayName = displayName,
-                                phoneNumbers = phoneNumbers,
+                                phoneNumbers = phoneNumbers
                             )
                     }
                 }
@@ -87,13 +87,13 @@ class AndroidDeviceContactsDataSource(
                 arrayOf(
                     ContactsContract.CommonDataKinds.Phone.NUMBER,
                     ContactsContract.CommonDataKinds.Phone.TYPE,
-                    ContactsContract.CommonDataKinds.Phone.LABEL,
+                    ContactsContract.CommonDataKinds.Phone.LABEL
                 ),
                 """
                 ${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?
                 """.trimIndent(),
                 arrayOf(contactId),
-                null,
+                null
             )?.use { cursor ->
 
                 val numberColumn = cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER)
@@ -122,7 +122,7 @@ class AndroidDeviceContactsDataSource(
                         DevicePhoneNumber(
                             value = number,
                             type = androidType.toDevicePhoneNumberType(),
-                            label = customLabel,
+                            label = customLabel
                         )
                 }
             }
@@ -155,7 +155,7 @@ class AndroidDeviceContactsDataSource(
             }
 
             ContactsContract.CommonDataKinds.Phone.TYPE_MAIN,
-            ContactsContract.CommonDataKinds.Phone.TYPE_COMPANY_MAIN,
+            ContactsContract.CommonDataKinds.Phone.TYPE_COMPANY_MAIN
             -> {
                 DevicePhoneNumberType.MAIN
             }

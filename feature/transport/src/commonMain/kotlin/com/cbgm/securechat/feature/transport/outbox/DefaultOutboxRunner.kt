@@ -8,14 +8,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 class DefaultOutboxRunner(
     private val protocolOutbox: ProtocolOutbox,
-    private val outboxProcessor: OutboxProcessor,
+    private val outboxProcessor: OutboxProcessor
 ) : OutboxRunner {
     private val runnerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 

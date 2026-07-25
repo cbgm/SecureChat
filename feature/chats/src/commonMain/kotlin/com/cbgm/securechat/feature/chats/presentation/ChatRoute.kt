@@ -27,9 +27,9 @@ fun ChatRoute(
         koinViewModel {
             parametersOf(
                 contactId,
-                contactName,
+                contactName
             )
-        },
+        }
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -77,7 +77,7 @@ fun ChatRoute(
         },
         onClickHeader = onClickHeader,
         onBack = onBack,
-        modifier = modifier,
+        modifier = modifier
     )
 
     if (
@@ -91,7 +91,7 @@ fun ChatRoute(
             onConfirm = viewModel::verifyIdentity,
             onDismiss = {
                 showVerificationDialog = false
-            },
+            }
         )
     }
 }

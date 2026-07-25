@@ -17,10 +17,10 @@ fun ContactsRoute(
     onCreateGroup: () -> Unit,
     onContactClick: (
         contactId: String,
-        contactName: String,
+        contactName: String
     ) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: ContactsViewModel = koinViewModel(),
+    viewModel: ContactsViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -32,7 +32,7 @@ fun ContactsRoute(
             },
             onPermissionDenied = {
                 viewModel.onDeviceContactsPermissionDenied()
-            },
+            }
         )
 
     LaunchedEffect(Unit) {
@@ -48,6 +48,6 @@ fun ContactsRoute(
         onContactClick = onContactClick,
         modifier = modifier,
         onSearchQueryChanged = viewModel::onUpdateSearchQuery,
-        searchQuery = searchQuery,
+        searchQuery = searchQuery
     )
 }

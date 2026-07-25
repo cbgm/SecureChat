@@ -4,7 +4,7 @@ class IdentityAcknowledgementPayloadEncoder {
     fun encode(
         acknowledgedEncryptionPublicKey: ByteArray,
         acknowledgedSigningPublicKey: ByteArray,
-        senderSigningPublicKey: ByteArray,
+        senderSigningPublicKey: ByteArray
     ): ByteArray {
         require(acknowledgedEncryptionPublicKey.isNotEmpty()) {
             "Acknowledged encryption key must not be empty"

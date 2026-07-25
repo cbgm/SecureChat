@@ -15,7 +15,7 @@ val outboxModule =
         single<ProtocolOutbox> {
             DefaultProtocolOutbox(
                 outboxDao = get(),
-                packetCodec = get(),
+                packetCodec = get()
             )
         }
     }

@@ -10,7 +10,7 @@ import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
 internal fun DevicePhoneNumber.toEntity(
     contactId: String,
     updatedAt: Long,
-    phoneNumberNormalizer: PhoneNumberNormalizer,
+    phoneNumberNormalizer: PhoneNumberNormalizer
 ): ContactPhoneNumberEntity =
     ContactPhoneNumberEntity(
         id = IdGenerator.generate(),
@@ -19,7 +19,7 @@ internal fun DevicePhoneNumber.toEntity(
         normalizedValue = phoneNumberNormalizer.normalize(value).getOrThrow(),
         type = type.toDomain().name,
         label = label,
-        updatedAtEpochMilliseconds = updatedAt,
+        updatedAtEpochMilliseconds = updatedAt
     )
 
 private fun DevicePhoneNumberType.toDomain(): ContactPhoneNumberType =

@@ -19,8 +19,8 @@ fun ContactDetailsRoute(
         koinViewModel(
             parameters = {
                 parametersOf(contactId)
-            },
-        ),
+            }
+        )
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -39,6 +39,6 @@ fun ContactDetailsRoute(
         onVerifyIdentity = viewModel::showVerificationDialog,
         onDismissVerification = viewModel::dismissVerificationDialog,
         onComparisonConfirmedChanged = viewModel::onComparisonConfirmedChanged,
-        onConfirmVerification = viewModel::confirmVerification,
+        onConfirmVerification = viewModel::confirmVerification
     )
 }

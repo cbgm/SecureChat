@@ -11,13 +11,13 @@ val contactImportModule =
         factory {
             ImportSharedIdentity(
                 identityShareCodec = get(),
-                importContact = get(),
+                importContact = get()
             )
         }
 
         viewModel {
             ImportIdentityViewModel(
-                importSharedIdentity = get(),
+                importSharedIdentity = get()
             )
         }
     }

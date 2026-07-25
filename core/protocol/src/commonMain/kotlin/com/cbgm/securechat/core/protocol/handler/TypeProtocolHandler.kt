@@ -19,6 +19,6 @@ interface TypedProtocolPacketHandler {
 
     suspend fun handle(
         context: IncomingPacketContext,
-        packet: SecureChatPacket,
+        packet: SecureChatPacket
     ): Result<Unit>
 }

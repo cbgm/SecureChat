@@ -7,5 +7,5 @@ enum class ContactPhoneNumberType {
     WORK,
     MAIN,
     CUSTOM,
-    OTHER,
+    OTHER
 }

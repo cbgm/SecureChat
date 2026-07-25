@@ -17,12 +17,12 @@ import androidx.compose.ui.unit.dp
 fun ContactAvatar(
     name: String,
     modifier: Modifier = Modifier,
-    size: Dp = 48.dp,
+    size: Dp = 48.dp
 ) {
     Surface(
         modifier = modifier.size(size),
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.secondaryContainer,
+        color = MaterialTheme.colorScheme.secondaryContainer
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
@@ -33,7 +33,7 @@ fun ContactAvatar(
                         .joinToString("") { it.first().uppercase() },
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
             )
         }
     }

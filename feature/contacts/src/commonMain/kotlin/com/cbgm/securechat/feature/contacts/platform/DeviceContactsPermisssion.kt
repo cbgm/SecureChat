@@ -11,5 +11,5 @@ import androidx.compose.runtime.Composable
 @Composable
 expect fun rememberDeviceContactsPermissionRequest(
     onPermissionGranted: () -> Unit,
-    onPermissionDenied: () -> Unit,
+    onPermissionDenied: () -> Unit
 ): () -> Unit

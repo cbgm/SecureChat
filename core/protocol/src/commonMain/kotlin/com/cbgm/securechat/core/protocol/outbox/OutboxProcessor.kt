@@ -3,7 +3,7 @@ package com.cbgm.securechat.core.protocol.outbox
 data class OutboxProcessingResult(
     val processedCount: Int,
     val sentCount: Int,
-    val failedCount: Int,
+    val failedCount: Int
 ) {
     init {
         require(processedCount >= 0)

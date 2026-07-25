@@ -21,7 +21,7 @@ class SettingsViewModel(
     private val getAppLanguageUseCase: GetAppLanguageUseCase,
     private val getDeveloperEnabledUseCase: GetDeveloperEnabledUseCase,
     private val getBuildInfoUseCase: GetBuildInfoUseCase,
-    private val setDeveloperModeEnabledUseCase: SetDeveloperEnabledUseCase,
+    private val setDeveloperModeEnabledUseCase: SetDeveloperEnabledUseCase
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -36,7 +36,7 @@ class SettingsViewModel(
                 it.copy(
                     currentLanguage = getAppLanguageUseCase.invoke(),
                     isDeveloperModeEnabled = getDeveloperEnabledUseCase.invoke(),
-                    buildInfo = getBuildInfoUseCase.invoke(),
+                    buildInfo = getBuildInfoUseCase.invoke()
                 )
             }
         }
@@ -57,7 +57,7 @@ class SettingsViewModel(
                 it.copy(
                     currentLanguage = language,
                     showLanguagePicker = false,
-                    snackbarMessage = "Language changed to ${language.name}. Restart the app to apply it everywhere.",
+                    snackbarMessage = "Language changed to ${language.name}. Restart the app to apply it everywhere."
                 )
             }
         }
@@ -75,7 +75,7 @@ class SettingsViewModel(
                     it.copy(
                         isDeveloperModeEnabled = true,
                         developerModeTapCount = 0,
-                        snackbarMessage = "Developer mode enabled",
+                        snackbarMessage = "Developer mode enabled"
                     )
                 }
             }

@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlin.collections.orEmpty
 import kotlin.time.Duration.Companion.milliseconds
 
 class ChatViewModel(
@@ -32,7 +31,7 @@ class ChatViewModel(
     private val chatsRepository: ChatsRepository,
     private val contactRepository: ContactRepository,
     private val getContactSafetyNumber: GetContactSafetyNumber,
-    private val typingIndicatorGateway: TypingIndicatorGateway,
+    private val typingIndicatorGateway: TypingIndicatorGateway
 ) : ViewModel() {
     private val messageText = MutableStateFlow("")
 
@@ -64,17 +63,17 @@ class ChatViewModel(
     private val conversationFlow: Flow<Conversation?> =
         chatsRepository
             .observeConversation(
-                contactId = contactId,
+                contactId = contactId
             )
 
     private val chatContentFlow: Flow<ChatContentState> =
         combine(
             conversationFlow,
-            contactFlow,
+            contactFlow
         ) { conversation, contact ->
             ChatContentState(
                 conversation = conversation,
-                contact = contact,
+                contact = contact
             )
         }
 
@@ -82,13 +81,13 @@ class ChatViewModel(
         combine(
             messageText,
             errorMessage,
-            isContactTyping,
+            isContactTyping
         ) { currentMessageText, currentError, contactTyping ->
 
             ComposerState(
                 messageText = currentMessageText,
                 errorMessage = currentError,
-                isContactTyping = contactTyping,
+                isContactTyping = contactTyping
             )
         }
 
@@ -96,36 +95,36 @@ class ChatViewModel(
         combine(
             safetyNumber,
             isLoadingSafetyNumber,
-            isVerifyingIdentity,
+            isVerifyingIdentity
         ) {
             currentSafetyNumber,
             loadingSafetyNumber,
-            verifyingIdentity,
+            verifyingIdentity
             ->
 
             VerificationState(
                 safetyNumber = currentSafetyNumber,
                 isLoadingSafetyNumber = loadingSafetyNumber,
-                isVerifyingIdentity = verifyingIdentity,
+                isVerifyingIdentity = verifyingIdentity
             )
         }
 
     private val screenContentFlow: Flow<ScreenContentState> =
         combine(
             chatContentFlow,
-            composerFlow,
+            composerFlow
         ) { chatContent, composer ->
 
             ScreenContentState(
                 chatContent = chatContent,
-                composer = composer,
+                composer = composer
             )
         }
 
     val uiState: StateFlow<ChatUiState> =
         combine(
             screenContentFlow,
-            verificationFlow,
+            verificationFlow
         ) { screenContent, verification ->
 
             val conversation = screenContent.chatContent.conversation
@@ -139,7 +138,7 @@ class ChatViewModel(
                 contactName =
                     resolveContactName(
                         contact = contact,
-                        conversation = conversation,
+                        conversation = conversation
                     ),
                 messages = conversation?.messages?.reversed().orEmpty(),
                 messageText = composer.messageText,
@@ -149,7 +148,7 @@ class ChatViewModel(
                 isLoadingContact = contact == null,
                 isLoadingSafetyNumber = verification.isLoadingSafetyNumber,
                 isVerifyingIdentity = verification.isVerifyingIdentity,
-                errorMessage = composer.errorMessage,
+                errorMessage = composer.errorMessage
             )
         }.stateIn(
             scope = viewModelScope,
@@ -157,8 +156,8 @@ class ChatViewModel(
             initialValue =
                 ChatUiState(
                     contactId = contactId,
-                    contactName = fallbackContactName,
-                ),
+                    contactName = fallbackContactName
+                )
         )
 
     init {
@@ -221,7 +220,7 @@ class ChatViewModel(
             runCatching {
                 chatsRepository.sendMessage(
                     contactId = contactId,
-                    text = normalizedText,
+                    text = normalizedText
                 )
             }.onFailure { error ->
                 messageText.value = normalizedText
@@ -252,7 +251,7 @@ class ChatViewModel(
                 .markConversationRead(contactId = contactId)
                 .onFailure { error ->
                     println(
-                        "Could not mark conversation as read: " + error.message,
+                        "Could not mark conversation as read: " + error.message
                     )
                 }
         }
@@ -282,7 +281,7 @@ class ChatViewModel(
             try {
                 contactRepository.markVerified(contactId = contactId).getOrThrow()
             } catch (
-                error: Throwable,
+                error: Throwable
             ) {
                 errorMessage.value = error.message ?: "Identity could not be verified"
             } finally {
@@ -314,7 +313,7 @@ class ChatViewModel(
             try {
                 safetyNumber.value = getContactSafetyNumber.invoke(contactId = contactId).getOrThrow()
             } catch (
-                error: Throwable,
+                error: Throwable
             ) {
                 safetyNumber.value = ""
 
@@ -355,10 +354,10 @@ class ChatViewModel(
         typingIndicatorGateway
             .sendTypingState(
                 contactId = contactId,
-                isTyping = isTyping,
+                isTyping = isTyping
             ).onFailure { error ->
                 println(
-                    "Could not send typing state for $contactId: ${error.message}",
+                    "Could not send typing state for $contactId: ${error.message}"
                 )
             }
     }
@@ -382,13 +381,13 @@ class ChatViewModel(
 
                     when (securityState) {
                         ContactSecurityState.MUTUAL_KEYS_UNVERIFIED,
-                        ContactSecurityState.MUTUAL_KEYS_VERIFIED,
+                        ContactSecurityState.MUTUAL_KEYS_VERIFIED
                         -> {
                             refreshSafetyNumber()
                         }
 
                         ContactSecurityState.NO_REMOTE_PUBLIC_KEYS,
-                        ContactSecurityState.ONE_WAY_KEYS,
+                        ContactSecurityState.ONE_WAY_KEYS
                         -> {
                             safetyNumber.value = ""
                         }
@@ -399,7 +398,7 @@ class ChatViewModel(
 
     private fun resolveContactName(
         contact: Contact?,
-        conversation: Conversation?,
+        conversation: Conversation?
     ): String =
         contact
             ?.displayName
@@ -433,24 +432,24 @@ class ChatViewModel(
 
     private data class ChatContentState(
         val conversation: Conversation?,
-        val contact: Contact?,
+        val contact: Contact?
     )
 
     private data class ComposerState(
         val messageText: String,
         val errorMessage: String?,
-        val isContactTyping: Boolean,
+        val isContactTyping: Boolean
     )
 
     private data class VerificationState(
         val safetyNumber: String,
         val isLoadingSafetyNumber: Boolean,
-        val isVerifyingIdentity: Boolean,
+        val isVerifyingIdentity: Boolean
     )
 
     private data class ScreenContentState(
         val chatContent: ChatContentState,
-        val composer: ComposerState,
+        val composer: ComposerState
     )
 
     private companion object {

@@ -14,12 +14,12 @@ import kotlinx.coroutines.flow.flow
 class DefaultIdentityRepository(
     private val identityKeyGenerator: IdentityKeyGenerator,
     private val privateKeyStorage: PrivateKeyStorage,
-    private val publicIdentityStorage: PublicIdentityStorage,
+    private val publicIdentityStorage: PublicIdentityStorage
 ) : IdentityRepository {
     private val identityUpdates =
         MutableSharedFlow<PublicIdentity?>(
             replay = 1,
-            extraBufferCapacity = 1,
+            extraBufferCapacity = 1
         )
 
     override fun observeIdentity(): Flow<PublicIdentity?> =
@@ -71,7 +71,7 @@ class DefaultIdentityRepository(
             privateKeyStorage
                 .saveIdentityPrivateKeys(
                     encryptionPrivateKey = keyPair.encryptionPrivateKey,
-                    signingPrivateKey = keyPair.signingPrivateKey,
+                    signingPrivateKey = keyPair.signingPrivateKey
                 ).getOrThrow()
 
             privateKeysWritten = true
@@ -79,7 +79,7 @@ class DefaultIdentityRepository(
             val publicIdentity =
                 PublicIdentity(
                     encryptionPublicKey = keyPair.encryptionPublicKey.toByteArray(),
-                    signingPublicKey = keyPair.signingPublicKey.toByteArray(),
+                    signingPublicKey = keyPair.signingPublicKey.toByteArray()
                 )
 
             publicIdentityStorage.save(identity = publicIdentity).getOrThrow()
@@ -90,7 +90,7 @@ class DefaultIdentityRepository(
 
             Result.success(publicIdentity)
         } catch (
-            creationError: Throwable,
+            creationError: Throwable
         ) {
             val publicRollback =
                 if (publicIdentityWritten) {
@@ -111,8 +111,8 @@ class DefaultIdentityRepository(
                 Result.failure(
                     IllegalStateException(
                         "Identity creation failed and rollback was incomplete",
-                        creationError,
-                    ),
+                        creationError
+                    )
                 )
             } else {
                 Result.failure(creationError)

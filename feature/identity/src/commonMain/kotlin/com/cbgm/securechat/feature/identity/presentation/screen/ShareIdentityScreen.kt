@@ -77,7 +77,7 @@ fun ShareIdentityScreen(
     onBack: () -> Unit,
     onShareIdentity: () -> Unit,
     modifier: Modifier = Modifier,
-    showBackButton: Boolean = true,
+    showBackButton: Boolean = true
 ) {
     var showOverflowMenu by remember {
         mutableStateOf(false)
@@ -103,9 +103,9 @@ fun ShareIdentityScreen(
                 },
                 onShowRawIdentityChange = {
                     showRawIdentity = it
-                },
+                }
             )
-        },
+        }
     ) { innerPadding, scrollState ->
         Column(
             modifier =
@@ -116,20 +116,20 @@ fun ShareIdentityScreen(
                         top = innerPadding.calculateTopPadding(),
                         bottom = innerPadding.calculateBottomPadding(),
                         start = MaterialTheme.spacing.screenPadding,
-                        end = MaterialTheme.spacing.screenPadding,
+                        end = MaterialTheme.spacing.screenPadding
                     ).padding(vertical = MaterialTheme.spacing.medium),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (uiState.encodedIdentity.isNullOrBlank()) {
                 IdentityOptionsContent(
                     uiState = uiState,
-                    onGenerateClick = onGenerateClick,
+                    onGenerateClick = onGenerateClick
                 )
             } else {
                 GeneratedIdentityContent(
                     encodedIdentity = uiState.encodedIdentity,
                     showRawIdentity = showRawIdentity,
-                    onShareIdentity = onShareIdentity,
+                    onShareIdentity = onShareIdentity
                 )
             }
 
@@ -140,7 +140,7 @@ fun ShareIdentityScreen(
                     text = message,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
+                    textAlign = TextAlign.Center
                 )
             }
         }
@@ -157,7 +157,7 @@ private fun ShareIdentityTopBar(
     showRawIdentity: Boolean,
     onBack: () -> Unit,
     onShowOverflowMenuChange: (Boolean) -> Unit,
-    onShowRawIdentityChange: (Boolean) -> Unit,
+    onShowRawIdentityChange: (Boolean) -> Unit
 ) {
     TopAppBar(
         colors =
@@ -166,13 +166,13 @@ private fun ShareIdentityTopBar(
                 scrolledContainerColor = containerColor,
                 titleContentColor = MaterialTheme.colorScheme.onBackground,
                 navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
-                actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+                actionIconContentColor = MaterialTheme.colorScheme.onBackground
             ),
         title = {
             Text(
                 text = stringResource(Res.string.feature_identity_share_identity),
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.SemiBold
             )
         },
         navigationIcon = {
@@ -180,7 +180,7 @@ private fun ShareIdentityTopBar(
                 IconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null,
+                        contentDescription = null
                     )
                 }
             }
@@ -191,11 +191,11 @@ private fun ShareIdentityTopBar(
                     IconButton(
                         onClick = {
                             onShowOverflowMenuChange(true)
-                        },
+                        }
                     ) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
-                            contentDescription = null,
+                            contentDescription = null
                         )
                     }
 
@@ -204,7 +204,7 @@ private fun ShareIdentityTopBar(
                         onDismissRequest = {
                             onShowOverflowMenuChange(false)
                         },
-                        modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer),
+                        modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer)
                     ) {
                         DropdownMenuItem(
                             text = {
@@ -215,7 +215,7 @@ private fun ShareIdentityTopBar(
                                         } else {
                                             stringResource(Res.string.feature_identity_show_raw_identity)
                                         },
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             },
                             leadingIcon = {
@@ -227,27 +227,27 @@ private fun ShareIdentityTopBar(
                                             Icons.Default.Visibility
                                         },
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             },
                             onClick = {
                                 onShowOverflowMenuChange(false)
                                 onShowRawIdentityChange(
-                                    !showRawIdentity,
+                                    !showRawIdentity
                                 )
-                            },
+                            }
                         )
                     }
                 }
             }
-        },
+        }
     )
 }
 
 @Composable
 private fun IdentityOptionsContent(
     uiState: ShareIdentityUiState,
-    onGenerateClick: () -> Unit,
+    onGenerateClick: () -> Unit
 ) {
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
@@ -257,19 +257,19 @@ private fun IdentityOptionsContent(
                 .size(88.dp)
                 .background(
                     color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
-                    shape = CircleShape,
+                    shape = CircleShape
                 ).border(
                     width = 1.dp,
                     color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
-                    shape = CircleShape,
+                    shape = CircleShape
                 ),
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = Icons.Default.QrCode2,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier.size(40.dp),
+            modifier = Modifier.size(40.dp)
         )
     }
 
@@ -279,7 +279,7 @@ private fun IdentityOptionsContent(
         text = stringResource(Res.string.feature_identity_create_qr_description),
         style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.SemiBold,
-        textAlign = TextAlign.Center,
+        textAlign = TextAlign.Center
     )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
@@ -288,7 +288,7 @@ private fun IdentityOptionsContent(
         text = stringResource(Res.string.feature_identity_public_keys_always_included),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-        textAlign = TextAlign.Center,
+        textAlign = TextAlign.Center
     )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
@@ -311,10 +311,10 @@ private fun IdentityOptionsContent(
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.background,
+                    color = MaterialTheme.colorScheme.background
                 )
             }
-        },
+        }
     )
 }
 
@@ -322,7 +322,7 @@ private fun IdentityOptionsContent(
 private fun GeneratedIdentityContent(
     encodedIdentity: String,
     showRawIdentity: Boolean,
-    onShareIdentity: () -> Unit,
+    onShareIdentity: () -> Unit
 ) {
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
@@ -330,7 +330,7 @@ private fun GeneratedIdentityContent(
         text = stringResource(Res.string.feature_identity_your_securechat_identity),
         style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.SemiBold,
-        textAlign = TextAlign.Center,
+        textAlign = TextAlign.Center
     )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
@@ -339,7 +339,7 @@ private fun GeneratedIdentityContent(
         text = stringResource(Res.string.feature_identity_scan_to_add_you),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-        textAlign = TextAlign.Center,
+        textAlign = TextAlign.Center
     )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.large))
@@ -347,23 +347,23 @@ private fun GeneratedIdentityContent(
     SecureChatCard {
         Column(
             modifier = Modifier.padding(MaterialTheme.spacing.large),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier =
                     Modifier
                         .background(
                             color = Color.White,
-                            shape = MaterialTheme.shapes.small,
+                            shape = MaterialTheme.shapes.small
                         ).border(
                             width = 1.dp,
                             color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f),
-                            shape = MaterialTheme.shapes.small,
-                        ).padding(16.dp),
+                            shape = MaterialTheme.shapes.small
+                        ).padding(16.dp)
             ) {
                 QrCode(
                     content = encodedIdentity,
-                    modifier = Modifier.size(240.dp),
+                    modifier = Modifier.size(240.dp)
                 )
             }
 
@@ -376,19 +376,19 @@ private fun GeneratedIdentityContent(
                 colors =
                     ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.secondary,
-                        contentColor = MaterialTheme.colorScheme.background,
-                    ),
+                        contentColor = MaterialTheme.colorScheme.background
+                    )
             ) {
                 Icon(
                     imageVector = Icons.Default.Share,
-                    contentDescription = null,
+                    contentDescription = null
                 )
 
                 Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
 
                 Text(
                     text = stringResource(Res.string.feature_identity_share_identity),
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
@@ -397,7 +397,7 @@ private fun GeneratedIdentityContent(
     AnimatedVisibility(
         visible = showRawIdentity,
         enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically(),
+        exit = fadeOut() + shrinkVertically()
     ) {
         Column {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
@@ -407,7 +407,7 @@ private fun GeneratedIdentityContent(
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.SemiBold
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
@@ -418,7 +418,7 @@ private fun GeneratedIdentityContent(
                     text = encodedIdentity,
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f)
                 )
             }
         }
@@ -433,7 +433,7 @@ private fun ShareIdentityScreenPreview() {
             uiState = ShareIdentityUiState(encodedIdentity = "test identity"),
             onGenerateClick = {},
             onBack = {},
-            onShareIdentity = {},
+            onShareIdentity = {}
         )
     }
 }

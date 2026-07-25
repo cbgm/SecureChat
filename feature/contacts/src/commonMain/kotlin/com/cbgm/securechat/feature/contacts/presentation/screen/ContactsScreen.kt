@@ -98,7 +98,7 @@ fun ContactsScreen(
     onBack: () -> Unit,
     onContactClick: (
         contactId: String,
-        contactName: String,
+        contactName: String
     ) -> Unit,
     onImportContact: () -> Unit,
     onCreateGroup: () -> Unit,
@@ -113,7 +113,7 @@ fun ContactsScreen(
     onContactSelected: (String) -> Unit = {},
     onSelectionConfirmed: () -> Unit = {},
     selectionTitle: String = "",
-    onSelectionTitleChanged: (String) -> Unit = {},
+    onSelectionTitleChanged: (String) -> Unit = {}
 ) {
     var showImportSheet by rememberSaveable {
         mutableStateOf(false)
@@ -133,7 +133,7 @@ fun ContactsScreen(
                 selectionConfirming = selectionConfirming,
                 onSelectionConfirmed = onSelectionConfirmed,
                 selectionTitle = selectionTitle,
-                onSelectionTitleChanged = onSelectionTitleChanged,
+                onSelectionTitleChanged = onSelectionTitleChanged
             )
         },
         floatingActionButton = {
@@ -144,10 +144,10 @@ fun ContactsScreen(
                 ContactsFloatingActionButton(
                     onClick = {
                         showImportSheet = true
-                    },
+                    }
                 )
             }
-        },
+        }
     ) { innerPadding, listState ->
         ContactsScreenContent(
             uiState = uiState,
@@ -158,7 +158,7 @@ fun ContactsScreen(
             onCreateGroup = onCreateGroup,
             selectionMode = selectionMode,
             selectedContactIds = selectedContactIds,
-            onContactSelected = onContactSelected,
+            onContactSelected = onContactSelected
         )
     }
 
@@ -174,7 +174,7 @@ fun ContactsScreen(
             onImportDeviceContacts = {
                 showImportSheet = false
                 onImportDeviceContacts()
-            },
+            }
         )
     }
 }
@@ -191,7 +191,7 @@ private fun ContactsTopBar(
     selectionConfirming: Boolean,
     onSelectionConfirmed: () -> Unit,
     selectionTitle: String,
-    onSelectionTitleChanged: (String) -> Unit,
+    onSelectionTitleChanged: (String) -> Unit
 ) {
     Column {
         CenterAlignedTopAppBar(
@@ -202,7 +202,7 @@ private fun ContactsTopBar(
                     scrolledContainerColor = containerColor,
                     titleContentColor = MaterialTheme.colorScheme.onBackground,
                     actionIconContentColor = MaterialTheme.colorScheme.onBackground,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
                 ),
             title = {
                 if (selectionMode) {
@@ -215,7 +215,7 @@ private fun ContactsTopBar(
                             Text(
                                 text = stringResource(Res.string.feature_chats_group_name),
                                 style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.Bold
                             )
                         },
                         singleLine = true,
@@ -226,14 +226,14 @@ private fun ContactsTopBar(
                                 disabledContainerColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
-                                disabledIndicatorColor = Color.Transparent,
-                            ),
+                                disabledIndicatorColor = Color.Transparent
+                            )
                     )
                 } else {
                     Text(
                         text = stringResource(Res.string.base_contacts),
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             },
@@ -248,12 +248,12 @@ private fun ContactsTopBar(
                 if (selectionMode) {
                     IconButton(
                         onClick = onSelectionConfirmed,
-                        enabled = selectionConfirmEnabled && !selectionConfirming,
+                        enabled = selectionConfirmEnabled && !selectionConfirming
                     ) {
                         if (selectionConfirming) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
+                                strokeWidth = 2.dp
                             )
                         } else {
                             Icon(imageVector = Icons.Default.Check, contentDescription = null)
@@ -264,17 +264,17 @@ private fun ContactsTopBar(
                         Icon(imageVector = Icons.Default.Close, contentDescription = null)
                     }
                 }
-            },
+            }
         )
         Box(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background),
+                    .background(MaterialTheme.colorScheme.background)
         ) {
             SearchField(
                 searchQuery = searchQuery,
-                onSearchQueryChanged = onSearchQueryChanged,
+                onSearchQueryChanged = onSearchQueryChanged
             )
         }
     }
@@ -283,7 +283,7 @@ private fun ContactsTopBar(
 @Composable
 private fun SearchField(
     searchQuery: String,
-    onSearchQueryChanged: (String) -> Unit,
+    onSearchQueryChanged: (String) -> Unit
 ) {
     TextField(
         value = searchQuery,
@@ -295,7 +295,7 @@ private fun SearchField(
                 .padding(
                     bottom = MaterialTheme.spacing.small,
                     start = MaterialTheme.spacing.small,
-                    end = MaterialTheme.spacing.small,
+                    end = MaterialTheme.spacing.small
                 ),
         colors =
             TextFieldDefaults.colors(
@@ -305,13 +305,13 @@ private fun SearchField(
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent,
-                cursorColor = MaterialTheme.colorScheme.onPrimary,
+                cursorColor = MaterialTheme.colorScheme.onPrimary
             ),
         singleLine = true,
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
-                contentDescription = null,
+                contentDescription = null
             )
         },
         trailingIcon = {
@@ -319,24 +319,24 @@ private fun SearchField(
                 IconButton(
                     onClick = {
                         onSearchQueryChanged("")
-                    },
+                    }
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = null,
+                        contentDescription = null
                     )
                 }
             }
         },
         placeholder = {
             Text(
-                text = "Name, Phone",
+                text = "Name, Phone"
                 /*stringResource(
                                         Res.string.feature_contacts_search,
                                     )*/
             )
         },
-        shape = MaterialTheme.shapes.extraSmall,
+        shape = MaterialTheme.shapes.extraSmall
     )
 }
 
@@ -346,12 +346,12 @@ private fun ContactsFloatingActionButton(onClick: () -> Unit) {
         modifier = Modifier.size(50.dp),
         onClick = onClick,
         containerColor = MaterialTheme.colorScheme.secondary,
-        contentColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.background
     ) {
         Icon(
             imageVector = Icons.Default.Add,
             contentDescription = null,
-            modifier = Modifier.size(28.dp),
+            modifier = Modifier.size(28.dp)
         )
     }
 }
@@ -366,7 +366,7 @@ private fun ContactsScreenContent(
     onCreateGroup: () -> Unit,
     selectionMode: Boolean,
     selectedContactIds: Set<String>,
-    onContactSelected: (String) -> Unit,
+    onContactSelected: (String) -> Unit
 ) {
     when (uiState) {
         ContactsUiState.Loading -> {
@@ -375,8 +375,8 @@ private fun ContactsScreenContent(
                     Modifier
                         .fillMaxSize()
                         .padding(
-                            innerPadding,
-                        ),
+                            innerPadding
+                        )
             )
         }
 
@@ -386,7 +386,7 @@ private fun ContactsScreenContent(
                     Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(MaterialTheme.spacing.medium),
+                        .padding(MaterialTheme.spacing.medium)
             )
         }
 
@@ -400,7 +400,7 @@ private fun ContactsScreenContent(
                 selectionMode = selectionMode,
                 selectedContactIds = selectedContactIds,
                 onContactSelected = onContactSelected,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize()
             )
         }
 
@@ -412,7 +412,7 @@ private fun ContactsScreenContent(
                     Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(MaterialTheme.spacing.medium),
+                        .padding(MaterialTheme.spacing.medium)
             )
         }
     }
@@ -428,7 +428,7 @@ private fun ContactsList(
     selectionMode: Boolean,
     selectedContactIds: Set<String>,
     onContactSelected: (String) -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     LazyColumn(
         modifier = modifier,
@@ -438,9 +438,9 @@ private fun ContactsList(
                 start = MaterialTheme.spacing.medium,
                 top = innerPadding.calculateTopPadding(),
                 end = MaterialTheme.spacing.medium,
-                bottom = innerPadding.calculateBottomPadding(),
+                bottom = innerPadding.calculateBottomPadding()
             ),
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
     ) {
         if (!selectionMode) {
             item(key = "create_group") {
@@ -450,14 +450,14 @@ private fun ContactsList(
 
         items(
             items = groupedContacts,
-            key = ContactGroupEntity::title,
+            key = ContactGroupEntity::title
         ) { group ->
             ContactGroup(
                 group = group,
                 onContactClick = onContactClick,
                 selectionMode = selectionMode,
                 selectedContactIds = selectedContactIds,
-                onContactSelected = onContactSelected,
+                onContactSelected = onContactSelected
             )
         }
     }
@@ -470,7 +470,7 @@ private fun CreateGroupListItem(onClick: () -> Unit) {
         shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.primaryContainer,
         tonalElevation = 2.dp,
-        shadowElevation = 1.dp,
+        shadowElevation = 1.dp
     ) {
         ListItem(
             modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -479,14 +479,14 @@ private fun CreateGroupListItem(onClick: () -> Unit) {
                     modifier =
                         Modifier.size(40.dp).background(
                             color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
-                            shape = CircleShape,
+                            shape = CircleShape
                         ),
-                    contentAlignment = Alignment.Center,
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.GroupAdd,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary,
+                        tint = MaterialTheme.colorScheme.secondary
                     )
                 }
             },
@@ -495,10 +495,10 @@ private fun CreateGroupListItem(onClick: () -> Unit) {
                     text = stringResource(Res.string.feature_chats_create_group),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
         )
     }
 }
@@ -509,7 +509,7 @@ private fun ContactGroup(
     onContactClick: (contactId: String, contactName: String) -> Unit,
     selectionMode: Boolean,
     selectedContactIds: Set<String>,
-    onContactSelected: (String) -> Unit,
+    onContactSelected: (String) -> Unit
 ) {
     Column {
         Text(
@@ -517,11 +517,11 @@ private fun ContactGroup(
             modifier =
                 Modifier.padding(
                     start = MaterialTheme.spacing.small,
-                    bottom = MaterialTheme.spacing.small,
+                    bottom = MaterialTheme.spacing.small
                 ),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.secondary,
+            color = MaterialTheme.colorScheme.secondary
         )
 
         Surface(
@@ -529,7 +529,7 @@ private fun ContactGroup(
             shape = MaterialTheme.shapes.small,
             color = MaterialTheme.colorScheme.primaryContainer,
             tonalElevation = 2.dp,
-            shadowElevation = 1.dp,
+            shadowElevation = 1.dp
         ) {
             Column {
                 group.contacts.forEachIndexed { index, contact ->
@@ -543,7 +543,7 @@ private fun ContactGroup(
                             } else {
                                 onContactClick(contact.id, contact.displayName.orEmpty())
                             }
-                        },
+                        }
                     )
                 }
             }
@@ -556,10 +556,10 @@ private fun ContactListItem(
     contact: Contact,
     selected: Boolean = false,
     selectionMode: Boolean = false,
-    onClick: () -> Unit,
+    onClick: () -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth()
     ) {
         ListItem(
             modifier =
@@ -578,7 +578,7 @@ private fun ContactListItem(
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
             supportingContent = {
@@ -593,7 +593,7 @@ private fun ContactListItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.74f),
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.74f)
                 )
             },
             trailingContent = {
@@ -603,7 +603,7 @@ private fun ContactListItem(
                     ContactStatus(contact = contact)
                 }
             },
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
         )
 
         HorizontalDivider(
@@ -611,7 +611,7 @@ private fun ContactListItem(
                 Modifier
                     .fillMaxWidth()
                     .padding(start = 80.dp),
-            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.05f),
+            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.05f)
         )
     }
 }
@@ -625,19 +625,19 @@ private fun ContactSelectionCircle(selected: Boolean) {
                 .border(
                     width = 2.dp,
                     color = if (selected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
-                    shape = CircleShape,
+                    shape = CircleShape
                 ).background(
                     color = if (selected) MaterialTheme.colorScheme.secondary else Color.Transparent,
-                    shape = CircleShape,
+                    shape = CircleShape
                 ),
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.Center
     ) {
         if (selected) {
             Icon(
                 imageVector = Icons.Default.Check,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.background,
+                tint = MaterialTheme.colorScheme.background
             )
         }
     }
@@ -651,7 +651,7 @@ private fun ContactStatus(contact: Contact) {
             StatusBadge(
                 text = stringResource(Res.string.base_missing),
                 icon = Icons.Default.Warning,
-                color = MaterialTheme.colorScheme.error,
+                color = MaterialTheme.colorScheme.error
             )
         }
 
@@ -659,7 +659,7 @@ private fun ContactStatus(contact: Contact) {
             StatusBadge(
                 text = stringResource(Res.string.base_secure),
                 icon = Icons.Default.Verified,
-                color = MaterialTheme.colorScheme.secondary,
+                color = MaterialTheme.colorScheme.secondary
             )
         }
     }
@@ -669,25 +669,25 @@ private fun ContactStatus(contact: Contact) {
 private fun StatusBadge(
     text: String,
     icon: ImageVector,
-    color: Color,
+    color: Color
 ) {
     Surface(
         shape = RoundedCornerShape(6.dp),
-        color = color.copy(alpha = 0.15f),
+        color = color.copy(alpha = 0.15f)
     ) {
         Row(
             modifier =
                 Modifier.padding(
                     horizontal = 8.dp,
-                    vertical = 4.dp,
+                    vertical = 4.dp
                 ),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = color,
-                modifier = Modifier.size(12.dp),
+                modifier = Modifier.size(12.dp)
             )
 
             Text(
@@ -695,7 +695,7 @@ private fun StatusBadge(
                 modifier = Modifier.padding(start = 4.dp),
                 style = MaterialTheme.typography.labelSmall,
                 color = color,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.SemiBold
             )
         }
     }
@@ -705,7 +705,7 @@ private fun StatusBadge(
 private fun LoadingContent(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier,
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
     }
@@ -715,11 +715,11 @@ private fun LoadingContent(modifier: Modifier = Modifier) {
 private fun EmptyContactsContent(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier,
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
         ) {
             Box(
                 modifier =
@@ -727,15 +727,15 @@ private fun EmptyContactsContent(modifier: Modifier = Modifier) {
                         .size(80.dp)
                         .background(
                             color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
-                            shape = CircleShape,
+                            shape = CircleShape
                         ),
-                contentAlignment = Alignment.Center,
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Contacts,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(36.dp)
                 )
             }
 
@@ -744,14 +744,14 @@ private fun EmptyContactsContent(modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(top = MaterialTheme.spacing.small),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Text(
                 text = stringResource(Res.string.feature_contacts_no_contacts_hint),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center,
+                textAlign = TextAlign.Center
             )
         }
     }
@@ -761,32 +761,32 @@ private fun EmptyContactsContent(modifier: Modifier = Modifier) {
 private fun ErrorContent(
     message: String,
     onImportContact: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier,
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
         ) {
             Text(
                 text = stringResource(Res.string.feature_contacts_could_not_load_contacts),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center,
+                textAlign = TextAlign.Center
             )
 
             SecureChatApprovalButton(
                 onClick = onImportContact,
-                text = stringResource(Res.string.base_import_contact),
+                text = stringResource(Res.string.base_import_contact)
             )
         }
     }
@@ -797,7 +797,7 @@ private fun ErrorContent(
 private fun ImportContactBottomSheet(
     onDismiss: () -> Unit,
     onImportContact: () -> Unit,
-    onImportDeviceContacts: () -> Unit,
+    onImportDeviceContacts: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -806,12 +806,12 @@ private fun ImportContactBottomSheet(
         sheetState = sheetState,
         containerColor = SheetColor,
         contentColor = Color.White,
-        dragHandle = null,
+        dragHandle = null
     ) {
         ImportContactSheet(
             onClose = onDismiss,
             onImportContact = onImportContact,
-            onImportDeviceContacts = onImportDeviceContacts,
+            onImportDeviceContacts = onImportDeviceContacts
         )
     }
 }
@@ -820,15 +820,15 @@ private fun ImportContactBottomSheet(
 private fun ImportContactSheet(
     onClose: () -> Unit,
     onImportContact: () -> Unit,
-    onImportDeviceContacts: () -> Unit,
+    onImportDeviceContacts: () -> Unit
 ) {
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .padding(
-                    bottom = MaterialTheme.spacing.medium,
-                ),
+                    bottom = MaterialTheme.spacing.medium
+                )
     ) {
         Box(
             modifier =
@@ -837,11 +837,11 @@ private fun ImportContactSheet(
                     .align(Alignment.CenterHorizontally)
                     .size(
                         width = 36.dp,
-                        height = 4.dp,
+                        height = 4.dp
                     ).background(
                         color = Color.White.copy(alpha = 0.25f),
-                        shape = RoundedCornerShape(2.dp),
-                    ),
+                        shape = RoundedCornerShape(2.dp)
+                    )
         )
 
         Row(
@@ -849,21 +849,21 @@ private fun ImportContactSheet(
                 Modifier
                     .fillMaxWidth()
                     .padding(MaterialTheme.spacing.base),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = stringResource(Res.string.feature_contacts_add_contact_title),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = Color.White
             )
 
             IconButton(onClick = onClose) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = Color.White
                 )
             }
         }
@@ -873,14 +873,14 @@ private fun ImportContactSheet(
             title = stringResource(Res.string.base_import_securechat_contact),
             description =
                 stringResource(Res.string.feature_contacts_import_securechat_contact_description),
-            onClick = onImportContact,
+            onClick = onImportContact
         )
 
         ImportOptionRow(
             icon = Icons.Default.Contacts,
             title = stringResource(Res.string.feature_contacts_import_from_device),
             description = stringResource(Res.string.feature_contacts_import_from_device_description),
-            onClick = onImportDeviceContacts,
+            onClick = onImportDeviceContacts
         )
     }
 }
@@ -890,7 +890,7 @@ private fun ImportOptionRow(
     icon: ImageVector,
     title: String,
     description: String,
-    onClick: () -> Unit,
+    onClick: () -> Unit
 ) {
     ListItem(
         modifier =
@@ -902,7 +902,7 @@ private fun ImportOptionRow(
                 imageVector = icon,
                 contentDescription = null,
                 tint = Color.White.copy(alpha = 0.85f),
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(22.dp)
             )
         },
         headlineContent = {
@@ -910,17 +910,17 @@ private fun ImportOptionRow(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
-                color = Color.White,
+                color = Color.White
             )
         },
         supportingContent = {
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.6f),
+                color = Color.White.copy(alpha = 0.6f)
             )
         },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
     )
 }
 
@@ -946,15 +946,15 @@ fun ContactsScreenPreview() {
                                                         value = "123456789",
                                                         label = "work",
                                                         type = ContactPhoneNumberType.WORK_MOBILE,
-                                                        id = "1",
-                                                    ),
+                                                        id = "1"
+                                                    )
                                                 ),
                                             preferredPhoneNumberId = "1",
                                             secureChatIdentity = null,
                                             deviceContactLinkStatus = DeviceContactLinkStatus.MISSING,
                                             deviceContactId = "1",
                                             createdAtEpochMilliseconds = System.currentTimeMillis(),
-                                            updatedAtEpochMilliseconds = System.currentTimeMillis(),
+                                            updatedAtEpochMilliseconds = System.currentTimeMillis()
                                         ),
                                         Contact(
                                             id = "6",
@@ -965,15 +965,15 @@ fun ContactsScreenPreview() {
                                                         value = "123456789",
                                                         label = "work",
                                                         type = ContactPhoneNumberType.WORK_MOBILE,
-                                                        id = "1",
-                                                    ),
+                                                        id = "1"
+                                                    )
                                                 ),
                                             preferredPhoneNumberId = "1",
                                             secureChatIdentity = null,
                                             deviceContactLinkStatus = DeviceContactLinkStatus.MISSING,
                                             deviceContactId = "1",
                                             createdAtEpochMilliseconds = System.currentTimeMillis(),
-                                            updatedAtEpochMilliseconds = System.currentTimeMillis(),
+                                            updatedAtEpochMilliseconds = System.currentTimeMillis()
                                         ),
                                         Contact(
                                             id = "2",
@@ -984,17 +984,17 @@ fun ContactsScreenPreview() {
                                                         value = "123456789",
                                                         label = "work",
                                                         type = ContactPhoneNumberType.WORK_MOBILE,
-                                                        id = "1",
-                                                    ),
+                                                        id = "1"
+                                                    )
                                                 ),
                                             preferredPhoneNumberId = "1",
                                             secureChatIdentity = null,
                                             deviceContactLinkStatus = DeviceContactLinkStatus.MISSING,
                                             deviceContactId = "1",
                                             createdAtEpochMilliseconds = System.currentTimeMillis(),
-                                            updatedAtEpochMilliseconds = System.currentTimeMillis(),
-                                        ),
-                                    ),
+                                            updatedAtEpochMilliseconds = System.currentTimeMillis()
+                                        )
+                                    )
                             ),
                             ContactGroupEntity(
                                 title = "F",
@@ -1009,15 +1009,15 @@ fun ContactsScreenPreview() {
                                                         value = "123456789",
                                                         label = "work",
                                                         type = ContactPhoneNumberType.WORK_MOBILE,
-                                                        id = "1",
-                                                    ),
+                                                        id = "1"
+                                                    )
                                                 ),
                                             preferredPhoneNumberId = "1",
                                             secureChatIdentity = null,
                                             deviceContactLinkStatus = DeviceContactLinkStatus.MISSING,
                                             deviceContactId = "1",
                                             createdAtEpochMilliseconds = System.currentTimeMillis(),
-                                            updatedAtEpochMilliseconds = System.currentTimeMillis(),
+                                            updatedAtEpochMilliseconds = System.currentTimeMillis()
                                         ),
                                         Contact(
                                             id = "17",
@@ -1028,19 +1028,19 @@ fun ContactsScreenPreview() {
                                                         value = "123456789",
                                                         label = "work",
                                                         type = ContactPhoneNumberType.WORK_MOBILE,
-                                                        id = "1",
-                                                    ),
+                                                        id = "1"
+                                                    )
                                                 ),
                                             preferredPhoneNumberId = "1",
                                             secureChatIdentity = null,
                                             deviceContactLinkStatus = DeviceContactLinkStatus.MISSING,
                                             deviceContactId = "1",
                                             createdAtEpochMilliseconds = System.currentTimeMillis(),
-                                            updatedAtEpochMilliseconds = System.currentTimeMillis(),
-                                        ),
-                                    ),
-                            ),
-                        ),
+                                            updatedAtEpochMilliseconds = System.currentTimeMillis()
+                                        )
+                                    )
+                            )
+                        )
                 ),
             onBack = {},
             onContactClick = { _, _ -> },
@@ -1049,7 +1049,7 @@ fun ContactsScreenPreview() {
             onImportDeviceContacts = {},
             modifier = Modifier.fillMaxSize(),
             onSearchQueryChanged = {},
-            searchQuery = "",
+            searchQuery = ""
         )
     }
 }

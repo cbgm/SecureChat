@@ -6,7 +6,7 @@ import okio.ByteString.Companion.toByteString
 
 class GetContactSafetyNumber(
     private val localPublicIdentityProvider: LocalPublicIdentityProvider,
-    private val contactRepository: ContactRepository,
+    private val contactRepository: ContactRepository
 ) {
     suspend fun invoke(contactId: String): Result<String> =
         runCatching {
@@ -26,19 +26,19 @@ class GetContactSafetyNumber(
             val localEncodedIdentity =
                 encodeIdentity(
                     encryptionPublicKey = localIdentity.encryptionPublicKey,
-                    signingPublicKey = localIdentity.signingPublicKey,
+                    signingPublicKey = localIdentity.signingPublicKey
                 )
 
             val remoteEncodedIdentity =
                 encodeIdentity(
                     encryptionPublicKey = remoteIdentity.encryptionPublicKey,
-                    signingPublicKey = remoteIdentity.signingPublicKey,
+                    signingPublicKey = remoteIdentity.signingPublicKey
                 )
 
             val orderedIdentities =
                 listOf(
                     localEncodedIdentity,
-                    remoteEncodedIdentity,
+                    remoteEncodedIdentity
                 ).sortedWith(BYTE_ARRAY_COMPARATOR)
 
             val payload =
@@ -58,7 +58,7 @@ class GetContactSafetyNumber(
 
     private fun encodeIdentity(
         encryptionPublicKey: ByteArray,
-        signingPublicKey: ByteArray,
+        signingPublicKey: ByteArray
     ): ByteArray {
         require(encryptionPublicKey.isNotEmpty()) {
             "Encryption public key must not be empty"
@@ -115,7 +115,7 @@ class GetContactSafetyNumber(
 
         fun compareByteArrays(
             first: ByteArray,
-            second: ByteArray,
+            second: ByteArray
         ): Int {
             val sharedLength = minOf(first.size, second.size)
 

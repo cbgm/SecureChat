@@ -28,7 +28,7 @@ import org.jetbrains.compose.resources.stringResource
 fun ScannedIdentityConfirmationDialog(
     preview: ScannedIdentityPreview,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -38,17 +38,17 @@ fun ScannedIdentityConfirmationDialog(
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = preview.displayName ?: stringResource(Res.string.feature_contactimport_unnamed_securechat_contact),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium
                 )
 
                 preview.phoneNumber?.let { phoneNumber ->
                     Text(
                         text = phoneNumber,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 }
 
@@ -57,55 +57,55 @@ fun ScannedIdentityConfirmationDialog(
                 Text(
                     text = stringResource(Res.string.feature_contactimport_securechat_identity_found),
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 FingerprintSection(
                     title = stringResource(Res.string.feature_contactimport_signing_key),
-                    fingerprint = preview.signingKeyFingerprint,
+                    fingerprint = preview.signingKeyFingerprint
                 )
 
                 FingerprintSection(
                     title = stringResource(Res.string.feature_contactimport_encryption_key),
-                    fingerprint = preview.encryptionKeyFingerprint,
+                    fingerprint = preview.encryptionKeyFingerprint
                 )
             }
         },
         confirmButton = {
             TextButton(
-                onClick = onConfirm,
+                onClick = onConfirm
             ) {
                 Text(stringResource(Res.string.base_import_action))
             }
         },
         dismissButton = {
             TextButton(
-                onClick = onDismiss,
+                onClick = onDismiss
             ) {
                 Text(stringResource(Res.string.base_cancel))
             }
-        },
+        }
     )
 }
 
 @Composable
 private fun FingerprintSection(
     title: String,
-    fingerprint: String,
+    fingerprint: String
 ) {
     Column {
         Text(
             text = title,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Text(
             text = fingerprint,
             style = MaterialTheme.typography.bodySmall,
-            fontFamily = FontFamily.Monospace,
+            fontFamily = FontFamily.Monospace
         )
     }
 }

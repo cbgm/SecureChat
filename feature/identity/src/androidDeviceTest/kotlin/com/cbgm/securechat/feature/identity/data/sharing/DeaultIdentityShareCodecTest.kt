@@ -21,20 +21,20 @@ class DefaultIdentityShareCodecTest {
                         1,
                         2,
                         3,
-                        4,
+                        4
                     ),
                 signingPublicKey =
                     byteArrayOf(
                         10,
                         11,
                         12,
-                        13,
+                        13
                     ),
                 contactDetails =
                     SharedContactDetails(
                         displayName = null,
-                        phoneNumber = "+491701234567",
-                    ),
+                        phoneNumber = "+491701234567"
+                    )
             )
 
         val encoded = codec.encode(original).getOrThrow()
@@ -45,22 +45,22 @@ class DefaultIdentityShareCodecTest {
 
         assertEquals(
             original.version,
-            decoded.version,
+            decoded.version
         )
 
         assertContentEquals(
             original.encryptionPublicKey,
-            decoded.encryptionPublicKey,
+            decoded.encryptionPublicKey
         )
 
         assertContentEquals(
             original.signingPublicKey,
-            decoded.signingPublicKey,
+            decoded.signingPublicKey
         )
 
         assertEquals(
             original.contactDetails,
-            decoded.contactDetails,
+            decoded.contactDetails
         )
     }
 
@@ -74,20 +74,20 @@ class DefaultIdentityShareCodecTest {
                         21,
                         22,
                         23,
-                        24,
+                        24
                     ),
                 signingPublicKey =
                     byteArrayOf(
                         31,
                         32,
                         33,
-                        34,
+                        34
                     ),
                 contactDetails =
                     SharedContactDetails(
                         displayName = "Alice Example",
-                        phoneNumber = "+49 170 123|456",
-                    ),
+                        phoneNumber = "+49 170 123|456"
+                    )
             )
 
         val encoded = codec.encode(original).getOrThrow()
@@ -96,17 +96,17 @@ class DefaultIdentityShareCodecTest {
 
         assertContentEquals(
             original.encryptionPublicKey,
-            decoded.encryptionPublicKey,
+            decoded.encryptionPublicKey
         )
 
         assertContentEquals(
             original.signingPublicKey,
-            decoded.signingPublicKey,
+            decoded.signingPublicKey
         )
 
         assertEquals(
             original.contactDetails,
-            decoded.contactDetails,
+            decoded.contactDetails
         )
     }
 

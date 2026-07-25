@@ -84,7 +84,7 @@ fun IdentityScreen(
     onShareIdentity: () -> Unit,
     scrollState: ScrollState,
     innerPadding: PaddingValues,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     Column(
         modifier
@@ -94,8 +94,8 @@ fun IdentityScreen(
                 top = innerPadding.calculateTopPadding(),
                 bottom = innerPadding.calculateBottomPadding(),
                 start = MaterialTheme.spacing.screenPadding,
-                end = MaterialTheme.spacing.screenPadding,
-            ),
+                end = MaterialTheme.spacing.screenPadding
+            )
     ) {
         when (uiState) {
             IdentityUiState.Loading -> {
@@ -108,7 +108,7 @@ fun IdentityScreen(
                     phoneNumberError = uiState.phoneNumberError,
                     onRequestPhoneNumberHint = onRequestPhoneNumberHint,
                     onPhoneNumberChanged = onPhoneNumberChanged,
-                    onCreateIdentity = onCreateIdentity,
+                    onCreateIdentity = onCreateIdentity
                 )
             }
 
@@ -116,7 +116,7 @@ fun IdentityScreen(
                 ReadyIdentityContent(
                     publicIdentity = uiState.publicIdentity,
                     localPhoneNumber = uiState.localPhoneNumber,
-                    onShareIdentity = onShareIdentity,
+                    onShareIdentity = onShareIdentity
                 )
             }
 
@@ -139,7 +139,7 @@ private fun LoadingContent() {
                 .fillMaxWidth()
                 .padding(top = 80.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Center
     ) {
         CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
 
@@ -148,7 +148,7 @@ private fun LoadingContent() {
         Text(
             text = stringResource(Res.string.feature_identity_checking_secure_identity),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
         )
     }
 }
@@ -156,7 +156,7 @@ private fun LoadingContent() {
 @Composable
 private fun IconBadge(
     icon: ImageVector,
-    tint: Color = MaterialTheme.colorScheme.secondary,
+    tint: Color = MaterialTheme.colorScheme.secondary
 ) {
     Box(
         modifier =
@@ -164,13 +164,13 @@ private fun IconBadge(
                 .size(80.dp)
                 .background(tint.copy(alpha = 0.12f), CircleShape)
                 .border(1.dp, tint.copy(alpha = 0.3f), CircleShape),
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = tint,
-            modifier = Modifier.size(36.dp),
+            modifier = Modifier.size(36.dp)
         )
     }
 }
@@ -181,11 +181,11 @@ private fun NoIdentityContent(
     phoneNumberError: String?,
     onRequestPhoneNumberHint: () -> Unit,
     onPhoneNumberChanged: (String) -> Unit,
-    onCreateIdentity: () -> Unit,
+    onCreateIdentity: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
@@ -197,7 +197,7 @@ private fun NoIdentityContent(
             text = stringResource(Res.string.base_securechat),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -206,7 +206,7 @@ private fun NoIdentityContent(
             text = stringResource(Res.string.feature_identity_identity_enter_phone_description),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f)
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.large))
@@ -215,7 +215,7 @@ private fun NoIdentityContent(
             Column(modifier = Modifier.padding(MaterialTheme.spacing.medium)) {
                 OutlinedButton(
                     onClick = onRequestPhoneNumberHint,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(text = stringResource(Res.string.feature_identity_choose_phone_number_from_device))
                 }
@@ -233,7 +233,7 @@ private fun NoIdentityContent(
                             text =
                                 phoneNumberError
                                     ?: stringResource(Res.string.feature_identity_stable_relay_address_description),
-                            style = MaterialTheme.typography.labelLarge,
+                            style = MaterialTheme.typography.labelLarge
                         )
                     },
                     isError = phoneNumberError != null,
@@ -242,7 +242,7 @@ private fun NoIdentityContent(
                     textStyle =
                         MaterialTheme.typography.bodySmall.copy(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.SemiBold
                         ),
                     colors =
                         OutlinedTextFieldDefaults.colors(
@@ -257,8 +257,8 @@ private fun NoIdentityContent(
                             cursorColor = MaterialTheme.colorScheme.secondary,
                             errorBorderColor = MaterialTheme.colorScheme.error,
                             errorLabelColor = MaterialTheme.colorScheme.error,
-                            errorCursorColor = MaterialTheme.colorScheme.error,
-                        ),
+                            errorCursorColor = MaterialTheme.colorScheme.error
+                        )
                 )
 
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
@@ -266,7 +266,7 @@ private fun NoIdentityContent(
                 SecureChatApprovalButton(
                     onClick = onCreateIdentity,
                     enabled = phoneNumber.isNotBlank(),
-                    text = stringResource(Res.string.feature_identity_approve_number_create_identity),
+                    text = stringResource(Res.string.feature_identity_approve_number_create_identity)
                 )
             }
         }
@@ -277,11 +277,11 @@ private fun NoIdentityContent(
 private fun ReadyIdentityContent(
     publicIdentity: PublicIdentity,
     localPhoneNumber: String,
-    onShareIdentity: () -> Unit,
+    onShareIdentity: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
@@ -293,7 +293,7 @@ private fun ReadyIdentityContent(
             text = stringResource(Res.string.feature_identity_identity_ready),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Bold
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -302,21 +302,21 @@ private fun ReadyIdentityContent(
             text = stringResource(Res.string.feature_identity_private_keys_protected),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f)
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
         Surface(
             shape = MaterialTheme.shapes.extraSmall,
-            color = Field,
+            color = Field
         ) {
             Text(
                 text = localPhoneNumber,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
             )
         }
 
@@ -328,7 +328,7 @@ private fun ReadyIdentityContent(
                     icon = Icons.Default.Lock,
                     title = stringResource(Res.string.feature_identity_encryption_public_key),
                     description = stringResource(Res.string.feature_identity_encryption_public_key_description),
-                    key = publicIdentity.encryptionPublicKey,
+                    key = publicIdentity.encryptionPublicKey
                 )
 
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
@@ -337,7 +337,7 @@ private fun ReadyIdentityContent(
                     icon = Icons.Default.Key,
                     title = stringResource(Res.string.feature_identity_signing_public_key),
                     description = stringResource(Res.string.feature_identity_signing_public_key_description),
-                    key = publicIdentity.signingPublicKey,
+                    key = publicIdentity.signingPublicKey
                 )
 
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
@@ -349,8 +349,8 @@ private fun ReadyIdentityContent(
                     colors =
                         androidx.compose.material3.ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondary,
-                            contentColor = Color(0xFF071A2E),
-                        ),
+                            contentColor = Color(0xFF071A2E)
+                        )
                 ) {
                     Text(text = stringResource(Res.string.feature_identity_share_my_identity), fontWeight = FontWeight.SemiBold)
                 }
@@ -364,7 +364,7 @@ private fun PublicKeySection(
     icon: ImageVector,
     title: String,
     description: String,
-    key: ByteArray,
+    key: ByteArray
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -372,7 +372,7 @@ private fun PublicKeySection(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(16.dp)
             )
 
             Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
@@ -381,7 +381,7 @@ private fun PublicKeySection(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.SemiBold
             )
         }
 
@@ -390,7 +390,7 @@ private fun PublicKeySection(
         Text(
             text = description,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
@@ -402,11 +402,11 @@ private fun PublicKeySection(
                     .fillMaxWidth()
                     .background(
                         color = Field,
-                        shape = MaterialTheme.shapes.medium,
+                        shape = MaterialTheme.shapes.medium
                     ).padding(MaterialTheme.spacing.base),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
-            fontFamily = FontFamily.Monospace,
+            fontFamily = FontFamily.Monospace
         )
     }
 }
@@ -415,7 +415,7 @@ private fun PublicKeySection(
 private fun IncompleteIdentityContent(onRetry: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
@@ -427,7 +427,7 @@ private fun IncompleteIdentityContent(onRetry: () -> Unit) {
             text = stringResource(Res.string.feature_identity_incomplete_identity),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
@@ -436,7 +436,7 @@ private fun IncompleteIdentityContent(onRetry: () -> Unit) {
             text = stringResource(Res.string.feature_identity_incomplete_identity_description),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
@@ -448,11 +448,11 @@ private fun IncompleteIdentityContent(onRetry: () -> Unit) {
 @Composable
 private fun ErrorContent(
     message: String,
-    onRetry: () -> Unit,
+    onRetry: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
@@ -464,7 +464,7 @@ private fun ErrorContent(
             text = stringResource(Res.string.feature_identity_something_went_wrong),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Bold
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
@@ -473,7 +473,7 @@ private fun ErrorContent(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
@@ -494,7 +494,7 @@ private fun NoIdentityPreview() {
             onRetry = {},
             onShareIdentity = {},
             scrollState = ScrollState(0),
-            innerPadding = PaddingValues(0.dp),
+            innerPadding = PaddingValues(0.dp)
         )
     }
 }
@@ -509,9 +509,9 @@ private fun ReadyIdentityPreview() {
                     publicIdentity =
                         PublicIdentity(
                             encryptionPublicKey = byteArrayOf(1, 2, 3),
-                            signingPublicKey = byteArrayOf(4, 5, 6),
+                            signingPublicKey = byteArrayOf(4, 5, 6)
                         ),
-                    localPhoneNumber = "+491701111111",
+                    localPhoneNumber = "+491701111111"
                 ),
             onRequestPhoneNumberHint = {},
             onPhoneNumberChanged = {},
@@ -519,7 +519,7 @@ private fun ReadyIdentityPreview() {
             onRetry = {},
             onShareIdentity = {},
             scrollState = ScrollState(0),
-            innerPadding = PaddingValues(0.dp),
+            innerPadding = PaddingValues(0.dp)
         )
     }
 }
@@ -536,7 +536,7 @@ private fun IncompleteIdentityPreview() {
             onRetry = {},
             onShareIdentity = {},
             scrollState = ScrollState(0),
-            innerPadding = PaddingValues(0.dp),
+            innerPadding = PaddingValues(0.dp)
         )
     }
 }
@@ -553,7 +553,7 @@ private fun LoadingIdentityPreview() {
             onRetry = {},
             onShareIdentity = {},
             scrollState = ScrollState(0),
-            innerPadding = PaddingValues(0.dp),
+            innerPadding = PaddingValues(0.dp)
         )
     }
 }

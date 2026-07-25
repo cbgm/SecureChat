@@ -4,7 +4,7 @@ data class AddDeviceContactRequest(
     val displayName: String?,
     val phoneNumber: String,
     val email: String? = null,
-    val company: String? = null,
+    val company: String? = null
 )
 
 sealed interface AddDeviceContactResult {
@@ -17,7 +17,7 @@ sealed interface AddDeviceContactResult {
     data object InvalidPhoneNumber : AddDeviceContactResult
 
     data class Failure(
-        val throwable: Throwable,
+        val throwable: Throwable
     ) : AddDeviceContactResult
 }
 

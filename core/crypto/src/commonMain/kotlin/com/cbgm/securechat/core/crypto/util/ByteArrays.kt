@@ -11,7 +11,7 @@ object ByteArrays {
         arrays.forEach { source ->
             source.copyInto(
                 destination = result,
-                destinationOffset = offset,
+                destinationOffset = offset
             )
 
             offset += source.size
@@ -29,7 +29,7 @@ object ByteArrays {
             (value ushr 24 and 0xFF).toByte(),
             (value ushr 16 and 0xFF).toByte(),
             (value ushr 8 and 0xFF).toByte(),
-            (value and 0xFF).toByte(),
+            (value and 0xFF).toByte()
         )
     }
 
@@ -37,7 +37,7 @@ object ByteArrays {
 
     fun compareUnsigned(
         first: ByteArray,
-        second: ByteArray,
+        second: ByteArray
     ): Int {
         val sharedSize = minOf(first.size, second.size)
 
@@ -56,7 +56,7 @@ object ByteArrays {
 
     fun contentEqualsConstantTime(
         first: ByteArray,
-        second: ByteArray,
+        second: ByteArray
     ): Boolean {
         if (first.size != second.size) return false
 

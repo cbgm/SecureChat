@@ -9,7 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 @Composable
 actual fun rememberIdentityShareLauncher(
     encodedIdentity: String,
-    shareTitle: String,
+    shareTitle: String
 ): () -> Unit {
     val context = LocalContext.current
 
@@ -29,14 +29,14 @@ actual fun rememberIdentityShareLauncher(
 
                             putExtra(
                                 Intent.EXTRA_SUBJECT,
-                                "SecureChat identity",
+                                "SecureChat identity"
                             )
 
                             putExtra(
                                 Intent.EXTRA_TEXT,
                                 buildShareText(
-                                    encodedIdentity = payload,
-                                ),
+                                    encodedIdentity = payload
+                                )
                             )
                         }
 
@@ -44,7 +44,7 @@ actual fun rememberIdentityShareLauncher(
                     Intent
                         .createChooser(
                             sendIntent,
-                            currentShareTitle.value,
+                            currentShareTitle.value
                         ).apply {
                         /*
                          * LocalContext may theoretically be backed by

@@ -9,6 +9,6 @@ object CryptoProvider {
 
     fun createSafetyNumberGenerator(cryptoHash: CryptoHash): SafetyNumberGenerator =
         SafetyNumberGenerator(
-            cryptoHash = cryptoHash,
+            cryptoHash = cryptoHash
         )
 }

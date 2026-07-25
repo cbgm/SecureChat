@@ -21,7 +21,7 @@ object DatabaseMigrations {
                         updatedAtEpochMilliseconds INTEGER NOT NULL,
                         FOREIGN KEY(contactId) REFERENCES contacts(id) ON UPDATE NO ACTION ON DELETE CASCADE
                     )
-                    """.trimIndent(),
+                    """.trimIndent()
                 )
 
                 connection.execSQL(
@@ -42,7 +42,7 @@ object DatabaseMigrations {
                         createdAtEpochMilliseconds,
                         updatedAtEpochMilliseconds
                     FROM conversations
-                    """.trimIndent(),
+                    """.trimIndent()
                 )
 
                 connection.execSQL("DROP TABLE conversations")
@@ -51,7 +51,7 @@ object DatabaseMigrations {
                 connection.execSQL("CREATE INDEX IF NOT EXISTS index_conversations_type ON conversations(type)")
                 connection.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_conversations_updatedAtEpochMilliseconds " +
-                        "ON conversations(updatedAtEpochMilliseconds)",
+                        "ON conversations(updatedAtEpochMilliseconds)"
                 )
 
                 connection.execSQL(
@@ -65,15 +65,15 @@ object DatabaseMigrations {
                         FOREIGN KEY(conversationId) REFERENCES conversations(id) ON UPDATE NO ACTION ON DELETE CASCADE,
                         FOREIGN KEY(contactId) REFERENCES contacts(id) ON UPDATE NO ACTION ON DELETE CASCADE
                     )
-                    """.trimIndent(),
+                    """.trimIndent()
                 )
                 connection.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_conversation_participants_conversationId " +
-                        "ON conversation_participants(conversationId)",
+                        "ON conversation_participants(conversationId)"
                 )
                 connection.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_conversation_participants_contactId " +
-                        "ON conversation_participants(contactId)",
+                        "ON conversation_participants(contactId)"
                 )
                 connection.execSQL(
                     """
@@ -90,7 +90,7 @@ object DatabaseMigrations {
                         createdAtEpochMilliseconds
                     FROM conversations
                     WHERE contactId IS NOT NULL
-                    """.trimIndent(),
+                    """.trimIndent()
                 )
 
                 connection.execSQL("ALTER TABLE messages ADD COLUMN senderContactId TEXT")
@@ -113,19 +113,19 @@ object DatabaseMigrations {
                         FOREIGN KEY(messageId) REFERENCES messages(id) ON UPDATE NO ACTION ON DELETE CASCADE,
                         FOREIGN KEY(contactId) REFERENCES contacts(id) ON UPDATE NO ACTION ON DELETE CASCADE
                     )
-                    """.trimIndent(),
+                    """.trimIndent()
                 )
                 connection.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_message_recipient_states_messageId " +
-                        "ON message_recipient_states(messageId)",
+                        "ON message_recipient_states(messageId)"
                 )
                 connection.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_message_recipient_states_contactId " +
-                        "ON message_recipient_states(contactId)",
+                        "ON message_recipient_states(contactId)"
                 )
                 connection.execSQL(
                     "CREATE UNIQUE INDEX IF NOT EXISTS index_message_recipient_states_packetId " +
-                        "ON message_recipient_states(packetId)",
+                        "ON message_recipient_states(packetId)"
                 )
             }
         }

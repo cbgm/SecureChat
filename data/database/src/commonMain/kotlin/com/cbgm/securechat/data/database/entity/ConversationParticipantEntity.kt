@@ -8,30 +8,30 @@ import androidx.room.Index
     tableName = "conversation_participants",
     primaryKeys = [
         "conversationId",
-        "contactId",
+        "contactId"
     ],
     foreignKeys = [
         ForeignKey(
             entity = ConversationEntity::class,
             parentColumns = ["id"],
             childColumns = ["conversationId"],
-            onDelete = ForeignKey.CASCADE,
+            onDelete = ForeignKey.CASCADE
         ),
         ForeignKey(
             entity = ContactEntity::class,
             parentColumns = ["id"],
             childColumns = ["contactId"],
-            onDelete = ForeignKey.CASCADE,
-        ),
+            onDelete = ForeignKey.CASCADE
+        )
     ],
     indices = [
         Index(value = ["conversationId"]),
-        Index(value = ["contactId"]),
-    ],
+        Index(value = ["contactId"])
+    ]
 )
 data class ConversationParticipantEntity(
     val conversationId: String,
     val contactId: String,
     val role: String,
-    val joinedAtEpochMilliseconds: Long,
+    val joinedAtEpochMilliseconds: Long
 )

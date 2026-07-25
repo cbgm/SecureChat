@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.first
 
 class DefaultContactByRelayIdResolver(
     private val contactRepository: ContactRepository,
-    private val relayIdGenerator: RelayIdGenerator,
+    private val relayIdGenerator: RelayIdGenerator
 ) : ContactByRelayIdResolver {
     override suspend fun resolveContactId(relayId: String): Result<String?> =
         runCatching {

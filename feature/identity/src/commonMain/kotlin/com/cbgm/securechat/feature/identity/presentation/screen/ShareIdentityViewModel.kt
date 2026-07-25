@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ShareIdentityViewModel(
-    private val createSharedIdentity: CreateSharedIdentity,
+    private val createSharedIdentity: CreateSharedIdentity
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ShareIdentityUiState())
 
@@ -30,7 +30,7 @@ class ShareIdentityViewModel(
             current.copy(
                 isGenerating = true,
                 encodedIdentity = null,
-                errorMessage = null,
+                errorMessage = null
             )
         }
 
@@ -41,7 +41,7 @@ class ShareIdentityViewModel(
                         current.copy(
                             isGenerating = false,
                             encodedIdentity = encodedIdentity,
-                            errorMessage = null,
+                            errorMessage = null
                         )
                     }
                 }.onFailure { error ->
@@ -49,7 +49,7 @@ class ShareIdentityViewModel(
                         current.copy(
                             isGenerating = false,
                             encodedIdentity = null,
-                            errorMessage = error.message ?: "Failed to create shared identity",
+                            errorMessage = error.message ?: "Failed to create shared identity"
                         )
                     }
                 }

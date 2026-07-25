@@ -15,7 +15,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun StartupRoute(
     onStartupComplete: () -> Unit,
-    startupViewModel: StartupViewModel = koinViewModel(),
+    startupViewModel: StartupViewModel = koinViewModel()
 ) {
     val startupUiState by startupViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -38,7 +38,7 @@ fun StartupRoute(
                 onRequestPhoneNumberHint = {},
                 onPhoneNumberChanged = {},
                 onCreateIdentity = {},
-                onRetry = startupViewModel::retry,
+                onRetry = startupViewModel::retry
             )
         }
     }

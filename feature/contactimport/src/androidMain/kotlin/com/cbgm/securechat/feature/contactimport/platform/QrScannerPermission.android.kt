@@ -13,7 +13,7 @@ import androidx.core.content.ContextCompat
 @Composable
 actual fun rememberQrScannerPermissionRequest(
     onPermissionGranted: () -> Unit,
-    onPermissionDenied: () -> Unit,
+    onPermissionDenied: () -> Unit
 ): () -> Unit {
     val context = LocalContext.current
 
@@ -23,7 +23,7 @@ actual fun rememberQrScannerPermissionRequest(
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission(),
+            contract = ActivityResultContracts.RequestPermission()
         ) { granted ->
             if (granted) {
                 currentOnGranted.value()
@@ -34,13 +34,13 @@ actual fun rememberQrScannerPermissionRequest(
 
     return remember(
         context,
-        permissionLauncher,
+        permissionLauncher
     ) {
         {
             val granted =
                 ContextCompat.checkSelfPermission(
                     context,
-                    Manifest.permission.CAMERA,
+                    Manifest.permission.CAMERA
                 ) == PackageManager.PERMISSION_GRANTED
 
             if (granted) {

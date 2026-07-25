@@ -14,7 +14,7 @@ import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
  */
 class ImportDeviceContacts(
     private val deviceContactsDataSource: DeviceContactsDataSource,
-    private val repository: ContactRepository,
+    private val repository: ContactRepository
 ) {
     suspend operator fun invoke(): Result<Unit> {
         return runCatching {
@@ -31,7 +31,7 @@ class ImportDeviceContacts(
                             ImportDevicePhoneNumber(
                                 value = normalizedValue,
                                 type = phoneNumber.type.toContactPhoneNumberType(),
-                                label = phoneNumber.label?.trim()?.takeIf { it.isNotEmpty() },
+                                label = phoneNumber.label?.trim()?.takeIf { it.isNotEmpty() }
                             )
                         }.distinctBy { phoneNumber ->
                             phoneNumber.value to phoneNumber.type
@@ -52,8 +52,8 @@ class ImportDeviceContacts(
                             ImportDeviceContactRequest(
                                 deviceContactId = deviceContact.id,
                                 displayName = deviceContact.displayName,
-                                phoneNumbers = phoneNumbers,
-                            ),
+                                phoneNumbers = phoneNumbers
+                            )
                     ).getOrThrow()
             }
         }

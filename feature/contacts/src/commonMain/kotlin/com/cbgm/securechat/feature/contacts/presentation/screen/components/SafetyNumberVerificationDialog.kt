@@ -47,7 +47,7 @@ fun SafetyNumberVerificationDialog(
     errorMessage: String?,
     onConfirmedChanged: (Boolean) -> Unit,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = {
@@ -58,7 +58,7 @@ fun SafetyNumberVerificationDialog(
         icon = {
             Icon(
                 imageVector = Icons.Default.Security,
-                contentDescription = null,
+                contentDescription = null
             )
         },
         title = {
@@ -72,13 +72,13 @@ fun SafetyNumberVerificationDialog(
                 hasConfirmedComparison = hasConfirmedComparison,
                 isSaving = isSaving,
                 errorMessage = errorMessage,
-                onConfirmedChanged = onConfirmedChanged,
+                onConfirmedChanged = onConfirmedChanged
             )
         },
         confirmButton = {
             Button(
                 onClick = onConfirm,
-                enabled = hasConfirmedComparison && !isSaving,
+                enabled = hasConfirmedComparison && !isSaving
             ) {
                 if (isSaving) {
                     CircularProgressIndicator()
@@ -90,11 +90,11 @@ fun SafetyNumberVerificationDialog(
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
-                enabled = !isSaving,
+                enabled = !isSaving
             ) {
                 Text(text = stringResource(Res.string.base_cancel))
             }
-        },
+        }
     )
 }
 
@@ -107,19 +107,19 @@ fun SafetyNumberVerificationContent(
     isSaving: Boolean,
     errorMessage: String?,
     onConfirmedChanged: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
         Text(
             text = stringResource(Res.string.feature_contacts_compare_complete_safety_number, contactName),
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = stringResource(Res.string.feature_contacts_both_devices_same_number),
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -127,14 +127,14 @@ fun SafetyNumberVerificationContent(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceVariant,
+            color = MaterialTheme.colorScheme.surfaceVariant
         ) {
             Text(
                 text = safetyNumber.formatted,
                 modifier = Modifier.padding(16.dp),
                 style = MaterialTheme.typography.titleMedium,
                 fontFamily = FontFamily.Monospace,
-                textAlign = TextAlign.Center,
+                textAlign = TextAlign.Center
             )
         }
 
@@ -148,21 +148,21 @@ fun SafetyNumberVerificationContent(
                         value = hasConfirmedComparison,
                         enabled = !isSaving,
                         role = Role.Checkbox,
-                        onValueChange = onConfirmedChanged,
+                        onValueChange = onConfirmedChanged
                     ).padding(vertical = 8.dp),
             verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Checkbox(
                 checked = hasConfirmedComparison,
                 onCheckedChange = null,
-                enabled = !isSaving,
+                enabled = !isSaving
             )
 
             Text(
                 text = stringResource(Res.string.feature_contacts_verification_confirmation),
                 modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium
             )
         }
 
@@ -172,7 +172,7 @@ fun SafetyNumberVerificationContent(
             Text(
                 text = errorMessage,
                 color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodySmall
             )
         }
     }
@@ -205,13 +205,13 @@ private fun PreviewSafetyNumberVerificationDialog() {
                                 "11111",
                                 "11111",
                                 "11111",
-                                "11111",
-                            ),
+                                "11111"
+                            )
                     ),
                 isSaving = false,
                 errorMessage = null,
                 hasConfirmedComparison = true,
-                onConfirmedChanged = {},
+                onConfirmedChanged = {}
             )
         }
     }

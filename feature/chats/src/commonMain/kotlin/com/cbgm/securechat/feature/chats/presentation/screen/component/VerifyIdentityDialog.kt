@@ -33,7 +33,7 @@ fun VerifyIdentityDialog(
     isVerifying: Boolean,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     AlertDialog(
         modifier = modifier,
@@ -48,7 +48,7 @@ fun VerifyIdentityDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(
-                    text = stringResource(Res.string.feature_chats_compare_safety_number_contact, contactName),
+                    text = stringResource(Res.string.feature_chats_compare_safety_number_contact, contactName)
                 )
 
                 when {
@@ -61,7 +61,7 @@ fun VerifyIdentityDialog(
                             text = stringResource(Res.string.feature_chats_safety_number_unavailable),
                             modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                             color = MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Center,
+                            textAlign = TextAlign.Center
                         )
                     }
 
@@ -71,7 +71,7 @@ fun VerifyIdentityDialog(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                             style = MaterialTheme.typography.titleMedium,
                             fontFamily = FontFamily.Monospace,
-                            textAlign = TextAlign.Center,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
@@ -79,20 +79,20 @@ fun VerifyIdentityDialog(
                 Text(
                     text = stringResource(Res.string.feature_chats_confirm_matching_numbers_only),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         },
         confirmButton = {
             Button(
                 onClick = onConfirm,
-                enabled = !isVerifying && !isLoadingSafetyNumber && safetyNumber.isNotBlank(),
+                enabled = !isVerifying && !isLoadingSafetyNumber && safetyNumber.isNotBlank()
             ) {
                 if (isVerifying) {
                     CircularProgressIndicator()
                 } else {
                     Text(
-                        text = stringResource(Res.string.feature_chats_numbers_match),
+                        text = stringResource(Res.string.feature_chats_numbers_match)
                     )
                 }
             }
@@ -100,11 +100,11 @@ fun VerifyIdentityDialog(
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
-                enabled = !isVerifying,
+                enabled = !isVerifying
             ) {
                 Text(text = stringResource(Res.string.base_cancel))
             }
-        },
+        }
     )
 }
 
@@ -118,7 +118,7 @@ private fun VerifyIdentityDialogPreview() {
             isLoadingSafetyNumber = false,
             isVerifying = false,
             onConfirm = {},
-            onDismiss = {},
+            onDismiss = {}
         )
     }
 }

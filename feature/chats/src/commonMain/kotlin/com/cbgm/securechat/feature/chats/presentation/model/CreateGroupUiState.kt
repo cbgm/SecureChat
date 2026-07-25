@@ -8,7 +8,7 @@ data class CreateGroupUiState(
     val contactGroups: List<ContactGroupEntity> = emptyList(),
     val selectedContactIds: Set<String> = emptySet(),
     val isCreating: Boolean = false,
-    val errorMessage: String? = null,
+    val errorMessage: String? = null
 ) {
     val canCreate: Boolean
         get() = title.isNotBlank() && selectedContactIds.size >= 2 && !isCreating

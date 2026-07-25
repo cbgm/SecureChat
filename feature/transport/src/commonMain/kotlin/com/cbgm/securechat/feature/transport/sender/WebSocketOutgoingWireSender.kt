@@ -13,11 +13,11 @@ class WebSocketOutgoingWireSender(
     private val webSocketTransportClient: WebSocketTransportClient,
     private val localRelayIdProvider: LocalRelayIdProvider,
     private val contactRelayIdResolver: ContactRelayIdResolver,
-    private val relayTransportConfig: RelayTransportConfig,
+    private val relayTransportConfig: RelayTransportConfig
 ) : OutgoingWireSender {
     override suspend fun send(
         contactId: String,
-        encodedTransportPayload: String,
+        encodedTransportPayload: String
     ): Result<Unit> =
         runCatching {
             require(contactId.isNotBlank()) {
@@ -25,7 +25,7 @@ class WebSocketOutgoingWireSender(
             }
 
             require(
-                encodedTransportPayload.isNotBlank(),
+                encodedTransportPayload.isNotBlank()
             ) {
                 "Transport payload must not be blank"
             }
@@ -41,13 +41,13 @@ class WebSocketOutgoingWireSender(
                     senderId = senderRelayId,
                     recipientId = recipientRelayId,
                     payload = encodedTransportPayload,
-                    createdAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
+                    createdAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
                 )
 
             webSocketTransportClient
                 .sendEnvelopeAndAwaitAcceptance(
                     envelope = envelope,
-                    timeoutMilliseconds = relayTransportConfig.acknowledgementTimeoutMilliseconds,
+                    timeoutMilliseconds = relayTransportConfig.acknowledgementTimeoutMilliseconds
                 ).getOrThrow()
         }
 }

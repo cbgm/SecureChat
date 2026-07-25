@@ -9,7 +9,7 @@ import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
  * Private keys are never returned here.
  */
 class GetPublicIdentity(
-    private val repository: IdentityRepository,
+    private val repository: IdentityRepository
 ) {
     suspend operator fun invoke(): Result<PublicIdentity?> = repository.getIdentity()
 }

@@ -32,7 +32,7 @@ val contactsModule =
         single<ContactMergeService> {
             DefaultContactMergeService(
                 contactDao = get<ContactDao>(),
-                phoneNumberNormalizer = get<PhoneNumberNormalizer>(),
+                phoneNumberNormalizer = get<PhoneNumberNormalizer>()
             )
         }
 
@@ -52,7 +52,7 @@ val contactsModule =
             DefaultIdentityExchangeStarter(
                 contactDao = get(),
                 localPublicIdentityProvider = get(),
-                protocolOutbox = get(),
+                protocolOutbox = get()
             )
         }
 
@@ -67,7 +67,7 @@ val contactsModule =
                 contactKeyExchangeStore = get(),
                 identityExchangeStarter = get(),
                 phoneNumberNormalizer = get<PhoneNumberNormalizer>(),
-                deviceContactWriter = get(),
+                deviceContactWriter = get()
             )
         }
 
@@ -86,14 +86,14 @@ val contactsModule =
         factory {
             ImportDeviceContacts(
                 deviceContactsDataSource = get(),
-                repository = get(),
+                repository = get()
             )
         }
 
         viewModel {
             ContactsViewModel(
                 observeContacts = get(),
-                importDeviceContacts = get(),
+                importDeviceContacts = get()
             )
         }
 
@@ -103,7 +103,7 @@ val contactsModule =
                 getContact = get(),
                 getPublicIdentity = get(),
                 contactRepository = get(),
-                safetyNumberGenerator = get(),
+                safetyNumberGenerator = get()
             )
         }
     }

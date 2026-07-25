@@ -14,11 +14,11 @@ import kotlin.random.Random
 
 class DefaultProtocolOutbox(
     private val outboxDao: ProtocolOutboxDao,
-    private val packetCodec: PacketCodec,
+    private val packetCodec: PacketCodec
 ) : ProtocolOutbox {
     override suspend fun enqueue(
         contactId: String,
-        packet: SecureChatPacket,
+        packet: SecureChatPacket
     ): Result<ProtocolOutboxItem> {
         return runCatching {
             require(contactId.isNotBlank()) {
@@ -49,7 +49,7 @@ class DefaultProtocolOutbox(
                     attemptCount = 0,
                     lastError = null,
                     createdAtEpochMilliseconds = now,
-                    updatedAtEpochMilliseconds = now,
+                    updatedAtEpochMilliseconds = now
                 )
 
             outboxDao.upsert(entity = entity)
@@ -89,28 +89,28 @@ class DefaultProtocolOutbox(
 
             check(
                 existing.status == OutboxStatus.PENDING.name ||
-                    existing.status == OutboxStatus.FAILED.name,
+                    existing.status == OutboxStatus.FAILED.name
             ) {
                 "Only pending or failed items can start processing"
             }
 
             outboxDao.markProcessing(
                 itemId = itemId,
-                updatedAt = SystemClock.nowEpochMilliseconds(),
+                updatedAt = SystemClock.nowEpochMilliseconds()
             )
         }
 
     override suspend fun requeueInterrupted(): Result<Unit> =
         runCatching {
             outboxDao.requeueInterrupted(
-                updatedAt = SystemClock.nowEpochMilliseconds(),
+                updatedAt = SystemClock.nowEpochMilliseconds()
             )
         }
 
     override suspend fun retryFailed(): Result<Unit> =
         runCatching {
             outboxDao.retryFailed(
-                updatedAt = SystemClock.nowEpochMilliseconds(),
+                updatedAt = SystemClock.nowEpochMilliseconds()
             )
         }
 
@@ -131,13 +131,13 @@ class DefaultProtocolOutbox(
 
             outboxDao.markSent(
                 itemId = itemId,
-                updatedAt = SystemClock.nowEpochMilliseconds(),
+                updatedAt = SystemClock.nowEpochMilliseconds()
             )
         }
 
     override suspend fun markFailed(
         itemId: String,
-        errorMessage: String,
+        errorMessage: String
     ): Result<Unit> =
         runCatching {
             require(itemId.isNotBlank()) {
@@ -151,7 +151,7 @@ class DefaultProtocolOutbox(
             outboxDao.markFailed(
                 itemId = itemId,
                 errorMessage = errorMessage.take(MAX_ERROR_LENGTH),
-                updatedAt = SystemClock.nowEpochMilliseconds(),
+                updatedAt = SystemClock.nowEpochMilliseconds()
             )
         }
 
@@ -163,7 +163,7 @@ class DefaultProtocolOutbox(
 
             outboxDao.retry(
                 itemId = itemId,
-                updatedAt = SystemClock.nowEpochMilliseconds(),
+                updatedAt = SystemClock.nowEpochMilliseconds()
             )
         }
 
@@ -177,7 +177,7 @@ class DefaultProtocolOutbox(
             attemptCount = attemptCount,
             lastError = lastError,
             createdAtEpochMilliseconds = createdAtEpochMilliseconds,
-            updatedAtEpochMilliseconds = updatedAtEpochMilliseconds,
+            updatedAtEpochMilliseconds = updatedAtEpochMilliseconds
         )
 
     private fun String.toOutboxStatus(): OutboxStatus =

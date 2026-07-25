@@ -6,8 +6,12 @@ import com.cbgm.securechat.core.crypto.transport.TransportEncryptionMode
 import com.cbgm.securechat.core.protocol.codec.PacketCodec
 import com.cbgm.securechat.core.protocol.handler.IncomingPacketContext
 import com.cbgm.securechat.core.protocol.handler.ProtocolPacketHandler
+import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentityProvider
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.packet.ChatMessagePacket
+import com.cbgm.securechat.core.protocol.packet.GroupChatMessagePacket
+import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
 import com.cbgm.securechat.core.protocol.packet.ReadReceiptPacket
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
@@ -15,6 +19,7 @@ import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
 import com.cbgm.securechat.data.database.entity.ConversationEntity
 import com.cbgm.securechat.data.database.entity.ConversationParticipantEntity
 import com.cbgm.securechat.data.database.entity.MessageEntity
+import com.cbgm.securechat.data.database.entity.MessageRecipientStateEntity
 import com.cbgm.securechat.data.database.model.ConversationSummary
 import com.cbgm.securechat.data.database.model.ConversationWithMessages
 import com.cbgm.securechat.feature.chats.domain.model.ChatMessage
@@ -37,11 +42,12 @@ class DefaultChatsRepository(
     private val chatDao: ChatDao,
     private val messageDeliveryStatusDao: MessageDeliveryStatusDao,
     private val getContact: GetContact,
+    private val localPublicIdentityProvider: LocalPublicIdentityProvider,
     private val identityExchangeStarter: IdentityExchangeStarter,
     private val protocolOutbox: ProtocolOutbox,
     private val incomingTransportMessageDecoder: IncomingTransportMessageDecoder,
     private val packetCodec: PacketCodec,
-    private val protocolPacketHandler: ProtocolPacketHandler,
+    private val protocolPacketHandler: ProtocolPacketHandler
 ) : ChatsRepository {
     override fun observeConversations(): Flow<List<Conversation>> =
         chatDao.observeConversationSummaries().map { summaries ->
@@ -61,12 +67,17 @@ class DefaultChatsRepository(
 
     override suspend fun createGroupConversation(
         title: String,
-        contactIds: Set<String>,
+        contactIds: Set<String>
     ): String {
         val normalizedTitle = title.trim()
         require(normalizedTitle.isNotEmpty()) { "Group title must not be blank" }
         require(contactIds.size >= MIN_GROUP_PARTICIPANT_COUNT) { "A group requires at least two contacts" }
 
+        val contacts =
+            contactIds.map { contactId ->
+                getContact(contactId).getOrThrow() ?: error("Contact was not found: $contactId")
+            }
+        val localIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
         val now = SystemClock.nowEpochMilliseconds()
         val conversationId = createId(prefix = "group")
         val conversation =
@@ -76,26 +87,65 @@ class DefaultChatsRepository(
                 type = GROUP_CONVERSATION_TYPE,
                 title = normalizedTitle,
                 createdAtEpochMilliseconds = now,
-                updatedAtEpochMilliseconds = now,
+                updatedAtEpochMilliseconds = now
             )
         val participants =
-            contactIds.map { contactId ->
+            contacts.map { contact ->
                 ConversationParticipantEntity(
                     conversationId = conversationId,
-                    contactId = contactId,
+                    contactId = contact.id,
                     role = GROUP_MEMBER_ROLE,
-                    joinedAtEpochMilliseconds = now,
+                    joinedAtEpochMilliseconds = now
                 )
+            }
+        val memberPayloads =
+            buildList {
+                add(
+                    GroupMemberPayload(
+                        displayName = null,
+                        encryptionPublicKey = localIdentity.encryptionPublicKey,
+                        signingPublicKey = localIdentity.signingPublicKey,
+                        role = GROUP_OWNER_ROLE
+                    )
+                )
+                contacts.forEach { contact ->
+                    val identity = contact.secureChatIdentity ?: error("Contact has no SecureChat identity: ${contact.id}")
+                    add(
+                        GroupMemberPayload(
+                            displayName = contact.displayName,
+                            encryptionPublicKey = identity.encryptionPublicKey,
+                            signingPublicKey = identity.signingPublicKey,
+                            role = GROUP_MEMBER_ROLE
+                        )
+                    )
+                }
             }
 
         chatDao.createGroupConversation(conversation, participants)
+
+        contacts.forEach { contact ->
+            identityExchangeStarter.ensureStarted(contact.id).getOrThrow()
+            protocolOutbox
+                .enqueue(
+                    contactId = contact.id,
+                    packet =
+                        GroupCreatedPacket(
+                            packetId = createId(prefix = "group-created-packet"),
+                            groupId = conversationId,
+                            title = normalizedTitle,
+                            createdAtEpochMilliseconds = now,
+                            members = memberPayloads
+                        )
+                ).getOrThrow()
+        }
+
         return conversationId
     }
 
     override fun observeGroupConversation(conversationId: String): Flow<GroupConversation?> =
         combine(
             chatDao.observeConversationById(conversationId),
-            chatDao.observeConversationParticipants(conversationId),
+            chatDao.observeConversationParticipants(conversationId)
         ) { conversation, participants ->
             if (conversation == null || conversation.type != GROUP_CONVERSATION_TYPE) {
                 null
@@ -103,14 +153,79 @@ class DefaultChatsRepository(
                 GroupConversation(
                     id = conversation.id,
                     title = conversation.title.orEmpty(),
-                    participantContactIds = participants.map { it.contactId },
+                    participantContactIds = participants.map { it.contactId }
                 )
+            }
+        }
+
+    override suspend fun sendGroupMessage(
+        conversationId: String,
+        text: String
+    ): Result<Unit> =
+        runCatching {
+            val normalizedText = text.trim()
+            require(normalizedText.isNotEmpty()) { "Message text must not be blank" }
+
+            val conversation =
+                chatDao.findConversationById(conversationId)
+                    ?: error("Group conversation was not found")
+            check(conversation.type == GROUP_CONVERSATION_TYPE) { "Conversation is not a group" }
+
+            val participants = chatDao.findConversationParticipants(conversationId)
+            check(participants.isNotEmpty()) { "Group has no participants" }
+
+            val now = SystemClock.nowEpochMilliseconds()
+            val messageId = createId(prefix = "group-message")
+            val packets =
+                participants.associateWith { participant ->
+                    GroupChatMessagePacket(
+                        packetId = createId(prefix = "group-message-packet"),
+                        groupId = conversationId,
+                        messageId = messageId,
+                        sentAtEpochMilliseconds = now,
+                        text = normalizedText
+                    )
+                }
+            val recipientStates =
+                packets.map { (participant, packet) ->
+                    MessageRecipientStateEntity(
+                        messageId = messageId,
+                        contactId = participant.contactId,
+                        packetId = packet.packetId,
+                        deliveryStatus = MessageDeliveryStatus.QUEUED.name,
+                        lastError = null,
+                        updatedAtEpochMilliseconds = now
+                    )
+                }
+
+            chatDao.upsertOutgoingGroupMessage(
+                message =
+                    MessageEntity(
+                        id = messageId,
+                        conversationId = conversationId,
+                        packetId = null,
+                        text = normalizedText,
+                        transportPayload = null,
+                        transportMode = TransportEncryptionMode.SEALED_BOX.name,
+                        contentStatus = MessageContentStatus.READABLE.name,
+                        deliveryStatus = MessageDeliveryStatus.QUEUED.name,
+                        senderContactId = null,
+                        isMine = true,
+                        createdAtEpochMilliseconds = now
+                    ),
+                recipientStates = recipientStates,
+                timestamp = now
+            )
+
+            packets.forEach { (participant, packet) ->
+                identityExchangeStarter.ensureStarted(participant.contactId).getOrThrow()
+                protocolOutbox.enqueue(participant.contactId, packet).getOrThrow()
             }
         }
 
     override suspend fun sendMessage(
         contactId: String,
-        text: String,
+        text: String
     ) {
         val normalizedText = text.trim()
 
@@ -133,13 +248,13 @@ class DefaultChatsRepository(
                 packetId = createId(prefix = "packet"),
                 messageId = messageId,
                 sentAtEpochMilliseconds = now,
-                text = normalizedText,
+                text = normalizedText
             )
 
         protocolOutbox
             .enqueue(
                 contactId = contactId,
-                packet = packet,
+                packet = packet
             ).getOrThrow()
 
         val plannedTransportMode = contact.plannedTransportMode()
@@ -156,18 +271,18 @@ class DefaultChatsRepository(
                 deliveryStatus = MessageDeliveryStatus.QUEUED.name,
                 senderContactId = null,
                 isMine = true,
-                createdAtEpochMilliseconds = now,
-            ),
+                createdAtEpochMilliseconds = now
+            )
         )
 
         chatDao.updateConversationTimestamp(
             conversationId = conversation.id,
-            timestamp = now,
+            timestamp = now
         )
     }
 
     override suspend fun retryMessage(
-        messageId: String,
+        messageId: String
     ): Result<Unit> =
         runCatching {
             require(messageId.isNotBlank()) {
@@ -204,7 +319,7 @@ class DefaultChatsRepository(
             val updatedRows =
                 messageDeliveryStatusDao.updateDeliveryStatusByMessageId(
                     messageId = messageId,
-                    deliveryStatus = MessageDeliveryStatus.QUEUED.name,
+                    deliveryStatus = MessageDeliveryStatus.QUEUED.name
                 )
 
             check(updatedRows == 1) {
@@ -213,7 +328,7 @@ class DefaultChatsRepository(
         }
 
     override suspend fun markConversationRead(
-        contactId: String,
+        contactId: String
     ): Result<Unit> =
         runCatching {
             require(contactId.isNotBlank()) {
@@ -222,7 +337,7 @@ class DefaultChatsRepository(
 
             val messages =
                 chatDao.findMessagesAwaitingReadReceipt(
-                    contactId = contactId,
+                    contactId = contactId
                 )
 
             messages.forEach { message ->
@@ -230,16 +345,16 @@ class DefaultChatsRepository(
                     ReadReceiptPacket(
                         packetId =
                             createReadReceiptPacketId(
-                                messageId = message.messageId,
+                                messageId = message.messageId
                             ),
                         messageId = message.messageId,
-                        readAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
+                        readAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
                     )
 
                 protocolOutbox
                     .enqueue(
                         contactId = contactId,
-                        packet = receipt,
+                        packet = receipt
                     ).getOrThrow()
 
                 val updatedRows = chatDao.markReadReceiptSent(messageId = message.messageId)
@@ -251,20 +366,20 @@ class DefaultChatsRepository(
                 println(
                     "Read receipt queued: " +
                         "messageId=${message.messageId}, " +
-                        "contactId=$contactId",
+                        "contactId=$contactId"
                 )
             }
         }
 
     private fun createReadReceiptPacketId(
-        messageId: String,
+        messageId: String
     ): String = "read-receipt-$messageId"
 
     override suspend fun receiveMessage(
         contactId: String,
         encodedTransportPayload: String,
         localEncryptionPublicKey: ByteArray,
-        localEncryptionPrivateKey: ByteArray,
+        localEncryptionPrivateKey: ByteArray
     ) {
         require(encodedTransportPayload.isNotBlank()) {
             "Incoming transport payload must not be blank"
@@ -278,7 +393,7 @@ class DefaultChatsRepository(
             incomingTransportMessageDecoder.decode(
                 encodedPayload = encodedTransportPayload,
                 localPublicKey = localEncryptionPublicKey,
-                localPrivateKey = localEncryptionPrivateKey,
+                localPrivateKey = localEncryptionPrivateKey
             )
 
         when (decodedTransport) {
@@ -288,7 +403,7 @@ class DefaultChatsRepository(
                     conversation = conversation,
                     encodedTransportPayload = encodedTransportPayload,
                     decodedTransport = decodedTransport,
-                    receivedAt = receivedAt,
+                    receivedAt = receivedAt
                 )
             }
 
@@ -299,7 +414,7 @@ class DefaultChatsRepository(
                     text = "Invalid transport packet",
                     transportMode = UNKNOWN_TRANSPORT_MODE,
                     contentStatus = MessageContentStatus.INVALID_PACKET,
-                    receivedAt = receivedAt,
+                    receivedAt = receivedAt
                 )
             }
 
@@ -310,7 +425,7 @@ class DefaultChatsRepository(
                     text = "Unable to read plaintext message",
                     transportMode = TransportEncryptionMode.PLAINTEXT.name,
                     contentStatus = MessageContentStatus.INVALID_PLAINTEXT_PACKET,
-                    receivedAt = receivedAt,
+                    receivedAt = receivedAt
                 )
             }
 
@@ -321,7 +436,7 @@ class DefaultChatsRepository(
                     text = "Unable to decrypt secure message",
                     transportMode = TransportEncryptionMode.SEALED_BOX.name,
                     contentStatus = MessageContentStatus.TRANSPORT_DECRYPTION_FAILED,
-                    receivedAt = receivedAt,
+                    receivedAt = receivedAt
                 )
             }
         }
@@ -332,12 +447,12 @@ class DefaultChatsRepository(
         conversation: ConversationEntity,
         encodedTransportPayload: String,
         decodedTransport: DecodedTransportMessage.Readable,
-        receivedAt: Long,
+        receivedAt: Long
     ) {
         val packet =
             packetCodec
                 .decode(
-                    encodedPacket = decodedTransport.plaintext,
+                    encodedPacket = decodedTransport.plaintext
                 ).getOrElse {
                     storeFailedIncomingMessage(
                         conversation = conversation,
@@ -345,7 +460,7 @@ class DefaultChatsRepository(
                         text = "Invalid protocol packet",
                         transportMode = decodedTransport.mode.name,
                         contentStatus = MessageContentStatus.INVALID_PACKET,
-                        receivedAt = receivedAt,
+                        receivedAt = receivedAt
                     )
 
                     return
@@ -359,9 +474,9 @@ class DefaultChatsRepository(
                         conversationId = conversation.id,
                         encodedTransportPayload = encodedTransportPayload,
                         transportMode = decodedTransport.mode.name,
-                        receivedAtEpochMilliseconds = receivedAt,
+                        receivedAtEpochMilliseconds = receivedAt
                     ),
-                packet = packet,
+                packet = packet
             ).onFailure {
                 storeFailedIncomingMessage(
                     conversation = conversation,
@@ -369,7 +484,7 @@ class DefaultChatsRepository(
                     text = "Unsupported or invalid protocol packet",
                     transportMode = decodedTransport.mode.name,
                     contentStatus = MessageContentStatus.INVALID_PACKET,
-                    receivedAt = receivedAt,
+                    receivedAt = receivedAt
                 )
             }
     }
@@ -380,7 +495,7 @@ class DefaultChatsRepository(
         text: String,
         transportMode: String,
         contentStatus: MessageContentStatus,
-        receivedAt: Long,
+        receivedAt: Long
     ) {
         chatDao.upsertMessage(
             MessageEntity(
@@ -395,22 +510,22 @@ class DefaultChatsRepository(
                     MessageDeliveryStatus.NOT_APPLICABLE.name,
                 senderContactId = conversation.contactId,
                 isMine = false,
-                createdAtEpochMilliseconds = receivedAt,
-            ),
+                createdAtEpochMilliseconds = receivedAt
+            )
         )
 
         chatDao.updateConversationTimestamp(
             conversationId = conversation.id,
-            timestamp = receivedAt,
+            timestamp = receivedAt
         )
     }
 
     private suspend fun getOrCreateConversation(
-        contactId: String,
+        contactId: String
     ): ConversationEntity {
         val existing =
             chatDao.findConversationByContactId(
-                contactId = contactId,
+                contactId = contactId
             )
 
         if (existing != null) {
@@ -426,13 +541,13 @@ class DefaultChatsRepository(
                 type = DIRECT_CONVERSATION_TYPE,
                 title = null,
                 createdAtEpochMilliseconds = now,
-                updatedAtEpochMilliseconds = now,
+                updatedAtEpochMilliseconds = now
             )
 
         chatDao.upsertConversation(conversation)
 
         return chatDao.findConversationByContactId(
-            contactId = contactId,
+            contactId = contactId
         ) ?: error("Conversation could not be created")
     }
 
@@ -474,12 +589,12 @@ class DefaultChatsRepository(
                     !message.isMine &&
                         !message.readReceiptSent &&
                         message.contentStatus == MessageContentStatus.READABLE.name
-                },
+                }
         )
     }
 
     private fun MessageEntity.toDomain(
-        contactId: String,
+        contactId: String
     ): ChatMessage =
         ChatMessage(
             id = id,
@@ -494,7 +609,7 @@ class DefaultChatsRepository(
                     deliveryStatus.toMessageDeliveryStatus()
                 } else {
                     MessageDeliveryStatus.NOT_APPLICABLE
-                },
+                }
         )
 
     private fun ConversationSummary.toDomain(): Conversation {
@@ -510,7 +625,7 @@ class DefaultChatsRepository(
                             ?: updatedAtEpochMilliseconds,
                     security = MessageSecurity.INSECURE,
                     contentStatus = MessageContentStatus.READABLE,
-                    deliveryStatus = MessageDeliveryStatus.NOT_APPLICABLE,
+                    deliveryStatus = MessageDeliveryStatus.NOT_APPLICABLE
                 )
             }
 
@@ -522,7 +637,7 @@ class DefaultChatsRepository(
                     ?.takeIf(String::isNotBlank)
                     ?: "Unknown contact",
             messages = listOfNotNull(lastMessage),
-            unreadCount = unreadCount,
+            unreadCount = unreadCount
         )
     }
 
@@ -549,7 +664,7 @@ class DefaultChatsRepository(
         val random =
             Random.nextLong().toString().replace(
                 oldValue = "-",
-                newValue = "",
+                newValue = ""
             )
 
         return "$prefix-$timestamp-$random"
@@ -558,6 +673,7 @@ class DefaultChatsRepository(
     private companion object {
         const val DIRECT_CONVERSATION_TYPE = "DIRECT"
         const val GROUP_CONVERSATION_TYPE = "GROUP"
+        const val GROUP_OWNER_ROLE = "OWNER"
         const val GROUP_MEMBER_ROLE = "MEMBER"
         const val MIN_GROUP_PARTICIPANT_COUNT = 2
         const val UNKNOWN_TRANSPORT_MODE = "UNKNOWN"

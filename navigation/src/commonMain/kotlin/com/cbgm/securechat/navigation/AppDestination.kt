@@ -9,7 +9,7 @@ sealed interface AppDestination {
 
     @Serializable
     data class ContactDetails(
-        val contactId: String,
+        val contactId: String
     ) : AppDestination
 
     @Serializable
@@ -17,7 +17,7 @@ sealed interface AppDestination {
 
     @Serializable
     data class GroupConversation(
-        val conversationId: String,
+        val conversationId: String
     ) : AppDestination
 
     @Serializable
@@ -26,12 +26,12 @@ sealed interface AppDestination {
     @Serializable
     data class Chat(
         val contactId: String,
-        val contactName: String,
+        val contactName: String
     ) : AppDestination
 
     @Serializable
     data class Disclaimer(
-        val type: DisclaimerType,
+        val type: DisclaimerType
     ) : AppDestination
 
     @Serializable
@@ -51,6 +51,6 @@ sealed interface AppDestination {
 
     @Serializable
     data class ImportContact(
-        val scannedIdentity: String? = null,
+        val scannedIdentity: String? = null
     ) : AppDestination
 }

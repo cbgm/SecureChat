@@ -2,7 +2,7 @@ package com.cbgm.securechat.feature.chats.presentation.screen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
+import com.cbgm.securechat.feature.chats.domain.usecase.CreateGroupConversation
 import com.cbgm.securechat.feature.chats.presentation.model.CreateGroupUiState
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContacts
@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 
 class CreateGroupViewModel(
     private val observeContacts: ObserveContacts,
-    private val chatsRepository: ChatsRepository,
+    private val createGroupConversation: CreateGroupConversation
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CreateGroupUiState())
     val uiState: StateFlow<CreateGroupUiState> = _uiState.asStateFlow()
@@ -41,7 +41,7 @@ class CreateGroupViewModel(
         _uiState.update { state ->
             state.copy(
                 searchQuery = query,
-                contactGroups = contacts.filterByQuery(query).groupByLetter(),
+                contactGroups = contacts.filterByQuery(query).groupByLetter()
             )
         }
     }
@@ -63,7 +63,7 @@ class CreateGroupViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isCreating = true, errorMessage = null) }
             runCatching {
-                chatsRepository.createGroupConversation(state.title, state.selectedContactIds)
+                createGroupConversation(state.title, state.selectedContactIds).getOrThrow()
             }.onSuccess { conversationId ->
                 _groupCreated.emit(conversationId)
             }.onFailure { error ->

@@ -8,28 +8,28 @@ import com.cbgm.securechat.feature.settings.domain.repository.SettingsRepository
 
 class SettingsRepositoryImpl(
     private val buildInfoProvider: BuildInfoProvider,
-    private val settingsStorage: InMemorySettingsStorage,
+    private val settingsStorage: InMemorySettingsStorage
 ) : SettingsRepository {
     override suspend fun getLanguage(): AppLanguage =
         AppLanguage.fromLanguageTag(
-            settingsStorage.getLanguageTag(),
+            settingsStorage.getLanguageTag()
         )
 
     override suspend fun setLanguage(
-        language: AppLanguage,
+        language: AppLanguage
     ) {
         settingsStorage.setLanguageTag(
-            languageTag = language.languageTag,
+            languageTag = language.languageTag
         )
     }
 
     override suspend fun isDeveloperModeEnabled(): Boolean = settingsStorage.getDeveloperModeEnabled()
 
     override suspend fun setDeveloperModeEnabled(
-        enabled: Boolean,
+        enabled: Boolean
     ) {
         settingsStorage.setDeveloperModeEnabled(
-            enabled = enabled,
+            enabled = enabled
         )
     }
 

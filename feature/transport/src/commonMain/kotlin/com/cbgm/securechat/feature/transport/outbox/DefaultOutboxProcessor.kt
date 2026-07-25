@@ -23,7 +23,7 @@ class DefaultOutboxProcessor(
     private val transportPayloadCodec: TransportPayloadCodec,
     private val outgoingWireSender: OutgoingWireSender,
     private val deliveryStateListener: OutboxDeliveryStateListener,
-    private val messageDeliveryStatusDao: MessageDeliveryStatusDao,
+    private val messageDeliveryStatusDao: MessageDeliveryStatusDao
 ) : OutboxProcessor {
     override suspend fun processPending(limit: Int): Result<OutboxProcessingResult> =
         runCatching {
@@ -49,7 +49,7 @@ class DefaultOutboxProcessor(
             OutboxProcessingResult(
                 processedCount = pendingItems.size,
                 sentCount = sentCount,
-                failedCount = failedCount,
+                failedCount = failedCount
             )
         }
 
@@ -70,7 +70,7 @@ class DefaultOutboxProcessor(
             val transportPayload =
                 createTransportPayload(
                     encodedPacket = item.encodedPacket,
-                    contact = contact,
+                    contact = contact
                 )
 
             val encodedTransportPayload = transportPayloadCodec.encode(payload = transportPayload)
@@ -84,13 +84,13 @@ class DefaultOutboxProcessor(
                     packetId = item.packetId,
                     deliveryStatus = MessageDeliveryStatus.SENDING.name,
                     transportPayload = encodedTransportPayload,
-                    transportMode = transportPayload.mode.name,
+                    transportMode = transportPayload.mode.name
                 )
 
             outgoingWireSender
                 .send(
                     contactId = item.contactId,
-                    encodedTransportPayload = encodedTransportPayload,
+                    encodedTransportPayload = encodedTransportPayload
                 ).getOrThrow()
 
             protocolOutbox.markSent(itemId = item.id).getOrThrow()
@@ -101,19 +101,19 @@ class DefaultOutboxProcessor(
 
             protocolOutbox.markFailed(
                 itemId = item.id,
-                errorMessage = errorMessage,
+                errorMessage = errorMessage
             )
 
             deliveryStateListener.onFailed(
                 packetId = item.packetId,
-                errorMessage = errorMessage,
+                errorMessage = errorMessage
             )
         }
     }
 
     private suspend fun createTransportPayload(
         encodedPacket: ByteArray,
-        contact: Contact,
+        contact: Contact
     ): EncryptedTransportPayload {
         require(encodedPacket.isNotEmpty()) {
             "Encoded protocol packet must not be empty"
@@ -130,14 +130,14 @@ class DefaultOutboxProcessor(
             return EncryptedTransportPayload(
                 version = TRANSPORT_VERSION,
                 mode = TransportEncryptionMode.PLAINTEXT,
-                payload = encodedPacket,
+                payload = encodedPacket
             )
         }
 
         return transportMessageCipher
             .encryptForRecipient(
                 plaintext = encodedPacket,
-                recipientPublicKey = identity.encryptionPublicKey,
+                recipientPublicKey = identity.encryptionPublicKey
             ).getOrThrow()
     }
 

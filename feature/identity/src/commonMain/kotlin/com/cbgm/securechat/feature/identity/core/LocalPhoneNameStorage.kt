@@ -9,7 +9,7 @@ interface LocalPhoneNameStorage {
 
     suspend fun savePhoneName(
         phoneNumber: String,
-        name: String,
+        name: String
     ): Result<Unit>
 
     suspend fun loadPhoneNumber(): Result<String?>

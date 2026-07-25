@@ -12,14 +12,14 @@ import androidx.core.content.ContextCompat
 @Composable
 actual fun rememberDeviceContactsPermissionRequest(
     onPermissionGranted: () -> Unit,
-    onPermissionDenied: () -> Unit,
+    onPermissionDenied: () -> Unit
 ): () -> Unit {
     val context =
         LocalContext.current
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission(),
+            contract = ActivityResultContracts.RequestPermission()
         ) { granted ->
             if (granted) {
                 onPermissionGranted()
@@ -32,20 +32,20 @@ actual fun rememberDeviceContactsPermissionRequest(
         context,
         permissionLauncher,
         onPermissionGranted,
-        onPermissionDenied,
+        onPermissionDenied
     ) {
         {
             val permissionGranted =
                 ContextCompat.checkSelfPermission(
                     context,
-                    Manifest.permission.READ_CONTACTS,
+                    Manifest.permission.READ_CONTACTS
                 ) == PackageManager.PERMISSION_GRANTED
 
             if (permissionGranted) {
                 onPermissionGranted()
             } else {
                 permissionLauncher.launch(
-                    Manifest.permission.READ_CONTACTS,
+                    Manifest.permission.READ_CONTACTS
                 )
             }
         }

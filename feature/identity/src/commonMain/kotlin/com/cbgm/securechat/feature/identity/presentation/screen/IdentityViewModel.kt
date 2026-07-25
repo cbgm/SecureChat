@@ -19,7 +19,7 @@ class IdentityViewModel(
     private val getPublicIdentity: GetPublicIdentity,
     private val createIdentity: CreateIdentity,
     private val localPhoneNameStorage: LocalPhoneNameStorage,
-    private val phoneNumberNormalizer: PhoneNumberNormalizer,
+    private val phoneNumberNormalizer: PhoneNumberNormalizer
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow<IdentityUiState>(IdentityUiState.Loading)
 
@@ -39,7 +39,7 @@ class IdentityViewModel(
                 }.onFailure { error ->
                     mutableUiState.value =
                         IdentityUiState.Error(
-                            message = error.message ?: "Failed to load identity state",
+                            message = error.message ?: "Failed to load identity state"
                         )
                 }
         }
@@ -48,20 +48,20 @@ class IdentityViewModel(
     fun onPhoneNumberChanged(value: String) {
         updatePhoneNumber(
             value = value,
-            errorMessage = null,
+            errorMessage = null
         )
     }
 
     fun onNameChanged(value: String) {
         updateName(
-            value = value,
+            value = value
         )
     }
 
     fun onSuggestedPhoneNumber(phoneNumber: String) {
         updatePhoneNumber(
             value = phoneNumber.trim(),
-            errorMessage = null,
+            errorMessage = null
         )
     }
 
@@ -91,7 +91,7 @@ class IdentityViewModel(
         val normalizedPhoneNumber =
             phoneNumberNormalizer
                 .normalize(
-                    phoneNumber = currentState.phoneNumber,
+                    phoneNumber = currentState.phoneNumber
                 ).getOrElse { error ->
                     mutableUiState.value =
                         currentState.copy(phoneNumberError = error.message ?: "Invalid phone number")
@@ -109,7 +109,7 @@ class IdentityViewModel(
                         IdentityUiState.NoIdentity(
                             phoneNumber = normalizedPhoneNumber,
                             name = currentState.name,
-                            phoneNumberError = error.message ?: "Phone number could not be saved",
+                            phoneNumberError = error.message ?: "Phone number could not be saved"
                         )
 
                     return@launch
@@ -120,12 +120,12 @@ class IdentityViewModel(
                     mutableUiState.value =
                         IdentityUiState.Ready(
                             publicIdentity = publicIdentity,
-                            localPhoneNumber = normalizedPhoneNumber,
+                            localPhoneNumber = normalizedPhoneNumber
                         )
                 }.onFailure { error ->
                     mutableUiState.value =
                         IdentityUiState.Error(
-                            message = error.message ?: "Failed to create identity",
+                            message = error.message ?: "Failed to create identity"
                         )
                 }
         }
@@ -133,7 +133,7 @@ class IdentityViewModel(
 
     private fun updatePhoneNumber(
         value: String,
-        errorMessage: String?,
+        errorMessage: String?
     ) {
         val currentState = mutableUiState.value
 
@@ -141,7 +141,7 @@ class IdentityViewModel(
             mutableUiState.value =
                 currentState.copy(
                     phoneNumber = value,
-                    phoneNumberError = errorMessage,
+                    phoneNumberError = errorMessage
                 )
         }
     }
@@ -152,7 +152,7 @@ class IdentityViewModel(
         if (currentState is IdentityUiState.NoIdentity) {
             mutableUiState.value =
                 currentState.copy(
-                    name = value,
+                    name = value
                 )
         }
     }
@@ -183,7 +183,7 @@ class IdentityViewModel(
                 .getOrElse { error ->
                     mutableUiState.value =
                         IdentityUiState.Error(
-                            message = error.message ?: "Local phone number could not be loaded",
+                            message = error.message ?: "Local phone number could not be loaded"
                         )
 
                     return
@@ -194,7 +194,7 @@ class IdentityViewModel(
         if (localPhoneNumber == null) {
             mutableUiState.value =
                 IdentityUiState.Error(
-                    message = "Identity exists, but the local phone number is missing. Clear app data once and complete onboarding again.",
+                    message = "Identity exists, but the local phone number is missing. Clear app data once and complete onboarding again."
                 )
 
             return
@@ -206,7 +206,7 @@ class IdentityViewModel(
                     if (publicIdentity != null) {
                         IdentityUiState.Ready(
                             publicIdentity = publicIdentity,
-                            localPhoneNumber = localPhoneNumber,
+                            localPhoneNumber = localPhoneNumber
                         )
                     } else {
                         IdentityUiState.IncompleteIdentity
@@ -214,7 +214,7 @@ class IdentityViewModel(
             }.onFailure { error ->
                 mutableUiState.value =
                     IdentityUiState.Error(
-                        message = error.message ?: "Failed to load public identity",
+                        message = error.message ?: "Failed to load public identity"
                     )
             }
     }

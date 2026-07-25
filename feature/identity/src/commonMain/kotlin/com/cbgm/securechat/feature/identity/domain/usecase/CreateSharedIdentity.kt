@@ -16,7 +16,7 @@ class CreateSharedIdentity(
     private val getPublicIdentity: GetPublicIdentity,
     private val localPhoneNameStorage: LocalPhoneNameStorage,
     private val phoneNumberNormalizer: PhoneNumberNormalizer,
-    private val identityShareCodec: IdentityShareCodec,
+    private val identityShareCodec: IdentityShareCodec
 ) {
     suspend operator fun invoke(): Result<String> =
         runCatching {
@@ -42,9 +42,9 @@ class CreateSharedIdentity(
                             contactDetails =
                                 SharedContactDetails(
                                     displayName = normalizedDisplayName,
-                                    phoneNumber = normalizedPhoneNumber,
-                                ),
-                        ),
+                                    phoneNumber = normalizedPhoneNumber
+                                )
+                        )
                 ).getOrThrow()
         }
 }

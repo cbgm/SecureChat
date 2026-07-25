@@ -35,7 +35,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class DefaultWebSocketTransportClient(
     private val httpClient: HttpClient,
-    private val json: Json,
+    private val json: Json
 ) : WebSocketTransportClient {
     private val clientScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -70,7 +70,7 @@ class DefaultWebSocketTransportClient(
 
     override fun connect(
         serverUrl: String,
-        localRelayId: String,
+        localRelayId: String
     ) {
         require(serverUrl.isNotBlank()) {
             "Relay server URL must not be blank"
@@ -86,14 +86,14 @@ class DefaultWebSocketTransportClient(
             clientScope.launch {
                 runConnection(
                     serverUrl = serverUrl,
-                    localRelayId = localRelayId,
+                    localRelayId = localRelayId
                 )
             }
     }
 
     override suspend fun sendEnvelopeAndAwaitAcceptance(
         envelope: RelayEnvelope,
-        timeoutMilliseconds: Long,
+        timeoutMilliseconds: Long
     ): Result<Unit> =
         runCatching {
             require(timeoutMilliseconds > 0L) {
@@ -138,28 +138,28 @@ class DefaultWebSocketTransportClient(
                     sessionMutex.withLock {
                         session
                     } ?: error(
-                        "WebSocket session is not available",
+                        "WebSocket session is not available"
                     )
 
                 val clientMessage =
                     RelayClientMessage.AcknowledgeEnvelope(
-                        envelopeId = envelopeId,
+                        envelopeId = envelopeId
                     )
 
                 val encodedMessage =
                     json.encodeToString<RelayClientMessage>(
-                        clientMessage,
+                        clientMessage
                     )
 
                 activeSession.send(
-                    Frame.Text(encodedMessage),
+                    Frame.Text(encodedMessage)
                 )
             }
         }
 
     override suspend fun sendTypingState(
         recipientId: String,
-        isTyping: Boolean,
+        isTyping: Boolean
     ): Result<Unit> =
         runCatching {
             require(recipientId.isNotBlank()) {
@@ -175,21 +175,21 @@ class DefaultWebSocketTransportClient(
                     sessionMutex.withLock {
                         session
                     } ?: error(
-                        "WebSocket session is not available",
+                        "WebSocket session is not available"
                     )
 
                 val clientMessage =
                     RelayClientMessage.TypingState(
                         recipientId = recipientId,
-                        isTyping = isTyping,
+                        isTyping = isTyping
                     )
 
                 activeSession.send(
                     Frame.Text(
                         json.encodeToString<RelayClientMessage>(
-                            clientMessage,
-                        ),
-                    ),
+                            clientMessage
+                        )
+                    )
                 )
             }
         }
@@ -212,8 +212,8 @@ class DefaultWebSocketTransportClient(
                 reason =
                     CloseReason(
                         code = CloseReason.Codes.NORMAL,
-                        message = "Client disconnect",
-                    ),
+                        message = "Client disconnect"
+                    )
             )
         }
 
@@ -226,7 +226,7 @@ class DefaultWebSocketTransportClient(
 
     private suspend fun runConnection(
         serverUrl: String,
-        localRelayId: String,
+        localRelayId: String
     ) {
         mutableConnectionState.value = TransportConnectionState.Connecting
 
@@ -240,7 +240,7 @@ class DefaultWebSocketTransportClient(
 
                 sendRegistration(
                     activeSession = this,
-                    localRelayId = localRelayId,
+                    localRelayId = localRelayId
                 )
 
                 incoming.consumeEach { frame ->
@@ -248,7 +248,7 @@ class DefaultWebSocketTransportClient(
                         is Frame.Text -> {
                             handleTextFrame(
                                 encodedMessage = frame.readText(),
-                                expectedRelayId = localRelayId,
+                                expectedRelayId = localRelayId
                             )
                         }
 
@@ -258,7 +258,7 @@ class DefaultWebSocketTransportClient(
                             println(
                                 "Received WebSocket close frame: " +
                                     "code=${reason?.code}, " +
-                                    "message=${reason?.message}",
+                                    "message=${reason?.message}"
                             )
                         }
 
@@ -285,25 +285,25 @@ class DefaultWebSocketTransportClient(
                 println(
                     "WebSocket session ended: " +
                         "code=${reason?.code}, " +
-                        "message=${reason?.message}",
+                        "message=${reason?.message}"
                 )
             }
 
             mutableConnectionState.value = TransportConnectionState.Disconnected
         } catch (
-            error: CancellationException,
+            error: CancellationException
         ) {
             mutableConnectionState.value = TransportConnectionState.Disconnected
 
             throw error
         } catch (
-            error: Throwable,
+            error: Throwable
         ) {
             println("WebSocket connection failed: ${error.message}")
 
             mutableConnectionState.value =
                 TransportConnectionState.Failed(
-                    message = error.message ?: "WebSocket connection failed",
+                    message = error.message ?: "WebSocket connection failed"
                 )
         } finally {
             sessionMutex.withLock {
@@ -318,7 +318,7 @@ class DefaultWebSocketTransportClient(
 
     private suspend fun sendRegistration(
         activeSession: DefaultClientWebSocketSession,
-        localRelayId: String,
+        localRelayId: String
     ) {
         val registration = RelayClientMessage.Register(relayId = localRelayId)
 
@@ -335,7 +335,7 @@ class DefaultWebSocketTransportClient(
                 sessionMutex.withLock {
                     session
                 } ?: error(
-                    "WebSocket session is not available",
+                    "WebSocket session is not available"
                 )
 
             val clientMessage = RelayClientMessage.SendEnvelope(envelope = envelope)
@@ -348,7 +348,7 @@ class DefaultWebSocketTransportClient(
 
     private suspend fun handleTextFrame(
         encodedMessage: String,
-        expectedRelayId: String,
+        expectedRelayId: String
     ) {
         val message =
             runCatching {
@@ -358,7 +358,7 @@ class DefaultWebSocketTransportClient(
 
                 mutableConnectionState.value =
                     TransportConnectionState.Failed(
-                        message = error.message ?: "Invalid relay response",
+                        message = error.message ?: "Invalid relay response"
                     )
 
                 return
@@ -387,8 +387,8 @@ class DefaultWebSocketTransportClient(
                 mutableIncomingTypingEvents.emit(
                     RelayTypingEvent(
                         senderId = message.senderId,
-                        isTyping = message.isTyping,
-                    ),
+                        isTyping = message.isTyping
+                    )
                 )
             }
 

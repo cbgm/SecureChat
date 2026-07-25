@@ -6,7 +6,7 @@ import com.cbgm.securechat.feature.identity.core.LocalPhoneNameStorage
 
 class IdentityLocalPhoneNumberProvider(
     private val localPhoneNameStorage: LocalPhoneNameStorage,
-    private val phoneNumberNormalizer: PhoneNumberNormalizer,
+    private val phoneNumberNormalizer: PhoneNumberNormalizer
 ) : LocalPhoneNumberProvider {
     override suspend fun getLocalPhoneNumber(): Result<String> =
         runCatching {
@@ -18,7 +18,7 @@ class IdentityLocalPhoneNumberProvider(
                         it.isNotBlank()
                     }
                     ?: error(
-                        "Local phone number has not been configured",
+                        "Local phone number has not been configured"
                     )
 
             phoneNumberNormalizer.normalize(phoneNumber = storedPhoneNumber).getOrThrow()

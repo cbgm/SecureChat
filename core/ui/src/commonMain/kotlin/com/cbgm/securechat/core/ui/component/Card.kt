@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 fun SecureChatCard(
     modifier: Modifier = Modifier,
     isFadingEnabled: Boolean = false,
-    content: @Composable () -> Unit,
+    content: @Composable () -> Unit
 ) {
     var animationStarted by remember { mutableStateOf(false) }
 
@@ -37,7 +37,7 @@ fun SecureChatCard(
                 0f
             },
         animationSpec = tween(durationMillis = 500, delayMillis = 260),
-        label = "startupCardAlpha",
+        label = "startupCardAlpha"
     )
 
     val cardTranslation by animateFloatAsState(
@@ -51,9 +51,9 @@ fun SecureChatCard(
             tween(
                 durationMillis = 650,
                 delayMillis = 180,
-                easing = FastOutSlowInEasing,
+                easing = FastOutSlowInEasing
             ),
-        label = "startupCardTranslation",
+        label = "startupCardTranslation"
     )
 
     Surface(
@@ -71,19 +71,19 @@ fun SecureChatCard(
         shape = MaterialTheme.shapes.small,
         tonalElevation = 8.dp,
         shadowElevation = 12.dp,
-        content = content,
+        content = content
     )
 }
 
 @Composable
 fun SecureChatCardNoAnimation(
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
+    content: @Composable () -> Unit
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.primaryContainer,
-        content = content,
+        content = content
     )
 }

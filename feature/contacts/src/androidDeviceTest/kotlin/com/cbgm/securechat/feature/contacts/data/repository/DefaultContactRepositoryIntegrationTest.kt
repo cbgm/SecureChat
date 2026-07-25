@@ -57,12 +57,12 @@ class DefaultContactRepositoryIntegrationTest {
                 mergeService =
                     DefaultContactMergeService(
                         contactDao = contactDao,
-                        phoneNumberNormalizer = phoneNumberNormalizer,
+                        phoneNumberNormalizer = phoneNumberNormalizer
                     ),
                 contactKeyExchangeStore = DefaultContactKeyExchangeStore(contactDao = contactDao),
                 identityExchangeStarter = TestIdentityExchangeStarter,
                 phoneNumberNormalizer = phoneNumberNormalizer,
-                deviceContactWriter = TestDeviceContactWriter,
+                deviceContactWriter = TestDeviceContactWriter
             )
     }
 
@@ -85,13 +85,13 @@ class DefaultContactRepositoryIntegrationTest {
                             encryptionPublicKey = encryptionPublicKey,
                             signingPublicKey = signingPublicKey,
                             displayName = null,
-                            phoneNumber = null,
-                        ),
+                            phoneNumber = null
+                        )
                 )
 
             assertTrue(
                 actual = result.isSuccess,
-                message = "Import failed: " + result.exceptionOrNull()?.message,
+                message = "Import failed: " + result.exceptionOrNull()?.message
             )
 
             val contact = result.getOrThrow()
@@ -106,24 +106,24 @@ class DefaultContactRepositoryIntegrationTest {
 
             assertEquals(
                 expected = DeviceContactLinkStatus.NOT_LINKED,
-                actual = contact.deviceContactLinkStatus,
+                actual = contact.deviceContactLinkStatus
             )
 
             val secureChatIdentity = requireSecureChatIdentity(contact.secureChatIdentity)
 
             assertContentEquals(
                 expected = encryptionPublicKey,
-                actual = secureChatIdentity.encryptionPublicKey,
+                actual = secureChatIdentity.encryptionPublicKey
             )
 
             assertContentEquals(
                 expected = signingPublicKey,
-                actual = secureChatIdentity.signingPublicKey,
+                actual = secureChatIdentity.signingPublicKey
             )
 
             assertEquals(
                 expected = ContactVerificationStatus.UNVERIFIED,
-                actual = secureChatIdentity.verificationStatus,
+                actual = secureChatIdentity.verificationStatus
             )
         }
 
@@ -142,42 +142,42 @@ class DefaultContactRepositoryIntegrationTest {
                                 encryptionPublicKey = encryptionPublicKey,
                                 signingPublicKey = signingPublicKey,
                                 displayName = "Alice",
-                                phoneNumber = "+49123456789",
-                            ),
+                                phoneNumber = "+49123456789"
+                            )
                     ).getOrThrow()
 
             assertEquals(
                 expected = "Alice",
-                actual = contact.displayName,
+                actual = contact.displayName
             )
 
             assertEquals(
                 expected = "+49123456789",
-                actual = contact.preferredPhoneNumber?.value,
+                actual = contact.preferredPhoneNumber?.value
             )
 
             assertEquals(
                 expected = 1,
-                actual = contact.phoneNumbers.size,
+                actual = contact.phoneNumbers.size
             )
 
             assertNull(actual = contact.deviceContactId)
 
             assertEquals(
                 expected = DeviceContactLinkStatus.NOT_LINKED,
-                actual = contact.deviceContactLinkStatus,
+                actual = contact.deviceContactLinkStatus
             )
 
             val secureChatIdentity = requireSecureChatIdentity(contact.secureChatIdentity)
 
             assertContentEquals(
                 expected = encryptionPublicKey,
-                actual = secureChatIdentity.encryptionPublicKey,
+                actual = secureChatIdentity.encryptionPublicKey
             )
 
             assertContentEquals(
                 expected = signingPublicKey,
-                actual = secureChatIdentity.signingPublicKey,
+                actual = secureChatIdentity.signingPublicKey
             )
         }
 
@@ -198,8 +198,8 @@ class DefaultContactRepositoryIntegrationTest {
                                 encryptionPublicKey = firstEncryptionPublicKey,
                                 signingPublicKey = signingPublicKey,
                                 displayName = "Alice",
-                                phoneNumber = null,
-                            ),
+                                phoneNumber = null
+                            )
                     ).getOrThrow()
 
             val secondContact =
@@ -210,42 +210,42 @@ class DefaultContactRepositoryIntegrationTest {
                                 encryptionPublicKey = secondEncryptionPublicKey,
                                 signingPublicKey = signingPublicKey,
                                 displayName = "Alice Updated",
-                                phoneNumber = "+49111111111",
-                            ),
+                                phoneNumber = "+49111111111"
+                            )
                     ).getOrThrow()
 
             assertEquals(
                 expected = firstContact.id,
-                actual = secondContact.id,
+                actual = secondContact.id
             )
 
             assertEquals(
                 expected = "Alice Updated",
-                actual = secondContact.displayName,
+                actual = secondContact.displayName
             )
 
             assertEquals(
                 expected = "+49111111111",
-                actual = secondContact.preferredPhoneNumber?.value,
+                actual = secondContact.preferredPhoneNumber?.value
             )
 
             val secureChatIdentity = requireSecureChatIdentity(secondContact.secureChatIdentity)
 
             assertContentEquals(
                 expected = secondEncryptionPublicKey,
-                actual = secureChatIdentity.encryptionPublicKey,
+                actual = secureChatIdentity.encryptionPublicKey
             )
 
             assertContentEquals(
                 expected = signingPublicKey,
-                actual = secureChatIdentity.signingPublicKey,
+                actual = secureChatIdentity.signingPublicKey
             )
 
             val contacts = repository.observeContacts().first()
 
             assertEquals(
                 expected = 1,
-                actual = contacts.size,
+                actual = contacts.size
             )
         }
 
@@ -261,8 +261,8 @@ class DefaultContactRepositoryIntegrationTest {
                             encryptionPublicKey = testKey(seed = 5),
                             signingPublicKey = signingPublicKey,
                             displayName = "Bob",
-                            phoneNumber = "+49222222222",
-                        ),
+                            phoneNumber = "+49222222222"
+                        )
                 ).getOrThrow()
 
             val updatedContact =
@@ -273,25 +273,25 @@ class DefaultContactRepositoryIntegrationTest {
                                 encryptionPublicKey = testKey(seed = 6),
                                 signingPublicKey = signingPublicKey,
                                 displayName = null,
-                                phoneNumber = null,
-                            ),
+                                phoneNumber = null
+                            )
                     ).getOrThrow()
 
             assertEquals(
                 expected = "Bob",
-                actual = updatedContact.displayName,
+                actual = updatedContact.displayName
             )
 
             assertEquals(
                 expected = "+49222222222",
-                actual = updatedContact.preferredPhoneNumber?.value,
+                actual = updatedContact.preferredPhoneNumber?.value
             )
 
             val secureChatIdentity = requireSecureChatIdentity(updatedContact.secureChatIdentity)
 
             assertContentEquals(
                 expected = testKey(seed = 6),
-                actual = secureChatIdentity.encryptionPublicKey,
+                actual = secureChatIdentity.encryptionPublicKey
             )
         }
 
@@ -306,15 +306,15 @@ class DefaultContactRepositoryIntegrationTest {
                                 encryptionPublicKey = testKey(seed = 7),
                                 signingPublicKey = testKey(seed = 107),
                                 displayName = null,
-                                phoneNumber = null,
-                            ),
+                                phoneNumber = null
+                            )
                     ).getOrThrow()
 
             val secureChatIdentity = requireSecureChatIdentity(contact.secureChatIdentity)
 
             assertEquals(
                 expected = ContactVerificationStatus.UNVERIFIED,
-                actual = secureChatIdentity.verificationStatus,
+                actual = secureChatIdentity.verificationStatus
             )
         }
 
@@ -329,8 +329,8 @@ class DefaultContactRepositoryIntegrationTest {
                                 encryptionPublicKey = testKey(seed = 8),
                                 signingPublicKey = testKey(seed = 108),
                                 displayName = "Charlie",
-                                phoneNumber = null,
-                            ),
+                                phoneNumber = null
+                            )
                     ).getOrThrow()
 
             val verifiedContact = repository.markVerified(contactId = importedContact.id).getOrThrow()
@@ -339,7 +339,7 @@ class DefaultContactRepositoryIntegrationTest {
 
             assertEquals(
                 expected = ContactVerificationStatus.VERIFIED,
-                actual = verifiedIdentity.verificationStatus,
+                actual = verifiedIdentity.verificationStatus
             )
 
             val loadedContact = repository.getContact(contactId = importedContact.id).getOrThrow()
@@ -350,7 +350,7 @@ class DefaultContactRepositoryIntegrationTest {
 
             assertEquals(
                 expected = ContactVerificationStatus.VERIFIED,
-                actual = loadedIdentity.verificationStatus,
+                actual = loadedIdentity.verificationStatus
             )
         }
 
@@ -364,33 +364,33 @@ class DefaultContactRepositoryIntegrationTest {
                             ImportDeviceContactRequest(
                                 deviceContactId = "device-contact-42",
                                 displayName = "Dana",
-                                phoneNumbers = listOf(devicePhoneNumber(value = "+49333333333")),
-                            ),
+                                phoneNumbers = listOf(devicePhoneNumber(value = "+49333333333"))
+                            )
                     ).getOrThrow()
 
             assertEquals(
                 expected = "Dana",
-                actual = contact.displayName,
+                actual = contact.displayName
             )
 
             assertEquals(
                 expected = "+49333333333",
-                actual = contact.preferredPhoneNumber?.value,
+                actual = contact.preferredPhoneNumber?.value
             )
 
             assertEquals(
                 expected = 1,
-                actual = contact.phoneNumbers.size,
+                actual = contact.phoneNumbers.size
             )
 
             assertEquals(
                 expected = "device-contact-42",
-                actual = contact.deviceContactId,
+                actual = contact.deviceContactId
             )
 
             assertEquals(
                 expected = DeviceContactLinkStatus.LINKED,
-                actual = contact.deviceContactLinkStatus,
+                actual = contact.deviceContactLinkStatus
             )
 
             assertNull(actual = contact.secureChatIdentity)
@@ -410,33 +410,33 @@ class DefaultContactRepositoryIntegrationTest {
                                     listOf(
                                         devicePhoneNumber(
                                             value = "+49111111111",
-                                            type = ContactPhoneNumberType.HOME,
+                                            type = ContactPhoneNumberType.HOME
                                         ),
                                         devicePhoneNumber(
                                             value = "+49222222222",
-                                            type = ContactPhoneNumberType.MOBILE,
+                                            type = ContactPhoneNumberType.MOBILE
                                         ),
                                         devicePhoneNumber(
                                             value = "+49333333333",
-                                            type = ContactPhoneNumberType.WORK,
-                                        ),
-                                    ),
-                            ),
+                                            type = ContactPhoneNumberType.WORK
+                                        )
+                                    )
+                            )
                     ).getOrThrow()
 
             assertEquals(
                 expected = 3,
-                actual = contact.phoneNumbers.size,
+                actual = contact.phoneNumbers.size
             )
 
             assertEquals(
                 expected = "+49222222222",
-                actual = contact.preferredPhoneNumber?.value,
+                actual = contact.preferredPhoneNumber?.value
             )
 
             assertEquals(
                 expected = ContactPhoneNumberType.MOBILE,
-                actual = contact.preferredPhoneNumber?.type,
+                actual = contact.preferredPhoneNumber?.type
             )
         }
 
@@ -454,10 +454,10 @@ class DefaultContactRepositoryIntegrationTest {
                                     listOf(
                                         devicePhoneNumber(
                                             value =
-                                                "+49444444444",
-                                        ),
-                                    ),
-                            ),
+                                                "+49444444444"
+                                        )
+                                    )
+                            )
                     ).getOrThrow()
 
             val secondContact =
@@ -473,20 +473,20 @@ class DefaultContactRepositoryIntegrationTest {
                                     listOf(
                                         devicePhoneNumber(
                                             value =
-                                                "+49555555555",
-                                        ),
-                                    ),
-                            ),
+                                                "+49555555555"
+                                        )
+                                    )
+                            )
                     ).getOrThrow()
 
             assertEquals(
                 expected = firstContact.id,
-                actual = secondContact.id,
+                actual = secondContact.id
             )
 
             assertEquals(
                 expected = "Erin Updated",
-                actual = secondContact.displayName,
+                actual = secondContact.displayName
             )
 
             assertEquals(
@@ -494,24 +494,24 @@ class DefaultContactRepositoryIntegrationTest {
                 actual =
                     secondContact
                         .preferredPhoneNumber
-                        ?.value,
+                        ?.value
             )
 
             assertEquals(
                 expected = 1,
-                actual = secondContact.phoneNumbers.size,
+                actual = secondContact.phoneNumbers.size
             )
 
             assertEquals(
                 expected = "device-contact-43",
-                actual = secondContact.deviceContactId,
+                actual = secondContact.deviceContactId
             )
 
             assertEquals(
                 expected =
                     DeviceContactLinkStatus.LINKED,
                 actual =
-                    secondContact.deviceContactLinkStatus,
+                    secondContact.deviceContactLinkStatus
             )
 
             val contacts =
@@ -521,7 +521,7 @@ class DefaultContactRepositoryIntegrationTest {
 
             assertEquals(
                 expected = 1,
-                actual = contacts.size,
+                actual = contacts.size
             )
         }
 
@@ -540,10 +540,10 @@ class DefaultContactRepositoryIntegrationTest {
                                 listOf(
                                     devicePhoneNumber(
                                         value =
-                                            "+49666666666",
-                                    ),
-                                ),
-                        ),
+                                            "+49666666666"
+                                    )
+                                )
+                        )
                 ).getOrThrow()
 
             val updatedContact =
@@ -558,15 +558,15 @@ class DefaultContactRepositoryIntegrationTest {
                                     listOf(
                                         devicePhoneNumber(
                                             value =
-                                                "+49666666666",
-                                        ),
-                                    ),
-                            ),
+                                                "+49666666666"
+                                        )
+                                    )
+                            )
                     ).getOrThrow()
 
             assertEquals(
                 expected = "Frank",
-                actual = updatedContact.displayName,
+                actual = updatedContact.displayName
             )
 
             assertEquals(
@@ -574,7 +574,7 @@ class DefaultContactRepositoryIntegrationTest {
                 actual =
                     updatedContact
                         .preferredPhoneNumber
-                        ?.value,
+                        ?.value
             )
         }
 
@@ -590,12 +590,12 @@ class DefaultContactRepositoryIntegrationTest {
                             displayName =
                                 "No Number",
                             phoneNumbers =
-                                emptyList(),
-                        ),
+                                emptyList()
+                        )
                 )
 
             assertTrue(
-                actual = result.isFailure,
+                actual = result.isFailure
             )
 
             val contacts =
@@ -604,7 +604,7 @@ class DefaultContactRepositoryIntegrationTest {
                     .first()
 
             assertTrue(
-                actual = contacts.isEmpty(),
+                actual = contacts.isEmpty()
             )
         }
 
@@ -624,15 +624,15 @@ class DefaultContactRepositoryIntegrationTest {
                                     listOf(
                                         devicePhoneNumber(
                                             value =
-                                                "+49777777777",
-                                        ),
-                                    ),
-                            ),
+                                                "+49777777777"
+                                        )
+                                    )
+                            )
                     ).getOrThrow()
 
             assertNull(
                 actual =
-                    existingContact.secureChatIdentity,
+                    existingContact.secureChatIdentity
             )
 
             val encryptionPublicKey =
@@ -652,18 +652,18 @@ class DefaultContactRepositoryIntegrationTest {
                                 signingPublicKey,
                                 displayName = null,
                                 phoneNumber =
-                                    "+49777777777",
-                            ),
+                                    "+49777777777"
+                            )
                     ).getOrThrow()
 
             assertEquals(
                 expected = existingContact.id,
-                actual = importedContact.id,
+                actual = importedContact.id
             )
 
             assertEquals(
                 expected = "Grace",
-                actual = importedContact.displayName,
+                actual = importedContact.displayName
             )
 
             assertEquals(
@@ -671,12 +671,12 @@ class DefaultContactRepositoryIntegrationTest {
                 actual =
                     importedContact
                         .preferredPhoneNumber
-                        ?.value,
+                        ?.value
             )
 
             assertEquals(
                 expected = "device-contact-45",
-                actual = importedContact.deviceContactId,
+                actual = importedContact.deviceContactId
             )
 
             assertEquals(
@@ -684,24 +684,24 @@ class DefaultContactRepositoryIntegrationTest {
                     DeviceContactLinkStatus.LINKED,
                 actual =
                     importedContact
-                        .deviceContactLinkStatus,
+                        .deviceContactLinkStatus
             )
 
             val secureChatIdentity =
                 requireSecureChatIdentity(
-                    importedContact.secureChatIdentity,
+                    importedContact.secureChatIdentity
                 )
 
             assertContentEquals(
                 expected = encryptionPublicKey,
                 actual =
-                    secureChatIdentity.encryptionPublicKey,
+                    secureChatIdentity.encryptionPublicKey
             )
 
             assertContentEquals(
                 expected = signingPublicKey,
                 actual =
-                    secureChatIdentity.signingPublicKey,
+                    secureChatIdentity.signingPublicKey
             )
 
             val allContacts =
@@ -711,7 +711,7 @@ class DefaultContactRepositoryIntegrationTest {
 
             assertEquals(
                 expected = 1,
-                actual = allContacts.size,
+                actual = allContacts.size
             )
         }
 
@@ -730,8 +730,8 @@ class DefaultContactRepositoryIntegrationTest {
                                 displayName =
                                     "Helen",
                                 phoneNumber =
-                                    "+49888888888",
-                            ),
+                                    "+49888888888"
+                            )
                     ).getOrThrow()
 
             val linkedContact =
@@ -747,32 +747,32 @@ class DefaultContactRepositoryIntegrationTest {
                                     listOf(
                                         devicePhoneNumber(
                                             value =
-                                                "+49888888888",
-                                        ),
-                                    ),
-                            ),
+                                                "+49888888888"
+                                        )
+                                    )
+                            )
                     ).getOrThrow()
 
             assertEquals(
                 expected = contactWithIdentity.id,
-                actual = linkedContact.id,
+                actual = linkedContact.id
             )
 
             assertNotNull(
                 actual =
-                    linkedContact.secureChatIdentity,
+                    linkedContact.secureChatIdentity
             )
 
             assertEquals(
                 expected = "device-contact-46",
-                actual = linkedContact.deviceContactId,
+                actual = linkedContact.deviceContactId
             )
 
             assertEquals(
                 expected =
                     DeviceContactLinkStatus.LINKED,
                 actual =
-                    linkedContact.deviceContactLinkStatus,
+                    linkedContact.deviceContactLinkStatus
             )
         }
 
@@ -792,10 +792,10 @@ class DefaultContactRepositoryIntegrationTest {
                                     listOf(
                                         devicePhoneNumber(
                                             value =
-                                                "+49999999999",
-                                        ),
-                                    ),
-                            ),
+                                                "+49999999999"
+                                        )
+                                    )
+                            )
                     ).getOrThrow()
 
             val updatedContact =
@@ -804,29 +804,29 @@ class DefaultContactRepositoryIntegrationTest {
                         deviceContactId =
                             "device-contact-47",
                         status =
-                            DeviceContactLinkStatus.MISSING,
+                            DeviceContactLinkStatus.MISSING
                     ).getOrThrow()
 
             assertNotNull(
-                actual = updatedContact,
+                actual = updatedContact
             )
 
             assertEquals(
                 expected = importedContact.id,
-                actual = updatedContact.id,
+                actual = updatedContact.id
             )
 
             assertEquals(
                 expected =
                     DeviceContactLinkStatus.MISSING,
                 actual =
-                    updatedContact.deviceContactLinkStatus,
+                    updatedContact.deviceContactLinkStatus
             )
 
             assertEquals(
                 expected = "device-contact-47",
                 actual =
-                    updatedContact.deviceContactId,
+                    updatedContact.deviceContactId
             )
         }
 
@@ -845,10 +845,10 @@ class DefaultContactRepositoryIntegrationTest {
                                 listOf(
                                     devicePhoneNumber(
                                         value =
-                                            "+49101010101",
-                                    ),
-                                ),
-                        ),
+                                            "+49101010101"
+                                    )
+                                )
+                        )
                 ).getOrThrow()
 
             repository
@@ -856,7 +856,7 @@ class DefaultContactRepositoryIntegrationTest {
                     deviceContactId =
                         "device-contact-48",
                     status =
-                        DeviceContactLinkStatus.MISSING,
+                        DeviceContactLinkStatus.MISSING
                 ).getOrThrow()
 
             val linkedAgain =
@@ -865,14 +865,14 @@ class DefaultContactRepositoryIntegrationTest {
                         deviceContactId =
                             "device-contact-48",
                         status =
-                            DeviceContactLinkStatus.LINKED,
+                            DeviceContactLinkStatus.LINKED
                     ).getOrThrow()
 
             assertNotNull(actual = linkedAgain)
 
             assertEquals(
                 expected = DeviceContactLinkStatus.LINKED,
-                actual = linkedAgain.deviceContactLinkStatus,
+                actual = linkedAgain.deviceContactLinkStatus
             )
         }
 
@@ -885,7 +885,7 @@ class DefaultContactRepositoryIntegrationTest {
                         deviceContactId =
                             "does-not-exist",
                         status =
-                            DeviceContactLinkStatus.MISSING,
+                            DeviceContactLinkStatus.MISSING
                     ).getOrThrow()
 
             assertNull(actual = result)
@@ -908,8 +908,8 @@ class DefaultContactRepositoryIntegrationTest {
                                 encryptionPublicKey = testKey(seed = 11),
                                 signingPublicKey = firstSigningKey,
                                 displayName = "Karl",
-                                phoneNumber = phoneNumber,
-                            ),
+                                phoneNumber = phoneNumber
+                            )
                     ).getOrThrow()
 
             val replacementResult =
@@ -919,8 +919,8 @@ class DefaultContactRepositoryIntegrationTest {
                             encryptionPublicKey = testKey(seed = 12),
                             signingPublicKey = secondSigningKey,
                             displayName = "Karl",
-                            phoneNumber = phoneNumber,
-                        ),
+                            phoneNumber = phoneNumber
+                        )
                 )
 
             assertTrue(actual = replacementResult.isFailure)
@@ -932,12 +932,12 @@ class DefaultContactRepositoryIntegrationTest {
 
             val secureChatIdentity =
                 requireSecureChatIdentity(
-                    loadedContact.secureChatIdentity,
+                    loadedContact.secureChatIdentity
                 )
 
             assertContentEquals(
                 expected = firstSigningKey,
-                actual = secureChatIdentity.signingPublicKey,
+                actual = secureChatIdentity.signingPublicKey
             )
         }
 
@@ -955,19 +955,19 @@ class DefaultContactRepositoryIntegrationTest {
                                     listOf(
                                         devicePhoneNumber(
                                             value = "+49131313131",
-                                            type = ContactPhoneNumberType.HOME,
+                                            type = ContactPhoneNumberType.HOME
                                         ),
                                         devicePhoneNumber(
                                             value = "+49141414141",
-                                            type = ContactPhoneNumberType.MOBILE,
-                                        ),
-                                    ),
-                            ),
+                                            type = ContactPhoneNumberType.MOBILE
+                                        )
+                                    )
+                            )
                     ).getOrThrow()
 
             assertEquals(
                 expected = "+49141414141",
-                actual = contact.preferredPhoneNumber?.value,
+                actual = contact.preferredPhoneNumber?.value
             )
 
             val updated =
@@ -975,23 +975,23 @@ class DefaultContactRepositoryIntegrationTest {
                     .updateContactDetails(
                         contactId = contact.id,
                         displayName = "Laura Updated",
-                        phoneNumber = "+49131313131",
+                        phoneNumber = "+49131313131"
                     ).getOrThrow()
 
             assertEquals(
                 expected = "Laura Updated",
-                actual = updated.displayName,
+                actual = updated.displayName
             )
 
             assertEquals(
                 expected = "+49131313131",
                 actual =
-                    updated.preferredPhoneNumber?.value,
+                    updated.preferredPhoneNumber?.value
             )
 
             assertEquals(
                 expected = 2,
-                actual = updated.phoneNumbers.size,
+                actual = updated.phoneNumbers.size
             )
         }
 
@@ -1013,8 +1013,8 @@ class DefaultContactRepositoryIntegrationTest {
                             deviceContactLinkStatus = DeviceContactLinkStatus.LINKED.name,
                             preferredPhoneNumberId = phoneNumberId,
                             createdAtEpochMilliseconds = 1_000L,
-                            updatedAtEpochMilliseconds = 1_000L,
-                        ),
+                            updatedAtEpochMilliseconds = 1_000L
+                        )
                 )
 
             database
@@ -1029,30 +1029,30 @@ class DefaultContactRepositoryIntegrationTest {
                                 normalizedValue = "+491701234567",
                                 type = ContactPhoneNumberType.MOBILE.name,
                                 label = null,
-                                updatedAtEpochMilliseconds = 1_000L,
-                            ),
-                        ),
+                                updatedAtEpochMilliseconds = 1_000L
+                            )
+                        )
                 )
 
             val loadedContact = repository.getContact(contactId = contactId).getOrThrow()
 
             assertNotNull(
-                actual = loadedContact,
+                actual = loadedContact
             )
 
             assertEquals(
                 expected = "device-contact-49",
-                actual = loadedContact.deviceContactId,
+                actual = loadedContact.deviceContactId
             )
 
             assertEquals(
                 expected = DeviceContactLinkStatus.LINKED,
-                actual = loadedContact.deviceContactLinkStatus,
+                actual = loadedContact.deviceContactLinkStatus
             )
 
             assertEquals(
                 expected = "+49131313131",
-                actual = loadedContact.preferredPhoneNumber?.value,
+                actual = loadedContact.preferredPhoneNumber?.value
             )
 
             assertNull(actual = loadedContact.secureChatIdentity)
@@ -1061,18 +1061,18 @@ class DefaultContactRepositoryIntegrationTest {
     private fun devicePhoneNumber(
         value: String,
         type: ContactPhoneNumberType = ContactPhoneNumberType.MOBILE,
-        label: String? = null,
+        label: String? = null
     ): ImportDevicePhoneNumber =
         ImportDevicePhoneNumber(
             value = value,
             type = type,
-            label = label,
+            label = label
         )
 
     private fun requireSecureChatIdentity(secureChatIdentity: SecureChatIdentity?): SecureChatIdentity =
         assertNotNull(
             actual = secureChatIdentity,
-            message = "Expected contact to have a SecureChat identity",
+            message = "Expected contact to have a SecureChat identity"
         )
 
     private fun testKey(seed: Int): ByteArray =

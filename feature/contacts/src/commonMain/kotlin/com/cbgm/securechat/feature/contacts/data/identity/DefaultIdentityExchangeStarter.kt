@@ -13,7 +13,7 @@ import kotlinx.coroutines.sync.withLock
 class DefaultIdentityExchangeStarter(
     private val contactDao: ContactDao,
     private val localPublicIdentityProvider: LocalPublicIdentityProvider,
-    private val protocolOutbox: ProtocolOutbox,
+    private val protocolOutbox: ProtocolOutbox
 ) : IdentityExchangeStarter {
     private val mutex = Mutex()
 
@@ -62,19 +62,19 @@ class DefaultIdentityExchangeStarter(
                         packetId = IdGenerator.generate(),
                         displayName = null,
                         encryptionPublicKey = localIdentity.encryptionPublicKey.copyOf(),
-                        signingPublicKey = localIdentity.signingPublicKey.copyOf(),
+                        signingPublicKey = localIdentity.signingPublicKey.copyOf()
                     )
 
                 protocolOutbox
                     .enqueue(
                         contactId = contactId,
-                        packet = packet,
+                        packet = packet
                     ).getOrThrow()
 
                 println(
                     "Identity exchange queued: " +
                         "contactId=$contactId, " +
-                        "packetId=${packet.packetId}",
+                        "packetId=${packet.packetId}"
                 )
             } finally {
                 mutex.withLock {

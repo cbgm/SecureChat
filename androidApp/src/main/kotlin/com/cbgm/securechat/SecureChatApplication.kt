@@ -51,7 +51,7 @@ class SecureChatApplication : Application() {
             startKoin {
                 androidLogger()
                 androidContext(
-                    this@SecureChatApplication,
+                    this@SecureChatApplication
                 )
                 modules(
                     cryptoModule,
@@ -67,7 +67,7 @@ class SecureChatApplication : Application() {
                     contactImportModule,
                     startupModule,
                     chatsModule,
-                    settingsModule,
+                    settingsModule
                 )
             }
 
@@ -80,7 +80,7 @@ class SecureChatApplication : Application() {
 
             combine(
                 identityRepository.observeIdentity(),
-                phoneNumberStorage.observePhoneNumber(),
+                phoneNumberStorage.observePhoneNumber()
             ) { identity, phoneNumber ->
                 identity != null && !phoneNumber.isNullOrBlank()
             }.first { ready ->
@@ -102,7 +102,7 @@ class SecureChatApplication : Application() {
                 .connectionState
                 .collect { state ->
                     println(
-                        "SecureChat relay state: $state",
+                        "SecureChat relay state: $state"
                     )
                 }
         }
@@ -159,7 +159,7 @@ class SecureChatApplication : Application() {
         val permissionGranted =
             ContextCompat.checkSelfPermission(
                 this,
-                Manifest.permission.READ_CONTACTS,
+                Manifest.permission.READ_CONTACTS
             ) == PackageManager.PERMISSION_GRANTED
 
         if (!permissionGranted) {
@@ -185,7 +185,7 @@ class SecureChatApplication : Application() {
             SodiumRuntime.initialize().getOrElse { error ->
                 throw IllegalStateException(
                     "SecureChat could not initialize its cryptographic runtime",
-                    error,
+                    error
                 )
             }
         }

@@ -14,7 +14,7 @@ fun CreateGroupScreen(
     onSearchQueryChanged: (String) -> Unit,
     onContactSelected: (String) -> Unit,
     onCreateGroup: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     ContactsScreen(
         uiState = ContactsUiState.Content(groups = uiState.contactGroups),
@@ -33,6 +33,6 @@ fun CreateGroupScreen(
         onContactSelected = onContactSelected,
         onSelectionConfirmed = onCreateGroup,
         selectionTitle = uiState.title,
-        onSelectionTitleChanged = onTitleChanged,
+        onSelectionTitleChanged = onTitleChanged
     )
 }

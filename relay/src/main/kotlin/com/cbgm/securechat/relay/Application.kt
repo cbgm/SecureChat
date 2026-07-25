@@ -10,8 +10,8 @@ fun main() {
         port = 8080,
         module = {
             relayModule()
-        },
+        }
     ).start(
-        wait = true,
+        wait = true
     )
 }

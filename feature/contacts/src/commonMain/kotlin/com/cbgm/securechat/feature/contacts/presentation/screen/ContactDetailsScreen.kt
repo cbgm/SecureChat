@@ -54,7 +54,6 @@ import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.crypto.safety.SafetyNumber
 import com.cbgm.securechat.core.extensions.toHexString
 import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
-import com.cbgm.securechat.core.ui.component.SecureChatCard
 import com.cbgm.securechat.core.ui.component.SecureChatCardNoAnimation
 import com.cbgm.securechat.core.ui.component.SecureChatScrollScaffold
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
@@ -126,7 +125,7 @@ fun ContactDetailsScreen(
     onDismissVerification: () -> Unit,
     onComparisonConfirmedChanged: (Boolean) -> Unit,
     onConfirmVerification: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     val title =
         when (uiState) {
@@ -143,16 +142,16 @@ fun ContactDetailsScreen(
             PatternBackground(
                 modifier = Modifier.fillMaxSize(),
                 backgroundColor = MaterialTheme.colorScheme.background,
-                alpha = 0.04f,
+                alpha = 0.04f
             )
         },
         topBar = { containerColor ->
             ContactDetailsTopBar(
                 title = title,
                 containerColor = containerColor,
-                onBack = onBack,
+                onBack = onBack
             )
-        },
+        }
     ) { innerPadding, scrollState ->
         ContactDetailsContent(
             uiState = uiState,
@@ -161,7 +160,7 @@ fun ContactDetailsScreen(
             onBack = onBack,
             onRetry = onRetry,
             onShareContact = onShareContact,
-            onVerifyIdentity = onVerifyIdentity,
+            onVerifyIdentity = onVerifyIdentity
         )
     }
 
@@ -178,7 +177,7 @@ fun ContactDetailsScreen(
             errorMessage = uiState.verificationError,
             onConfirmedChanged = onComparisonConfirmedChanged,
             onConfirm = onConfirmVerification,
-            onDismiss = onDismissVerification,
+            onDismiss = onDismissVerification
         )
     }
 }
@@ -188,7 +187,7 @@ fun ContactDetailsScreen(
 private fun ContactDetailsTopBar(
     title: String,
     containerColor: Color,
-    onBack: () -> Unit,
+    onBack: () -> Unit
 ) {
     TopAppBar(
         colors =
@@ -197,23 +196,23 @@ private fun ContactDetailsTopBar(
                 scrolledContainerColor = containerColor,
                 titleContentColor = MaterialTheme.colorScheme.onBackground,
                 actionIconContentColor = MaterialTheme.colorScheme.onBackground,
-                navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                navigationIconContentColor = MaterialTheme.colorScheme.onBackground
             ),
         title = {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Bold
             )
         },
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = null,
+                    contentDescription = null
                 )
             }
-        },
+        }
     )
 }
 
@@ -225,7 +224,7 @@ private fun ContactDetailsContent(
     onBack: () -> Unit,
     onRetry: () -> Unit,
     onShareContact: () -> Unit,
-    onVerifyIdentity: () -> Unit,
+    onVerifyIdentity: () -> Unit
 ) {
     when (uiState) {
         ContactDetailsUiState.Loading -> {
@@ -233,7 +232,7 @@ private fun ContactDetailsContent(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .padding(innerPadding),
+                        .padding(innerPadding)
             )
         }
 
@@ -244,7 +243,7 @@ private fun ContactDetailsContent(
                     Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(MaterialTheme.spacing.medium),
+                        .padding(MaterialTheme.spacing.medium)
             )
         }
 
@@ -256,7 +255,7 @@ private fun ContactDetailsContent(
                 onVerifyIdentity = onVerifyIdentity,
                 scrollState = scrollState,
                 innerPadding = innerPadding,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize()
             )
         }
 
@@ -268,7 +267,7 @@ private fun ContactDetailsContent(
                     Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(24.dp),
+                        .padding(24.dp)
             )
         }
     }
@@ -278,7 +277,7 @@ private fun ContactDetailsContent(
 private fun LoadingContent(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier,
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
     }
@@ -292,7 +291,7 @@ private fun ContactContent(
     onVerifyIdentity: () -> Unit,
     scrollState: ScrollState,
     innerPadding: PaddingValues,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     Column(
         modifier =
@@ -302,9 +301,9 @@ private fun ContactContent(
                     top = innerPadding.calculateTopPadding(),
                     bottom = innerPadding.calculateBottomPadding(),
                     start = MaterialTheme.spacing.screenPadding,
-                    end = MaterialTheme.spacing.screenPadding,
+                    end = MaterialTheme.spacing.screenPadding
                 ),
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
     ) {
         ContactHeader(contact = contact)
 
@@ -315,15 +314,15 @@ private fun ContactContent(
                 Icon(
                     imageVector = Icons.Default.Share,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onBackground,
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
                 Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
                 Text(
                     text = stringResource(Res.string.base_share_contact),
                     color = MaterialTheme.colorScheme.onBackground,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium
                 )
-            },
+            }
         )
 
         if (contact.secureChatIdentity == null) {
@@ -332,7 +331,7 @@ private fun ContactContent(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth()
             )
         }
 
@@ -341,7 +340,7 @@ private fun ContactContent(
         SectionCard {
             PhoneNumbersSection(
                 phoneNumbers = contact.phoneNumbers,
-                preferredPhoneNumberId = contact.preferredPhoneNumberId,
+                preferredPhoneNumberId = contact.preferredPhoneNumberId
             )
         }
 
@@ -357,7 +356,7 @@ private fun ContactContent(
                 SecureChatIdentitySection(
                     identity = secureChatIdentity,
                     safetyNumber = safetyNumber,
-                    onVerifyIdentity = onVerifyIdentity,
+                    onVerifyIdentity = onVerifyIdentity
                 )
             }
         }
@@ -383,20 +382,20 @@ private fun ContactHeader(contact: Contact) {
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(contentAlignment = Alignment.BottomEnd) {
             Surface(
                 modifier = Modifier.size(88.dp),
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
+                color = MaterialTheme.colorScheme.primaryContainer
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
                         text = contact.initials(),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -407,14 +406,14 @@ private fun ContactHeader(contact: Contact) {
                 Surface(
                     modifier = Modifier.size(26.dp),
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.secondary,
+                    color = MaterialTheme.colorScheme.secondary
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = null,
                             tint = Color(0xFF071A2E),
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
@@ -422,14 +421,14 @@ private fun ContactHeader(contact: Contact) {
                 Surface(
                     modifier = Modifier.size(26.dp),
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.error,
+                    color = MaterialTheme.colorScheme.error
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.Warning,
                             contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.size(14.dp),
+                            modifier = Modifier.size(14.dp)
                         )
                     }
                 }
@@ -445,7 +444,7 @@ private fun ContactHeader(contact: Contact) {
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -468,7 +467,7 @@ private fun ContactHeader(contact: Contact) {
             text = statusText,
             style = MaterialTheme.typography.bodyMedium,
             color = statusColor,
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -476,7 +475,7 @@ private fun ContactHeader(contact: Contact) {
 @Composable
 private fun PhoneNumbersSection(
     phoneNumbers: List<ContactPhoneNumber>,
-    preferredPhoneNumberId: String?,
+    preferredPhoneNumberId: String?
 ) {
     SectionTitle(icon = Icons.Default.Phone, title = stringResource(Res.string.base_phone_numbers))
 
@@ -486,7 +485,7 @@ private fun PhoneNumbersSection(
         Text(
             text = stringResource(Res.string.feature_contacts_no_phone_numbers_stored),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
         )
         return
     }
@@ -495,7 +494,7 @@ private fun PhoneNumbersSection(
         phoneNumbers.forEachIndexed { _, phoneNumber ->
             PhoneNumberItem(
                 phoneNumber = phoneNumber,
-                isPreferred = phoneNumber.id == preferredPhoneNumberId,
+                isPreferred = phoneNumber.id == preferredPhoneNumberId
             )
         }
     }
@@ -504,7 +503,7 @@ private fun PhoneNumbersSection(
 @Composable
 private fun PhoneNumberItem(
     phoneNumber: ContactPhoneNumber,
-    isPreferred: Boolean,
+    isPreferred: Boolean
 ) {
     ListItem(
         leadingContent = {
@@ -512,7 +511,7 @@ private fun PhoneNumberItem(
                 imageVector = Icons.Default.Phone,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(20.dp)
             )
         },
         headlineContent = {
@@ -525,13 +524,13 @@ private fun PhoneNumberItem(
             if (isPreferred) {
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)
                 ) {
                     Text(
                         text = stringResource(Res.string.base_preferred),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
             }
@@ -540,8 +539,8 @@ private fun PhoneNumberItem(
             ListItemDefaults.colors(
                 containerColor = Color.Transparent,
                 headlineColor = MaterialTheme.colorScheme.onBackground,
-                supportingColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-            ),
+                supportingColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+            )
     )
 }
 
@@ -549,7 +548,7 @@ private fun PhoneNumberItem(
 private fun DeviceContactSection(status: DeviceContactLinkStatus) {
     SectionTitle(
         icon = Icons.Default.ContactPhone,
-        title = stringResource(Res.string.feature_contacts_device_contact),
+        title = stringResource(Res.string.feature_contacts_device_contact)
     )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
@@ -561,7 +560,7 @@ private fun DeviceContactSection(status: DeviceContactLinkStatus) {
                 iconColor = MaterialTheme.colorScheme.error,
                 title = stringResource(Res.string.feature_contacts_not_linked),
                 titleColor = MaterialTheme.colorScheme.error,
-                description = stringResource(Res.string.feature_contacts_device_contact_not_linked_description),
+                description = stringResource(Res.string.feature_contacts_device_contact_not_linked_description)
             )
         }
 
@@ -571,7 +570,7 @@ private fun DeviceContactSection(status: DeviceContactLinkStatus) {
                 iconColor = MaterialTheme.colorScheme.secondary,
                 title = stringResource(Res.string.base_linked),
                 titleColor = MaterialTheme.colorScheme.secondary,
-                description = stringResource(Res.string.feature_contacts_device_contact_linked_description),
+                description = stringResource(Res.string.feature_contacts_device_contact_linked_description)
             )
         }
 
@@ -581,7 +580,7 @@ private fun DeviceContactSection(status: DeviceContactLinkStatus) {
                 iconColor = MaterialTheme.colorScheme.error.copy(alpha = 0.74f),
                 title = stringResource(Res.string.feature_contacts_device_contact_missing),
                 titleColor = MaterialTheme.colorScheme.error.copy(alpha = 0.74f),
-                description = stringResource(Res.string.feature_contacts_device_contact_missing_description),
+                description = stringResource(Res.string.feature_contacts_device_contact_missing_description)
             )
         }
     }
@@ -593,14 +592,14 @@ private fun StatusRow(
     iconColor: Color,
     title: String,
     description: String,
-    titleColor: Color = MaterialTheme.colorScheme.onBackground,
+    titleColor: Color = MaterialTheme.colorScheme.onBackground
 ) {
     Row(verticalAlignment = Alignment.Top) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = iconColor,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(20.dp)
         )
 
         Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
@@ -610,7 +609,7 @@ private fun StatusRow(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = titleColor,
+                color = titleColor
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -618,7 +617,7 @@ private fun StatusRow(
             Text(
                 text = description,
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
         }
     }
@@ -634,7 +633,7 @@ private fun NoSecureChatIdentityContent() {
         text = stringResource(Res.string.feature_contacts_securechat_not_enabled),
         style = MaterialTheme.typography.bodyMedium,
         fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.error,
+        color = MaterialTheme.colorScheme.error
     )
 
     Spacer(modifier = Modifier.height(4.dp))
@@ -642,7 +641,7 @@ private fun NoSecureChatIdentityContent() {
     Text(
         text = stringResource(Res.string.feature_contacts_securechat_keys_attach_later),
         style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
     )
 }
 
@@ -650,11 +649,11 @@ private fun NoSecureChatIdentityContent() {
 private fun SecureChatIdentitySection(
     identity: SecureChatIdentity,
     safetyNumber: SafetyNumber?,
-    onVerifyIdentity: () -> Unit,
+    onVerifyIdentity: () -> Unit
 ) {
     SectionTitle(
         icon = Icons.Default.Security,
-        title = stringResource(Res.string.feature_contacts_securechat_identity),
+        title = stringResource(Res.string.feature_contacts_securechat_identity)
     )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
@@ -666,7 +665,7 @@ private fun SecureChatIdentitySection(
                 iconColor = MaterialTheme.colorScheme.error,
                 title = stringResource(Res.string.base_not_verified),
                 titleColor = MaterialTheme.colorScheme.error,
-                description = stringResource(Res.string.feature_contacts_compare_before_trusting),
+                description = stringResource(Res.string.feature_contacts_compare_before_trusting)
             )
         }
 
@@ -676,7 +675,7 @@ private fun SecureChatIdentitySection(
                 iconColor = MaterialTheme.colorScheme.secondary,
                 title = stringResource(Res.string.base_verified),
                 titleColor = MaterialTheme.colorScheme.secondary,
-                description = stringResource(Res.string.feature_contacts_identity_verified_description),
+                description = stringResource(Res.string.feature_contacts_identity_verified_description)
             )
         }
     }
@@ -688,7 +687,7 @@ private fun SecureChatIdentitySection(
             text = stringResource(Res.string.feature_contacts_safety_number),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.SemiBold
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
@@ -702,7 +701,7 @@ private fun SecureChatIdentitySection(
             supportingText = {
                 Text(
                     text = stringResource(Res.string.feature_contacts_compare_entire_number),
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelMedium
                 )
             },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
@@ -710,14 +709,14 @@ private fun SecureChatIdentitySection(
                 MaterialTheme.typography.bodySmall.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center,
+                    textAlign = TextAlign.Center
                 ),
             colors =
                 OutlinedTextFieldDefaults.colors(
                     disabledContainerColor = MaterialTheme.colorScheme.background,
                     disabledBorderColor = MaterialTheme.colorScheme.background,
-                    disabledSupportingTextColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                ),
+                    disabledSupportingTextColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                )
         )
 
         if (identity.verificationStatus == ContactVerificationStatus.UNVERIFIED) {
@@ -729,7 +728,7 @@ private fun SecureChatIdentitySection(
                     Icon(imageVector = Icons.Default.Security, contentDescription = null)
                     Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
                     Text(text = stringResource(Res.string.feature_contacts_verify_safety_number))
-                },
+                }
             )
         }
 
@@ -738,28 +737,28 @@ private fun SecureChatIdentitySection(
 
     KeySection(
         title = stringResource(Res.string.feature_contacts_signing_fingerprint),
-        key = identity.signingPublicKey,
+        key = identity.signingPublicKey
     )
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
     KeySection(
         title = stringResource(Res.string.feature_contacts_encryption_fingerprint),
-        key = identity.encryptionPublicKey,
+        key = identity.encryptionPublicKey
     )
 }
 
 @Composable
 private fun KeySection(
     title: String,
-    key: ByteArray,
+    key: ByteArray
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = title,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
@@ -771,11 +770,11 @@ private fun KeySection(
                     .fillMaxWidth()
                     .background(
                         color = MaterialTheme.colorScheme.background,
-                        shape = MaterialTheme.shapes.medium,
+                        shape = MaterialTheme.shapes.medium
                     ).padding(MaterialTheme.spacing.small),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-            fontFamily = FontFamily.Monospace,
+            fontFamily = FontFamily.Monospace
         )
     }
 }
@@ -783,14 +782,14 @@ private fun KeySection(
 @Composable
 private fun SectionTitle(
     icon: ImageVector,
-    title: String,
+    title: String
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier.size(18.dp)
         )
 
         Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
@@ -799,7 +798,7 @@ private fun SectionTitle(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = MaterialTheme.colorScheme.onBackground
         )
     }
 }
@@ -807,22 +806,22 @@ private fun SectionTitle(
 @Composable
 private fun NotFoundContent(
     onBack: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
         ) {
             Text(
                 text = stringResource(Res.string.feature_contacts_contact_not_found),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             SecureChatApprovalButton(
                 onClick = onBack,
-                text = stringResource(Res.string.feature_contacts_return_to_contacts),
+                text = stringResource(Res.string.feature_contacts_return_to_contacts)
             )
         }
     }
@@ -832,29 +831,29 @@ private fun NotFoundContent(
 private fun ErrorContent(
     message: String,
     onRetry: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
         ) {
             Text(
                 text = stringResource(Res.string.feature_contacts_could_not_load_contact),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center,
+                textAlign = TextAlign.Center
             )
 
             SecureChatApprovalButton(
                 onClick = onRetry,
-                text = stringResource(Res.string.base_retry),
+                text = stringResource(Res.string.base_retry)
             )
         }
     }
@@ -909,8 +908,8 @@ private fun PreviewContactDetailsScreen() {
                                         id = "1",
                                         value = "1234567890",
                                         type = ContactPhoneNumberType.MOBILE,
-                                        label = "Mobile",
-                                    ),
+                                        label = "Mobile"
+                                    )
                                 ),
                             preferredPhoneNumberId = "1",
                             deviceContactLinkStatus = DeviceContactLinkStatus.LINKED,
@@ -920,11 +919,11 @@ private fun PreviewContactDetailsScreen() {
                                     encryptionPublicKey = byteArrayOf(4, 5, 6),
                                     verificationStatus = ContactVerificationStatus.UNVERIFIED,
                                     updatedAtEpochMilliseconds = System.currentTimeMillis(),
-                                    keyExchangeStatus = KeyExchangeStatus.ONE_WAY,
+                                    keyExchangeStatus = KeyExchangeStatus.ONE_WAY
                                 ),
                             createdAtEpochMilliseconds = System.currentTimeMillis(),
                             updatedAtEpochMilliseconds = System.currentTimeMillis(),
-                            deviceContactId = "1",
+                            deviceContactId = "1"
                         ),
                     safetyNumber =
                         SafetyNumber(
@@ -945,12 +944,12 @@ private fun PreviewContactDetailsScreen() {
                                     "11111",
                                     "11111",
                                     "11111",
-                                    "11111",
-                                ),
+                                    "11111"
+                                )
                         ),
                     hasConfirmedComparison = false,
                     isSavingVerification = false,
-                    verificationError = null,
+                    verificationError = null
                 ),
             onBack = {},
             onRetry = {},
@@ -958,7 +957,7 @@ private fun PreviewContactDetailsScreen() {
             onVerifyIdentity = {},
             onDismissVerification = {},
             onComparisonConfirmedChanged = {},
-            onConfirmVerification = {},
+            onConfirmVerification = {}
         )
     }
 }

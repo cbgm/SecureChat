@@ -8,11 +8,10 @@ import com.cbgm.securechat.feature.chats.presentation.model.ChatsUiState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 
 class ChatsViewModel(
-    chatsRepository: ChatsRepository,
+    chatsRepository: ChatsRepository
 ) : ViewModel() {
     val uiState: StateFlow<ChatsUiState> =
         chatsRepository
@@ -26,6 +25,6 @@ class ChatsViewModel(
             }.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = ChatsUiState.Loading,
+                initialValue = ChatsUiState.Loading
             )
 }

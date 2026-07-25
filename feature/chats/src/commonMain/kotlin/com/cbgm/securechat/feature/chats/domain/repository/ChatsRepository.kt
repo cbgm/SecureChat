@@ -13,14 +13,19 @@ interface ChatsRepository {
 
     suspend fun createGroupConversation(
         title: String,
-        contactIds: Set<String>,
+        contactIds: Set<String>
     ): String
 
     fun observeGroupConversation(conversationId: String): Flow<GroupConversation?>
 
+    suspend fun sendGroupMessage(
+        conversationId: String,
+        text: String
+    ): Result<Unit>
+
     suspend fun sendMessage(
         contactId: String,
-        text: String,
+        text: String
     )
 
     /**
@@ -33,7 +38,7 @@ interface ChatsRepository {
         contactId: String,
         encodedTransportPayload: String,
         localEncryptionPublicKey: ByteArray,
-        localEncryptionPrivateKey: ByteArray,
+        localEncryptionPrivateKey: ByteArray
     )
 
     suspend fun retryMessage(messageId: String): Result<Unit>

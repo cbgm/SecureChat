@@ -23,5 +23,5 @@ enum class ContactSecurityState {
      * Both parties possess each other's public keys,
      * and the safety number is verified.
      */
-    MUTUAL_KEYS_VERIFIED,
+    MUTUAL_KEYS_VERIFIED
 }

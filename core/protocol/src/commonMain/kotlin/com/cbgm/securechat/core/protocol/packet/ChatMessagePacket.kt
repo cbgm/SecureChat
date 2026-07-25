@@ -17,7 +17,7 @@ data class ChatMessagePacket(
      */
     val messageId: String,
     val sentAtEpochMilliseconds: Long,
-    val text: String,
+    val text: String
 ) : SecureChatPacket {
     init {
         require(packetId.isNotBlank()) {

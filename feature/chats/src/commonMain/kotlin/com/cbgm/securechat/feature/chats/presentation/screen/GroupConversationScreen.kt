@@ -27,7 +27,7 @@ import org.jetbrains.compose.resources.stringResource
 fun GroupConversationScreen(
     conversation: GroupConversation?,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -40,22 +40,22 @@ fun GroupConversationScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
-                },
+                }
             )
-        },
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text =
                     stringResource(
                         Res.string.feature_chats_group_member_count,
-                        conversation?.participantContactIds?.size ?: 0,
+                        conversation?.participantContactIds?.size ?: 0
                     ),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium
             )
         }
     }

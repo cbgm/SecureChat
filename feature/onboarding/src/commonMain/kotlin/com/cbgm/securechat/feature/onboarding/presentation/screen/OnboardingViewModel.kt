@@ -25,7 +25,7 @@ class OnboardingViewModel : ViewModel() {
     fun requestPermissions() {
         mutableState.value =
             mutableState.value.copy(
-                permissionRequestId = mutableState.value.permissionRequestId + 1,
+                permissionRequestId = mutableState.value.permissionRequestId + 1
             )
     }
 
@@ -40,7 +40,7 @@ class OnboardingViewModel : ViewModel() {
                         mutableState.value.automaticPhoneRequestId + 1
                     } else {
                         mutableState.value.automaticPhoneRequestId
-                    },
+                    }
             )
     }
 
@@ -48,7 +48,7 @@ class OnboardingViewModel : ViewModel() {
         if (!mutableState.value.phonePermissionGranted) return
         mutableState.value =
             mutableState.value.copy(
-                automaticPhoneRequestId = mutableState.value.automaticPhoneRequestId + 1,
+                automaticPhoneRequestId = mutableState.value.automaticPhoneRequestId + 1
             )
     }
 

@@ -13,13 +13,13 @@ object ByteArrayAsBase64Serializer : KSerializer<ByteArray> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor(
             serialName = "SecureChatBase64ByteArray",
-            kind = PrimitiveKind.STRING,
+            kind = PrimitiveKind.STRING
         )
 
     @OptIn(ExperimentalEncodingApi::class)
     override fun serialize(
         encoder: Encoder,
-        value: ByteArray,
+        value: ByteArray
     ) {
         encoder.encodeString(Base64.encode(value))
     }

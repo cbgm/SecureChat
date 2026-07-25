@@ -33,13 +33,13 @@ class SodiumTransportMessageCipherTest {
                         recipientPublicKey =
                             recipient
                                 .encryptionPublicKey
-                                .toByteArray(),
+                                .toByteArray()
                     ).getOrThrow()
 
             assertTrue(
                 encrypted.mode ==
                     TransportEncryptionMode
-                        .SEALED_BOX,
+                        .SEALED_BOX
             )
 
             val decrypted =
@@ -54,12 +54,12 @@ class SodiumTransportMessageCipherTest {
                         localPrivateKey =
                             recipient
                                 .encryptionPrivateKey
-                                .toByteArray(),
+                                .toByteArray()
                     ).getOrThrow()
 
             assertContentEquals(
                 expected = plaintext,
-                actual = decrypted,
+                actual = decrypted
             )
         }
 
@@ -85,7 +85,7 @@ class SodiumTransportMessageCipherTest {
                         recipientPublicKey =
                             recipient
                                 .encryptionPublicKey
-                                .toByteArray(),
+                                .toByteArray()
                     ).getOrThrow()
 
             val result =
@@ -99,11 +99,11 @@ class SodiumTransportMessageCipherTest {
                     localPrivateKey =
                         attacker
                             .encryptionPrivateKey
-                            .toByteArray(),
+                            .toByteArray()
                 )
 
             assertTrue(
-                result.isFailure,
+                result.isFailure
             )
         }
 }

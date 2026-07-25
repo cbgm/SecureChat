@@ -13,16 +13,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
-import com.cbgm.securechat.resources.Res
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
-import org.jetbrains.compose.resources.stringResource
 
 @Composable
 actual fun QrCode(
     content: String,
-    modifier: Modifier,
+    modifier: Modifier
 ) {
     val bitmap =
         remember(content) {
@@ -34,20 +32,20 @@ actual fun QrCode(
             modifier
                 .background(
                     color = MaterialTheme.colorScheme.surface,
-                    shape = MaterialTheme.shapes.medium,
+                    shape = MaterialTheme.shapes.medium
                 ),
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.Center
     ) {
         Image(
             bitmap = bitmap.asImageBitmap(),
-            contentDescription = null,
+            contentDescription = null
         )
     }
 }
 
 private fun createQrBitmap(
     content: String,
-    size: Int = 800,
+    size: Int = 800
 ): Bitmap {
     val matrix =
         QRCodeWriter().encode(
@@ -55,7 +53,7 @@ private fun createQrBitmap(
             BarcodeFormat.QR_CODE,
             size,
             size,
-            mapOf(EncodeHintType.MARGIN to 1),
+            mapOf(EncodeHintType.MARGIN to 1)
         )
 
     val bitmap = createBitmap(size, size)

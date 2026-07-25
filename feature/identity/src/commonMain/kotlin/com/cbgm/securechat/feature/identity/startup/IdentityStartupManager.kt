@@ -2,7 +2,7 @@ package com.cbgm.securechat.feature.identity.startup
 
 class IdentityStartupManager(
     private val identityExists:
-        suspend () -> Result<Boolean>,
+        suspend () -> Result<Boolean>
 ) {
     suspend fun ensureIdentityExists(): Result<IdentityStartupResult> =
         runCatching {

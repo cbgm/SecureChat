@@ -8,30 +8,30 @@ import androidx.room.Index
     tableName = "message_recipient_states",
     primaryKeys = [
         "messageId",
-        "contactId",
+        "contactId"
     ],
     foreignKeys = [
         ForeignKey(
             entity = MessageEntity::class,
             parentColumns = ["id"],
             childColumns = ["messageId"],
-            onDelete = ForeignKey.CASCADE,
+            onDelete = ForeignKey.CASCADE
         ),
         ForeignKey(
             entity = ContactEntity::class,
             parentColumns = ["id"],
             childColumns = ["contactId"],
-            onDelete = ForeignKey.CASCADE,
-        ),
+            onDelete = ForeignKey.CASCADE
+        )
     ],
     indices = [
         Index(value = ["messageId"]),
         Index(value = ["contactId"]),
         Index(
             value = ["packetId"],
-            unique = true,
-        ),
-    ],
+            unique = true
+        )
+    ]
 )
 data class MessageRecipientStateEntity(
     val messageId: String,
@@ -39,5 +39,5 @@ data class MessageRecipientStateEntity(
     val packetId: String?,
     val deliveryStatus: String,
     val lastError: String?,
-    val updatedAtEpochMilliseconds: Long,
+    val updatedAtEpochMilliseconds: Long
 )

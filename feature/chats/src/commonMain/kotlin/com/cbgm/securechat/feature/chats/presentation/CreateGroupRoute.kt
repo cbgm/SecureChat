@@ -14,7 +14,7 @@ fun CreateGroupRoute(
     onBack: () -> Unit,
     onGroupCreated: (conversationId: String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: CreateGroupViewModel = koinViewModel(),
+    viewModel: CreateGroupViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -29,6 +29,6 @@ fun CreateGroupRoute(
         onSearchQueryChanged = viewModel::onSearchQueryChanged,
         onContactSelected = viewModel::onContactSelected,
         onCreateGroup = viewModel::onCreateGroup,
-        modifier = modifier,
+        modifier = modifier
     )
 }

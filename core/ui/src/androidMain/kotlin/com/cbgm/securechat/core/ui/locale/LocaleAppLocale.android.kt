@@ -16,7 +16,7 @@ actual object LocalAppLocale {
 
     @Composable
     actual infix fun provides(
-        value: String?,
+        value: String?
     ): ProvidedValue<*> {
         val currentConfiguration = LocalConfiguration.current
 
@@ -33,7 +33,7 @@ actual object LocalAppLocale {
 
         val newConfiguration =
             Configuration(
-                currentConfiguration,
+                currentConfiguration
             ).apply {
                 setLocale(newLocale)
             }
@@ -42,11 +42,11 @@ actual object LocalAppLocale {
 
         resources.updateConfiguration(
             newConfiguration,
-            resources.displayMetrics,
+            resources.displayMetrics
         )
 
         return LocalConfiguration.provides(
-            newConfiguration,
+            newConfiguration
         )
     }
 }

@@ -30,34 +30,34 @@ import org.jetbrains.compose.resources.stringResource
 fun PrivacyPage(onNext: () -> Unit) {
     Column(
         Modifier.padding(MaterialTheme.spacing.medium),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = stringResource(Res.string.feature_onboarding_privacy_first),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onPrimary,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.SemiBold
         )
         Spacer(Modifier.height(MaterialTheme.spacing.small))
         ListingRow(
             index = "01",
             title = stringResource(Res.string.feature_onboarding_end_to_end_encryption),
-            description = stringResource(Res.string.feature_onboarding_e2ee_description),
+            description = stringResource(Res.string.feature_onboarding_e2ee_description)
         )
         ListingRow(
             index = "02",
             title = stringResource(Res.string.feature_onboarding_contacts_stay_local),
-            description = stringResource(Res.string.feature_onboarding_contacts_stay_local_description),
+            description = stringResource(Res.string.feature_onboarding_contacts_stay_local_description)
         )
         ListingRow(
             index = "03",
             title = stringResource(Res.string.feature_onboarding_identity_belongs_to_you),
-            description = stringResource(Res.string.feature_onboarding_identity_belongs_to_you_description),
+            description = stringResource(Res.string.feature_onboarding_identity_belongs_to_you_description)
         )
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
         SecureChatApprovalButton(
             onClick = onNext,
-            text = stringResource(Res.string.base_continue_action),
+            text = stringResource(Res.string.base_continue_action)
         )
     }
 }

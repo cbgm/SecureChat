@@ -13,6 +13,6 @@ interface OutboxDeliveryStateListener {
 
     suspend fun onFailed(
         packetId: String,
-        errorMessage: String,
+        errorMessage: String
     ): Result<Unit>
 }

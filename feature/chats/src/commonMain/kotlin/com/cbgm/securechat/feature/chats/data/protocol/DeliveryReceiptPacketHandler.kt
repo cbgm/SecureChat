@@ -5,16 +5,15 @@ import com.cbgm.securechat.core.protocol.handler.TypedProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.packet.DeliveryReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
-import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 
 class DeliveryReceiptPacketHandler(
-    private val messageDeliveryStatusDao: MessageDeliveryStatusDao,
+    private val messageDeliveryStatusDao: MessageDeliveryStatusDao
 ) : TypedProtocolPacketHandler {
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is DeliveryReceiptPacket
 
     override suspend fun handle(
         context: IncomingPacketContext,
-        packet: SecureChatPacket,
+        packet: SecureChatPacket
     ): Result<Unit> =
         runCatching {
             val receipt =
@@ -32,14 +31,14 @@ class DeliveryReceiptPacketHandler(
             val updatedRows =
                 messageDeliveryStatusDao.markOutgoingMessageDelivered(
                     messageId = receipt.messageId,
-                    contactId = context.contactId,
+                    contactId = context.contactId
                 )
 
             println(
                 "Delivery receipt handled: " +
                     "messageId=${receipt.messageId}, " +
                     "contactId=${context.contactId}, " +
-                    "updatedRows=$updatedRows",
+                    "updatedRows=$updatedRows"
             )
         }
 }

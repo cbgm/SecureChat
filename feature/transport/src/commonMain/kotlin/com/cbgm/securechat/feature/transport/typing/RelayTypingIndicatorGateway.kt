@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.flow
 
 class RelayTypingIndicatorGateway(
     private val webSocketTransportClient: WebSocketTransportClient,
-    private val contactRelayIdResolver: ContactRelayIdResolver,
+    private val contactRelayIdResolver: ContactRelayIdResolver
 ) : TypingIndicatorGateway {
     override fun observeTyping(contactId: String): Flow<Boolean> =
         flow {
@@ -31,7 +31,7 @@ class RelayTypingIndicatorGateway(
 
     override suspend fun sendTypingState(
         contactId: String,
-        isTyping: Boolean,
+        isTyping: Boolean
     ): Result<Unit> =
         contactRelayIdResolver
             .resolve(contactId = contactId)
@@ -39,11 +39,11 @@ class RelayTypingIndicatorGateway(
                 onSuccess = { contactRelayId ->
                     webSocketTransportClient.sendTypingState(
                         recipientId = contactRelayId,
-                        isTyping = isTyping,
+                        isTyping = isTyping
                     )
                 },
                 onFailure = { error ->
                     Result.failure(error)
-                },
+                }
             )
 }

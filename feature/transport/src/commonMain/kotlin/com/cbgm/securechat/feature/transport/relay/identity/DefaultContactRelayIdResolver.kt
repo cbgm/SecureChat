@@ -4,7 +4,7 @@ import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
 
 class DefaultContactRelayIdResolver(
     private val getContact: GetContact,
-    private val relayIdGenerator: RelayIdGenerator,
+    private val relayIdGenerator: RelayIdGenerator
 ) : ContactRelayIdResolver {
     override suspend fun resolve(contactId: String): Result<String> =
         runCatching {
@@ -32,7 +32,7 @@ class DefaultContactRelayIdResolver(
                             it.isNotEmpty()
                         }
                     ?: error(
-                        "Contact has no phone number",
+                        "Contact has no phone number"
                     )
 
             relayIdGenerator.deriveFromPhoneNumber(phoneNumber = phoneNumber).getOrThrow()

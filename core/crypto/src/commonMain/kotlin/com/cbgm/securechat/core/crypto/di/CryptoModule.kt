@@ -25,7 +25,7 @@ val cryptoModule =
 
         single {
             SafetyNumberGenerator(
-                cryptoHash = get(),
+                cryptoHash = get()
             )
         }
 
@@ -35,7 +35,7 @@ val cryptoModule =
 
         single<IdentityAcknowledgementCrypto> {
             SodiumIdentityAcknowledgementCrypto(
-                payloadEncoder = get<IdentityAcknowledgementPayloadEncoder>(),
+                payloadEncoder = get<IdentityAcknowledgementPayloadEncoder>()
             )
         }
 
@@ -54,7 +54,7 @@ val cryptoModule =
         single<IncomingTransportMessageDecoder> {
             DefaultIncomingTransportMessageDecoder(
                 payloadCodec = get(),
-                transportCipher = get(),
+                transportCipher = get()
             )
         }
     }

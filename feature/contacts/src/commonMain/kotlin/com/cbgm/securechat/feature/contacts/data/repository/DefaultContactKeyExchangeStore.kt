@@ -9,12 +9,12 @@ import com.cbgm.securechat.feature.contacts.domain.model.RemoteIdentityUpdate
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactKeyExchangeStore
 
 class DefaultContactKeyExchangeStore(
-    private val contactDao: ContactDao,
+    private val contactDao: ContactDao
 ) : ContactKeyExchangeStore {
     override suspend fun storeRemoteIdentity(
         contactId: String,
         encryptionPublicKey: ByteArray,
-        signingPublicKey: ByteArray,
+        signingPublicKey: ByteArray
     ): Result<RemoteIdentityUpdate> =
         runCatching {
             require(contactId.isNotBlank()) {
@@ -63,8 +63,8 @@ class DefaultContactKeyExchangeStore(
                         signingPublicKey = signingPublicKey.copyOf(),
                         verificationStatus = nextVerificationStatus.name,
                         keyExchangeStatus = nextKeyExchangeStatus.name,
-                        updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
-                    ),
+                        updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+                    )
             )
 
             RemoteIdentityUpdate(
@@ -73,14 +73,14 @@ class DefaultContactKeyExchangeStore(
                 signingPublicKey = signingPublicKey.copyOf(),
                 keyExchangeStatus = nextKeyExchangeStatus,
                 verificationStatus = nextVerificationStatus,
-                identityChanged = identityChanged,
+                identityChanged = identityChanged
             )
         }
 
     override suspend fun markMutual(
         contactId: String,
         expectedRemoteEncryptionPublicKey: ByteArray,
-        expectedRemoteSigningPublicKey: ByteArray,
+        expectedRemoteSigningPublicKey: ByteArray
     ): Result<Unit> =
         runCatching {
             require(contactId.isNotBlank()) {
@@ -101,7 +101,7 @@ class DefaultContactKeyExchangeStore(
                     expectedEncryptionPublicKey = expectedRemoteEncryptionPublicKey,
                     expectedSigningPublicKey = expectedRemoteSigningPublicKey,
                     keyExchangeStatus = KeyExchangeStatus.MUTUAL.name,
-                    updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
+                    updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
                 )
 
             check(updatedRows == 1) {
@@ -114,7 +114,7 @@ class DefaultContactKeyExchangeStore(
             contactDao.replaceAllKeyExchangeStatuses(
                 currentKeyExchangeStatus = KeyExchangeStatus.MUTUAL.name,
                 keyExchangeStatus = KeyExchangeStatus.ONE_WAY.name,
-                updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
+                updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
             )
         }
 

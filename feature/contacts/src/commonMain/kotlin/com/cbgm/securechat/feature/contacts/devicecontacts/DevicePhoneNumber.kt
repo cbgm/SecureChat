@@ -12,5 +12,5 @@ package com.cbgm.securechat.feature.contacts.devicecontacts
 data class DevicePhoneNumber(
     val value: String,
     val type: DevicePhoneNumberType,
-    val label: String?,
+    val label: String?
 )

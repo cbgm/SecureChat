@@ -34,7 +34,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
-import com.cbgm.securechat.feature.chats.domain.model.Conversation
 import com.cbgm.securechat.feature.chats.presentation.model.ChatsUiState
 import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
 import com.cbgm.securechat.resources.Res
@@ -47,7 +46,7 @@ data class ChatListItem(
     val contactName: String,
     val lastMessage: String,
     val timestamp: String,
-    val unreadCount: Int = 0,
+    val unreadCount: Int = 0
 )
 
 @Composable
@@ -56,7 +55,7 @@ fun ChatsScreen(
     onChatClick: (ChatListItem) -> Unit,
     listState: LazyListState,
     innerPadding: PaddingValues,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     when (uiState) {
         ChatsUiState.Loading -> {
@@ -65,10 +64,10 @@ fun ChatsScreen(
                     modifier
                         .fillMaxSize()
                         .padding(innerPadding),
-                contentAlignment = Alignment.Center,
+                contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.onBackground,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
         }
@@ -78,7 +77,7 @@ fun ChatsScreen(
                 modifier =
                     modifier
                         .fillMaxSize()
-                        .padding(innerPadding),
+                        .padding(innerPadding)
             )
         }
 
@@ -86,17 +85,17 @@ fun ChatsScreen(
             LazyColumn(
                 modifier = modifier.fillMaxSize(),
                 contentPadding = innerPadding,
-                state = listState,
+                state = listState
             ) {
                 items(
                     items = uiState.conversations,
-                    key = { chat -> chat.contactId },
+                    key = { chat -> chat.contactId }
                 ) { chat ->
                     ChatItem(
                         chat = chat,
                         onClick = {
                             onChatClick(chat)
-                        },
+                        }
                     )
                 }
             }
@@ -110,7 +109,7 @@ fun ChatsScreen(
 private fun ChatItem(
     chat: ChatListItem,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     val hasUnread = chat.unreadCount > 0
 
@@ -130,7 +129,7 @@ private fun ChatItem(
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
             supportingContent = {
@@ -145,13 +144,13 @@ private fun ChatItem(
                         } else {
                             MaterialTheme.colorScheme.onPrimary.copy(alpha = .74f)
                         },
-                    fontWeight = if (hasUnread) FontWeight.Medium else FontWeight.Normal,
+                    fontWeight = if (hasUnread) FontWeight.Medium else FontWeight.Normal
                 )
             },
             trailingContent = {
                 Column(
                     horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
                         text = chat.timestamp,
@@ -161,7 +160,7 @@ private fun ChatItem(
                                 MaterialTheme.colorScheme.secondary
                             } else {
                                 MaterialTheme.colorScheme.onPrimary.copy(alpha = .74f)
-                            },
+                            }
                     )
 
                     if (hasUnread) {
@@ -170,14 +169,14 @@ private fun ChatItem(
                                 Modifier
                                     .sizeIn(minWidth = 20.dp, minHeight = 20.dp)
                                     .background(MaterialTheme.colorScheme.secondary, CircleShape),
-                            contentAlignment = Alignment.Center,
+                            contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = if (chat.unreadCount > 99) "99+" else chat.unreadCount.toString(),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF071A2E),
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
                             )
                         }
                     }
@@ -185,8 +184,8 @@ private fun ChatItem(
             },
             colors =
                 ListItemDefaults.colors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                ),
+                    containerColor = MaterialTheme.colorScheme.background
+                )
         )
 
         HorizontalDivider(
@@ -194,7 +193,7 @@ private fun ChatItem(
                 Modifier
                     .fillMaxWidth()
                     .padding(start = 80.dp),
-            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .05f),
+            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .05f)
         )
     }
 }
@@ -204,7 +203,7 @@ private fun EmptyChatsContent(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.padding(horizontal = MaterialTheme.spacing.screenPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Center
     ) {
         Box(
             modifier =
@@ -212,15 +211,15 @@ private fun EmptyChatsContent(modifier: Modifier = Modifier) {
                     .size(80.dp)
                     .background(
                         MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
-                        CircleShape,
+                        CircleShape
                     ),
-            contentAlignment = Alignment.Center,
+            contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.ChatBubbleOutline,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.size(36.dp),
+                modifier = Modifier.size(36.dp)
             )
         }
 
@@ -229,14 +228,14 @@ private fun EmptyChatsContent(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(top = MaterialTheme.spacing.medium),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Text(
             text = stringResource(Res.string.feature_chats_no_conversations_hint),
             modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.base.div(2)),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
         )
     }
 }
@@ -255,19 +254,19 @@ private fun ChatsScreenPreview() {
                                 contactName = "Alice",
                                 lastMessage = "Hello!",
                                 timestamp = "10:00 AM",
-                                unreadCount = 3,
+                                unreadCount = 3
                             ),
                             ChatListItem(
                                 contactId = "2",
                                 contactName = "Bob",
                                 lastMessage = "Sounds good, see you then.",
-                                timestamp = "Yesterday",
-                            ),
-                        ),
+                                timestamp = "Yesterday"
+                            )
+                        )
                 ),
             onChatClick = {},
             listState = LazyListState(),
-            innerPadding = PaddingValues(),
+            innerPadding = PaddingValues()
         )
     }
 }

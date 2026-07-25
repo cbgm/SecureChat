@@ -12,7 +12,7 @@ sealed interface ContactDetailsUiState {
         val isVerificationDialogVisible: Boolean = false,
         val hasConfirmedComparison: Boolean = false,
         val isSavingVerification: Boolean = false,
-        val verificationError: String? = null,
+        val verificationError: String? = null
     ) : ContactDetailsUiState {
         val canVerify: Boolean
             get() {
@@ -23,6 +23,6 @@ sealed interface ContactDetailsUiState {
     data object NotFound : ContactDetailsUiState
 
     data class Error(
-        val message: String,
+        val message: String
     ) : ContactDetailsUiState
 }

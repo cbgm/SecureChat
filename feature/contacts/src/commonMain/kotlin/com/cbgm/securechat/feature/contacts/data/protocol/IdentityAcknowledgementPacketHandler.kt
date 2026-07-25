@@ -13,13 +13,13 @@ class IdentityAcknowledgementPacketHandler(
     private val contactRepository: ContactRepository,
     private val contactKeyExchangeStore: ContactKeyExchangeStore,
     private val localPublicIdentityProvider: LocalPublicIdentityProvider,
-    private val identityAcknowledgementCrypto: IdentityAcknowledgementCrypto,
+    private val identityAcknowledgementCrypto: IdentityAcknowledgementCrypto
 ) : TypedProtocolPacketHandler {
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is IdentityAcknowledgementPacket
 
     override suspend fun handle(
         context: IncomingPacketContext,
-        packet: SecureChatPacket,
+        packet: SecureChatPacket
     ): Result<Unit> =
         runCatching {
             val acknowledgement =
@@ -69,7 +69,7 @@ class IdentityAcknowledgementPacketHandler(
                     acknowledgedEncryptionPublicKey = acknowledgement.acknowledgedEncryptionPublicKey,
                     acknowledgedSigningPublicKey = acknowledgement.acknowledgedSigningPublicKey,
                     senderSigningPublicKey = remoteIdentity.signingPublicKey,
-                    signature = acknowledgement.signature,
+                    signature = acknowledgement.signature
                 ).getOrThrow()
 
             println("Identity acknowledgement verified: contactId=${context.contactId}")
@@ -83,7 +83,7 @@ class IdentityAcknowledgementPacketHandler(
                 .markMutual(
                     contactId = context.contactId,
                     expectedRemoteEncryptionPublicKey = remoteIdentity.encryptionPublicKey,
-                    expectedRemoteSigningPublicKey = remoteIdentity.signingPublicKey,
+                    expectedRemoteSigningPublicKey = remoteIdentity.signingPublicKey
                 ).getOrThrow()
 
             println("Contact marked MUTUAL: " + "contactId=${context.contactId}")

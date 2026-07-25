@@ -20,7 +20,7 @@ interface MessageRecipientStateDao {
         FROM message_recipient_states
         WHERE messageId = :messageId
         ORDER BY contactId
-        """,
+        """
     )
     fun observeByMessageId(messageId: String): Flow<List<MessageRecipientStateEntity>>
 
@@ -30,7 +30,7 @@ interface MessageRecipientStateDao {
         FROM message_recipient_states
         WHERE messageId = :messageId
         ORDER BY contactId
-        """,
+        """
     )
     suspend fun findByMessageId(messageId: String): List<MessageRecipientStateEntity>
 
@@ -40,7 +40,7 @@ interface MessageRecipientStateDao {
         FROM message_recipient_states
         WHERE packetId = :packetId
         LIMIT 1
-        """,
+        """
     )
     suspend fun findByPacketId(packetId: String): MessageRecipientStateEntity?
 
@@ -52,13 +52,13 @@ interface MessageRecipientStateDao {
             updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
         WHERE messageId = :messageId
           AND contactId = :contactId
-        """,
+        """
     )
     suspend fun updateDeliveryStatus(
         messageId: String,
         contactId: String,
         deliveryStatus: String,
         lastError: String?,
-        updatedAtEpochMilliseconds: Long,
+        updatedAtEpochMilliseconds: Long
     ): Int
 }

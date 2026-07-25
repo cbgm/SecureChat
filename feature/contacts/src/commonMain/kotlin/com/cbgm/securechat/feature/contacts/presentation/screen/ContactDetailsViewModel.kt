@@ -19,7 +19,7 @@ class ContactDetailsViewModel(
     private val getContact: GetContact,
     private val getPublicIdentity: GetPublicIdentity,
     private val contactRepository: ContactRepository,
-    private val safetyNumberGenerator: SafetyNumberGenerator,
+    private val safetyNumberGenerator: SafetyNumberGenerator
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<ContactDetailsUiState>(ContactDetailsUiState.Loading)
 
@@ -55,7 +55,7 @@ class ContactDetailsViewModel(
                 _uiState.value =
                     ContactDetailsUiState.Content(
                         contact = contact,
-                        safetyNumber = null,
+                        safetyNumber = null
                     )
 
                 return@launch
@@ -65,7 +65,7 @@ class ContactDetailsViewModel(
                 getPublicIdentity().getOrElse { error ->
                     _uiState.value =
                         ContactDetailsUiState.Error(
-                            message = error.message ?: "Failed to load your SecureChat identity",
+                            message = error.message ?: "Failed to load your SecureChat identity"
                         )
 
                     return@launch
@@ -84,17 +84,17 @@ class ContactDetailsViewModel(
                         firstIdentity =
                             PublicIdentityKeySet(
                                 signingPublicKey = localIdentity.signingPublicKey,
-                                encryptionPublicKey = localIdentity.encryptionPublicKey,
+                                encryptionPublicKey = localIdentity.encryptionPublicKey
                             ),
                         secondIdentity =
                             PublicIdentityKeySet(
                                 signingPublicKey = remoteIdentity.signingPublicKey,
-                                encryptionPublicKey = remoteIdentity.encryptionPublicKey,
-                            ),
+                                encryptionPublicKey = remoteIdentity.encryptionPublicKey
+                            )
                     ).getOrElse { error ->
                         _uiState.value =
                             ContactDetailsUiState.Error(
-                                message = error.message ?: "Failed to generate safety number",
+                                message = error.message ?: "Failed to generate safety number"
                             )
 
                         return@launch
@@ -103,7 +103,7 @@ class ContactDetailsViewModel(
             _uiState.value =
                 ContactDetailsUiState.Content(
                     contact = contact,
-                    safetyNumber = safetyNumber,
+                    safetyNumber = safetyNumber
                 )
         }
     }
@@ -116,7 +116,7 @@ class ContactDetailsViewModel(
                 current.copy(
                     isVerificationDialogVisible = true,
                     hasConfirmedComparison = false,
-                    verificationError = null,
+                    verificationError = null
                 )
             }
         }
@@ -130,7 +130,7 @@ class ContactDetailsViewModel(
                 current.copy(
                     isVerificationDialogVisible = false,
                     hasConfirmedComparison = false,
-                    verificationError = null,
+                    verificationError = null
                 )
             }
         }
@@ -140,7 +140,7 @@ class ContactDetailsViewModel(
         updateContent { current ->
             current.copy(
                 hasConfirmedComparison = confirmed,
-                verificationError = null,
+                verificationError = null
             )
         }
     }
@@ -171,7 +171,7 @@ class ContactDetailsViewModel(
                                 isVerificationDialogVisible = false,
                                 hasConfirmedComparison = false,
                                 isSavingVerification = false,
-                                verificationError = null,
+                                verificationError = null
                             )
                     }
                 }.onFailure { error ->
@@ -181,7 +181,7 @@ class ContactDetailsViewModel(
                         _uiState.value =
                             latest.copy(
                                 isSavingVerification = false,
-                                verificationError = error.message ?: "Failed to verify identity",
+                                verificationError = error.message ?: "Failed to verify identity"
                             )
                     }
                 }

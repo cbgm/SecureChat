@@ -11,7 +11,7 @@ data class SharedIdentityPayload(
     val version: Int,
     val encryptionPublicKey: ByteArray,
     val signingPublicKey: ByteArray,
-    val contactDetails: SharedContactDetails,
+    val contactDetails: SharedContactDetails
 ) {
     init {
         require(version > 0) {
@@ -58,7 +58,7 @@ data class SharedIdentityPayload(
  */
 data class SharedContactDetails(
     val displayName: String?,
-    val phoneNumber: String,
+    val phoneNumber: String
 ) {
     init {
         require(phoneNumber.isNotBlank()) {

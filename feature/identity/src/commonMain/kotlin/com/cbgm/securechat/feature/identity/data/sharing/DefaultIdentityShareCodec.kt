@@ -74,10 +74,10 @@ class DefaultIdentityShareCodec : IdentityShareCodec {
 
                         part.substring(
                             startIndex = 0,
-                            endIndex = separatorIndex,
+                            endIndex = separatorIndex
                         ) to
                             part.substring(
-                                startIndex = separatorIndex + 1,
+                                startIndex = separatorIndex + 1
                             )
                     }
 
@@ -103,8 +103,8 @@ class DefaultIdentityShareCodec : IdentityShareCodec {
                 contactDetails =
                     SharedContactDetails(
                         displayName = displayName,
-                        phoneNumber = phoneNumber,
-                    ),
+                        phoneNumber = phoneNumber
+                    )
             )
         }
 

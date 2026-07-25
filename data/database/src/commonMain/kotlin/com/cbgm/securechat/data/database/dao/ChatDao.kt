@@ -7,6 +7,7 @@ import androidx.room.Upsert
 import com.cbgm.securechat.data.database.entity.ConversationEntity
 import com.cbgm.securechat.data.database.entity.ConversationParticipantEntity
 import com.cbgm.securechat.data.database.entity.MessageEntity
+import com.cbgm.securechat.data.database.entity.MessageRecipientStateEntity
 import com.cbgm.securechat.data.database.model.ConversationSummary
 import com.cbgm.securechat.data.database.model.ConversationWithMessages
 import com.cbgm.securechat.data.database.model.UnreadIncomingMessage
@@ -20,7 +21,7 @@ interface ChatDao {
         FROM conversations
         WHERE contactId = :contactId
         LIMIT 1
-        """,
+        """
     )
     suspend fun findConversationByContactId(contactId: String): ConversationEntity?
 
@@ -36,7 +37,7 @@ interface ChatDao {
     @Transaction
     suspend fun createGroupConversation(
         conversation: ConversationEntity,
-        participants: List<ConversationParticipantEntity>,
+        participants: List<ConversationParticipantEntity>
     ) {
         upsertConversation(conversation)
         upsertConversationParticipants(participants)
@@ -51,8 +52,25 @@ interface ChatDao {
     @Query("SELECT * FROM conversation_participants WHERE conversationId = :conversationId")
     suspend fun findConversationParticipants(conversationId: String): List<ConversationParticipantEntity>
 
+    @Query("SELECT * FROM conversations WHERE id = :conversationId LIMIT 1")
+    suspend fun findConversationById(conversationId: String): ConversationEntity?
+
     @Upsert
     suspend fun upsertMessage(message: MessageEntity)
+
+    @Upsert
+    suspend fun upsertMessageRecipientStates(states: List<MessageRecipientStateEntity>)
+
+    @Transaction
+    suspend fun upsertOutgoingGroupMessage(
+        message: MessageEntity,
+        recipientStates: List<MessageRecipientStateEntity>,
+        timestamp: Long
+    ) {
+        upsertMessage(message)
+        upsertMessageRecipientStates(recipientStates)
+        updateConversationTimestamp(message.conversationId, timestamp)
+    }
 
     /**
      * Atomically creates/reuses the conversation and stores an incoming
@@ -64,21 +82,21 @@ interface ChatDao {
         conversation: ConversationEntity,
         message: MessageEntity,
         timestamp: Long,
-        participant: ConversationParticipantEntity? = null,
+        participant: ConversationParticipantEntity? = null
     ) {
         upsertConversation(
-            conversation = conversation,
+            conversation = conversation
         )
 
         participant?.let { upsertConversationParticipant(it) }
 
         upsertMessage(
-            message = message,
+            message = message
         )
 
         updateConversationTimestamp(
             conversationId = conversation.id,
-            timestamp = timestamp,
+            timestamp = timestamp
         )
     }
 
@@ -87,11 +105,11 @@ interface ChatDao {
         UPDATE conversations
         SET updatedAtEpochMilliseconds = :timestamp
         WHERE id = :conversationId
-        """,
+        """
     )
     suspend fun updateConversationTimestamp(
         conversationId: String,
-        timestamp: Long,
+        timestamp: Long
     )
 
     @Transaction
@@ -101,7 +119,7 @@ interface ChatDao {
         FROM conversations
         WHERE contactId = :contactId
         LIMIT 1
-        """,
+        """
     )
     fun observeConversationByContactId(contactId: String): Flow<ConversationWithMessages?>
 
@@ -156,7 +174,7 @@ interface ChatDao {
     )
 
     ORDER BY conversations.updatedAtEpochMilliseconds DESC
-    """,
+    """
     )
     fun observeConversationSummaries(): Flow<List<ConversationSummary>>
 
@@ -164,7 +182,7 @@ interface ChatDao {
         """
         DELETE FROM conversations
         WHERE id = :conversationId
-        """,
+        """
     )
     suspend fun deleteConversation(conversationId: String)
 
@@ -174,7 +192,7 @@ interface ChatDao {
     FROM messages
     WHERE id = :messageId
     LIMIT 1
-    """,
+    """
     )
     suspend fun findMessageById(messageId: String): MessageEntity?
 
@@ -192,7 +210,7 @@ interface ChatDao {
       AND messages.readReceiptSent = 0
       AND messages.contentStatus = 'READABLE'
     ORDER BY messages.createdAtEpochMilliseconds ASC
-    """,
+    """
     )
     suspend fun findMessagesAwaitingReadReceipt(contactId: String): List<UnreadIncomingMessage>
 
@@ -202,7 +220,7 @@ interface ChatDao {
     SET readReceiptSent = 1
     WHERE id = :messageId
       AND isMine = 0
-    """,
+    """
     )
     suspend fun markReadReceiptSent(messageId: String): Int
 }

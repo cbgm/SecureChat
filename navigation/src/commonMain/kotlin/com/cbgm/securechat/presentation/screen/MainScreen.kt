@@ -51,10 +51,10 @@ fun MainScreen(
     onNavigateToDeveloperMenu: () -> Unit,
     onOpenChat: (
         contactId: String,
-        contactName: String,
+        contactName: String
     ) -> Unit,
     onShareIdentity: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.Chats) }
     var showContactsOverlay by rememberSaveable {
@@ -68,11 +68,11 @@ fun MainScreen(
             MainTab.Me to
                 SecureChatScrollStateType.Scroll,
             MainTab.Settings to
-                SecureChatScrollStateType.Scroll,
+                SecureChatScrollStateType.Scroll
         )
 
     Box(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize()
     ) {
         SecureChatTabbedScaffold(
             modifier = Modifier.fillMaxSize(),
@@ -84,7 +84,7 @@ fun MainScreen(
                     containerColor = containerColor,
                     onAddChat = {
                         showContactsOverlay = true
-                    },
+                    }
                 )
             },
             bottomBar = { containerColor ->
@@ -93,9 +93,9 @@ fun MainScreen(
                     containerColor = containerColor,
                     onTabSelected = { tab ->
                         selectedTab = tab
-                    },
+                    }
                 )
-            },
+            }
         ) { innerPadding, scrollStates ->
             MainContent(
                 selectedTab = selectedTab,
@@ -106,7 +106,7 @@ fun MainScreen(
                 onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
                 onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,
                 onNavigateToLicenses = onNavigateToLicenses,
-                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu,
+                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu
             )
         }
 
@@ -118,7 +118,7 @@ fun MainScreen(
             horizontalPadding = 0.dp,
             topPadding = 48.dp,
             tonalElevation = 8.dp,
-            shadowElevation = 12.dp,
+            shadowElevation = 12.dp
         ) { dismissOverlay ->
             ContactsRoute(
                 modifier = Modifier.fillMaxSize(),
@@ -133,16 +133,16 @@ fun MainScreen(
                 },
                 onContactClick = {
                     contactId,
-                    contactName,
+                    contactName
                     ->
 
                     dismissOverlay()
 
                     onOpenChat(
                         contactId,
-                        contactName,
+                        contactName
                     )
-                },
+                }
             )
         }
     }
@@ -153,14 +153,14 @@ fun MainScreen(
 private fun MainTopBar(
     selectedTab: MainTab,
     containerColor: Color,
-    onAddChat: () -> Unit,
+    onAddChat: () -> Unit
 ) {
     TopAppBar(
         title = {
             Text(
                 text = stringResource(selectedTab.label),
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Bold
             )
         },
         actions = {
@@ -168,7 +168,7 @@ private fun MainTopBar(
                 IconButton(onClick = onAddChat) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "",
+                        contentDescription = ""
                     )
                 }
             }
@@ -178,8 +178,8 @@ private fun MainTopBar(
                 containerColor = containerColor,
                 scrolledContainerColor = containerColor,
                 titleContentColor = MaterialTheme.colorScheme.onBackground,
-                actionIconContentColor = MaterialTheme.colorScheme.onBackground,
-            ),
+                actionIconContentColor = MaterialTheme.colorScheme.onBackground
+            )
     )
 }
 
@@ -187,11 +187,11 @@ private fun MainTopBar(
 private fun MainBottomBar(
     selectedTab: MainTab,
     containerColor: Color,
-    onTabSelected: (MainTab) -> Unit,
+    onTabSelected: (MainTab) -> Unit
 ) {
     NavigationBar(
         containerColor = containerColor,
-        contentColor = MaterialTheme.colorScheme.onPrimary,
+        contentColor = MaterialTheme.colorScheme.onPrimary
     ) {
         MainTab.entries.forEach { tab ->
             val isSelected = selectedTab == tab
@@ -209,16 +209,16 @@ private fun MainBottomBar(
                                     tab.res
                                 } else {
                                     tab.resOutlined
-                                },
+                                }
                             ),
                         contentDescription = null,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(28.dp)
                     )
                 },
                 label = {
                     Text(
                         text = stringResource(tab.label),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 },
                 colors =
@@ -229,8 +229,8 @@ private fun MainBottomBar(
                         unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         disabledIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
+                        disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
             )
         }
     }
@@ -246,7 +246,7 @@ private fun MainContent(
     onNavigateToPrivacyPolicy: () -> Unit,
     onNavigateToDataDisclaimer: () -> Unit,
     onNavigateToLicenses: () -> Unit,
-    onNavigateToDeveloperMenu: () -> Unit,
+    onNavigateToDeveloperMenu: () -> Unit
 ) {
     when (selectedTab) {
         MainTab.Chats -> {
@@ -254,10 +254,10 @@ private fun MainContent(
                 onChatClick = onOpenChat,
                 listState =
                     scrollStates.lazyListState(
-                        MainTab.Chats,
+                        MainTab.Chats
                     ),
                 innerPadding = innerPadding,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize()
             )
         }
 
@@ -266,10 +266,10 @@ private fun MainContent(
                 onShareIdentity = onShareIdentity,
                 scrollState =
                     scrollStates.scrollState(
-                        MainTab.Me,
+                        MainTab.Me
                     ),
                 innerPadding = innerPadding,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize()
             )
         }
 
@@ -277,13 +277,13 @@ private fun MainContent(
             SettingsRoute(
                 scrollState =
                     scrollStates.scrollState(
-                        MainTab.Settings,
+                        MainTab.Settings
                     ),
                 innerPadding = innerPadding,
                 onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
                 onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,
                 onNavigateToLicenses = onNavigateToLicenses,
-                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu,
+                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu
             )
         }
     }
@@ -302,7 +302,7 @@ private fun MainScreenPreview() {
             onNavigateToDataDisclaimer = {},
             onNavigateToLicenses = {},
             onNavigateToDeveloperMenu = {},
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize()
         )
     }
 }

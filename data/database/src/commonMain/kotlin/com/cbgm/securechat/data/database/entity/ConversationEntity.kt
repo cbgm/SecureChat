@@ -12,17 +12,17 @@ import androidx.room.PrimaryKey
             entity = ContactEntity::class,
             parentColumns = ["id"],
             childColumns = ["contactId"],
-            onDelete = ForeignKey.CASCADE,
-        ),
+            onDelete = ForeignKey.CASCADE
+        )
     ],
     indices = [
         Index(
             value = ["contactId"],
-            unique = true,
+            unique = true
         ),
         Index(value = ["type"]),
-        Index(value = ["updatedAtEpochMilliseconds"]),
-    ],
+        Index(value = ["updatedAtEpochMilliseconds"])
+    ]
 )
 data class ConversationEntity(
     @PrimaryKey
@@ -35,5 +35,5 @@ data class ConversationEntity(
     val type: String,
     val title: String?,
     val createdAtEpochMilliseconds: Long,
-    val updatedAtEpochMilliseconds: Long,
+    val updatedAtEpochMilliseconds: Long
 )

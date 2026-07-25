@@ -14,7 +14,7 @@ import com.cbgm.securechat.feature.identity.domain.model.PublicIdentity
  * We store them in app-private SharedPreferences as Base64 strings.
  */
 class AndroidPublicIdentityStorage(
-    context: Context,
+    context: Context
 ) : PublicIdentityStorage {
     /**
      * App-private SharedPreferences file used only for
@@ -23,7 +23,7 @@ class AndroidPublicIdentityStorage(
     private val preferences =
         context.getSharedPreferences(
             PREFERENCES_NAME,
-            Context.MODE_PRIVATE,
+            Context.MODE_PRIVATE
         )
 
     /**
@@ -42,10 +42,10 @@ class AndroidPublicIdentityStorage(
                     .edit()
                     .putString(
                         ENCRYPTION_PUBLIC_KEY,
-                        identity.encryptionPublicKey.toBase64(),
+                        identity.encryptionPublicKey.toBase64()
                     ).putString(
                         SIGNING_PUBLIC_KEY,
-                        identity.signingPublicKey.toBase64(),
+                        identity.signingPublicKey.toBase64()
                     ).commit()
 
             /**
@@ -78,18 +78,18 @@ class AndroidPublicIdentityStorage(
             val encryptionPublicKeyBase64 =
                 preferences.getString(
                     ENCRYPTION_PUBLIC_KEY,
-                    null,
+                    null
                 ) ?: return@runCatching null
 
             val signingPublicKeyBase64 =
                 preferences.getString(
                     SIGNING_PUBLIC_KEY,
-                    null,
+                    null
                 ) ?: return@runCatching null
 
             PublicIdentity(
                 encryptionPublicKey = encryptionPublicKeyBase64.fromBase64(),
-                signingPublicKey = signingPublicKeyBase64.fromBase64(),
+                signingPublicKey = signingPublicKeyBase64.fromBase64()
             )
         }
     }
@@ -110,7 +110,7 @@ class AndroidPublicIdentityStorage(
     private fun ByteArray.toBase64(): String =
         Base64.encodeToString(
             this,
-            Base64.NO_WRAP,
+            Base64.NO_WRAP
         )
 
     /**
@@ -119,7 +119,7 @@ class AndroidPublicIdentityStorage(
     private fun String.fromBase64(): ByteArray =
         Base64.decode(
             this,
-            Base64.NO_WRAP,
+            Base64.NO_WRAP
         )
 
     private companion object {

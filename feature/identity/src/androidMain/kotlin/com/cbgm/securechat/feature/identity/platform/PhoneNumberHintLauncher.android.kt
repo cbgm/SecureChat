@@ -17,7 +17,7 @@ import com.google.android.gms.auth.api.identity.Identity
 actual fun PhoneNumberHintLauncher(
     requestId: Int,
     enabled: Boolean,
-    onResult: (PhoneNumberHintResult) -> Unit,
+    onResult: (PhoneNumberHintResult) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -27,7 +27,7 @@ actual fun PhoneNumberHintLauncher(
 
     val resultLauncher =
         rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.StartIntentSenderForResult(),
+            contract = ActivityResultContracts.StartIntentSenderForResult()
         ) { result ->
 
             if (result.resultCode != Activity.RESULT_OK) {
@@ -53,7 +53,7 @@ actual fun PhoneNumberHintLauncher(
     LaunchedEffect(
         requestId,
         enabled,
-        signInClient,
+        signInClient
     ) {
         if (!enabled || requestId <= 0) return@LaunchedEffect
 
@@ -70,13 +70,13 @@ actual fun PhoneNumberHintLauncher(
             .getPhoneNumberHintIntent(request)
             .addOnSuccessListener { pendingIntent ->
                 resultLauncher.launch(
-                    IntentSenderRequest.Builder(pendingIntent.intentSender).build(),
+                    IntentSenderRequest.Builder(pendingIntent.intentSender).build()
                 )
             }.addOnFailureListener { error ->
                 onResult(
                     PhoneNumberHintResult.Failed(
-                        message = error.message ?: "Phone number picker is unavailable",
-                    ),
+                        message = error.message ?: "Phone number picker is unavailable"
+                    )
                 )
             }
     }

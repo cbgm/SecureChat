@@ -13,7 +13,7 @@ import org.koin.core.parameter.parametersOf
 fun GroupConversationRoute(
     conversationId: String,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     val viewModel = koinViewModel<GroupConversationViewModel> { parametersOf(conversationId) }
     val conversation by viewModel.conversation.collectAsStateWithLifecycle()

@@ -5,6 +5,6 @@ import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 interface ProtocolPacketHandler {
     suspend fun handle(
         context: IncomingPacketContext,
-        packet: SecureChatPacket,
+        packet: SecureChatPacket
     ): Result<Unit>
 }

@@ -56,35 +56,35 @@ val transportModule =
         single<LocalRelayIdProvider> {
             DefaultLocalRelayIdProvider(
                 localPhoneNumberProvider = get<LocalPhoneNumberProvider>(),
-                relayIdGenerator = get<RelayIdGenerator>(),
+                relayIdGenerator = get<RelayIdGenerator>()
             )
         }
 
         single<ContactRelayIdResolver> {
             DefaultContactRelayIdResolver(
                 getContact = get<GetContact>(),
-                relayIdGenerator = get<RelayIdGenerator>(),
+                relayIdGenerator = get<RelayIdGenerator>()
             )
         }
 
         single<ContactByRelayIdResolver> {
             DefaultContactByRelayIdResolver(
                 contactRepository = get<ContactRepository>(),
-                relayIdGenerator = get<RelayIdGenerator>(),
+                relayIdGenerator = get<RelayIdGenerator>()
             )
         }
 
         single<WebSocketTransportClient> {
             DefaultWebSocketTransportClient(
                 httpClient = get<HttpClient>(),
-                json = get(qualifier = named(RELAY_JSON_QUALIFIER)),
+                json = get(qualifier = named(RELAY_JSON_QUALIFIER))
             )
         }
 
         single<TypingIndicatorGateway> {
             RelayTypingIndicatorGateway(
                 webSocketTransportClient = get<WebSocketTransportClient>(),
-                contactRelayIdResolver = get<ContactRelayIdResolver>(),
+                contactRelayIdResolver = get<ContactRelayIdResolver>()
             )
         }
 
@@ -92,7 +92,7 @@ val transportModule =
             DefaultRelayConnectionManager(
                 webSocketTransportClient = get<WebSocketTransportClient>(),
                 localRelayIdProvider = get<LocalRelayIdProvider>(),
-                relayTransportConfig = get<RelayTransportConfig>(),
+                relayTransportConfig = get<RelayTransportConfig>()
             )
         }
 
@@ -101,7 +101,7 @@ val transportModule =
                 webSocketTransportClient = get<WebSocketTransportClient>(),
                 localRelayIdProvider = get<LocalRelayIdProvider>(),
                 contactRelayIdResolver = get<ContactRelayIdResolver>(),
-                relayTransportConfig = get<RelayTransportConfig>(),
+                relayTransportConfig = get<RelayTransportConfig>()
             )
         }
 
@@ -113,14 +113,14 @@ val transportModule =
                 transportPayloadCodec = get(),
                 outgoingWireSender = get<OutgoingWireSender>(),
                 deliveryStateListener = get(),
-                messageDeliveryStatusDao = get(),
+                messageDeliveryStatusDao = get()
             )
         }
 
         single<OutboxRunner> {
             DefaultOutboxRunner(
                 protocolOutbox = get<ProtocolOutbox>(),
-                outboxProcessor = get<OutboxProcessor>(),
+                outboxProcessor = get<OutboxProcessor>()
             )
         }
 
@@ -129,7 +129,7 @@ val transportModule =
                 webSocketTransportClient = get<WebSocketTransportClient>(),
                 contactByRelayIdResolver = get<ContactByRelayIdResolver>(),
                 localEncryptionKeyPairProvider = get<LocalEncryptionKeyPairProvider>(),
-                chatsRepository = get<ChatsRepository>(),
+                chatsRepository = get<ChatsRepository>()
             )
         }
 

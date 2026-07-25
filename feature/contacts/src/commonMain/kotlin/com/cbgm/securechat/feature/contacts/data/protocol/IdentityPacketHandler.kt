@@ -15,13 +15,13 @@ class IdentityPacketHandler(
     private val contactKeyExchangeStore: ContactKeyExchangeStore,
     private val localSigningKeyPairProvider: LocalSigningKeyPairProvider,
     private val identityAcknowledgementCrypto: IdentityAcknowledgementCrypto,
-    private val protocolOutbox: ProtocolOutbox,
+    private val protocolOutbox: ProtocolOutbox
 ) : TypedProtocolPacketHandler {
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is IdentityPacket
 
     override suspend fun handle(
         context: IncomingPacketContext,
-        packet: SecureChatPacket,
+        packet: SecureChatPacket
     ): Result<Unit> =
         runCatching {
             val identityPacket =
@@ -38,7 +38,7 @@ class IdentityPacketHandler(
                 .storeRemoteIdentity(
                     contactId = context.contactId,
                     encryptionPublicKey = identityPacket.encryptionPublicKey,
-                    signingPublicKey = identityPacket.signingPublicKey,
+                    signingPublicKey = identityPacket.signingPublicKey
                 ).getOrThrow()
 
             val localSigningKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
@@ -55,7 +55,7 @@ class IdentityPacketHandler(
                         acknowledgedEncryptionPublicKey = identityPacket.encryptionPublicKey,
                         acknowledgedSigningPublicKey = identityPacket.signingPublicKey,
                         senderSigningPublicKey = localSigningKeyPair.publicKey,
-                        senderSigningPrivateKey = localSigningKeyPair.privateKey,
+                        senderSigningPrivateKey = localSigningKeyPair.privateKey
                     ).getOrThrow()
 
             val acknowledgement =
@@ -64,7 +64,7 @@ class IdentityPacketHandler(
                     senderSigningPublicKey = localSigningKeyPair.publicKey.copyOf(),
                     acknowledgedEncryptionPublicKey = identityPacket.encryptionPublicKey.copyOf(),
                     acknowledgedSigningPublicKey = identityPacket.signingPublicKey.copyOf(),
-                    signature = signature.copyOf(),
+                    signature = signature.copyOf()
                 )
 
             /*
@@ -76,7 +76,7 @@ class IdentityPacketHandler(
             protocolOutbox
                 .enqueue(
                     contactId = context.contactId,
-                    packet = acknowledgement,
+                    packet = acknowledgement
                 ).getOrThrow()
         }
 }

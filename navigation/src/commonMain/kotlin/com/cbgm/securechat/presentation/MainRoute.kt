@@ -12,7 +12,7 @@ fun MainRoute(
     onNavigateToLicenses: () -> Unit,
     onNavigateToDeveloperMenu: () -> Unit,
     onOpenChat: (String, String) -> Unit,
-    onShareIdentity: () -> Unit,
+    onShareIdentity: () -> Unit
 ) {
     MainScreen(
         onImportContact = onImportContact,
@@ -22,6 +22,6 @@ fun MainRoute(
         onNavigateToLicenses = onNavigateToLicenses,
         onNavigateToDeveloperMenu = onNavigateToDeveloperMenu,
         onOpenChat = onOpenChat,
-        onShareIdentity = onShareIdentity,
+        onShareIdentity = onShareIdentity
     )
 }

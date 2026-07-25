@@ -59,12 +59,12 @@ class AndroidPrivateKeyStorageTest {
                 val saveResult =
                     storage.saveIdentityPrivateKeys(
                         encryptionPrivateKey = originalKeyPair.encryptionPrivateKey,
-                        signingPrivateKey = originalKeyPair.signingPrivateKey,
+                        signingPrivateKey = originalKeyPair.signingPrivateKey
                     )
 
                 assertTrue(
                     saveResult.isSuccess,
-                    "Saving private keys failed: " + saveResult.exceptionOrNull()?.message,
+                    "Saving private keys failed: " + saveResult.exceptionOrNull()?.message
                 )
 
                 /**
@@ -79,12 +79,12 @@ class AndroidPrivateKeyStorageTest {
 
                 assertNotNull(
                     loadedEncryptionPrivateKey,
-                    "Loaded encryption private key must not be null",
+                    "Loaded encryption private key must not be null"
                 )
 
                 assertNotNull(
                     loadedSigningPrivateKey,
-                    "Loaded signing private key must not be null",
+                    "Loaded signing private key must not be null"
                 )
 
                 /**
@@ -95,12 +95,12 @@ class AndroidPrivateKeyStorageTest {
                  */
                 assertContentEquals(
                     originalKeyPair.encryptionPrivateKey,
-                    loadedEncryptionPrivateKey,
+                    loadedEncryptionPrivateKey
                 )
 
                 assertContentEquals(
                     originalKeyPair.signingPrivateKey,
-                    loadedSigningPrivateKey,
+                    loadedSigningPrivateKey
                 )
             } finally {
                 /**

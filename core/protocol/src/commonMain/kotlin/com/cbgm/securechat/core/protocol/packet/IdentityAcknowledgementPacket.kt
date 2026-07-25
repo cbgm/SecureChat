@@ -17,7 +17,7 @@ data class IdentityAcknowledgementPacket(
     @Serializable(with = ByteArrayAsBase64Serializer::class)
     val acknowledgedSigningPublicKey: ByteArray,
     @Serializable(with = ByteArrayAsBase64Serializer::class)
-    val signature: ByteArray,
+    val signature: ByteArray
 ) : SecureChatPacket {
     init {
         require(packetId.isNotBlank()) {

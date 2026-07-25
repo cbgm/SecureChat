@@ -25,13 +25,13 @@ val appModule =
 
         single<PrivateKeyStorage> {
             AndroidPrivateKeyStorage(
-                context = androidContext(),
+                context = androidContext()
             )
         }
 
         single<PublicIdentityStorage> {
             AndroidPublicIdentityStorage(
-                context = androidContext(),
+                context = androidContext()
             )
         }
 
@@ -45,19 +45,19 @@ val appModule =
 
         single<DeviceContactsDataSource> {
             AndroidDeviceContactsDataSource(
-                contentResolver = get(),
+                contentResolver = get()
             )
         }
 
         single<DeviceContactWriter> {
             AndroidDeviceContactWriter(
-                context = androidContext(),
+                context = androidContext()
             )
         }
 
         single {
             RelayTransportConfig(
-                serverUrl = "ws://10.0.2.2:8080/relay",
+                serverUrl = "ws://10.0.2.2:8080/relay"
             )
         }
     }

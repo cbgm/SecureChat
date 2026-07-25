@@ -17,14 +17,14 @@ fun ShareIdentityRoute(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     showBackButton: Boolean = true,
-    viewModel: ShareIdentityViewModel = koinViewModel(),
+    viewModel: ShareIdentityViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val shareIdentity =
         rememberIdentityShareLauncher(
             encodedIdentity = uiState.encodedIdentity.orEmpty(),
-            shareTitle = stringResource(Res.string.feature_identity_share_identity),
+            shareTitle = stringResource(Res.string.feature_identity_share_identity)
         )
 
     ShareIdentityScreen(
@@ -33,6 +33,6 @@ fun ShareIdentityRoute(
         onBack = onBack,
         showBackButton = showBackButton,
         modifier = modifier,
-        onShareIdentity = shareIdentity,
+        onShareIdentity = shareIdentity
     )
 }

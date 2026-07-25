@@ -8,7 +8,7 @@ class InMemorySettingsStorage {
     suspend fun getLanguageTag(): String? = languageTag
 
     suspend fun setLanguageTag(
-        languageTag: String,
+        languageTag: String
     ) {
         this.languageTag = languageTag
     }
@@ -16,7 +16,7 @@ class InMemorySettingsStorage {
     suspend fun getDeveloperModeEnabled(): Boolean = developerModeEnabled
 
     suspend fun setDeveloperModeEnabled(
-        enabled: Boolean,
+        enabled: Boolean
     ) {
         developerModeEnabled = enabled
     }

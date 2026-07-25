@@ -5,7 +5,7 @@ data class Conversation(
     val contactId: String,
     val contactName: String,
     val messages: List<ChatMessage>,
-    val unreadCount: Int,
+    val unreadCount: Int
 ) {
     val lastMessage: ChatMessage?
         get() =

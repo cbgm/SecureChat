@@ -22,7 +22,7 @@ fun ImportIdentityRoute(
     onScanQrCode: () -> Unit,
     onBack: () -> Unit,
     viewModel: ImportIdentityViewModel = koinViewModel(),
-    identityShareCodec: IdentityShareCodec = koinInject(),
+    identityShareCodec: IdentityShareCodec = koinInject()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -56,7 +56,7 @@ fun ImportIdentityRoute(
                         displayName = payload.contactDetails.displayName,
                         phoneNumber = payload.contactDetails.phoneNumber,
                         signingKeyFingerprint = payload.signingPublicKey.toFingerprint(),
-                        encryptionKeyFingerprint = payload.encryptionPublicKey.toFingerprint(),
+                        encryptionKeyFingerprint = payload.encryptionPublicKey.toFingerprint()
                     )
             }.onFailure {
                 /*
@@ -73,7 +73,7 @@ fun ImportIdentityRoute(
         onEncodedIdentityChanged = viewModel::onEncodedIdentityChanged,
         onImportClick = viewModel::importIdentity,
         onScanQrCode = onScanQrCode,
-        onBack = onBack,
+        onBack = onBack
     )
 
     scannedIdentityPreview?.let { preview ->
@@ -88,7 +88,7 @@ fun ImportIdentityRoute(
             },
             onDismiss = {
                 scannedIdentityPreview = null
-            },
+            }
         )
     }
 }
@@ -104,6 +104,6 @@ private fun ByteArray.toFingerprint(): String {
         .uppercase()
         .chunked(4)
         .joinToString(
-            separator = "-",
+            separator = "-"
         )
 }

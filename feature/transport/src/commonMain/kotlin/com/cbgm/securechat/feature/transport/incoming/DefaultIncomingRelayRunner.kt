@@ -15,7 +15,7 @@ class DefaultIncomingRelayRunner(
     private val webSocketTransportClient: WebSocketTransportClient,
     private val contactByRelayIdResolver: ContactByRelayIdResolver,
     private val localEncryptionKeyPairProvider: LocalEncryptionKeyPairProvider,
-    private val chatsRepository: ChatsRepository,
+    private val chatsRepository: ChatsRepository
 ) : IncomingRelayRunner {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -34,7 +34,7 @@ class DefaultIncomingRelayRunner(
                         processEnvelope(
                             envelopeId = envelope.envelopeId,
                             senderRelayId = envelope.senderId,
-                            encodedTransportPayload = envelope.payload,
+                            encodedTransportPayload = envelope.payload
                         )
                     }
             }
@@ -48,13 +48,13 @@ class DefaultIncomingRelayRunner(
     private suspend fun processEnvelope(
         envelopeId: String,
         senderRelayId: String,
-        encodedTransportPayload: String,
+        encodedTransportPayload: String
     ) {
         try {
             val contactId =
                 contactByRelayIdResolver
                     .resolveContactId(
-                        relayId = senderRelayId,
+                        relayId = senderRelayId
                     ).getOrThrow()
                     ?: run {
                         println("Incoming envelope ignored: " + "unknown sender $senderRelayId")
@@ -68,24 +68,24 @@ class DefaultIncomingRelayRunner(
                 contactId = contactId,
                 encodedTransportPayload = encodedTransportPayload,
                 localEncryptionPublicKey = keyPair.publicKey,
-                localEncryptionPrivateKey = keyPair.privateKey,
+                localEncryptionPrivateKey = keyPair.privateKey
             )
 
             webSocketTransportClient
                 .acknowledgeIncomingEnvelope(
-                    envelopeId = envelopeId,
+                    envelopeId = envelopeId
                 ).getOrThrow()
 
             println(
                 "Incoming envelope stored and acknowledged: " +
-                    "envelopeId=$envelopeId, contactId=$contactId",
+                    "envelopeId=$envelopeId, contactId=$contactId"
             )
         } catch (
-            error: CancellationException,
+            error: CancellationException
         ) {
             throw error
         } catch (
-            error: Throwable,
+            error: Throwable
         ) {
             println("Incoming envelope failed: ${error.message}")
         }

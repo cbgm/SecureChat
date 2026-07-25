@@ -10,7 +10,7 @@ import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
  * storage or the repository implementation directly.
  */
 class GetIdentityStatus(
-    private val repository: IdentityRepository,
+    private val repository: IdentityRepository
 ) {
     suspend operator fun invoke(): Result<IdentityStatus> = repository.getStatus()
 }

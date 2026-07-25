@@ -26,10 +26,10 @@ import com.cbgm.securechat.data.database.entity.ProtocolOutboxEntity
         ConversationParticipantEntity::class,
         MessageEntity::class,
         MessageRecipientStateEntity::class,
-        ProtocolOutboxEntity::class,
+        ProtocolOutboxEntity::class
     ],
     version = 11,
-    exportSchema = true,
+    exportSchema = true
 )
 @ConstructedBy(SecureChatDatabaseConstructor::class)
 abstract class SecureChatDatabase : RoomDatabase() {

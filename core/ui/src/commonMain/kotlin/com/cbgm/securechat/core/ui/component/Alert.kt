@@ -12,7 +12,7 @@ fun SecureChatAlertDialog(
     confirmButton: @Composable () -> Unit,
     dismissButton: @Composable () -> Unit,
     title: String,
-    text: @Composable () -> Unit,
+    text: @Composable () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -23,11 +23,11 @@ fun SecureChatAlertDialog(
                 text = title,
                 color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Bold
             )
         },
         text = text,
         confirmButton = confirmButton,
-        dismissButton = dismissButton,
+        dismissButton = dismissButton
     )
 }

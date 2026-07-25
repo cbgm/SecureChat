@@ -53,8 +53,8 @@ fun AppNavigation() {
                 Modifier
                     .fillMaxSize()
                     .background(
-                        MaterialTheme.colorScheme.background,
-                    ),
+                        MaterialTheme.colorScheme.background
+                    )
         ) {
             composable<AppDestination.Licences>(
                 enterTransition = {
@@ -62,8 +62,8 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Left,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 },
                 exitTransition = {
@@ -71,10 +71,10 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Right,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
-                },
+                }
             ) {
                 LicensesRoute(onBack = { navController.popBackStack() })
             }
@@ -85,8 +85,8 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Left,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 },
                 exitTransition = {
@@ -94,10 +94,10 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Right,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
-                },
+                }
             ) {
                 DeveloperMenuRoute(onBack = { navController.popBackStack() })
             }
@@ -108,8 +108,8 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Left,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 },
                 exitTransition = {
@@ -117,17 +117,17 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Right,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
-                },
+                }
             ) { backStackEntry ->
                 val destination =
                     backStackEntry.toRoute<AppDestination.Disclaimer>()
 
                 DisclaimerRoute(
                     type = destination.type,
-                    onBack = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() }
                 )
             }
 
@@ -138,7 +138,7 @@ fun AppNavigation() {
                         navController.navigate(AppDestination.GroupConversation(conversationId)) {
                             popUpTo(AppDestination.CreateGroup) { inclusive = true }
                         }
-                    },
+                    }
                 )
             }
 
@@ -146,7 +146,7 @@ fun AppNavigation() {
                 val destination = backStackEntry.toRoute<AppDestination.GroupConversation>()
                 GroupConversationRoute(
                     conversationId = destination.conversationId,
-                    onBack = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() }
                 )
             }
 
@@ -154,7 +154,7 @@ fun AppNavigation() {
                 ShareIdentityRoute(
                     onBack = {
                         navController.popBackStack()
-                    },
+                    }
                 )
             }
 
@@ -168,7 +168,7 @@ fun AppNavigation() {
                     },
                     onBack = {
                         navController.popBackStack()
-                    },
+                    }
                 )
             }
 
@@ -178,8 +178,8 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Up,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 },
                 exitTransition = {
@@ -187,10 +187,10 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Down,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
-                },
+                }
             ) {
                 ContactsRoute(
                     onBack = {
@@ -206,10 +206,10 @@ fun AppNavigation() {
                         navController.navigate(
                             AppDestination.Chat(
                                 contactId = contactId,
-                                contactName = contactName,
-                            ),
+                                contactName = contactName
+                            )
                         )
-                    },
+                    }
                 )
             }
 
@@ -220,8 +220,8 @@ fun AppNavigation() {
                         navController.navigate(
                             AppDestination.Chat(
                                 contactId = contactId,
-                                contactName = contactName,
-                            ),
+                                contactName = contactName
+                            )
                         )
                     },
                     onShareIdentity = {
@@ -230,15 +230,15 @@ fun AppNavigation() {
                     onNavigateToPrivacyPolicy = {
                         navController.navigate(
                             AppDestination.Disclaimer(
-                                type = DisclaimerType.PRIVACY_POLICY,
-                            ),
+                                type = DisclaimerType.PRIVACY_POLICY
+                            )
                         )
                     },
                     onNavigateToDataDisclaimer = {
                         navController.navigate(
                             AppDestination.Disclaimer(
-                                type = DisclaimerType.DATA_DISCLAIMER,
-                            ),
+                                type = DisclaimerType.DATA_DISCLAIMER
+                            )
                         )
                     },
                     onNavigateToLicenses = {
@@ -252,7 +252,7 @@ fun AppNavigation() {
                     },
                     onCreateGroup = {
                         navController.navigate(AppDestination.CreateGroup)
-                    },
+                    }
                 )
             }
 
@@ -262,8 +262,8 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Left,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 },
                 exitTransition = {
@@ -271,10 +271,10 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Right,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
-                },
+                }
             ) { backStackEntry ->
                 val destination = backStackEntry.toRoute<AppDestination.Chat>()
 
@@ -286,7 +286,7 @@ fun AppNavigation() {
                     },
                     onClickHeader = {
                         navController.navigate(AppDestination.ContactDetails(destination.contactId))
-                    },
+                    }
                 )
             }
 
@@ -300,7 +300,7 @@ fun AppNavigation() {
                 val shareContact =
                     rememberIdentityShareLauncher(
                         encodedIdentity = encodedContactToShare,
-                        shareTitle = stringResource(Res.string.base_share_contact),
+                        shareTitle = stringResource(Res.string.base_share_contact)
                     )
 
                 var shouldLaunchShare by remember { mutableStateOf(false) }
@@ -342,15 +342,15 @@ fun AppNavigation() {
                                             contactDetails =
                                                 SharedContactDetails(
                                                     displayName = contact.displayName,
-                                                    phoneNumber = phoneNumber,
-                                                ),
-                                        ),
+                                                    phoneNumber = phoneNumber
+                                                )
+                                        )
                                 ).onSuccess { encodedIdentity ->
                                     encodedContactToShare = encodedIdentity
                                     shouldLaunchShare = true
                                 }
                         }
-                    },
+                    }
                 )
             }
 
@@ -366,14 +366,14 @@ fun AppNavigation() {
                             ?.savedStateHandle
                             ?.set(
                                 "scannedIdentity",
-                                encodedIdentity,
+                                encodedIdentity
                             )
 
                         navController.popBackStack()
                     },
                     onBack = {
                         navController.popBackStack()
-                    },
+                    }
                 )
             }
 
@@ -385,7 +385,7 @@ fun AppNavigation() {
                                 inclusive = true
                             }
                         }
-                    },
+                    }
                 )
             }
         }

@@ -15,7 +15,7 @@ data class ImportContactRequest(
     val displayName: String?,
     val phoneNumber: String?,
     val encryptionPublicKey: ByteArray,
-    val signingPublicKey: ByteArray,
+    val signingPublicKey: ByteArray
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) {
@@ -30,10 +30,10 @@ data class ImportContactRequest(
             displayName == other.displayName &&
             phoneNumber == other.phoneNumber &&
             encryptionPublicKey.contentEquals(
-                other.encryptionPublicKey,
+                other.encryptionPublicKey
             ) &&
             signingPublicKey.contentEquals(
-                other.signingPublicKey,
+                other.signingPublicKey
             )
     }
 

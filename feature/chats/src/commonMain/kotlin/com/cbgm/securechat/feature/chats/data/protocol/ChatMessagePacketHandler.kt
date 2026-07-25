@@ -16,13 +16,13 @@ import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 
 class ChatMessagePacketHandler(
     private val chatDao: ChatDao,
-    private val protocolOutbox: ProtocolOutbox,
+    private val protocolOutbox: ProtocolOutbox
 ) : TypedProtocolPacketHandler {
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is ChatMessagePacket
 
     override suspend fun handle(
         context: IncomingPacketContext,
-        packet: SecureChatPacket,
+        packet: SecureChatPacket
     ): Result<Unit> =
         runCatching {
             val chatPacket =
@@ -47,7 +47,7 @@ class ChatMessagePacketHandler(
                         type = ConversationType.DIRECT.name,
                         title = null,
                         createdAtEpochMilliseconds = context.receivedAtEpochMilliseconds,
-                        updatedAtEpochMilliseconds = context.receivedAtEpochMilliseconds,
+                        updatedAtEpochMilliseconds = context.receivedAtEpochMilliseconds
                     )
 
             val incomingMessage =
@@ -62,13 +62,13 @@ class ChatMessagePacketHandler(
                     deliveryStatus = MessageDeliveryStatus.NOT_APPLICABLE.name,
                     isMine = false,
                     senderContactId = context.contactId,
-                    createdAtEpochMilliseconds = chatPacket.sentAtEpochMilliseconds,
+                    createdAtEpochMilliseconds = chatPacket.sentAtEpochMilliseconds
                 )
 
             chatDao.upsertIncomingChatMessage(
                 conversation = conversation,
                 message = incomingMessage,
-                timestamp = context.receivedAtEpochMilliseconds,
+                timestamp = context.receivedAtEpochMilliseconds
             )
 
             /*
@@ -84,22 +84,22 @@ class ChatMessagePacketHandler(
                     packetId =
                         createDeliveryReceiptPacketId(
                             messageId =
-                                chatPacket.messageId,
+                                chatPacket.messageId
                         ),
                     messageId = chatPacket.messageId,
-                    deliveredAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
+                    deliveredAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
                 )
 
             protocolOutbox
                 .enqueue(
                     contactId = context.contactId,
-                    packet = receipt,
+                    packet = receipt
                 ).getOrThrow()
 
             println(
                 "Delivery receipt queued: " +
                     "messageId=${chatPacket.messageId}, " +
-                    "contactId=${context.contactId}",
+                    "contactId=${context.contactId}"
             )
         }
 
