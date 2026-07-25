@@ -6,6 +6,7 @@ import androidx.room.RoomDatabase
 import com.cbgm.securechat.data.database.dao.ChatDao
 import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
+import com.cbgm.securechat.data.database.dao.MessageRecipientStateDao
 import com.cbgm.securechat.data.database.dao.ProtocolOutboxDao
 import com.cbgm.securechat.data.database.entity.ContactEntity
 import com.cbgm.securechat.data.database.entity.ContactPhoneNumberEntity
@@ -13,6 +14,7 @@ import com.cbgm.securechat.data.database.entity.ContactPublicIdentityEntity
 import com.cbgm.securechat.data.database.entity.ConversationEntity
 import com.cbgm.securechat.data.database.entity.ConversationParticipantEntity
 import com.cbgm.securechat.data.database.entity.MessageEntity
+import com.cbgm.securechat.data.database.entity.MessageRecipientStateEntity
 import com.cbgm.securechat.data.database.entity.ProtocolOutboxEntity
 
 @Database(
@@ -23,9 +25,10 @@ import com.cbgm.securechat.data.database.entity.ProtocolOutboxEntity
         ConversationEntity::class,
         ConversationParticipantEntity::class,
         MessageEntity::class,
+        MessageRecipientStateEntity::class,
         ProtocolOutboxEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 @ConstructedBy(SecureChatDatabaseConstructor::class)
@@ -37,4 +40,6 @@ abstract class SecureChatDatabase : RoomDatabase() {
     abstract fun protocolOutboxDao(): ProtocolOutboxDao
 
     abstract fun messageDeliveryStatusDao(): MessageDeliveryStatusDao
+
+    abstract fun messageRecipientStateDao(): MessageRecipientStateDao
 }

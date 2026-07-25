@@ -33,7 +33,7 @@ import com.cbgm.securechat.feature.settings.presentation.DeveloperMenuRoute
 import com.cbgm.securechat.feature.settings.presentation.DisclaimerRoute
 import com.cbgm.securechat.feature.settings.presentation.LicensesRoute
 import com.cbgm.securechat.feature.settings.presentation.model.DisclaimerType
-import com.cbgm.securechat.presentation.screen.MainScreen
+import com.cbgm.securechat.presentation.MainRoute
 import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.base_share_contact
 import com.cbgm.securechat.startup.presentation.StartupRoute
@@ -214,7 +214,7 @@ fun AppNavigation() {
             }
 
             composable<AppDestination.Main> {
-                MainScreen(
+                MainRoute(
                     onOpenChat = { contactId, contactName ->
 
                         navController.navigate(

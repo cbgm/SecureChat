@@ -26,15 +26,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.cbgm.securechat.core.ui.component.SecureChatMainScrollStates
-import com.cbgm.securechat.core.ui.component.SecureChatMainScrollTarget
 import com.cbgm.securechat.core.ui.component.SecureChatOverlayHost
 import com.cbgm.securechat.core.ui.component.SecureChatScrollStateType
 import com.cbgm.securechat.core.ui.component.SecureChatTabbedScaffold
 import com.cbgm.securechat.core.ui.component.SecureChatTabbedScrollStates
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.feature.chats.presentation.ChatsRoute
-import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
 import com.cbgm.securechat.feature.contacts.presentation.ContactsRoute
 import com.cbgm.securechat.feature.identity.presentation.IdentityRoute
 import com.cbgm.securechat.feature.settings.presentation.SettingsRoute
@@ -64,7 +61,7 @@ fun MainScreen(
         mutableStateOf(false)
     }
 
-    val MainScrollTargets =
+    val mainScrollTargets =
         mapOf(
             MainTab.Chats to
                 SecureChatScrollStateType.LazyList,
@@ -80,7 +77,7 @@ fun MainScreen(
         SecureChatTabbedScaffold(
             modifier = Modifier.fillMaxSize(),
             selectedScrollTarget = selectedTab,
-            scrollTargets = MainScrollTargets,
+            scrollTargets = mainScrollTargets,
             topBar = { containerColor ->
                 MainTopBar(
                     selectedTab = selectedTab,
@@ -106,14 +103,10 @@ fun MainScreen(
                 scrollStates = scrollStates,
                 onOpenChat = onOpenChat,
                 onShareIdentity = onShareIdentity,
-                onNavigateToPrivacyPolicy =
-                onNavigateToPrivacyPolicy,
-                onNavigateToDataDisclaimer =
-                onNavigateToDataDisclaimer,
-                onNavigateToLicenses =
-                onNavigateToLicenses,
-                onNavigateToDeveloperMenu =
-                onNavigateToDeveloperMenu,
+                onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
+                onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,
+                onNavigateToLicenses = onNavigateToLicenses,
+                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu,
             )
         }
 
@@ -154,15 +147,6 @@ fun MainScreen(
         }
     }
 }
-
-private fun MainTab.toScrollTarget(): SecureChatMainScrollTarget =
-    when (this) {
-        MainTab.Chats -> SecureChatMainScrollTarget.Chats
-
-        MainTab.Me -> SecureChatMainScrollTarget.Identity
-
-        MainTab.Settings -> SecureChatMainScrollTarget.Settings
-    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

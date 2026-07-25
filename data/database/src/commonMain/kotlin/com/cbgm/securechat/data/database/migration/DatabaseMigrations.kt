@@ -96,4 +96,37 @@ object DatabaseMigrations {
                 connection.execSQL("ALTER TABLE messages ADD COLUMN senderContactId TEXT")
             }
         }
+
+    val Migration10To11 =
+        object : Migration(10, 11) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS message_recipient_states (
+                        messageId TEXT NOT NULL,
+                        contactId TEXT NOT NULL,
+                        packetId TEXT,
+                        deliveryStatus TEXT NOT NULL,
+                        lastError TEXT,
+                        updatedAtEpochMilliseconds INTEGER NOT NULL,
+                        PRIMARY KEY(messageId, contactId),
+                        FOREIGN KEY(messageId) REFERENCES messages(id) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(contactId) REFERENCES contacts(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent(),
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_message_recipient_states_messageId " +
+                        "ON message_recipient_states(messageId)",
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_message_recipient_states_contactId " +
+                        "ON message_recipient_states(contactId)",
+                )
+                connection.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_message_recipient_states_packetId " +
+                        "ON message_recipient_states(packetId)",
+                )
+            }
+        }
 }

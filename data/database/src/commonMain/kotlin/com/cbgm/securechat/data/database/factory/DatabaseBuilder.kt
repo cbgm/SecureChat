@@ -11,7 +11,9 @@ import kotlinx.coroutines.Dispatchers
  */
 fun buildSecureChatDatabase(builder: RoomDatabase.Builder<SecureChatDatabase>): SecureChatDatabase =
     builder
-        .addMigrations(DatabaseMigrations.Migration9To10)
-        .setDriver(BundledSQLiteDriver())
+        .addMigrations(
+            DatabaseMigrations.Migration9To10,
+            DatabaseMigrations.Migration10To11,
+        ).setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
         .build()
