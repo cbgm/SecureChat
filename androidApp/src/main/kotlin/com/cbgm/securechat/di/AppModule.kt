@@ -1,7 +1,6 @@
 package com.cbgm.securechat.di
 
 import android.content.ContentResolver
-import com.cbgm.securechat.build.AndroidBuildInfoProvider
 import com.cbgm.securechat.feature.contacts.devicecontacts.AndroidDeviceContactWriter
 import com.cbgm.securechat.feature.contacts.devicecontacts.AndroidDeviceContactsDataSource
 import com.cbgm.securechat.feature.contacts.devicecontacts.DeviceContactWriter
@@ -12,6 +11,7 @@ import com.cbgm.securechat.feature.identity.data.storage.AndroidPrivateKeyStorag
 import com.cbgm.securechat.feature.identity.data.storage.AndroidPublicIdentityStorage
 import com.cbgm.securechat.feature.settings.domain.repository.BuildInfoProvider
 import com.cbgm.securechat.feature.transport.relay.config.RelayTransportConfig
+import com.cbgm.securechat.provider.AndroidBuildInfoProvider
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
