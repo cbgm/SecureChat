@@ -4,11 +4,13 @@ import com.cbgm.securechat.core.crypto.transport.EncryptedTransportPayload
 import com.cbgm.securechat.core.crypto.transport.TransportEncryptionMode
 import com.cbgm.securechat.core.crypto.transport.TransportMessageCipher
 import com.cbgm.securechat.core.crypto.transport.TransportPayloadCodec
+import com.cbgm.securechat.core.protocol.codec.PacketCodec
 import com.cbgm.securechat.core.protocol.outbox.OutboxDeliveryStateListener
 import com.cbgm.securechat.core.protocol.outbox.OutboxProcessingResult
 import com.cbgm.securechat.core.protocol.outbox.OutboxProcessor
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutboxItem
+import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
 import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
@@ -21,6 +23,7 @@ class DefaultOutboxProcessor(
     private val getContact: GetContact,
     private val transportMessageCipher: TransportMessageCipher,
     private val transportPayloadCodec: TransportPayloadCodec,
+    private val packetCodec: PacketCodec,
     private val outgoingWireSender: OutgoingWireSender,
     private val deliveryStateListener: OutboxDeliveryStateListener,
     private val messageDeliveryStatusDao: MessageDeliveryStatusDao
@@ -70,7 +73,8 @@ class DefaultOutboxProcessor(
             val transportPayload =
                 createTransportPayload(
                     encodedPacket = item.encodedPacket,
-                    contact = contact
+                    contact = contact,
+                    forcePlaintext = item.encodedPacket.isGroupCreatedPacket()
                 )
 
             val encodedTransportPayload = transportPayloadCodec.encode(payload = transportPayload)
@@ -113,10 +117,19 @@ class DefaultOutboxProcessor(
 
     private suspend fun createTransportPayload(
         encodedPacket: ByteArray,
-        contact: Contact
+        contact: Contact,
+        forcePlaintext: Boolean
     ): EncryptedTransportPayload {
         require(encodedPacket.isNotEmpty()) {
             "Encoded protocol packet must not be empty"
+        }
+
+        if (forcePlaintext) {
+            return EncryptedTransportPayload(
+                version = TRANSPORT_VERSION,
+                mode = TransportEncryptionMode.PLAINTEXT,
+                payload = encodedPacket
+            )
         }
 
         val identity = contact.secureChatIdentity
@@ -140,6 +153,8 @@ class DefaultOutboxProcessor(
                 recipientPublicKey = identity.encryptionPublicKey
             ).getOrThrow()
     }
+
+    private fun ByteArray.isGroupCreatedPacket(): Boolean = packetCodec.decode(this).getOrNull() is GroupCreatedPacket
 
     private companion object {
         const val TRANSPORT_VERSION = 1

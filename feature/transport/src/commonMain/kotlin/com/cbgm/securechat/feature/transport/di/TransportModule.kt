@@ -115,6 +115,7 @@ val transportModule =
                 getContact = get<GetContact>(),
                 transportMessageCipher = get(),
                 transportPayloadCodec = get(),
+                packetCodec = get(),
                 outgoingWireSender = get<OutgoingWireSender>(),
                 deliveryStateListener = get(),
                 messageDeliveryStatusDao = get()

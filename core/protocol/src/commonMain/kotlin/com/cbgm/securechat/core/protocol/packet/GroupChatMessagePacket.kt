@@ -15,7 +15,8 @@ data class GroupChatMessagePacket(
     val sentAtEpochMilliseconds: Long,
     val text: String,
     @Serializable(with = ByteArrayAsBase64Serializer::class)
-    val senderSigningPublicKey: ByteArray = byteArrayOf()
+    val senderSigningPublicKey: ByteArray = byteArrayOf(),
+    val senderPhoneNumber: String? = null
 ) : SecureChatPacket {
     init {
         require(packetId.isNotBlank()) { "Packet ID must not be blank" }

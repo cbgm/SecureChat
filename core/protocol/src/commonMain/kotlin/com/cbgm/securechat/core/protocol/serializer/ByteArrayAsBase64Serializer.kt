@@ -28,8 +28,8 @@ object ByteArrayAsBase64Serializer : KSerializer<ByteArray> {
     override fun deserialize(decoder: Decoder): ByteArray {
         val encoded = decoder.decodeString()
 
-        require(encoded.isNotBlank()) {
-            "Encoded byte array must not be blank"
+        if (encoded.isEmpty()) {
+            return byteArrayOf()
         }
 
         return Base64.decode(encoded)

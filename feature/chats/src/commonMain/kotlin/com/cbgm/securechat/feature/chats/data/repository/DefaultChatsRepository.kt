@@ -129,7 +129,7 @@ class DefaultChatsRepository(
 
                     add(
                         GroupMemberPayload(
-                            displayName = contact.displayName,
+                            displayName = null,
                             encryptionPublicKey = identity?.encryptionPublicKey ?: byteArrayOf(),
                             signingPublicKey = identity?.signingPublicKey ?: byteArrayOf(),
                             role = GROUP_MEMBER_ROLE,
@@ -194,6 +194,7 @@ class DefaultChatsRepository(
             val now = SystemClock.nowEpochMilliseconds()
             val messageId = createId(prefix = "group-message")
             val localIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
+            val localPhoneNumber = localPhoneNumberProvider.getLocalPhoneNumber().getOrThrow()
             val packets =
                 participants.associateWith { participant ->
                     GroupChatMessagePacket(
@@ -202,7 +203,8 @@ class DefaultChatsRepository(
                         messageId = messageId,
                         sentAtEpochMilliseconds = now,
                         text = normalizedText,
-                        senderSigningPublicKey = localIdentity.signingPublicKey.copyOf()
+                        senderSigningPublicKey = localIdentity.signingPublicKey.copyOf(),
+                        senderPhoneNumber = localPhoneNumber
                     )
                 }
             val recipientStates =

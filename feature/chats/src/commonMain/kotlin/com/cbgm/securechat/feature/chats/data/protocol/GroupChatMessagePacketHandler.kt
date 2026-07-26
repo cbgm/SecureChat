@@ -6,6 +6,7 @@ import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.packet.DeliveryReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.GroupChatMessagePacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
+import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
 import com.cbgm.securechat.data.database.dao.ContactDao
@@ -16,6 +17,7 @@ import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 class GroupChatMessagePacketHandler(
     private val chatDao: ChatDao,
     private val contactDao: ContactDao,
+    private val phoneNumberNormalizer: PhoneNumberNormalizer,
     private val protocolOutbox: ProtocolOutbox
 ) : TypedProtocolPacketHandler {
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is GroupChatMessagePacket
@@ -33,13 +35,7 @@ class GroupChatMessagePacketHandler(
                     ?: error("Group conversation was not found")
             check(conversation.type == GROUP_CONVERSATION_TYPE) { "Conversation is not a group" }
 
-            val senderContactId =
-                if (groupPacket.senderSigningPublicKey.isNotEmpty()) {
-                    contactDao.findBySigningPublicKey(groupPacket.senderSigningPublicKey)?.contact?.id
-                        ?: context.contactId
-                } else {
-                    context.contactId
-                }
+            val senderContactId = resolveSenderContactId(groupPacket, context.contactId)
 
             chatDao.upsertMessage(
                 MessageEntity(
@@ -69,6 +65,29 @@ class GroupChatMessagePacketHandler(
                         )
                 ).getOrThrow()
         }
+
+    private suspend fun resolveSenderContactId(
+        packet: GroupChatMessagePacket,
+        fallbackContactId: String
+    ): String {
+        if (packet.senderSigningPublicKey.isNotEmpty()) {
+            contactDao.findBySigningPublicKey(packet.senderSigningPublicKey)?.let { contact ->
+                return contact.contact.id
+            }
+        }
+
+        val normalizedPhoneNumber =
+            packet.senderPhoneNumber
+                ?.let { phoneNumber -> phoneNumberNormalizer.normalize(phoneNumber).getOrNull() }
+
+        if (normalizedPhoneNumber != null) {
+            contactDao.findByNormalizedPhoneNumber(normalizedPhoneNumber)?.let { contact ->
+                return contact.contact.id
+            }
+        }
+
+        return fallbackContactId
+    }
 
     private companion object {
         const val GROUP_CONVERSATION_TYPE = "GROUP"
