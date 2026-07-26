@@ -19,14 +19,14 @@ import com.cbgm.securechat.feature.identity.di.androidIdentityStorageModule
 import com.cbgm.securechat.feature.identity.di.identityModule
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
 import com.cbgm.securechat.feature.identity.domain.repository.storage.LocalPhoneNameStorage
+import com.cbgm.securechat.feature.messaging.application.incoming.IncomingRelayRunner
+import com.cbgm.securechat.feature.messaging.di.messagingModule
 import com.cbgm.securechat.feature.onboarding.di.onboardingModule
 import com.cbgm.securechat.feature.settings.di.settingsModule
 import com.cbgm.securechat.feature.transport.connection.RelayConnectionManager
 import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
 import com.cbgm.securechat.feature.transport.di.transportModule
 import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
-import com.cbgm.securechat.messaging.di.messagingModule
-import com.cbgm.securechat.messaging.runtime.incoming.IncomingRelayRunner
 import com.cbgm.securechat.startup.di.startupModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

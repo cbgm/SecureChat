@@ -22,8 +22,8 @@ import com.cbgm.securechat.feature.contacts.domain.usecase.ImportDeviceContacts
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContact
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContacts
 import com.cbgm.securechat.feature.contacts.domain.usecase.VerifyContact
-import com.cbgm.securechat.feature.contacts.presentation.screen.ContactDetailsViewModel
 import com.cbgm.securechat.feature.contacts.presentation.screen.ContactsViewModel
+import com.cbgm.securechat.feature.contacts.presentation.screen.details.ContactDetailsViewModel
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModel

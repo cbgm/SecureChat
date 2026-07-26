@@ -34,9 +34,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.component.PatternBackground
 import com.cbgm.securechat.core.ui.component.SecureChatScrollScaffold
+import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.contactimport.presentation.model.ImportIdentityUiState
 import com.cbgm.securechat.resources.Res
@@ -301,5 +303,19 @@ private fun StatusBanner(
                 fontWeight = FontWeight.Medium
             )
         }
+    }
+}
+
+@Preview
+@Composable
+fun ImportIdentityScreenPreview() {
+    SecureChatTheme {
+        ImportIdentityScreen(
+            uiState = ImportIdentityUiState(),
+            onEncodedIdentityChanged = {},
+            onImportClick = {},
+            onBack = {},
+            onScanQrCode = {}
+        )
     }
 }

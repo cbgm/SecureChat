@@ -6,7 +6,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactDetailsUiState
 import com.cbgm.securechat.feature.contacts.presentation.screen.ContactDetailsScreen
-import com.cbgm.securechat.feature.contacts.presentation.screen.ContactDetailsViewModel
+import com.cbgm.securechat.feature.contacts.presentation.screen.details.ContactDetailsViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 

@@ -7,7 +7,7 @@ SecureChat separates messaging orchestration from transport mechanics and chat s
 | Module | Owns | Does not own |
 |---|---|---|
 | `:feature:transport` | WebSocket client, relay connection, wire sender, relay codecs | Contacts, chat repositories, outbox orchestration |
-| `:messaging` | Incoming relay runner, outbox runtime, relay/contact resolution, typing adapter | Compose UI, conversation persistence rules |
+| `:feature:messaging` | Incoming relay runner, outbox application flow, relay/contact resolution, typing adapter | Compose UI, conversation persistence rules |
 | `:feature:chats` | Conversations, messages, receipts, delivery state, chat UI | WebSocket lifecycle and relay routing |
 | `:feature:contacts` | Contacts, device-contact ports, identity verification | Relay/WebSocket implementation |
 | `:feature:identity` | Local identity, identity storage ports, sharing codec contract | Chat or relay orchestration |
@@ -16,7 +16,7 @@ SecureChat separates messaging orchestration from transport mechanics and chat s
 
 ```mermaid
 flowchart TD
-    App[":androidApp"] --> Messaging[":messaging"]
+    App[":androidApp"] --> Messaging[":feature:messaging"]
     App --> Chats[":feature:chats"]
     Messaging --> Transport[":feature:transport"]
     Messaging --> Chats
@@ -27,9 +27,9 @@ flowchart TD
     Contacts --> Protocol
 ```
 
-`:feature:transport` must remain unaware of feature repositories and the database. `:messaging` is the application-level composition boundary that connects transport ports to chats and contacts.
+`:feature:transport` must remain unaware of feature repositories and the database. `:feature:messaging` is the application-level composition boundary that connects transport ports to chats and contacts.
 
-## Runtime flow
+## Application flow
 
 Outgoing packets are persisted by chats, observed and prepared by messaging, and transmitted by transport. Incoming relay envelopes are collected by messaging, then handed to the `IncomingMessageHandler` implemented by chats.
 

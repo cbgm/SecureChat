@@ -25,10 +25,10 @@ import com.cbgm.securechat.feature.chats.domain.usecase.RetryMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SendGroupMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SendMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SetTypingIndicator
-import com.cbgm.securechat.feature.chats.presentation.screen.ChatViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.ChatsViewModel
-import com.cbgm.securechat.feature.chats.presentation.screen.CreateGroupViewModel
-import com.cbgm.securechat.feature.chats.presentation.screen.GroupConversationViewModel
+import com.cbgm.securechat.feature.chats.presentation.screen.chat.ChatViewModel
+import com.cbgm.securechat.feature.chats.presentation.screen.chat.GroupConversationViewModel
+import com.cbgm.securechat.feature.chats.presentation.screen.create.CreateGroupViewModel
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContactSafetyNumber
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContact
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContacts

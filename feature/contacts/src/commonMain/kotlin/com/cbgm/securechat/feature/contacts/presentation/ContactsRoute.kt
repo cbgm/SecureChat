@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactsEffect
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactsEvent
+import com.cbgm.securechat.feature.contacts.presentation.model.ContactsScreenMode
 import com.cbgm.securechat.feature.contacts.presentation.platform.rememberDeviceContactsPermissionRequest
 import com.cbgm.securechat.feature.contacts.presentation.screen.ContactsScreen
 import com.cbgm.securechat.feature.contacts.presentation.screen.ContactsViewModel
@@ -54,14 +55,19 @@ fun ContactsRoute(
 
     ContactsScreen(
         uiState = uiState,
+        mode =
+            ContactsScreenMode.Overview(
+                onContactClick = onContactClick,
+                onImportContact = onImportContact,
+                onCreateGroup = onCreateGroup,
+                onImportDeviceContacts = requestDeviceContactsPermission
+            ),
+        searchQuery = searchQuery,
+        onSearchQueryChanged = { query ->
+            viewModel.onEvent(ContactsEvent.SearchQueryChanged(query))
+        },
         onBack = onBack,
-        onImportContact = onImportContact,
-        onCreateGroup = onCreateGroup,
-        onImportDeviceContacts = requestDeviceContactsPermission,
-        onContactClick = onContactClick,
         modifier = modifier,
-        snackbarHostState = snackbarHostState,
-        onSearchQueryChanged = { viewModel.onEvent(ContactsEvent.SearchQueryChanged(it)) },
-        searchQuery = searchQuery
+        snackbarHostState = snackbarHostState
     )
 }

@@ -28,8 +28,10 @@ import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.component.SecureChatStaticScaffold
+import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.contactimport.platform.QrScanner
 import com.cbgm.securechat.resources.Res
@@ -165,5 +167,16 @@ private fun ScannerOverlay(modifier: Modifier = Modifier) {
                 cap = StrokeCap.Round
             )
         }
+    }
+}
+
+@Preview
+@Composable
+fun ScannedIdentityPreview() {
+    SecureChatTheme {
+        ScanIdentityScreen(
+            onQrCodeScanned = {},
+            onBack = {}
+        )
     }
 }

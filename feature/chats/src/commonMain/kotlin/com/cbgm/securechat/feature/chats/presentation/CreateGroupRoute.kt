@@ -8,7 +8,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cbgm.securechat.feature.chats.presentation.model.CreateGroupEffect
 import com.cbgm.securechat.feature.chats.presentation.model.CreateGroupEvent
 import com.cbgm.securechat.feature.chats.presentation.screen.CreateGroupScreen
-import com.cbgm.securechat.feature.chats.presentation.screen.CreateGroupViewModel
+import com.cbgm.securechat.feature.chats.presentation.screen.create.CreateGroupViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable

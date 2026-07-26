@@ -7,7 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cbgm.securechat.feature.chats.presentation.screen.ChatScreen
-import com.cbgm.securechat.feature.chats.presentation.screen.GroupConversationViewModel
+import com.cbgm.securechat.feature.chats.presentation.screen.chat.GroupConversationViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 

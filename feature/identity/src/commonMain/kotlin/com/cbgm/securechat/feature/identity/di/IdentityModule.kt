@@ -15,7 +15,6 @@ import com.cbgm.securechat.feature.identity.data.repository.DefaultIdentityRepos
 import com.cbgm.securechat.feature.identity.data.sharing.DefaultIdentityShareCodec
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
 import com.cbgm.securechat.feature.identity.domain.repository.storage.LocalPhoneNameStorage
-import com.cbgm.securechat.feature.identity.domain.repository.storage.PublicIdentityStorage
 import com.cbgm.securechat.feature.identity.domain.service.IdentityShareCodec
 import com.cbgm.securechat.feature.identity.domain.usecase.CreateIdentity
 import com.cbgm.securechat.feature.identity.domain.usecase.CreateSharedIdentity
@@ -26,7 +25,6 @@ import com.cbgm.securechat.feature.identity.domain.usecase.NormalizeLocalPhoneNu
 import com.cbgm.securechat.feature.identity.domain.usecase.SaveLocalPhoneName
 import com.cbgm.securechat.feature.identity.presentation.screen.IdentityViewModel
 import com.cbgm.securechat.feature.identity.presentation.screen.ShareIdentityViewModel
-import com.cbgm.securechat.feature.identity.startup.IdentityStartupManager
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
@@ -90,10 +88,6 @@ val identityModule =
 
         single<IdentityShareCodec> {
             DefaultIdentityShareCodec()
-        }
-
-        single {
-            IdentityStartupManager(identityExists = { get<PublicIdentityStorage>().exists() })
         }
 
         factory {

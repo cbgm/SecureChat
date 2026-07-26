@@ -10,9 +10,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cbgm.securechat.feature.chats.domain.model.ContactSecurityState
+import com.cbgm.securechat.feature.chats.presentation.component.chat.VerifyIdentityDialog
 import com.cbgm.securechat.feature.chats.presentation.screen.ChatScreen
-import com.cbgm.securechat.feature.chats.presentation.screen.ChatViewModel
-import com.cbgm.securechat.feature.chats.presentation.screen.component.VerifyIdentityDialog
+import com.cbgm.securechat.feature.chats.presentation.screen.chat.ChatViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 

@@ -1,7 +1,7 @@
 package com.cbgm.securechat.feature.chats.presentation.mapper
 
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
-import com.cbgm.securechat.feature.chats.presentation.screen.ChatListItem
+import com.cbgm.securechat.feature.chats.presentation.model.ChatListItem
 
 fun Conversation.toChatListItem() =
     ChatListItem(

@@ -33,8 +33,6 @@ docs/
 
 feature/
 
-messaging/
-
 navigation/
 
 quality/
@@ -161,15 +159,15 @@ Business rules should remain inside the domain layer.
 
 ---
 
-# messaging
+# feature:messaging
 
 ```
-messaging/
+feature/messaging/
 ```
 
 Owns application-level send and receive orchestration:
 
-- outbox processing and runtime
+- outbox processing in the application layer
 - incoming relay collection
 - relay/contact resolution
 - transport-backed typing adapter
@@ -195,17 +193,20 @@ identity
 
 chats
 
+messaging
+
 transport
 
 onboarding
 ```
 
-Each feature should encapsulate
+Each feature should use the layers that match its responsibility:
 
-- presentation
+- presentation (for UI)
 - domain
 - data (if applicable)
-- navigation entry point
+- application orchestration (only for UI-less workflows)
+- navigation entry point (for navigable UI)
 
 Features communicate through public APIs rather than implementation details.
 
