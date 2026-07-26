@@ -20,6 +20,21 @@ interface ContactDao {
 
     @Query(
         """
+        UPDATE contacts
+        SET displayName = :phoneNumber,
+            updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
+        WHERE id = :contactId
+          AND (displayName IS NULL OR TRIM(displayName) = '')
+        """
+    )
+    suspend fun usePhoneNumberAsDisplayNameWhenMissing(
+        contactId: String,
+        phoneNumber: String,
+        updatedAtEpochMilliseconds: Long
+    )
+
+    @Query(
+        """
     SELECT contacts.*
     FROM contacts
     INNER JOIN contact_phone_numbers

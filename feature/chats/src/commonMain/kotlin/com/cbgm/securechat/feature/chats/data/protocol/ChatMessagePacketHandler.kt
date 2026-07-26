@@ -8,6 +8,7 @@ import com.cbgm.securechat.core.protocol.packet.DeliveryReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
+import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.data.database.entity.ConversationEntity
 import com.cbgm.securechat.data.database.entity.ConversationType
 import com.cbgm.securechat.data.database.entity.MessageEntity
@@ -16,6 +17,7 @@ import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 
 class ChatMessagePacketHandler(
     private val chatDao: ChatDao,
+    private val contactDao: ContactDao,
     private val protocolOutbox: ProtocolOutbox
 ) : TypedProtocolPacketHandler {
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is ChatMessagePacket
@@ -32,6 +34,17 @@ class ChatMessagePacketHandler(
             require(chatPacket.text.isNotBlank()) {
                 "Incoming chat message must not be blank"
             }
+
+            chatPacket.senderPhoneNumber
+                ?.trim()
+                ?.takeIf(String::isNotBlank)
+                ?.let { senderPhoneNumber ->
+                    contactDao.usePhoneNumberAsDisplayNameWhenMissing(
+                        contactId = context.contactId,
+                        phoneNumber = senderPhoneNumber,
+                        updatedAtEpochMilliseconds = context.receivedAtEpochMilliseconds
+                    )
+                }
 
             /*
              * messageId is the Room primary key.

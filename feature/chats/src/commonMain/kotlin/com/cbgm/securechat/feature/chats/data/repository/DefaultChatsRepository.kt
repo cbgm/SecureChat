@@ -262,13 +262,15 @@ class DefaultChatsRepository(
 
         val now = SystemClock.nowEpochMilliseconds()
         val messageId = createId(prefix = "message")
+        val localPhoneNumber = localPhoneNumberProvider.getLocalPhoneNumber().getOrThrow()
 
         val packet =
             ChatMessagePacket(
                 packetId = createId(prefix = "packet"),
                 messageId = messageId,
                 sentAtEpochMilliseconds = now,
-                text = normalizedText
+                text = normalizedText,
+                senderPhoneNumber = localPhoneNumber
             )
 
         protocolOutbox
