@@ -26,6 +26,8 @@ For read-only verification used by Git hooks and CI:
 
 - [Getting started](getting-started/introduction.md)
 - [Architecture](architecture/overview.md)
+- [Messaging boundary](architecture/messaging-boundary.md)
+- [Messaging and delivery flow](features/message-transport-flow.md)
 - [Security](security/overview.md)
 - [Features](features/chats.md)
 - [Development](development/local-development.md)
@@ -53,6 +55,16 @@ When modules, dependencies, source sets, or module contents change:
 Commit the updated files under `docs/generated/`.
 
 Do not edit generated files manually.
+
+## Messaging documentation
+
+Use the messaging pages in this order:
+
+1. [Messaging boundary](architecture/messaging-boundary.md) explains which module owns each responsibility.
+2. [Messaging and delivery flow](features/message-transport-flow.md) traces direct messages, group messages,
+   receipts, typing, retries, relay acknowledgements, and extension points using the production class names.
+3. [Transport](features/transport.md) documents WebSocket and relay mechanics.
+4. [Protocol](api/protocol.md) documents packet types and serialization.
 
 ## Documentation workflow
 

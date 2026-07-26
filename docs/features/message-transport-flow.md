@@ -1,19 +1,26 @@
-# Message Sending and Transport Flow
+# Messaging and Delivery Flow
 
-This page documents the current SecureChat message-delivery implementation using the actual production classes in the repository.
+This is the implementation guide for SecureChat messaging. It follows the current production
+classes from UI intent to relay storage and back to the receiving database, then explains how to
+extend the design safely.
 
-It covers:
+For module ownership first, read [Messaging Boundary](../architecture/messaging-boundary.md).
 
-- creation of an outgoing chat message
-- persistent outbox storage
-- payload preparation and encryption
-- WebSocket relay delivery
-- relay acceptance and offline storage
-- incoming packet decoding and persistence
-- delivery and read receipts
-- reconnect and retry behavior
+## Mental model
 
-## End-to-end overview
+A message crosses four different representations:
+
+| Representation | Example type | Owner |
+|---|---|---|
+| Domain/chat state | `MessageEntity`, `MessageDeliveryStatus` | `:feature:chats` and `:data:database` |
+| Protocol packet | `ChatMessagePacket`, `DeliveryReceiptPacket` | `:core:protocol` |
+| Encoded transport payload | `EncryptedTransportPayload` encoded by `TransportPayloadCodec` | `:core:crypto` |
+| Relay frame | `RelayClientMessage.SendEnvelope` containing a `RelayEnvelope` | `:feature:transport` |
+
+Do not collapse these layers. A protocol packet describes meaning; a transport payload describes
+protection; a relay envelope describes routing.
+
+## Complete direct-message path
 
 ```mermaid
 sequenceDiagram
@@ -21,611 +28,499 @@ sequenceDiagram
     participant VM as ChatViewModel
     participant Repo as DefaultChatsRepository
     participant Outbox as DefaultProtocolOutbox
-    participant Runner as DefaultOutboxRunner
     participant Processor as DefaultOutboxProcessor
-    participant Sender as WebSocketOutgoingWireSender
-    participant WS as DefaultWebSocketTransportClient
+    participant Wire as WebSocketOutgoingWireSender
     participant Relay as RelayWebSocketHandler
-    participant Router as DefaultRelayEnvelopeRouter
-    participant Store as InMemoryPendingEnvelopeStore
-    participant ReceiverWS as Receiving DefaultWebSocketTransportClient
     participant Incoming as DefaultIncomingRelayRunner
-    participant ReceiveHandler as IncomingMessageHandler
-    participant ReceiveProcessor as IncomingMessageProcessor
+    participant Decoder as IncomingMessageProcessor
     participant Handler as ChatMessagePacketHandler
 
-    User->>VM: Send text
-    VM->>Repo: sendMessage(contactId, text)
-    Repo->>Repo: store MessageEntity as QUEUED
+    User->>VM: send text
+    VM->>Repo: sendMessage(conversationId, text)
+    Repo->>Repo: persist MessageEntity(QUEUED)
     Repo->>Outbox: enqueue(ChatMessagePacket)
-    Outbox-->>Runner: observePending emits
-    Runner->>Processor: processPending(limit = 20)
-    Processor->>Processor: encode/encrypt transport payload
-    Processor->>Sender: send(contactId, payload)
-    Sender->>WS: sendEnvelopeAndAwaitAcceptance(...)
-    WS->>Relay: RelayClientMessage.SendEnvelope
-    Relay->>Router: accept(envelope)
-    Router->>Store: enqueue(envelope)
-    Relay-->>WS: EnvelopeAccepted
-    Processor->>Outbox: markSent(itemId)
-    Processor->>Repo: delivery coordinator applies SENT
-    Router->>ReceiverWS: IncomingEnvelope
-    ReceiverWS-->>Incoming: incomingEnvelopes flow
-    Incoming->>ReceiveHandler: handle transport payload
-    ReceiveHandler->>ReceiveProcessor: decode and dispatch
-    ReceiveProcessor->>Handler: dispatch ChatMessagePacket
-    Handler->>Handler: persist incoming message
+    Processor->>Outbox: markProcessing
+    Processor->>Processor: encode and optionally encrypt
+    Processor->>Wire: send(relayId, payload)
+    Wire->>Relay: SendEnvelope
+    Relay-->>Wire: EnvelopeAccepted
+    Processor->>Outbox: markSent
+    Relay-->>Incoming: IncomingEnvelope
+    Incoming->>Decoder: handle(contactId, payload, keys)
+    Decoder->>Handler: handle(context, packet)
+    Handler->>Handler: persist incoming MessageEntity
     Handler->>Outbox: enqueue(DeliveryReceiptPacket)
-    Incoming->>ReceiverWS: acknowledgeIncomingEnvelope(envelopeId)
-    ReceiverWS->>Relay: AcknowledgeEnvelope
-    Relay->>Store: remove(envelope)
+    Incoming-->>Relay: AcknowledgeEnvelope
 ```
 
-## Runtime startup
+There are two acknowledgements:
 
-Transport services are started from `SecureChatApplication.startRuntimeServices()`.
+- `EnvelopeAccepted` means the relay accepted the outgoing envelope. The sender becomes `SENT`.
+- `DeliveryReceiptPacket` means the recipient decoded and stored the message. The sender becomes
+  `DELIVERED`.
 
-The startup sequence is:
+`AcknowledgeEnvelope` is different again: it lets the relay remove its pending copy after the
+recipient finishes local processing.
 
-1. `IncomingRelayRunner.start()` begins collecting incoming relay envelopes.
-2. `RelayConnectionManager.start()` starts the reconnecting WebSocket loop.
+## Runtime startup and connection lifecycle
+
+`SecureChatApplication` waits until `IdentityRepository.observeIdentity()` returns an identity and
+`LocalPhoneNameStorage.observePhoneNumber()` returns a non-blank phone number. It then calls
+`startRuntimeServices()`:
+
+1. `IncomingRelayRunner.start()` starts collecting `WebSocketTransportClient.incomingEnvelopes`.
+2. `RelayConnectionManager.start()` starts the relay connection loop.
 3. `SecureChatApplication` observes `RelayConnectionManager.connectionState`.
-4. When the state becomes `TransportConnectionState.Connected`, it calls `OutboxRunner.start()`.
+4. Each time the state becomes `TransportConnectionState.Connected`, it calls
+   `OutboxRunner.start()`.
 
-Important classes:
+`DefaultRelayConnectionManager` resolves the local address through `LocalRelayIdProvider`, connects
+with `WebSocketTransportClient.connect()`, and retries after failures. The backoff starts at one
+second, doubles, and is capped at 30 seconds. A connection attempt times out after 15 seconds.
 
-| Responsibility | Class |
-|---|---|
-| Android process startup | `SecureChatApplication` |
-| Connection lifecycle | `DefaultRelayConnectionManager` |
-| WebSocket implementation | `DefaultWebSocketTransportClient` |
-| Incoming-envelope collector | `DefaultIncomingRelayRunner` |
-| Persistent outbox observer | `DefaultOutboxRunner` |
+`DefaultOutboxRunner.start()` is intentionally safe to call after every reconnect. It:
 
-## 1. Creating an outgoing message
+- creates the `ProtocolOutbox.observePending()` collector only when one is not already active;
+- calls `ProtocolOutbox.requeueInterrupted()` for rows left in `PROCESSING`;
+- calls `ProtocolOutbox.retryFailed()` for failed attempts;
+- drains all currently available items.
 
-The outgoing flow begins in:
+The `processingMutex` prevents the Room observer and reconnect recovery from draining concurrently.
+Batches contain at most 20 items.
 
-```kotlin
-DefaultChatsRepository.sendMessage(
-    conversationId: String,
-    text: String,
-)
-```
+## Creating outgoing work
 
-`DefaultChatsRepository` performs the following steps:
+### Direct message
 
-1. Trims the message and ignores blank input.
-2. Loads the direct conversation and recipient.
-3. Creates a `ChatMessagePacket` containing:
-   - `packetId`
-   - `messageId`
-   - `sentAtEpochMilliseconds`
-   - message text
-4. Stores a visible `MessageEntity` with `MessageDeliveryStatus.QUEUED`.
-5. Updates the conversation timestamp.
-6. Enqueues the packet through `ProtocolOutbox.enqueue()`.
+`ChatViewModel` calls the `SendMessage` use case, which delegates to
+`DefaultChatsRepository.sendMessage()`.
 
-The visible message is stored first so an immediately running outbox processor can always find its delivery state. If enqueueing fails, the delivery state machine moves the visible message to `FAILED`.
+The repository:
 
-`ProtocolOutbox.enqueue()` is idempotent by `packetId`, so repeating the same enqueue operation does not create a duplicate outbox entry.
+1. trims and validates the text;
+2. loads a direct `ConversationEntity` and its contact;
+3. creates one `ChatMessagePacket`;
+4. stores the visible `MessageEntity` with `QUEUED`;
+5. updates the conversation timestamp;
+6. calls `ProtocolOutbox.enqueue(contactId, packet)`.
 
-## 2. Persistent protocol outbox
+The visible message is stored before the outbox row. If enqueue fails,
+`MessageDeliveryStateCoordinator` applies `SEND_FAILED`.
 
-The outbox abstraction is:
+### Group creation
 
-```kotlin
-interface ProtocolOutbox
-```
+`CreateGroupConversation` calls `DefaultChatsRepository.createGroupConversation()`. The repository
+creates the local group and participants, builds a `GroupCreatedPacket` containing
+`GroupMemberPayload` entries, and enqueues one packet per contact.
 
-Its Room-backed implementation is:
+`DefaultOutboxProcessor` deliberately forces `GroupCreatedPacket` to
+`TransportEncryptionMode.PLAINTEXT`, even if the recipient already has a mutual identity. This is
+the current implementation rule; changing it requires an explicit protocol compatibility decision.
 
-```kotlin
-DefaultProtocolOutbox
-```
+### Group message
 
-The persistent entity is `ProtocolOutboxEntity`, accessed through `ProtocolOutboxDao`.
+`SendGroupMessage` calls `DefaultChatsRepository.sendGroupMessage()`. The repository:
 
-### Outbox states
+1. validates that the conversation is a group;
+2. creates one shared `messageId`;
+3. creates a distinct `GroupChatMessagePacket.packetId` for every participant;
+4. stores one visible `MessageEntity`;
+5. stores one `MessageRecipientStateEntity` per participant;
+6. enqueues each packet for its participant.
 
-`OutboxStatus` defines four states:
+Per-recipient rows are the source of truth for group delivery. The visible message status is
+recomputed by `MessageDeliveryStateMachine.aggregate()`.
 
-```text
-PENDING
-PROCESSING
-SENT
-FAILED
-```
+### Identity exchange and receipts
 
-The normal state transition is:
+The same outbox also carries control packets:
+
+- `DefaultIdentityExchangeStarter` enqueues `IdentityPacket`.
+- `IdentityPacketHandler` enqueues `IdentityAcknowledgementPacket`.
+- `ChatMessagePacketHandler` and `GroupChatMessagePacketHandler` enqueue
+  `DeliveryReceiptPacket`.
+- `DefaultChatsRepository.markConversationRead()` enqueues `ReadReceiptPacket`.
+
+No handler sends directly to the WebSocket. Persisting through `ProtocolOutbox` gives every packet
+the same retry and recovery behavior.
+
+## Persistent protocol outbox
+
+`ProtocolOutbox` is the transport-independent contract in `:core:protocol`.
+`DefaultProtocolOutbox` is the Room-backed implementation in `:data:database`, using
+`ProtocolOutboxDao` and `ProtocolOutboxEntity`.
+
+`DefaultProtocolOutbox.enqueue()`:
+
+- validates the contact and packet IDs;
+- returns the existing row when `packetId` is already present;
+- encodes the `SecureChatPacket` with `PacketCodec`;
+- persists a new row as `PENDING`.
+
+The idempotency key is `packetId`, not `messageId`.
+
+### Outbox state machine
 
 ```mermaid
 stateDiagram-v2
     [*] --> PENDING: enqueue
-    PENDING --> PROCESSING: markProcessing
-    PROCESSING --> SENT: relay accepts envelope
-    PROCESSING --> FAILED: preparation or sending fails
-    FAILED --> PENDING: retry
+    PENDING --> PROCESSING: PROCESSING_STARTED
+    PROCESSING --> SENT: SEND_SUCCEEDED
+    PROCESSING --> FAILED: SEND_FAILED
+    FAILED --> PENDING: RETRY_REQUESTED
+    PROCESSING --> PENDING: RECOVERY_REQUESTED
 ```
 
-`OutboxStateMachine` is the single definition of valid outbox transitions. Database methods persist those transitions but do not define additional lifecycle rules.
+`OutboxStateMachine` defines valid transitions and `DefaultProtocolOutbox` validates them before
+DAO updates. `retryFailed()` and `requeueInterrupted()` are bulk recovery operations used on
+connection availability.
 
-`DefaultProtocolOutbox.enqueue()`:
+## Preparing and sending a queued packet
 
-- checks for an existing row by `packetId`
-- encodes the `SecureChatPacket` with `PacketCodec`
-- stores the encoded bytes with status `PENDING`
-- returns the existing item when the same packet ID was already queued
+`DefaultOutboxProcessor.processPending()` loads up to the requested limit and continues processing
+other rows if one item fails. For each `ProtocolOutboxItem`, `processItem()` performs:
 
-This idempotency is used by chat messages, delivery receipts, read receipts, and identity-exchange packets.
+1. `ProtocolOutbox.markProcessing(item.id)`;
+2. `OutboxDeliveryStateListener.onProcessing(item.packetId)`;
+3. `GetContact(item.contactId)`;
+4. packet protection through `createTransportPayload()`;
+5. encoding through `TransportPayloadCodec.encode()`;
+6. `OutboxDeliveryStateListener.onPrepared()` to persist the exact payload and mode;
+7. recipient resolution through `ContactRelayIdResolver`;
+8. `OutgoingWireSender.send(recipientRelayId, encodedTransportPayload)`;
+9. `ProtocolOutbox.markSent(item.id)`;
+10. `OutboxDeliveryStateListener.onSent(item.packetId)`.
 
-## 3. Observing and draining the outbox
+Any failure before `markSent()` changes the outbox row to `FAILED` and calls
+`OutboxDeliveryStateListener.onFailed()`.
 
-`DefaultOutboxRunner` observes:
+The production listener is `ChatOutboxDeliveryStateListener`. It delegates to
+`MessageDeliveryStateCoordinator`; control packets without visible chat state are valid and simply
+produce no chat-row transition.
 
-```kotlin
-protocolOutbox.observePending()
-```
+## Plaintext and sealed-box selection
 
-When Room emits at least one pending item, the runner calls:
+`DefaultOutboxProcessor.createTransportPayload()` selects the current transport mode:
 
-```kotlin
-outboxProcessor.processPending(limit = 20)
-```
-
-A `Mutex` named `processingMutex` ensures that only one outbox-draining loop runs at a time.
-
-The runner processes batches until one of these conditions is reached:
-
-- no pending items remain
-- a batch contains fewer than 20 items
-- processing returns a failure
-
-`DefaultOutboxRunner` does not prepare encryption or talk to the WebSocket directly. That work belongs to `DefaultOutboxProcessor`.
-
-## 4. Preparing and sending one outbox item
-
-`DefaultOutboxProcessor.processItem()` owns one complete send attempt.
-
-Its sequence is:
-
-1. `ProtocolOutbox.markProcessing(item.id)`
-2. `OutboxDeliveryStateListener.onProcessing(packetId)`
-3. load the recipient through `GetContact`
-4. create an `EncryptedTransportPayload`
-5. encode it with `TransportPayloadCodec`
-6. store the exact prepared payload
-7. send it through `OutgoingWireSender`
-8. mark the outbox row as `SENT`
-9. update the visible message to `SENT`
-
-If any step inside the send block fails:
-
-1. `ProtocolOutbox.markFailed()` stores the error
-2. `OutboxDeliveryStateListener.onFailed()` updates the visible message to `FAILED`
-
-### Visible chat status synchronization
-
-The implementation of `OutboxDeliveryStateListener` is:
-
-```kotlin
-ChatOutboxDeliveryStateListener
-```
-
-It translates protocol-outbox callbacks into `MessageDeliveryEvent` values. `MessageDeliveryStateCoordinator` then:
-
-- loads the current direct-message or recipient state
-- asks `MessageDeliveryStateMachine` for the next state
-- persists the transition
-- derives the group message status from all recipient states
-
-| Outbox callback | Visible message status |
+| Condition | Mode |
 |---|---|
-| `onProcessing()` | `SENDING` |
-| `onSent()` | `SENT` |
-| `onFailed()` | `FAILED` |
+| Packet decodes as `GroupCreatedPacket` | `PLAINTEXT` |
+| Contact has no `SecureChatIdentity` | `PLAINTEXT` |
+| Contact encryption key is empty | `PLAINTEXT` |
+| `KeyExchangeStatus` is not `MUTUAL` | `PLAINTEXT` |
+| Contact has a non-empty key and `KeyExchangeStatus.MUTUAL` | `SEALED_BOX` |
 
-Not every protocol packet has a visible chat row. Identity packets and receipt packets can therefore update zero message rows without being treated as errors.
+For `SEALED_BOX`, the processor calls
+`TransportMessageCipher.encryptForRecipient(plaintext, recipientPublicKey)`. For plaintext, it
+constructs `EncryptedTransportPayload` directly. Both modes are encoded by
+`TransportPayloadCodec`; therefore “plaintext” means the protocol bytes are not end-to-end
+encrypted, not that raw protocol JSON is placed directly in a WebSocket frame.
 
-Late and duplicate events are intentional no-ops. For example, an older delivery receipt cannot move a message from `READ` back to `DELIVERED`.
+`DefaultChatsRepository.plannedTransportMode()` mirrors the same contact conditions so the UI can
+store the intended mode immediately. `DefaultOutboxProcessor` remains authoritative when the packet
+is actually sent.
 
-## 5. Plaintext versus encrypted transport payloads
+## Relay address resolution
 
-`DefaultOutboxProcessor.createTransportPayload()` decides whether the protocol packet is encrypted.
+The wire uses relay IDs, while chat and contacts use contact IDs.
 
-Encryption is enabled only when the contact has:
+### Outgoing
 
-- a `secureChatIdentity`
-- a non-empty encryption public key
-- `KeyExchangeStatus.MUTUAL`
+`DefaultContactRelayIdResolver.resolve(contactId)`:
 
-When these conditions are not met, the processor creates:
+1. returns an existing `ContactRelayIdDao` mapping;
+2. otherwise loads the contact with `GetContact`;
+3. selects the preferred phone number or first available number;
+4. derives the relay ID with `RelayIdGenerator`;
+5. persists `ContactRelayIdEntity`.
 
-```kotlin
-EncryptedTransportPayload(
-    version = 1,
-    mode = TransportEncryptionMode.PLAINTEXT,
-    payload = encodedPacket,
-)
-```
+The production generator is `Sha256RelayIdGenerator`.
 
-When the key exchange is mutual, it uses:
+### Incoming
 
-```kotlin
-TransportMessageCipher.encryptForRecipient(...)
-```
+`DefaultContactByRelayIdResolver.resolveContactId(relayId)`:
 
-The concrete crypto implementation is `SodiumTransportMessageCipher`.
+1. checks `ContactRelayIdDao`;
+2. derives relay IDs for known contact phone numbers until one matches;
+3. persists the match if found;
+4. otherwise creates an unlinked placeholder `ContactEntity` and stores the relay mapping.
 
-The result is serialized by `TransportPayloadCodec` before it enters the relay transport layer.
+This placeholder lets the incoming pipeline continue for a previously unknown sender. A later chat
+packet may call `ContactDao.usePhoneNumberAsDisplayNameWhenMissing()` using
+`ChatMessagePacket.senderPhoneNumber`.
 
-## 6. Creating the relay envelope
+## WebSocket send and relay acceptance
 
-`WebSocketOutgoingWireSender` implements `OutgoingWireSender`.
+`WebSocketOutgoingWireSender` implements the protocol port `OutgoingWireSender`. It gets the sender
+ID from `LocalRelayIdProvider`, creates a `RelayEnvelope`, and calls
+`WebSocketTransportClient.sendEnvelopeAndAwaitAcceptance()`.
 
-It resolves:
+`DefaultWebSocketTransportClient`:
 
-- the local sender relay ID through `LocalRelayIdProvider`
-- the recipient relay ID through `ContactRelayIdResolver`
+- requires `TransportConnectionState.Connected`;
+- stores a `CompletableDeferred` by `envelopeId`;
+- sends `RelayClientMessage.SendEnvelope`;
+- waits for `RelayServerMessage.EnvelopeAccepted`;
+- fails on timeout, connection closure, or send failure.
 
-It then creates a `RelayEnvelope` containing:
+A `RelayServerMessage.Error` is logged but does not automatically close the socket. The pending
+acceptance eventually times out, causing the outbox item to fail.
 
-- `envelopeId`
-- `senderId`
-- `recipientId`
-- opaque encoded transport payload
-- creation timestamp
+## Relay-side routing
 
-The sender calls:
+`RelayWebSocketHandler` requires `RelayClientMessage.Register` before other operations.
+`InMemoryRelayConnectionRegistry` maps a relay ID to its active `RelayClientConnection`.
 
-```kotlin
-DefaultWebSocketTransportClient.sendEnvelopeAndAwaitAcceptance(...)
-```
+For `RelayClientMessage.SendEnvelope`, the handler:
 
-This is an important boundary:
+1. rejects a sender ID that differs from the registered relay ID;
+2. calls `DefaultRelayEnvelopeRouter.accept()`;
+3. sends `RelayServerMessage.EnvelopeAccepted` after storage succeeds;
+4. calls `deliverPending(recipientId)` for immediate delivery when possible.
 
-- `SENT` means the relay accepted and stored the envelope.
-- It does **not** yet mean the recipient stored the chat message.
+`DefaultRelayEnvelopeRouter.accept()` writes to `PendingEnvelopeStore`. The current implementation,
+`InMemoryPendingEnvelopeStore`, uses `putIfAbsent(envelopeId, envelope)` so submitting the same
+envelope again does not duplicate it.
 
-## 7. WebSocket acceptance
+When a recipient registers, `RelayWebSocketHandler.handleRegistration()` also calls
+`deliverPending()`. Envelopes remain in the store until the recipient sends
+`RelayClientMessage.AcknowledgeEnvelope`.
 
-`DefaultWebSocketTransportClient` serializes the envelope into:
+!!! warning "Current durability limit"
+    `InMemoryPendingEnvelopeStore` survives client disconnects but not a relay-process restart.
+    Client outbox rows are durable in Room; accepted relay envelopes are not yet durable.
 
-```kotlin
-RelayClientMessage.SendEnvelope
-```
+## Incoming decoding and dispatch
 
-It registers a pending `CompletableDeferred` for the envelope ID and waits for one of these outcomes:
+`DefaultWebSocketTransportClient` emits `RelayServerMessage.IncomingEnvelope.envelope` through
+`incomingEnvelopes`.
 
-- `RelayServerMessage.EnvelopeAccepted`
-- relay error
-- WebSocket closure
-- acknowledgement timeout
+`DefaultIncomingRelayRunner`:
 
-`WebSocketOutgoingWireSender` uses `RelayTransportConfig.acknowledgementTimeoutMilliseconds` as the timeout.
+1. maps `RelayEnvelope.senderId` to a contact with `ContactByRelayIdResolver`;
+2. obtains keys from `LocalEncryptionKeyPairProvider`;
+3. calls `IncomingMessageHandler.handle()` with the contact, payload, and key pair;
+4. calls `WebSocketTransportClient.acknowledgeIncomingEnvelope()` only after handling returns.
 
-When `EnvelopeAccepted` arrives, the deferred completes and the local sender can mark the outbox row and visible message as `SENT`.
+`IncomingMessageProcessor` is the `IncomingMessageHandler` implementation. It calls
+`IncomingTransportMessageDecoder.decode()` and handles four outcomes:
 
-## 8. Relay-side storage and routing
-
-The relay entry point for WebSocket frames is:
-
-```kotlin
-RelayWebSocketHandler
-```
-
-Clients must first send `RelayClientMessage.Register`. The relay stores active sessions in:
-
-```kotlin
-InMemoryRelayConnectionRegistry
-```
-
-### Accepting an envelope
-
-For `RelayClientMessage.SendEnvelope`, `RelayWebSocketHandler`:
-
-1. verifies that the envelope sender matches the registered relay ID
-2. calls `DefaultRelayEnvelopeRouter.accept()`
-3. sends `RelayServerMessage.EnvelopeAccepted` to the sender
-4. attempts immediate delivery to the recipient
-
-`DefaultRelayEnvelopeRouter.accept()` stores the envelope in:
-
-```kotlin
-InMemoryPendingEnvelopeStore
-```
-
-The store uses `putIfAbsent(envelopeId, envelope)`, making repeated submission of the same relay envelope idempotent.
-
-### Offline recipient behavior
-
-If the recipient is not connected, `deliverPending()` returns and the envelope remains in `InMemoryPendingEnvelopeStore`.
-
-When the recipient later registers, `RelayWebSocketHandler.handleRegistration()` calls:
-
-```kotlin
-envelopeRouter.deliverPending(recipientId)
-```
-
-The current relay store is in memory. Pending envelopes therefore survive a client disconnect but do not survive a relay-process restart.
-
-## 9. Receiving an envelope
-
-`DefaultWebSocketTransportClient` exposes accepted incoming envelopes through:
-
-```kotlin
-incomingEnvelopes: Flow<RelayEnvelope>
-```
-
-`DefaultIncomingRelayRunner` collects that flow.
-
-For each envelope it:
-
-1. resolves `senderRelayId` to a local contact using `ContactByRelayIdResolver`
-2. obtains the local encryption key pair through `LocalEncryptionKeyPairProvider`
-3. calls `DefaultChatsRepository.receiveMessage()`
-4. acknowledges the relay envelope only after local processing succeeds
-
-The acknowledgement call is:
-
-```kotlin
-webSocketTransportClient.acknowledgeIncomingEnvelope(envelopeId)
-```
-
-That sends `RelayClientMessage.AcknowledgeEnvelope` to the relay. `RelayWebSocketHandler` then removes the envelope from `PendingEnvelopeStore`.
-
-If processing fails, no envelope acknowledgement is sent, so the relay can deliver the envelope again later.
-
-## 10. Decoding and dispatching incoming protocol packets
-
-`DefaultChatsRepository.receiveMessage()` delegates the complete incoming pipeline to:
-
-```kotlin
-IncomingMessageProcessor
-```
-
-The processor passes the encoded payload to:
-
-```kotlin
-IncomingTransportMessageDecoder
-```
-
-The concrete implementation is:
-
-```kotlin
-DefaultIncomingTransportMessageDecoder
-```
-
-The decoder returns one of these result types:
-
-- `DecodedTransportMessage.Readable`
-- `DecodedTransportMessage.InvalidPacket`
-- `DecodedTransportMessage.InvalidPlaintext`
-- `DecodedTransportMessage.DecryptionFailed`
-
-Readable packets are decoded with `PacketCodec` and dispatched through `ProtocolPacketHandler` using an `IncomingPacketContext`.
-
-The receive pipeline is deliberately separate from the outgoing state machines:
-
-```text
-decode transport -> decode packet -> resolve conversation -> dispatch handler -> persist
-```
-
-Transport failures become stored unreadable messages. Handler failures prevent relay acknowledgement unless the direct chat failure can be represented locally.
-
-The registered typed handlers include:
-
-| Packet | Handler |
+| Decoder result | Behavior |
 |---|---|
-| `ChatMessagePacket` | `ChatMessagePacketHandler` |
-| `DeliveryReceiptPacket` | `DeliveryReceiptPacketHandler` |
-| `ReadReceiptPacket` | `ReadReceiptPacketHandler` |
-| identity packet types | identity-specific handlers |
+| `DecodedTransportMessage.Readable` | Decode the protocol packet and dispatch it |
+| `DecodedTransportMessage.InvalidPacket` | Store an unreadable direct message with `INVALID_PACKET` |
+| `DecodedTransportMessage.InvalidPlaintext` | Store with `INVALID_PLAINTEXT_PACKET` |
+| `DecodedTransportMessage.DecryptionFailed` | Store with `TRANSPORT_DECRYPTION_FAILED` |
 
-Malformed or undecryptable payloads are stored as failed incoming messages with the appropriate `MessageContentStatus`, allowing the UI to show an explicit failure state instead of silently dropping the packet.
+For readable data, `KotlinxPacketCodec` decodes a `SecureChatPacket`. The processor creates
+`IncomingPacketContext`, including contact ID, resolved conversation ID, original transport payload,
+transport mode, and receive time.
 
-## 11. Persisting an incoming chat message
+`DefaultProtocolPacketHandler` selects the first registered `TypedProtocolPacketHandler` whose
+`canHandle()` returns true. If there is no handler, or the selected handler fails, the relay
+envelope is normally not acknowledged and may be delivered again. A direct `ChatMessagePacket`
+handler failure is represented as an unreadable stored message instead.
 
-`ChatMessagePacketHandler` persists a valid `ChatMessagePacket`.
+## Registered packet handlers
 
-Important behavior:
+`protocolModule` builds `DefaultProtocolPacketHandler` from all Koin bindings of
+`TypedProtocolPacketHandler`. `chatsModule` and `contactsModule` contribute the handlers:
 
-- `messageId` is used as the Room primary key.
-- Repeated delivery updates the same row instead of creating duplicates.
-- The incoming visible message uses `MessageDeliveryStatus.NOT_APPLICABLE` because delivery status is displayed only for outgoing messages.
-- A delivery receipt is queued only after persistence succeeds.
+| `packetType` | Packet class | Handler | Effect |
+|---|---|---|---|
+| `chat_message` | `ChatMessagePacket` | `ChatMessagePacketHandler` | Upsert direct message; queue delivery receipt |
+| `group_created` | `GroupCreatedPacket` | `GroupCreatedPacketHandler` | Create/update group and resolve participants |
+| `group_chat_message` | `GroupChatMessagePacket` | `GroupChatMessagePacketHandler` | Upsert group message; queue delivery receipt |
+| `delivery_receipt` | `DeliveryReceiptPacket` | `DeliveryReceiptPacketHandler` | Apply `DELIVERY_CONFIRMED` |
+| `read_receipt` | `ReadReceiptPacket` | `ReadReceiptPacketHandler` | Apply `READ_CONFIRMED` |
+| `identity` | `IdentityPacket` | `IdentityPacketHandler` | Store remote identity and queue signed acknowledgement |
+| `identity_acknowledgement` | `IdentityAcknowledgementPacket` | `IdentityAcknowledgementPacketHandler` | Verify acknowledgement against stored remote and current local keys |
 
-The handler creates a deterministic receipt packet ID:
+## Message idempotency and receipts
+
+`ChatMessagePacketHandler` uses `ChatMessagePacket.messageId` as the incoming Room primary key.
+Repeated delivery therefore updates the same message instead of creating another visible row. It
+queues a delivery receipt only after persistence succeeds.
+
+Direct-message receipt IDs are deterministic:
 
 ```text
 delivery-receipt-<messageId>
-```
-
-This prevents duplicate outbox rows when the same incoming message is delivered repeatedly.
-
-## 12. Delivery receipts
-
-After storing an incoming chat message, `ChatMessagePacketHandler` enqueues a:
-
-```kotlin
-DeliveryReceiptPacket
-```
-
-That receipt travels through the same persistent outbox, encryption, relay, and incoming-dispatch pipeline as any other protocol packet.
-
-On the original sender, `DeliveryReceiptPacketHandler` applies:
-
-```kotlin
-MessageDeliveryEvent.DELIVERY_CONFIRMED
-```
-
-through `MessageDeliveryStateCoordinator`. Duplicate receipts and receipts arriving after `READ` do not regress the current state.
-
-```text
-DELIVERED
-```
-
-A zero-row update is allowed because the receipt may be duplicated, the local message may have been deleted, or the message may already be `DELIVERED` or `READ`.
-
-## 13. Read receipts
-
-When a conversation is marked as read, `DefaultChatsRepository.markConversationRead()` finds incoming messages awaiting a read receipt.
-
-For each one it creates a `ReadReceiptPacket` with deterministic ID:
-
-```text
 read-receipt-<messageId>
 ```
 
-After successfully enqueueing the receipt, it marks the incoming message row so the same receipt is not repeatedly created.
-
-On the original sender, `ReadReceiptPacketHandler` applies:
-
-```kotlin
-MessageDeliveryEvent.READ_CONFIRMED
-```
-
-The visible status becomes:
+For group messages, the delivery receipt includes the receiver contact in its packet ID:
 
 ```text
-READ
+delivery-receipt-<messageId>-<contactId>
 ```
 
-## 14. Meaning of delivery states
+`DefaultChatsRepository.markConversationRead()` finds incoming messages awaiting a receipt, enqueues
+`ReadReceiptPacket`, and only then marks the local row as having a read receipt sent.
 
-`MessageDeliveryStatus` represents the user-visible lifecycle:
+## User-visible delivery state
 
-| Status | Meaning |
+`MessageDeliveryStateMachine` defines the user-visible state:
+
+```mermaid
+stateDiagram-v2
+    [*] --> QUEUED
+    QUEUED --> SENDING: SEND_STARTED
+    SENDING --> SENT: SEND_SUCCEEDED
+    QUEUED --> FAILED: SEND_FAILED
+    SENDING --> FAILED: SEND_FAILED
+    FAILED --> QUEUED: RETRY_REQUESTED
+    SENT --> DELIVERED: DELIVERY_CONFIRMED
+    DELIVERED --> READ: READ_CONFIRMED
+```
+
+Delivery and read confirmations may also arrive from an earlier local state. The state machine
+accepts them without regressing later states, making duplicate and reordered receipts safe.
+
+| Status | Exact meaning |
 |---|---|
-| `QUEUED` | Packet and visible message are stored locally but transmission has not started. |
-| `SENDING` | `DefaultOutboxProcessor` is preparing or transmitting the final transport payload. |
-| `SENT` | The relay returned `EnvelopeAccepted`; the relay now owns a pending copy. |
-| `DELIVERED` | The recipient persisted the chat message and sent a `DeliveryReceiptPacket`. |
-| `READ` | The recipient opened/marked the conversation read and sent a `ReadReceiptPacket`. |
-| `FAILED` | The local outbox attempt failed. |
-| `NOT_APPLICABLE` | Used for incoming messages. |
+| `NOT_APPLICABLE` | Incoming message; outgoing delivery progress does not apply |
+| `QUEUED` | Visible state and protocol packet are intended for local queueing |
+| `SENDING` | The outbox is preparing or transmitting the packet |
+| `SENT` | The relay accepted the envelope |
+| `DELIVERED` | The recipient persisted the message and returned a delivery receipt |
+| `READ` | The recipient queued a read receipt after marking the conversation read |
+| `FAILED` | The local preparation or wire attempt failed |
 
-The distinction between `SENT` and `DELIVERED` is intentional. Relay acceptance is not proof that the recipient stored the message.
+For groups, `MessageDeliveryStateCoordinator` updates the matching
+`MessageRecipientStateEntity` by `packetId`, then calls `MessageDeliveryStateMachine.aggregate()`.
+`SENT`, `DELIVERED`, and `READ` require every recipient to have reached that level or later.
 
-For group messages, each recipient has its own state in `MessageRecipientStateEntity`. The visible group-message status is derived by `MessageDeliveryStateMachine.aggregate()` and is never treated as an independent source of truth.
+## Manual retry
 
-## 15. Reconnection behavior
+`RetryMessage` calls `DefaultChatsRepository.retryMessage(messageId)`. The repository requires an
+outgoing `FAILED` message, finds linked outbox rows by packet ID, calls
+`ProtocolOutbox.retry(itemId)`, and applies `RETRY_REQUESTED`.
 
-`DefaultRelayConnectionManager` maintains the WebSocket connection.
+For a group, only failed recipient rows are retried. A pending-flow emission wakes
+`DefaultOutboxRunner`; a later reconnect also retries failed rows automatically.
 
-It:
+## Typing indicators
 
-- resolves the local relay ID
-- calls `WebSocketTransportClient.connect()`
-- waits for `Connected` or `Failed`
-- waits for a connected session to end
-- disconnects the old session
-- reconnects with exponential backoff
+Typing state is deliberately outside the persistent protocol outbox. It is ephemeral.
 
-Backoff starts at 1 second and is capped at 30 seconds.
+`ChatViewModel` and `GroupConversationViewModel` call `SetTypingIndicator` and observe
+`ObserveTypingIndicator`. Both use the `TypingIndicatorGateway` domain port from `:feature:chats`.
 
-The connection timeout is 15 seconds.
+`RelayTypingIndicatorGateway` in `:feature:messaging`:
 
-When the relay connection becomes `Connected`, `SecureChatApplication` starts `OutboxRunner`. Since `DefaultOutboxRunner` observes Room, new `PENDING` rows trigger processing automatically while the runner is active.
+- resolves a contact ID through `ContactRelayIdResolver`;
+- sends with `WebSocketTransportClient.sendTypingState()`;
+- filters `incomingTypingEvents` by the resolved sender relay ID;
+- applies `distinctUntilChanged()`.
 
-## 16. Manual retry
+The transport serializes `RelayClientMessage.TypingState`. `RelayWebSocketHandler` forwards it only
+to a currently connected recipient as `RelayServerMessage.TypingState`; it is not persisted in
+`PendingEnvelopeStore`.
 
-The chat retry entry point is:
+## Failure and duplicate behavior
 
-```kotlin
-DefaultChatsRepository.retryMessage(messageId)
-```
-
-It verifies that:
-
-- the message exists
-- it is outgoing
-- its visible status is `FAILED`
-- it has a linked protocol packet
-- the linked outbox item exists
-
-It then calls:
-
-```kotlin
-ProtocolOutbox.retry(itemId)
-```
-
-and changes the visible message status back to `QUEUED`.
-
-The Room pending-flow emission then wakes `DefaultOutboxRunner` and starts another send attempt.
-
-## 17. Idempotency and duplicate tolerance
-
-SecureChat relies on identifiers at multiple layers:
-
-| Layer | Identifier | Purpose |
+| Failure point | Persisted result | Relay acknowledgement |
 |---|---|---|
-| Protocol packet | `packetId` | Prevent duplicate persistent outbox rows. |
-| Chat message | `messageId` | Prevent duplicate incoming chat rows. |
-| Relay envelope | `envelopeId` | Prevent duplicate relay-store entries. |
-| Delivery receipt | `delivery-receipt-<messageId>` | Make receipt creation repeat-safe. |
-| Read receipt | `read-receipt-<messageId>` | Make read-receipt creation repeat-safe. |
+| Outbox packet preparation or send fails | Outbox `FAILED`; visible outgoing state `FAILED` when linked | Not applicable |
+| Relay accepted, but client missed `EnvelopeAccepted` | Local attempt times out and may retry; relay deduplicates the same `envelopeId` | Not applicable |
+| Incoming payload is unreadable but stored as failure | Failed incoming `MessageEntity` exists | Sent after handler returns |
+| Typed packet handler fails | No successful application result | Not sent |
+| Incoming envelope acknowledgement send fails | Application work may already be stored | Relay retains and redelivers; handlers must remain idempotent |
+| Relay process restarts | Client outbox survives; in-memory relay pending data does not | Pending data is lost |
 
-The design assumes that packets and envelopes may be delivered more than once. Handlers and storage operations must therefore remain idempotent.
+Every new incoming handler must assume at-least-once delivery.
 
-## 18. Current reliability boundaries
+## How to add a protocol packet
 
-The current implementation provides persistence on the client through Room, but the relay pending store is:
+Use this checklist:
 
-```kotlin
-InMemoryPendingEnvelopeStore
-```
+1. Add a serializable packet under `:core:protocol/.../packet` implementing `SecureChatPacket`.
+2. Give it a unique `@SerialName`; `createProtocolJson()` uses `packetType` as the discriminator.
+3. Add encode/decode coverage to `KotlinxPacketCodecTest`.
+4. Put the behavior in the feature that owns the meaning.
+5. Implement `TypedProtocolPacketHandler` there.
+6. Bind the handler as `TypedProtocolPacketHandler` in that feature’s Koin module.
+7. Create the packet from a repository, use case adapter, or existing packet handler and enqueue it
+   through `ProtocolOutbox`.
+8. Make persistence idempotent by a stable business identifier; do not rely only on relay
+   deduplication.
+9. Decide whether the packet follows normal encryption selection. If it needs a special rule like
+   `GroupCreatedPacket`, make that rule explicit and test `DefaultOutboxProcessor`.
+10. Document its delivery semantics here and in [Protocol](../api/protocol.md).
 
-Consequences:
+Do not add a `when` branch to `DefaultProtocolPacketHandler`; registration is polymorphic through
+`TypedProtocolPacketHandler`.
 
-- queued client packets survive app restarts because they are stored in Room
-- accepted relay envelopes survive recipient disconnects while the relay process remains alive
-- accepted relay envelopes are lost if the relay process restarts
+## How to add or replace a wire transport
 
-A production relay should replace `InMemoryPendingEnvelopeStore` with durable storage while preserving the `PendingEnvelopeStore` interface.
+The stable outgoing port is `OutgoingWireSender`. The current adapter is
+`WebSocketOutgoingWireSender`.
 
-## 19. Class map
+For another wire:
 
-### Chat layer
+1. Implement `OutgoingWireSender.send(recipientAddress, encodedTransportPayload)`.
+2. Define what successful return means. To preserve current delivery state, success must mean that
+   the transport has durably accepted responsibility, equivalent to `EnvelopeAccepted`.
+3. Bind the implementation in DI instead of `WebSocketOutgoingWireSender`.
+4. If incoming data is also different, expose it behind an incoming transport port and adapt
+   `DefaultIncomingRelayRunner`; do not put transport-specific frames in `IncomingMessageProcessor`.
+5. Keep `DefaultOutboxProcessor`, `ProtocolOutbox`, packet handlers, and delivery state independent
+   of the wire format.
 
-| Class | Role |
+## How to change relay addressing
+
+Address derivation is isolated by:
+
+- `RelayIdGenerator`;
+- `LocalRelayIdProvider`;
+- `ContactRelayIdResolver`;
+- `ContactByRelayIdResolver`.
+
+Change or replace these contracts and adapters together. Plan a migration for persisted
+`ContactRelayIdEntity` rows. Do not derive relay IDs inside chat repositories or ViewModels.
+
+## How to add a delivery state
+
+Delivery state exists at two levels:
+
+- `OutboxStatus` describes the send attempt.
+- `MessageDeliveryStatus` describes user-visible progress.
+
+For an outbox lifecycle change, update `OutboxEvent`, `OutboxStateMachine`, persistence operations,
+and `OutboxStateMachineTest`.
+
+For a visible state, update `MessageDeliveryEvent`, `MessageDeliveryStateMachine`,
+`MessageDeliveryStateCoordinator`, group aggregation, database serialization, UI mapping, and
+`MessageDeliveryStateMachineTest`. Define how late and duplicate events behave before changing the
+code.
+
+## Tests to protect when extending messaging
+
+The repository currently has focused tests for:
+
+- packet encoding in `KotlinxPacketCodecTest` and `GroupCreatedPacketCodecTest`;
+- outbox transitions in `OutboxStateMachineTest`;
+- visible delivery transitions and aggregation in `MessageDeliveryStateMachineTest`;
+- transport payload codec in `DefaultTransportPayloadCodecTest`;
+- device crypto in `SodiumTransportMessageCipherTest`.
+
+New orchestration behavior should add tests around `DefaultOutboxProcessor`,
+`DefaultOutboxRunner`, `DefaultIncomingRelayRunner`, typed handlers, and relay acknowledgement
+timing. Those are the boundaries where a refactor can otherwise change reliability semantics while
+still compiling.
+
+## Class index
+
+| Area | Classes and interfaces |
 |---|---|
-| `DefaultChatsRepository` | Creates outgoing messages and packets, observes conversations, and queues read receipts. |
-| `IncomingMessageProcessor` | Runs the incoming decode, dispatch, and failure-persistence pipeline. |
-| `DirectConversationStore` | Reuses or creates direct conversations for outgoing and incoming flows. |
-| `MessageDeliveryStateMachine` | Defines delivery transitions and group-status aggregation. |
-| `MessageDeliveryStateCoordinator` | Loads and persists direct or per-recipient delivery transitions. |
-| `ChatMessagePacketHandler` | Persists incoming chat packets and queues delivery receipts. |
-| `DeliveryReceiptPacketHandler` | Marks outgoing messages delivered. |
-| `ReadReceiptPacketHandler` | Marks outgoing messages read. |
-| `ChatOutboxDeliveryStateListener` | Maps outbox state changes to visible message states. |
-
-### Protocol and database layer
-
-| Class/interface | Role |
-|---|---|
-| `ProtocolOutbox` | Persistent queue contract. |
-| `DefaultProtocolOutbox` | Room-backed outbox implementation. |
-| `ProtocolOutboxDao` | Outbox database access. |
-| `PacketCodec` | Encodes and decodes protocol packets. |
-| `ProtocolPacketHandler` | Dispatches decoded packets to typed handlers. |
-
-### Transport layer
-
-| Class/interface | Role |
-|---|---|
-| `DefaultOutboxRunner` | Observes and drains pending outbox rows. |
-| `DefaultOutboxProcessor` | Prepares, encrypts, transmits, and updates one batch of packets. |
-| `WebSocketOutgoingWireSender` | Wraps payloads in relay envelopes. |
-| `DefaultWebSocketTransportClient` | Owns WebSocket frames, registration, envelope acceptance, and incoming flows. |
-| `DefaultRelayConnectionManager` | Owns reconnect lifecycle and backoff. |
-| `DefaultIncomingRelayRunner` | Resolves incoming senders, stores packets, and acknowledges relay envelopes. |
-
-### Relay layer
-
-| Class/interface | Role |
-|---|---|
-| `RelayWebSocketHandler` | Handles registration, sends, acknowledgements, and typing events. |
-| `DefaultRelayEnvelopeRouter` | Stores accepted envelopes and delivers pending envelopes to connected recipients. |
-| `InMemoryPendingEnvelopeStore` | Current non-durable pending-envelope storage. |
-| `InMemoryRelayConnectionRegistry` | Tracks active relay sessions by relay ID. |
+| Startup | `SecureChatApplication`, `RelayConnectionManager`, `DefaultRelayConnectionManager`, `TransportConnectionState` |
+| Outgoing orchestration | `OutboxRunner`, `DefaultOutboxRunner`, `OutboxProcessor`, `DefaultOutboxProcessor` |
+| Persistent queue | `ProtocolOutbox`, `DefaultProtocolOutbox`, `ProtocolOutboxDao`, `ProtocolOutboxItem`, `OutboxStateMachine` |
+| Delivery state | `ChatOutboxDeliveryStateListener`, `MessageDeliveryStateCoordinator`, `MessageDeliveryStateMachine` |
+| Address mapping | `RelayIdGenerator`, `Sha256RelayIdGenerator`, `ContactRelayIdResolver`, `DefaultContactRelayIdResolver`, `ContactByRelayIdResolver`, `DefaultContactByRelayIdResolver` |
+| Wire transport | `OutgoingWireSender`, `WebSocketOutgoingWireSender`, `WebSocketTransportClient`, `DefaultWebSocketTransportClient` |
+| Incoming orchestration | `IncomingRelayRunner`, `DefaultIncomingRelayRunner`, `IncomingMessageHandler`, `IncomingMessageProcessor` |
+| Packet dispatch | `ProtocolPacketHandler`, `DefaultProtocolPacketHandler`, `TypedProtocolPacketHandler`, `IncomingPacketContext` |
+| Relay server | `RelayWebSocketHandler`, `DefaultRelayEnvelopeRouter`, `InMemoryRelayConnectionRegistry`, `InMemoryPendingEnvelopeStore` |
+| Typing | `TypingIndicatorGateway`, `RelayTypingIndicatorGateway`, `RelayTypingEvent` |

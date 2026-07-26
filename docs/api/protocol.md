@@ -1,439 +1,167 @@
 # SecureChat Protocol
 
-## Overview
+`:core:protocol` defines transport-independent messages and ports. It contains no Ktor, Room,
+Compose, contact repository, or platform crypto implementation.
 
-The SecureChat Protocol defines the structure and lifecycle of every message exchanged between SecureChat clients.
+For the full runtime path, see
+[Messaging and Delivery Flow](../features/message-transport-flow.md).
 
-It is intentionally independent from
+## Packet envelope
 
-- Android
-- WebSockets
-- Relay implementation
-- User Interface
+Every application packet implements:
 
-The protocol describes **what** is transmitted, not **how** it is transported.
-
----
-
-# Design Goals
-
-The protocol has been designed to provide
-
-- deterministic serialization
-- protocol versioning
-- forward compatibility
-- authenticated encrypted payloads
-- platform independence
-- explicit message types
-
----
-
-# Protocol Stack
-
-```
-Application
-
-↓
-
-Domain Message
-
-↓
-
-Serialization
-
-↓
-
-Encryption
-
-↓
-
-Transport Packet
-
-↓
-
-WebSocket
-
-↓
-
-Relay
+```kotlin
+sealed interface SecureChatPacket {
+    val packetId: String
+    val version: Int
+}
 ```
 
-The relay never interprets protocol payloads.
+`packetId` identifies one protocol operation and is the persistent outbox idempotency key.
+`version` is checked by `ProtocolVersion` during both encoding and decoding.
 
----
+`createProtocolJson()` uses `packetType` as the sealed-class discriminator. It encodes defaults,
+rejects unknown keys, is not lenient, and omits explicit nulls.
 
-# Protocol Layers
+Conceptual JSON:
 
-The protocol consists of several logical layers.
-
-```
-Application
-
-↓
-
-Message
-
-↓
-
-Serialization
-
-↓
-
-Encryption
-
-↓
-
-Transport
+```json
+{
+  "packetType": "chat_message",
+  "packetId": "packet-...",
+  "version": 1,
+  "messageId": "message-...",
+  "sentAtEpochMilliseconds": 123456789,
+  "text": "Hello"
+}
 ```
 
-Each layer has a single responsibility.
+The actual property set depends on the packet class.
 
----
+## Packet catalog
 
-# Message Lifecycle
+| Discriminator | Class | Important fields | Handled by |
+|---|---|---|---|
+| `chat_message` | `ChatMessagePacket` | `messageId`, timestamp, text, optional sender phone | `ChatMessagePacketHandler` |
+| `group_created` | `GroupCreatedPacket` | `groupId`, title, timestamp, `GroupMemberPayload` list | `GroupCreatedPacketHandler` |
+| `group_chat_message` | `GroupChatMessagePacket` | group/message IDs, text, sender signing key and phone | `GroupChatMessagePacketHandler` |
+| `delivery_receipt` | `DeliveryReceiptPacket` | `messageId`, delivery timestamp | `DeliveryReceiptPacketHandler` |
+| `read_receipt` | `ReadReceiptPacket` | `messageId`, read timestamp | `ReadReceiptPacketHandler` |
+| `identity` | `IdentityPacket` | display name and public encryption/signing keys | `IdentityPacketHandler` |
+| `identity_acknowledgement` | `IdentityAcknowledgementPacket` | sender key, acknowledged keys, signature | `IdentityAcknowledgementPacketHandler` |
 
-Outgoing messages follow this lifecycle.
+Packet definitions live under:
 
-```
-Create
-
-↓
-
-Validate
-
-↓
-
-Serialize
-
-↓
-
-Encrypt
-
-↓
-
-Transport
-
-↓
-
-Relay
-
-↓
-
-Recipient
-
-↓
-
-Decrypt
-
-↓
-
-Deserialize
-
-↓
-
-Display
+```text
+core/protocol/src/commonMain/kotlin/com/cbgm/securechat/core/protocol/packet/
 ```
 
----
+## Encoding
 
-# Protocol Version
+`PacketCodec` is the contract. `KotlinxPacketCodec` is the production implementation.
 
-Every protocol packet includes a version field.
+Encoding:
 
-Example
+1. checks `ProtocolVersion.isSupported(packet.version)`;
+2. serializes through `SecureChatPacket.serializer()`;
+3. returns UTF-8 JSON bytes.
 
-```
-Version = 1
-```
+Decoding:
 
-Benefits
+1. rejects an empty byte array;
+2. decodes strict UTF-8;
+3. deserializes through the sealed `SecureChatPacket` serializer;
+4. rejects an unsupported version.
 
-- backwards compatibility
-- future protocol evolution
-- graceful rejection of unsupported versions
+Packet bytes are not a relay frame. The outgoing messaging pipeline next wraps them in
+`EncryptedTransportPayload` and encodes that value with `TransportPayloadCodec`.
 
-Clients should reject unsupported protocol versions explicitly.
+## Incoming dispatch
 
----
+`ProtocolPacketHandler` is the dispatch contract. `DefaultProtocolPacketHandler` receives all
+Koin-registered `TypedProtocolPacketHandler` implementations and selects the first handler whose
+`canHandle(packet)` returns true.
 
-# Message Identifier
+Each handler receives:
 
-Every message should contain a unique identifier.
-
-Purposes
-
-- duplicate detection
-- retries
-- acknowledgements
-- ordering
-
-Message identifiers should be globally unique.
-
----
-
-# Sender Identity
-
-Every protocol message identifies its sender.
-
-The sender identity is represented by the sender's public identity rather than mutable metadata such as display names.
-
----
-
-# Recipient Identity
-
-Every message specifies exactly one recipient identity.
-
-Future protocol extensions may introduce
-
-- group identifiers
-- broadcast identifiers
-- multi-device routing
-
-without changing the existing one-to-one protocol.
-
----
-
-# Payload
-
-The payload represents the application data.
-
-Examples
-
-- text message
-- attachment metadata
-- delivery acknowledgement
-- protocol event
-
-Payloads are encrypted before transport.
-
----
-
-# Serialization
-
-Messages are serialized before encryption.
-
-```
-Domain Message
-
-↓
-
-Serializer
-
-↓
-
-Binary Representation
+```kotlin
+data class IncomingPacketContext(
+    val contactId: String,
+    val conversationId: String,
+    val encodedTransportPayload: String,
+    val transportMode: String,
+    val receivedAtEpochMilliseconds: Long,
+)
 ```
 
-Serialization must be deterministic.
+`transportMode` is a string so `:core:protocol` remains independent of `:core:crypto`.
 
-The same message should always produce identical serialized data.
+Handler ownership follows packet meaning:
 
----
+- chat and receipt handlers are registered by `chatsModule`;
+- identity handlers are registered by `contactsModule`;
+- `protocolModule` only supplies codec and generic dispatch.
 
-# Encryption
+## Outbox contracts
 
-Serialization always occurs before encryption.
+`:core:protocol` defines the persistent send abstraction without implementing storage:
 
-```
-Serialize
+- `ProtocolOutbox`
+- `ProtocolOutboxItem`
+- `OutboxStatus`
+- `OutboxEvent`
+- `OutboxStateMachine`
+- `OutboxProcessor`
+- `OutboxRunner`
+- `OutboxDeliveryStateListener`
 
-↓
+`DefaultProtocolOutbox` in `:data:database` implements persistence.
+`DefaultOutboxProcessor` and `DefaultOutboxRunner` in `:feature:messaging` implement orchestration.
 
-Encrypt
+This split lets protocol packets be queued without depending on Room, contacts, crypto, or
+WebSockets.
 
-↓
+## Transport ports
 
-Ciphertext
-```
+`OutgoingWireSender` is the outgoing boundary:
 
-Encrypted payloads are opaque to the transport layer.
-
----
-
-# Decryption
-
-Incoming packets follow the reverse process.
-
-```
-Ciphertext
-
-↓
-
-Decrypt
-
-↓
-
-Deserialize
-
-↓
-
-Domain Message
+```kotlin
+interface OutgoingWireSender {
+    suspend fun send(
+        recipientAddress: String,
+        encodedTransportPayload: String,
+    ): Result<Unit>
+}
 ```
 
-If decryption fails, processing stops immediately.
+The production implementation is `WebSocketOutgoingWireSender` in `:feature:transport`.
 
----
+`IncomingMessageHandler` is the incoming application boundary. It receives an already resolved
+contact ID, encoded transport payload, and the local encryption key pair. The production
+implementation is `IncomingMessageProcessor` in `:feature:chats`.
 
-# Validation
+## Versioning rules
 
-Messages should be validated before processing.
+When changing an existing packet:
 
-Typical validation includes
+- adding or removing a field affects strict decoding because `ignoreUnknownKeys` is `false`;
+- default values affect what old/new implementations can decode;
+- changing a `@SerialName` changes the wire discriminator;
+- changing field meaning without changing the protocol version is a compatibility break.
 
-- protocol version
-- required fields
-- supported message type
-- payload structure
+Treat the protocol as an external API even while only one client implementation exists. Define the
+migration and compatibility policy before changing an existing serialized shape.
 
-Malformed packets should be rejected.
+## Adding a packet
 
----
+1. Add a `@Serializable` class implementing `SecureChatPacket`.
+2. Add a unique `@SerialName`.
+3. Validate required fields in `init` where appropriate.
+4. Add round-trip and invalid-input coverage to `KotlinxPacketCodecTest`.
+5. Implement `TypedProtocolPacketHandler` in the owning feature.
+6. Bind it with `bind<TypedProtocolPacketHandler>()` in that feature’s Koin module.
+7. Create and enqueue it through `ProtocolOutbox`; do not send directly.
+8. Ensure its handler is idempotent under repeated delivery.
+9. Document any special encryption requirement.
 
-# Ordering
-
-Applications should not assume packets always arrive in transmission order.
-
-Ordering should rely on protocol metadata rather than network timing.
-
----
-
-# Duplicate Detection
-
-Duplicate messages should be ignored safely.
-
-Typical flow
-
-```
-Receive
-
-↓
-
-Message ID Exists?
-
-↓
-
-Yes
-
-↓
-
-Ignore
-```
-
-This makes retransmission safe.
-
----
-
-# Delivery States
-
-The protocol supports several delivery states.
-
-```
-Queued
-
-↓
-
-Sent
-
-↓
-
-Delivered
-
-↓
-
-Read
-```
-
-Applications may expose these states to the user interface.
-
----
-
-# Error Messages
-
-Protocol errors should be represented explicitly.
-
-Examples
-
-- unsupported version
-- malformed payload
-- authentication failure
-- invalid packet
-- decryption failure
-
-Errors should never expose sensitive information.
-
----
-
-# Extensibility
-
-The protocol has been designed to evolve.
-
-Future protocol extensions may include
-
-- attachments
-- voice messages
-- reactions
-- typing indicators
-- group messaging
-- encrypted backups
-- multi-device synchronization
-
-Backward compatibility should remain a primary design goal.
-
----
-
-# Platform Independence
-
-The protocol is defined entirely in common code.
-
-No Android-specific behaviour should appear in protocol definitions.
-
-This ensures identical behaviour across every supported platform.
-
----
-
-# Security
-
-The protocol assumes
-
-- authenticated encryption
-- trusted cryptographic primitives
-- secure key management
-
-The protocol itself never exposes private keys.
-
----
-
-# Testing
-
-Protocol tests should verify
-
-- serialization
-- deserialization
-- version compatibility
-- malformed packets
-- duplicate detection
-- backwards compatibility
-- encryption compatibility
-
-Every protocol change should include corresponding compatibility tests.
-
----
-
-# Documentation
-
-Protocol modifications should always update
-
-- protocol documentation
-- generated architecture documentation
-- compatibility tests
-- changelog
-
-The protocol should remain fully documented and versioned.
-
----
-
-# Summary
-
-The SecureChat Protocol defines the canonical format for all communication between clients.
-
-It separates application behaviour, serialization, encryption and transport into independent layers, allowing the protocol to evolve without tightly coupling it to any specific platform or networking implementation.
+See the detailed [extension checklist](../features/message-transport-flow.md#how-to-add-a-protocol-packet).
