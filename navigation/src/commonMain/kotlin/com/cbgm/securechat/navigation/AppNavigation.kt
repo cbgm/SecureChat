@@ -20,12 +20,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.cbgm.securechat.feature.chats.domain.usecase.GetOrCreateDirectConversation
 import com.cbgm.securechat.feature.chats.presentation.ChatRoute
-import com.cbgm.securechat.feature.chats.presentation.CreateGroupRoute
 import com.cbgm.securechat.feature.chats.presentation.GroupConversationRoute
 import com.cbgm.securechat.feature.contactimport.presentation.ImportIdentityRoute
 import com.cbgm.securechat.feature.contactimport.presentation.ScanIdentityRoute
 import com.cbgm.securechat.feature.contacts.presentation.ContactDetailsRoute
-import com.cbgm.securechat.feature.contacts.presentation.ContactsRoute
 import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
 import com.cbgm.securechat.feature.identity.domain.model.SharedContactDetails
 import com.cbgm.securechat.feature.identity.domain.model.SharedIdentityPayload
@@ -36,6 +34,7 @@ import com.cbgm.securechat.feature.settings.presentation.DisclaimerRoute
 import com.cbgm.securechat.feature.settings.presentation.LicensesRoute
 import com.cbgm.securechat.feature.settings.presentation.model.DisclaimerType
 import com.cbgm.securechat.presentation.MainRoute
+import com.cbgm.securechat.presentation.screen.ContactsFlow
 import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.base_share_contact
 import com.cbgm.securechat.startup.presentation.StartupRoute
@@ -134,17 +133,6 @@ fun AppNavigation() {
                 )
             }
 
-            composable<AppDestination.CreateGroup> {
-                CreateGroupRoute(
-                    onBack = { navController.popBackStack() },
-                    onGroupCreated = { conversationId ->
-                        navController.navigate(AppDestination.GroupConversation(conversationId)) {
-                            popUpTo(AppDestination.CreateGroup) { inclusive = true }
-                        }
-                    }
-                )
-            }
-
             composable<AppDestination.GroupConversation> { backStackEntry ->
                 val destination = backStackEntry.toRoute<AppDestination.GroupConversation>()
                 GroupConversationRoute(
@@ -198,15 +186,12 @@ fun AppNavigation() {
                 val coroutineScope = rememberCoroutineScope()
                 val getOrCreateDirectConversation = koinInject<GetOrCreateDirectConversation>()
 
-                ContactsRoute(
+                ContactsFlow(
                     onBack = {
                         navController.popBackStack()
                     },
                     onImportContact = {
                         navController.navigate(AppDestination.ImportContact())
-                    },
-                    onCreateGroup = {
-                        navController.navigate(AppDestination.CreateGroup)
                     },
                     onContactClick = { contactId, contactName ->
                         coroutineScope.launch {
@@ -219,6 +204,9 @@ fun AppNavigation() {
                                 )
                             )
                         }
+                    },
+                    onGroupCreated = { conversationId ->
+                        navController.navigate(AppDestination.GroupConversation(conversationId))
                     }
                 )
             }
@@ -262,10 +250,7 @@ fun AppNavigation() {
                         navController.navigate(AppDestination.DeveloperMenu)
                     },
                     onImportContact = {
-                        navController.navigate(AppDestination.ImportContact())
-                    },
-                    onCreateGroup = {
-                        navController.navigate(AppDestination.CreateGroup)
+                        navController.navigate(AppDestination.ImportContact)
                     }
                 )
             }

@@ -34,7 +34,6 @@ import com.cbgm.securechat.core.ui.component.SecureChatTabbedScrollStates
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.feature.chats.domain.usecase.GetOrCreateDirectConversation
 import com.cbgm.securechat.feature.chats.presentation.ChatsRoute
-import com.cbgm.securechat.feature.contacts.presentation.ContactsRoute
 import com.cbgm.securechat.feature.identity.presentation.IdentityRoute
 import com.cbgm.securechat.feature.settings.presentation.SettingsRoute
 import com.cbgm.securechat.presentation.model.MainTab
@@ -48,7 +47,6 @@ import org.koin.compose.koinInject
 @Composable
 fun MainScreen(
     onImportContact: () -> Unit,
-    onCreateGroup: () -> Unit,
     onNavigateToPrivacyPolicy: () -> Unit,
     onNavigateToDataDisclaimer: () -> Unit,
     onNavigateToLicenses: () -> Unit,
@@ -129,16 +127,12 @@ fun MainScreen(
             tonalElevation = 8.dp,
             shadowElevation = 12.dp
         ) { dismissOverlay ->
-            ContactsRoute(
+            ContactsFlow(
                 modifier = Modifier.fillMaxSize(),
                 onBack = dismissOverlay,
                 onImportContact = {
                     dismissOverlay()
                     onImportContact()
-                },
-                onCreateGroup = {
-                    dismissOverlay()
-                    onCreateGroup()
                 },
                 onContactClick = { contactId, contactName ->
                     coroutineScope.launch {
@@ -146,6 +140,10 @@ fun MainScreen(
                         dismissOverlay()
                         onOpenChat(conversationId, contactId, contactName, false)
                     }
+                },
+                onGroupCreated = { conversationId ->
+                    dismissOverlay()
+                    onOpenChat(conversationId, "", "", true)
                 }
             )
         }
@@ -299,7 +297,6 @@ private fun MainScreenPreview() {
     SecureChatTheme {
         MainScreen(
             onImportContact = {},
-            onCreateGroup = {},
             onOpenChat = { _, _, _, _ -> },
             onShareIdentity = {},
             onNavigateToPrivacyPolicy = {},
