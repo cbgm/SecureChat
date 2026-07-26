@@ -238,4 +238,5 @@
     <string name="feature_startup_preparing_securechat">SecureChat wird vorbereitet…</string>
     <string name="feature_startup_setup_failed">Die Einrichtung von SecureChat konnte nicht abgeschlossen werden.</string>
     <string name="feature_startup_verify_phone_number">Bestätige deine Telefonnummer</string>
+    <string name="feature_chats_sender_not_in_contacts">%1$s (nicht in Kontakten)</string>
 </resources>

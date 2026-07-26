@@ -94,6 +94,7 @@ import com.cbgm.securechat.resources.feature_chats_loading_chat
 import com.cbgm.securechat.resources.feature_chats_not_encrypted
 import com.cbgm.securechat.resources.feature_chats_queued
 import com.cbgm.securechat.resources.feature_chats_read
+import com.cbgm.securechat.resources.feature_chats_sender_not_in_contacts
 import com.cbgm.securechat.resources.feature_chats_sending
 import com.cbgm.securechat.resources.feature_chats_sent
 import com.cbgm.securechat.resources.feature_chats_start_conversation_with
@@ -568,8 +569,18 @@ private fun MessageBubble(
             horizontalAlignment = if (message.isMine) Alignment.End else Alignment.Start
         ) {
             if (!message.isMine && !message.senderName.isNullOrBlank()) {
+                val senderLabel =
+                    if (message.senderIsInContacts) {
+                        message.senderName
+                    } else {
+                        stringResource(
+                            Res.string.feature_chats_sender_not_in_contacts,
+                            message.senderName
+                        )
+                    }
+
                 Text(
-                    text = message.senderName,
+                    text = senderLabel,
                     modifier = Modifier.padding(start = 8.dp, bottom = 3.dp),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,

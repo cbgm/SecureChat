@@ -193,6 +193,7 @@ class DefaultChatsRepository(
 
             val now = SystemClock.nowEpochMilliseconds()
             val messageId = createId(prefix = "group-message")
+            val localIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
             val packets =
                 participants.associateWith { participant ->
                     GroupChatMessagePacket(
@@ -200,7 +201,8 @@ class DefaultChatsRepository(
                         groupId = conversationId,
                         messageId = messageId,
                         sentAtEpochMilliseconds = now,
-                        text = normalizedText
+                        text = normalizedText,
+                        senderSigningPublicKey = localIdentity.signingPublicKey.copyOf()
                     )
                 }
             val recipientStates =

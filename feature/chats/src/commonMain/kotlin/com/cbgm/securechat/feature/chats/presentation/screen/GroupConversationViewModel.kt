@@ -8,6 +8,7 @@ import com.cbgm.securechat.feature.chats.domain.usecase.ObserveConversation
 import com.cbgm.securechat.feature.chats.domain.usecase.RetryMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SendGroupMessage
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
+import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -34,10 +35,19 @@ class GroupConversationViewModel(
             messageText,
             errorMessage
         ) { conversation, contacts, currentMessageText, currentError ->
-            val namesById = contacts.associate { it.id to it.displayName.orEmpty() }
+            val sendersById = contacts.associateBy { it.id }
             val messages =
                 conversation?.messages.orEmpty().map { message ->
-                    message.copy(senderName = message.senderContactId?.let(namesById::get))
+                    val sender = message.senderContactId?.let(sendersById::get)
+                    val senderName =
+                        sender?.displayName?.takeIf(String::isNotBlank)
+                            ?: sender?.preferredPhoneNumber?.value
+                            ?: "Unknown contact"
+
+                    message.copy(
+                        senderName = senderName,
+                        senderIsInContacts = sender?.deviceContactLinkStatus == DeviceContactLinkStatus.LINKED
+                    )
                 }
             val memberCount = conversation?.participantContactIds?.let { it.size + 1 } ?: 0
 

@@ -1,5 +1,6 @@
 package com.cbgm.securechat.core.protocol.packet
 
+import com.cbgm.securechat.core.protocol.serializer.ByteArrayAsBase64Serializer
 import com.cbgm.securechat.core.protocol.version.ProtocolVersion
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -12,7 +13,9 @@ data class GroupChatMessagePacket(
     val groupId: String,
     val messageId: String,
     val sentAtEpochMilliseconds: Long,
-    val text: String
+    val text: String,
+    @Serializable(with = ByteArrayAsBase64Serializer::class)
+    val senderSigningPublicKey: ByteArray = byteArrayOf()
 ) : SecureChatPacket {
     init {
         require(packetId.isNotBlank()) { "Packet ID must not be blank" }

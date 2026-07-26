@@ -8,12 +8,14 @@ import com.cbgm.securechat.core.protocol.packet.GroupChatMessagePacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
+import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.data.database.entity.MessageEntity
 import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 
 class GroupChatMessagePacketHandler(
     private val chatDao: ChatDao,
+    private val contactDao: ContactDao,
     private val protocolOutbox: ProtocolOutbox
 ) : TypedProtocolPacketHandler {
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is GroupChatMessagePacket
@@ -31,6 +33,14 @@ class GroupChatMessagePacketHandler(
                     ?: error("Group conversation was not found")
             check(conversation.type == GROUP_CONVERSATION_TYPE) { "Conversation is not a group" }
 
+            val senderContactId =
+                if (groupPacket.senderSigningPublicKey.isNotEmpty()) {
+                    contactDao.findBySigningPublicKey(groupPacket.senderSigningPublicKey)?.contact?.id
+                        ?: context.contactId
+                } else {
+                    context.contactId
+                }
+
             chatDao.upsertMessage(
                 MessageEntity(
                     id = groupPacket.messageId,
@@ -41,7 +51,7 @@ class GroupChatMessagePacketHandler(
                     transportMode = context.transportMode,
                     contentStatus = MessageContentStatus.READABLE.name,
                     deliveryStatus = MessageDeliveryStatus.NOT_APPLICABLE.name,
-                    senderContactId = context.contactId,
+                    senderContactId = senderContactId,
                     isMine = false,
                     createdAtEpochMilliseconds = groupPacket.sentAtEpochMilliseconds
                 )
