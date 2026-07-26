@@ -10,7 +10,7 @@ import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
  */
 class UnavailableOutgoingWireSender : OutgoingWireSender {
     override suspend fun send(
-        contactId: String,
+        recipientAddress: String,
         encodedTransportPayload: String
     ): Result<Unit> =
         Result.failure(

@@ -15,17 +15,18 @@ import com.cbgm.securechat.feature.chats.di.chatsModule
 import com.cbgm.securechat.feature.contactimport.di.contactImportModule
 import com.cbgm.securechat.feature.contacts.di.contactsModule
 import com.cbgm.securechat.feature.contacts.domain.usecase.ImportDeviceContacts
-import com.cbgm.securechat.feature.identity.core.LocalPhoneNameStorage
 import com.cbgm.securechat.feature.identity.di.androidIdentityStorageModule
 import com.cbgm.securechat.feature.identity.di.identityModule
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
+import com.cbgm.securechat.feature.identity.domain.repository.storage.LocalPhoneNameStorage
 import com.cbgm.securechat.feature.onboarding.di.onboardingModule
 import com.cbgm.securechat.feature.settings.di.settingsModule
 import com.cbgm.securechat.feature.transport.connection.RelayConnectionManager
 import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
 import com.cbgm.securechat.feature.transport.di.transportModule
-import com.cbgm.securechat.feature.transport.incoming.IncomingRelayRunner
 import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
+import com.cbgm.securechat.messaging.di.messagingModule
+import com.cbgm.securechat.messaging.runtime.incoming.IncomingRelayRunner
 import com.cbgm.securechat.startup.di.startupModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -56,17 +57,18 @@ class SecureChatApplication : Application() {
                 modules(
                     cryptoModule,
                     protocolModule,
-                    transportModule,
                     androidDatabaseModule,
                     androidIdentityStorageModule,
                     identityModule,
                     onboardingModule,
                     contactsModule,
+                    chatsModule,
+                    transportModule,
+                    messagingModule,
                     appModule,
                     sharedModule,
                     contactImportModule,
                     startupModule,
-                    chatsModule,
                     settingsModule
                 )
             }

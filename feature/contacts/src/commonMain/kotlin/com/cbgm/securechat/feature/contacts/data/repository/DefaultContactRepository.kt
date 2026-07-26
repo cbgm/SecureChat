@@ -8,9 +8,9 @@ import com.cbgm.securechat.data.database.entity.ContactEntity
 import com.cbgm.securechat.data.database.entity.ContactPhoneNumberEntity
 import com.cbgm.securechat.feature.contacts.data.mapper.toDomain
 import com.cbgm.securechat.feature.contacts.data.merge.ContactMergeService
-import com.cbgm.securechat.feature.contacts.devicecontacts.AddDeviceContactRequest
-import com.cbgm.securechat.feature.contacts.devicecontacts.AddDeviceContactResult
-import com.cbgm.securechat.feature.contacts.devicecontacts.DeviceContactWriter
+import com.cbgm.securechat.feature.contacts.domain.device.AddDeviceContactRequest
+import com.cbgm.securechat.feature.contacts.domain.device.AddDeviceContactResult
+import com.cbgm.securechat.feature.contacts.domain.device.DeviceContactWriter
 import com.cbgm.securechat.feature.contacts.domain.identity.IdentityExchangeStarter
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType

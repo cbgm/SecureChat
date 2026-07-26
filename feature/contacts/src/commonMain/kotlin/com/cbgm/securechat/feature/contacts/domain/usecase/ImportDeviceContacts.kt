@@ -1,7 +1,7 @@
 package com.cbgm.securechat.feature.contacts.domain.usecase
 
-import com.cbgm.securechat.feature.contacts.devicecontacts.DeviceContactsDataSource
-import com.cbgm.securechat.feature.contacts.devicecontacts.DevicePhoneNumberType
+import com.cbgm.securechat.feature.contacts.domain.device.DeviceContactsDataSource
+import com.cbgm.securechat.feature.contacts.domain.device.DevicePhoneNumberType
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
 import com.cbgm.securechat.feature.contacts.domain.model.ImportDeviceContactRequest
 import com.cbgm.securechat.feature.contacts.domain.model.ImportDevicePhoneNumber

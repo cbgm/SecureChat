@@ -5,6 +5,7 @@ import com.cbgm.securechat.core.crypto.transport.IncomingTransportMessageDecoder
 import com.cbgm.securechat.core.crypto.transport.TransportEncryptionMode
 import com.cbgm.securechat.core.id.IdGenerator
 import com.cbgm.securechat.core.protocol.codec.PacketCodec
+import com.cbgm.securechat.core.protocol.handler.IncomingMessageHandler
 import com.cbgm.securechat.core.protocol.handler.IncomingPacketContext
 import com.cbgm.securechat.core.protocol.handler.ProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.packet.ChatMessagePacket
@@ -24,8 +25,8 @@ class IncomingMessageProcessor(
     private val transportMessageDecoder: IncomingTransportMessageDecoder,
     private val packetCodec: PacketCodec,
     private val packetHandler: ProtocolPacketHandler
-) {
-    suspend fun process(
+) : IncomingMessageHandler {
+    override suspend fun handle(
         contactId: String,
         encodedTransportPayload: String,
         localEncryptionPublicKey: ByteArray,

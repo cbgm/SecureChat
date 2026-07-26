@@ -28,13 +28,6 @@ interface ChatsRepository {
         text: String
     )
 
-    suspend fun receiveMessage(
-        contactId: String,
-        encodedTransportPayload: String,
-        localEncryptionPublicKey: ByteArray,
-        localEncryptionPrivateKey: ByteArray
-    )
-
     suspend fun retryMessage(messageId: String): Result<Unit>
 
     suspend fun markConversationRead(conversationId: String): Result<Unit>

@@ -6,9 +6,6 @@ import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPairProvider
 import com.cbgm.securechat.core.protocol.identity.LocalSigningPublicKeyProvider
 import com.cbgm.securechat.core.protocol.phone.LocalPhoneNumberProvider
 import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
-import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
-import com.cbgm.securechat.feature.identity.core.LocalPhoneNameStorage
-import com.cbgm.securechat.feature.identity.core.PublicIdentityStorage
 import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalEncryptionKeyPairProvider
 import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalPhoneNumberProvider
 import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalPublicIdentityProvider
@@ -17,10 +14,16 @@ import com.cbgm.securechat.feature.identity.data.protocol.IdentityLocalSigningPu
 import com.cbgm.securechat.feature.identity.data.repository.DefaultIdentityRepository
 import com.cbgm.securechat.feature.identity.data.sharing.DefaultIdentityShareCodec
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
+import com.cbgm.securechat.feature.identity.domain.repository.storage.LocalPhoneNameStorage
+import com.cbgm.securechat.feature.identity.domain.repository.storage.PublicIdentityStorage
+import com.cbgm.securechat.feature.identity.domain.service.IdentityShareCodec
 import com.cbgm.securechat.feature.identity.domain.usecase.CreateIdentity
 import com.cbgm.securechat.feature.identity.domain.usecase.CreateSharedIdentity
 import com.cbgm.securechat.feature.identity.domain.usecase.GetIdentityStatus
+import com.cbgm.securechat.feature.identity.domain.usecase.GetLocalPhoneNumber
 import com.cbgm.securechat.feature.identity.domain.usecase.GetPublicIdentity
+import com.cbgm.securechat.feature.identity.domain.usecase.NormalizeLocalPhoneNumber
+import com.cbgm.securechat.feature.identity.domain.usecase.SaveLocalPhoneName
 import com.cbgm.securechat.feature.identity.presentation.screen.IdentityViewModel
 import com.cbgm.securechat.feature.identity.presentation.screen.ShareIdentityViewModel
 import com.cbgm.securechat.feature.identity.startup.IdentityStartupManager
@@ -48,6 +51,18 @@ val identityModule =
 
         single {
             GetPublicIdentity(repository = get<IdentityRepository>())
+        }
+
+        single {
+            GetLocalPhoneNumber(localPhoneNameStorage = get<LocalPhoneNameStorage>())
+        }
+
+        single {
+            NormalizeLocalPhoneNumber(phoneNumberNormalizer = get<PhoneNumberNormalizer>())
+        }
+
+        single {
+            SaveLocalPhoneName(localPhoneNameStorage = get<LocalPhoneNameStorage>())
         }
 
         single<LocalPhoneNumberProvider> {
@@ -95,8 +110,9 @@ val identityModule =
                 getIdentityStatus = get<GetIdentityStatus>(),
                 getPublicIdentity = get<GetPublicIdentity>(),
                 createIdentity = get<CreateIdentity>(),
-                localPhoneNameStorage = get<LocalPhoneNameStorage>(),
-                phoneNumberNormalizer = get<PhoneNumberNormalizer>()
+                getLocalPhoneNumber = get<GetLocalPhoneNumber>(),
+                normalizeLocalPhoneNumber = get<NormalizeLocalPhoneNumber>(),
+                saveLocalPhoneName = get<SaveLocalPhoneName>()
             )
         }
 

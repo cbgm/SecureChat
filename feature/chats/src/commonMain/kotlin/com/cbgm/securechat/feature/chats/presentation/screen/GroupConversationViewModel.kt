@@ -3,15 +3,16 @@ package com.cbgm.securechat.feature.chats.presentation.screen
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
-import com.cbgm.securechat.feature.chats.domain.repository.TypingIndicatorGateway
 import com.cbgm.securechat.feature.chats.domain.usecase.MarkConversationRead
 import com.cbgm.securechat.feature.chats.domain.usecase.ObserveConversation
+import com.cbgm.securechat.feature.chats.domain.usecase.ObserveTypingIndicator
 import com.cbgm.securechat.feature.chats.domain.usecase.RetryMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SendGroupMessage
+import com.cbgm.securechat.feature.chats.domain.usecase.SetTypingIndicator
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
-import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
+import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContacts
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -32,8 +33,9 @@ class GroupConversationViewModel(
     private val sendGroupMessage: SendGroupMessage,
     private val markConversationReadUseCase: MarkConversationRead,
     private val retryMessageUseCase: RetryMessage,
-    contactRepository: ContactRepository,
-    private val typingIndicatorGateway: TypingIndicatorGateway
+    observeContacts: ObserveContacts,
+    private val observeTypingIndicator: ObserveTypingIndicator,
+    private val setTypingIndicator: SetTypingIndicator
 ) : ViewModel() {
     private val messageText = MutableStateFlow("")
     private val errorMessage = MutableStateFlow<String?>(null)
@@ -46,7 +48,7 @@ class GroupConversationViewModel(
     private val remoteTypingTimeoutJobs = mutableMapOf<String, Job>()
 
     private val conversationFlow: Flow<Conversation?> = observeConversation(conversationId)
-    private val contactsFlow: Flow<List<Contact>> = contactRepository.observeContacts()
+    private val contactsFlow: Flow<List<Contact>> = observeContacts()
 
     val uiState: StateFlow<ChatUiState> =
         combine(
@@ -183,7 +185,7 @@ class GroupConversationViewModel(
         (contactIds - typingObserverJobs.keys).forEach { contactId ->
             typingObserverJobs[contactId] =
                 viewModelScope.launch {
-                    typingIndicatorGateway.observeTyping(contactId).collect { isTyping ->
+                    observeTypingIndicator(contactId).collect { isTyping ->
                         remoteTypingTimeoutJobs.remove(contactId)?.cancel()
                         typingContactIds.update { current ->
                             if (isTyping) current + contactId else current - contactId
@@ -207,8 +209,7 @@ class GroupConversationViewModel(
 
     private suspend fun sendTypingStateNow(isTyping: Boolean) {
         participantContactIds.value.forEach { contactId ->
-            typingIndicatorGateway
-                .sendTypingState(contactId, isTyping)
+            setTypingIndicator(contactId, isTyping)
                 .onFailure { error ->
                     println("Could not send group typing state for $contactId: ${error.message}")
                 }

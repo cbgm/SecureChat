@@ -3,7 +3,7 @@ package com.cbgm.securechat.feature.contactimport.domain.usecase
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.ImportContactRequest
 import com.cbgm.securechat.feature.contacts.domain.usecase.ImportContact
-import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
+import com.cbgm.securechat.feature.identity.domain.service.IdentityShareCodec
 
 /**
  * Decodes and imports a shared SecureChat identity.

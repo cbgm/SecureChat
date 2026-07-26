@@ -30,7 +30,7 @@ sequenceDiagram
     participant Store as InMemoryPendingEnvelopeStore
     participant ReceiverWS as Receiving DefaultWebSocketTransportClient
     participant Incoming as DefaultIncomingRelayRunner
-    participant ReceiverRepo as DefaultChatsRepository
+    participant ReceiveHandler as IncomingMessageHandler
     participant ReceiveProcessor as IncomingMessageProcessor
     participant Handler as ChatMessagePacketHandler
 
@@ -51,8 +51,8 @@ sequenceDiagram
     Processor->>Repo: delivery coordinator applies SENT
     Router->>ReceiverWS: IncomingEnvelope
     ReceiverWS-->>Incoming: incomingEnvelopes flow
-    Incoming->>ReceiverRepo: receiveMessage(...)
-    ReceiverRepo->>ReceiveProcessor: process transport payload
+    Incoming->>ReceiveHandler: handle transport payload
+    ReceiveHandler->>ReceiveProcessor: decode and dispatch
     ReceiveProcessor->>Handler: dispatch ChatMessagePacket
     Handler->>Handler: persist incoming message
     Handler->>Outbox: enqueue(DeliveryReceiptPacket)

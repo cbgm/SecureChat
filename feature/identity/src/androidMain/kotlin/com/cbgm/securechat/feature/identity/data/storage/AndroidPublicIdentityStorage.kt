@@ -2,8 +2,8 @@ package com.cbgm.securechat.feature.identity.data.storage
 
 import android.content.Context
 import android.util.Base64
-import com.cbgm.securechat.feature.identity.core.PublicIdentityStorage
 import com.cbgm.securechat.feature.identity.domain.model.PublicIdentity
+import com.cbgm.securechat.feature.identity.domain.repository.storage.PublicIdentityStorage
 
 /**
  * Android implementation for storing the user's public identity.

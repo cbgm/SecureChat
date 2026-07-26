@@ -2,9 +2,9 @@ package com.cbgm.securechat.feature.identity.data.sharing
 
 import com.cbgm.securechat.core.extensions.escapeShareValue
 import com.cbgm.securechat.core.extensions.unescapeShareValue
-import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
 import com.cbgm.securechat.feature.identity.domain.model.SharedContactDetails
 import com.cbgm.securechat.feature.identity.domain.model.SharedIdentityPayload
+import com.cbgm.securechat.feature.identity.domain.service.IdentityShareCodec
 
 /**
  * Text codec for shared SecureChat identities.

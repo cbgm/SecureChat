@@ -18,10 +18,4 @@ data class ChatUiState(
     val errorMessage: String? = null,
     val isGroup: Boolean = false,
     val subtitle: String = ""
-) {
-    val isEndToEndEncrypted: Boolean
-        get() {
-            return contactSecurityState == ContactSecurityState.MUTUAL_KEYS_UNVERIFIED ||
-                contactSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED
-        }
-}
+)

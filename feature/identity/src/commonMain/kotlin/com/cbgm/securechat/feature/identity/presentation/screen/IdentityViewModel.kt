@@ -2,12 +2,13 @@ package com.cbgm.securechat.feature.identity.presentation.screen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
-import com.cbgm.securechat.feature.identity.core.LocalPhoneNameStorage
 import com.cbgm.securechat.feature.identity.domain.model.IdentityStatus
 import com.cbgm.securechat.feature.identity.domain.usecase.CreateIdentity
 import com.cbgm.securechat.feature.identity.domain.usecase.GetIdentityStatus
+import com.cbgm.securechat.feature.identity.domain.usecase.GetLocalPhoneNumber
 import com.cbgm.securechat.feature.identity.domain.usecase.GetPublicIdentity
+import com.cbgm.securechat.feature.identity.domain.usecase.NormalizeLocalPhoneNumber
+import com.cbgm.securechat.feature.identity.domain.usecase.SaveLocalPhoneName
 import com.cbgm.securechat.feature.identity.presentation.model.IdentityUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,8 +19,9 @@ class IdentityViewModel(
     private val getIdentityStatus: GetIdentityStatus,
     private val getPublicIdentity: GetPublicIdentity,
     private val createIdentity: CreateIdentity,
-    private val localPhoneNameStorage: LocalPhoneNameStorage,
-    private val phoneNumberNormalizer: PhoneNumberNormalizer
+    private val getLocalPhoneNumber: GetLocalPhoneNumber,
+    private val normalizeLocalPhoneNumber: NormalizeLocalPhoneNumber,
+    private val saveLocalPhoneName: SaveLocalPhoneName
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow<IdentityUiState>(IdentityUiState.Loading)
 
@@ -89,10 +91,8 @@ class IdentityViewModel(
         if (currentState !is IdentityUiState.NoIdentity) return
 
         val normalizedPhoneNumber =
-            phoneNumberNormalizer
-                .normalize(
-                    phoneNumber = currentState.phoneNumber
-                ).getOrElse { error ->
+            normalizeLocalPhoneNumber(phoneNumber = currentState.phoneNumber)
+                .getOrElse { error ->
                     mutableUiState.value =
                         currentState.copy(phoneNumberError = error.message ?: "Invalid phone number")
 
@@ -102,8 +102,7 @@ class IdentityViewModel(
         viewModelScope.launch {
             mutableUiState.value = IdentityUiState.Loading
 
-            localPhoneNameStorage
-                .savePhoneName(phoneNumber = normalizedPhoneNumber, name = currentState.name)
+            saveLocalPhoneName(phoneNumber = normalizedPhoneNumber, name = currentState.name)
                 .onFailure { error ->
                     mutableUiState.value =
                         IdentityUiState.NoIdentity(
@@ -161,7 +160,7 @@ class IdentityViewModel(
         when (status) {
             IdentityStatus.NOT_CREATED -> {
                 val storedPhoneNumber =
-                    localPhoneNameStorage.loadPhoneNumber().getOrNull().orEmpty()
+                    getLocalPhoneNumber().getOrNull().orEmpty()
 
                 mutableUiState.value = IdentityUiState.NoIdentity(phoneNumber = storedPhoneNumber)
             }
@@ -178,8 +177,7 @@ class IdentityViewModel(
 
     private suspend fun loadReadyIdentity() {
         val localPhoneNumber =
-            localPhoneNameStorage
-                .loadPhoneNumber()
+            getLocalPhoneNumber()
                 .getOrElse { error ->
                     mutableUiState.value =
                         IdentityUiState.Error(

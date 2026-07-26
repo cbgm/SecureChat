@@ -13,7 +13,7 @@ import com.cbgm.securechat.feature.contactimport.presentation.model.ScannedIdent
 import com.cbgm.securechat.feature.contactimport.presentation.screen.ImportIdentityScreen
 import com.cbgm.securechat.feature.contactimport.presentation.screen.ImportIdentityViewModel
 import com.cbgm.securechat.feature.contactimport.presentation.screen.components.ScannedIdentityConfirmationDialog
-import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
+import com.cbgm.securechat.feature.identity.domain.service.IdentityShareCodec
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 

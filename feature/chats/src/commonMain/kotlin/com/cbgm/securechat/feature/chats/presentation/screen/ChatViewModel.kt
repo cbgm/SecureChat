@@ -4,17 +4,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cbgm.securechat.feature.chats.domain.model.ContactSecurityState
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
-import com.cbgm.securechat.feature.chats.domain.repository.TypingIndicatorGateway
-import com.cbgm.securechat.feature.chats.domain.usecase.GetContactSafetyNumber
 import com.cbgm.securechat.feature.chats.domain.usecase.MarkConversationRead
 import com.cbgm.securechat.feature.chats.domain.usecase.ObserveConversation
+import com.cbgm.securechat.feature.chats.domain.usecase.ObserveTypingIndicator
 import com.cbgm.securechat.feature.chats.domain.usecase.RetryMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SendMessage
+import com.cbgm.securechat.feature.chats.domain.usecase.SetTypingIndicator
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
-import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
+import com.cbgm.securechat.feature.contacts.domain.usecase.GetContactSafetyNumber
+import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContact
+import com.cbgm.securechat.feature.contacts.domain.usecase.VerifyContact
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -37,9 +39,11 @@ class ChatViewModel(
     private val sendMessageUseCase: SendMessage,
     private val markConversationReadUseCase: MarkConversationRead,
     private val retryFailedMessage: RetryMessage,
-    private val contactRepository: ContactRepository,
+    observeContact: ObserveContact,
     private val getContactSafetyNumber: GetContactSafetyNumber,
-    private val typingIndicatorGateway: TypingIndicatorGateway
+    private val verifyContact: VerifyContact,
+    private val observeTypingIndicator: ObserveTypingIndicator,
+    private val setTypingIndicator: SetTypingIndicator
 ) : ViewModel() {
     private val messageText = MutableStateFlow("")
 
@@ -60,13 +64,7 @@ class ChatViewModel(
     private var isLocalTyping = false
 
     private val contactFlow: Flow<Contact?> =
-        contactRepository
-            .observeContacts()
-            .map { contacts ->
-                contacts.firstOrNull { contact ->
-                    contact.id == contactId
-                }
-            }.distinctUntilChanged()
+        observeContact(contactId = contactId)
 
     private val conversationFlow: Flow<Conversation?> =
         observeConversation(conversationId)
@@ -278,7 +276,7 @@ class ChatViewModel(
 
         viewModelScope.launch {
             try {
-                contactRepository.markVerified(contactId = contactId).getOrThrow()
+                verifyContact(contactId = contactId).getOrThrow()
             } catch (
                 error: Throwable
             ) {
@@ -310,7 +308,11 @@ class ChatViewModel(
 
         viewModelScope.launch {
             try {
-                safetyNumber.value = getContactSafetyNumber.invoke(contactId = contactId).getOrThrow()
+                safetyNumber.value =
+                    getContactSafetyNumber
+                        .invoke(contactId = contactId)
+                        .getOrThrow()
+                        .singleLine
             } catch (
                 error: Throwable
             ) {
@@ -326,8 +328,7 @@ class ChatViewModel(
 
     private fun observeIncomingTypingEvents() {
         viewModelScope.launch {
-            typingIndicatorGateway
-                .observeTyping(contactId = contactId)
+            observeTypingIndicator(contactId = contactId)
                 .collect { isTyping ->
                     remoteTypingTimeoutJob?.cancel()
                     isContactTyping.value = isTyping
@@ -350,15 +351,14 @@ class ChatViewModel(
     }
 
     private suspend fun sendTypingStateNow(isTyping: Boolean) {
-        typingIndicatorGateway
-            .sendTypingState(
-                contactId = contactId,
-                isTyping = isTyping
-            ).onFailure { error ->
-                println(
-                    "Could not send typing state for $contactId: ${error.message}"
-                )
-            }
+        setTypingIndicator(
+            contactId = contactId,
+            isTyping = isTyping
+        ).onFailure { error ->
+            println(
+                "Could not send typing state for $contactId: ${error.message}"
+            )
+        }
     }
 
     private suspend fun stopTypingNow() {

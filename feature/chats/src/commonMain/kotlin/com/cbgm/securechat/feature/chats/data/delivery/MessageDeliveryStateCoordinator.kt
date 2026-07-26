@@ -12,6 +12,22 @@ class MessageDeliveryStateCoordinator(
     private val messageDeliveryStatusDao: MessageDeliveryStatusDao,
     private val messageRecipientStateDao: MessageRecipientStateDao
 ) {
+    suspend fun storePreparedTransport(
+        packetId: String,
+        encodedTransportPayload: String,
+        transportMode: String
+    ) {
+        require(packetId.isNotBlank()) { "Packet ID must not be blank" }
+        require(encodedTransportPayload.isNotBlank()) { "Transport payload must not be blank" }
+        require(transportMode.isNotBlank()) { "Transport mode must not be blank" }
+
+        messageDeliveryStatusDao.updatePreparedTransport(
+            packetId = packetId,
+            transportPayload = encodedTransportPayload,
+            transportMode = transportMode
+        )
+    }
+
     suspend fun applyPacketEvent(
         packetId: String,
         event: MessageDeliveryEvent,

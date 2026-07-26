@@ -33,6 +33,8 @@ docs/
 
 feature/
 
+messaging/
+
 navigation/
 
 quality/
@@ -156,6 +158,23 @@ Typical responsibilities include
 - Remote APIs
 
 Business rules should remain inside the domain layer.
+
+---
+
+# messaging
+
+```
+messaging/
+```
+
+Owns application-level send and receive orchestration:
+
+- outbox processing and runtime
+- incoming relay collection
+- relay/contact resolution
+- transport-backed typing adapter
+
+Wire and WebSocket mechanics remain in `feature/transport`. Conversation storage and delivery-state rules remain in `feature/chats`.
 
 ---
 

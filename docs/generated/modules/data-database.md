@@ -10,8 +10,8 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `data` |
 | Directory | `data/database` |
 | Build file | `data/database/build.gradle.kts` |
-| Kotlin files | 30 |
-| Production Kotlin files | 30 |
+| Kotlin files | 29 |
+| Production Kotlin files | 29 |
 | Test Kotlin files | 0 |
 | Resource files | 1 |
 | Direct dependencies | 2 |
@@ -35,4 +35,4 @@ Generated automatically by `./gradlew architectureReport`.
 - [`:androidApp`](../modules/androidApp.md)
 - [`:feature:chats`](../modules/feature-chats.md)
 - [`:feature:contacts`](../modules/feature-contacts.md)
-- [`:feature:transport`](../modules/feature-transport.md)
+- [`:messaging`](../modules/messaging.md)

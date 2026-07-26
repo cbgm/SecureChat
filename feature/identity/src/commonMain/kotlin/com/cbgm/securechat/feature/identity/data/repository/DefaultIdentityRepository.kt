@@ -1,11 +1,11 @@
 package com.cbgm.securechat.feature.identity.data.repository
 
 import com.cbgm.securechat.core.crypto.identity.IdentityKeyGenerator
-import com.cbgm.securechat.feature.identity.core.PrivateKeyStorage
-import com.cbgm.securechat.feature.identity.core.PublicIdentityStorage
 import com.cbgm.securechat.feature.identity.domain.model.IdentityStatus
 import com.cbgm.securechat.feature.identity.domain.model.PublicIdentity
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
+import com.cbgm.securechat.feature.identity.domain.repository.storage.PrivateKeyStorage
+import com.cbgm.securechat.feature.identity.domain.repository.storage.PublicIdentityStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emitAll

@@ -6,12 +6,12 @@ Generated automatically by `./gradlew architectureReport`.
 
 | Metric | Count |
 |---|---:|
-| Modules | 21 |
-| Module groups | 9 |
-| Project dependencies | 60 |
-| Kotlin files | 427 |
+| Modules | 22 |
+| Module groups | 10 |
+| Project dependencies | 63 |
+| Kotlin files | 435 |
 | Test Kotlin files | 16 |
-| Resource files | 53 |
+| Resource files | 54 |
 
 ## Module groups
 
@@ -41,6 +41,10 @@ Generated automatically by `./gradlew architectureReport`.
 - [**onboarding** (`:feature:onboarding`)](modules/feature-onboarding.md)
 - [**settings** (`:feature:settings`)](modules/feature-settings.md)
 - [**transport** (`:feature:transport`)](modules/feature-transport.md)
+
+### messaging
+
+- [**messaging** (`:messaging`)](modules/messaging.md)
 
 ### navigation
 
@@ -95,6 +99,10 @@ graph TD
         module_feature_transport[":feature:transport"]
     end
 
+    subgraph group_messaging["messaging"]
+        module_messaging[":messaging"]
+    end
+
     subgraph group_navigation["navigation"]
         module_navigation[":navigation"]
     end
@@ -127,6 +135,7 @@ graph TD
     module_androidApp --> module_feature_onboarding
     module_androidApp --> module_feature_settings
     module_androidApp --> module_feature_transport
+    module_androidApp --> module_messaging
     module_androidApp --> module_shared
     module_androidApp --> module_startup
     module_data_database --> module_core
@@ -146,7 +155,6 @@ graph TD
     module_feature_contacts --> module_core_protocol
     module_feature_contacts --> module_core_ui
     module_feature_contacts --> module_data_database
-    module_feature_contacts --> module_feature_identity
     module_feature_identity --> module_core
     module_feature_identity --> module_core_crypto
     module_feature_identity --> module_core_protocol
@@ -155,11 +163,14 @@ graph TD
     module_feature_onboarding --> module_feature_identity
     module_feature_settings --> module_core_ui
     module_feature_transport --> module_core
-    module_feature_transport --> module_core_crypto
     module_feature_transport --> module_core_protocol
-    module_feature_transport --> module_data_database
-    module_feature_transport --> module_feature_chats
-    module_feature_transport --> module_feature_contacts
+    module_messaging --> module_core
+    module_messaging --> module_core_crypto
+    module_messaging --> module_core_protocol
+    module_messaging --> module_data_database
+    module_messaging --> module_feature_chats
+    module_messaging --> module_feature_contacts
+    module_messaging --> module_feature_transport
     module_navigation --> module_core
     module_navigation --> module_core_ui
     module_navigation --> module_feature_chats

@@ -2,13 +2,11 @@ package com.cbgm.securechat.feature.contacts.presentation.screen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.cbgm.securechat.core.crypto.model.PublicIdentityKeySet
-import com.cbgm.securechat.core.crypto.safety.SafetyNumberGenerator
 import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
-import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
+import com.cbgm.securechat.feature.contacts.domain.usecase.GetContactSafetyNumber
+import com.cbgm.securechat.feature.contacts.domain.usecase.VerifyContact
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactDetailsUiState
-import com.cbgm.securechat.feature.identity.domain.usecase.GetPublicIdentity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,9 +15,8 @@ import kotlinx.coroutines.launch
 class ContactDetailsViewModel(
     private val contactId: String,
     private val getContact: GetContact,
-    private val getPublicIdentity: GetPublicIdentity,
-    private val contactRepository: ContactRepository,
-    private val safetyNumberGenerator: SafetyNumberGenerator
+    private val getContactSafetyNumber: GetContactSafetyNumber,
+    private val verifyContact: VerifyContact
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<ContactDetailsUiState>(ContactDetailsUiState.Loading)
 
@@ -61,37 +58,10 @@ class ContactDetailsViewModel(
                 return@launch
             }
 
-            val localIdentity =
-                getPublicIdentity().getOrElse { error ->
-                    _uiState.value =
-                        ContactDetailsUiState.Error(
-                            message = error.message ?: "Failed to load your SecureChat identity"
-                        )
-
-                    return@launch
-                }
-
-            if (localIdentity == null) {
-                _uiState.value =
-                    ContactDetailsUiState.Error(message = "Your SecureChat identity is missing")
-
-                return@launch
-            }
-
             val safetyNumber =
-                safetyNumberGenerator
-                    .generate(
-                        firstIdentity =
-                            PublicIdentityKeySet(
-                                signingPublicKey = localIdentity.signingPublicKey,
-                                encryptionPublicKey = localIdentity.encryptionPublicKey
-                            ),
-                        secondIdentity =
-                            PublicIdentityKeySet(
-                                signingPublicKey = remoteIdentity.signingPublicKey,
-                                encryptionPublicKey = remoteIdentity.encryptionPublicKey
-                            )
-                    ).getOrElse { error ->
+                getContactSafetyNumber
+                    .invoke(contactId = contactId)
+                    .getOrElse { error ->
                         _uiState.value =
                             ContactDetailsUiState.Error(
                                 message = error.message ?: "Failed to generate safety number"
@@ -159,8 +129,7 @@ class ContactDetailsViewModel(
         _uiState.value = current.copy(isSavingVerification = true, verificationError = null)
 
         viewModelScope.launch {
-            contactRepository
-                .markVerified(contactId = contactId)
+            verifyContact(contactId = contactId)
                 .onSuccess { verifiedContact ->
                     val latest = _uiState.value as? ContactDetailsUiState.Content
 

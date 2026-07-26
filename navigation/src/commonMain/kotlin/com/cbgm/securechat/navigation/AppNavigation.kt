@@ -24,11 +24,11 @@ import com.cbgm.securechat.feature.chats.presentation.GroupConversationRoute
 import com.cbgm.securechat.feature.contactimport.presentation.ImportIdentityRoute
 import com.cbgm.securechat.feature.contactimport.presentation.ScanIdentityRoute
 import com.cbgm.securechat.feature.contacts.presentation.ContactDetailsRoute
-import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
 import com.cbgm.securechat.feature.identity.domain.model.SharedContactDetails
 import com.cbgm.securechat.feature.identity.domain.model.SharedIdentityPayload
-import com.cbgm.securechat.feature.identity.platform.rememberIdentityShareLauncher
+import com.cbgm.securechat.feature.identity.domain.service.IdentityShareCodec
 import com.cbgm.securechat.feature.identity.presentation.ShareIdentityRoute
+import com.cbgm.securechat.feature.identity.presentation.platform.rememberIdentityShareLauncher
 import com.cbgm.securechat.feature.settings.presentation.DeveloperMenuRoute
 import com.cbgm.securechat.feature.settings.presentation.DisclaimerRoute
 import com.cbgm.securechat.feature.settings.presentation.LicensesRoute

@@ -1,7 +1,7 @@
 package com.cbgm.securechat.feature.identity.data.storage
 
 import android.content.SharedPreferences
-import com.cbgm.securechat.feature.identity.core.LocalPhoneNameStorage
+import com.cbgm.securechat.feature.identity.domain.repository.storage.LocalPhoneNameStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow

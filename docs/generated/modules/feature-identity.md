@@ -10,12 +10,12 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `feature` |
 | Directory | `feature/identity` |
 | Build file | `feature/identity/build.gradle.kts` |
-| Kotlin files | 45 |
-| Production Kotlin files | 41 |
+| Kotlin files | 48 |
+| Production Kotlin files | 44 |
 | Test Kotlin files | 4 |
 | Resource files | 1 |
 | Direct dependencies | 4 |
-| Direct dependents | 6 |
+| Direct dependents | 5 |
 
 ## Source sets
 
@@ -36,7 +36,6 @@ Generated automatically by `./gradlew architectureReport`.
 
 - [`:androidApp`](../modules/androidApp.md)
 - [`:feature:contactimport`](../modules/feature-contactimport.md)
-- [`:feature:contacts`](../modules/feature-contacts.md)
 - [`:feature:onboarding`](../modules/feature-onboarding.md)
 - [`:navigation`](../modules/navigation.md)
 - [`:startup`](../modules/startup.md)

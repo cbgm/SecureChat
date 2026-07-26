@@ -7,9 +7,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.cbgm.securechat.feature.contacts.platform.rememberDeviceContactsPermissionRequest
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactsEffect
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactsEvent
+import com.cbgm.securechat.feature.contacts.presentation.platform.rememberDeviceContactsPermissionRequest
 import com.cbgm.securechat.feature.contacts.presentation.screen.ContactsScreen
 import com.cbgm.securechat.feature.contacts.presentation.screen.ContactsViewModel
 import org.koin.compose.viewmodel.koinViewModel

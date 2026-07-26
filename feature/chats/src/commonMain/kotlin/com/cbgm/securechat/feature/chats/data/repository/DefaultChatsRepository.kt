@@ -21,7 +21,6 @@ import com.cbgm.securechat.data.database.model.ConversationSummary
 import com.cbgm.securechat.data.database.model.ConversationWithMessages
 import com.cbgm.securechat.feature.chats.data.conversation.DirectConversationStore
 import com.cbgm.securechat.feature.chats.data.delivery.MessageDeliveryStateCoordinator
-import com.cbgm.securechat.feature.chats.data.incoming.IncomingMessageProcessor
 import com.cbgm.securechat.feature.chats.domain.model.ChatMessage
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
 import com.cbgm.securechat.feature.chats.domain.model.GroupConversation
@@ -44,7 +43,6 @@ class DefaultChatsRepository(
     private val messageRecipientStateDao: MessageRecipientStateDao,
     private val directConversationStore: DirectConversationStore,
     private val deliveryStateCoordinator: MessageDeliveryStateCoordinator,
-    private val incomingMessageProcessor: IncomingMessageProcessor,
     private val getContact: GetContact,
     private val localPublicIdentityProvider: LocalPublicIdentityProvider,
     private val localPhoneNumberProvider: LocalPhoneNumberProvider,
@@ -409,18 +407,6 @@ class DefaultChatsRepository(
     private fun createReadReceiptPacketId(
         messageId: String
     ): String = "read-receipt-$messageId"
-
-    override suspend fun receiveMessage(
-        contactId: String,
-        encodedTransportPayload: String,
-        localEncryptionPublicKey: ByteArray,
-        localEncryptionPrivateKey: ByteArray
-    ) = incomingMessageProcessor.process(
-        contactId = contactId,
-        encodedTransportPayload = encodedTransportPayload,
-        localEncryptionPublicKey = localEncryptionPublicKey,
-        localEncryptionPrivateKey = localEncryptionPrivateKey
-    )
 
     private fun Contact.plannedTransportMode(): TransportEncryptionMode {
         val identity = secureChatIdentity

@@ -56,8 +56,8 @@ import com.cbgm.securechat.core.ui.component.SecureChatCardNoAnimation
 import com.cbgm.securechat.core.ui.component.SecureChatScrollScaffold
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
-import com.cbgm.securechat.feature.identity.platform.QrCode
 import com.cbgm.securechat.feature.identity.presentation.model.ShareIdentityUiState
+import com.cbgm.securechat.feature.identity.presentation.platform.QrCode
 import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.feature_identity_create_qr_code
 import com.cbgm.securechat.resources.feature_identity_create_qr_description

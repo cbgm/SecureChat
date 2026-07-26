@@ -7,9 +7,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.cbgm.securechat.feature.identity.platform.PhoneNumberHintLauncher
-import com.cbgm.securechat.feature.identity.platform.PhoneNumberHintResult
 import com.cbgm.securechat.feature.identity.presentation.model.IdentityUiState
+import com.cbgm.securechat.feature.identity.presentation.platform.PhoneNumberHintLauncher
+import com.cbgm.securechat.feature.identity.presentation.platform.PhoneNumberHintResult
 import com.cbgm.securechat.feature.identity.presentation.screen.IdentityViewModel
 import com.cbgm.securechat.feature.onboarding.platform.AutomaticPhoneNumberReader
 import com.cbgm.securechat.feature.onboarding.platform.AutomaticPhoneNumberResult

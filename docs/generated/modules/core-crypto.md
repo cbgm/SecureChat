@@ -10,8 +10,8 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `core` |
 | Directory | `core/crypto` |
 | Build file | `core/crypto/build.gradle.kts` |
-| Kotlin files | 29 |
-| Production Kotlin files | 25 |
+| Kotlin files | 28 |
+| Production Kotlin files | 24 |
 | Test Kotlin files | 4 |
 | Resource files | 1 |
 | Direct dependencies | 0 |
@@ -36,4 +36,4 @@ None.
 - [`:feature:chats`](../modules/feature-chats.md)
 - [`:feature:contacts`](../modules/feature-contacts.md)
 - [`:feature:identity`](../modules/feature-identity.md)
-- [`:feature:transport`](../modules/feature-transport.md)
+- [`:messaging`](../modules/messaging.md)

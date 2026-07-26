@@ -16,9 +16,12 @@ import com.cbgm.securechat.feature.contacts.domain.identity.IdentityExchangeStar
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactKeyExchangeStore
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
+import com.cbgm.securechat.feature.contacts.domain.usecase.GetContactSafetyNumber
 import com.cbgm.securechat.feature.contacts.domain.usecase.ImportContact
 import com.cbgm.securechat.feature.contacts.domain.usecase.ImportDeviceContacts
+import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContact
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContacts
+import com.cbgm.securechat.feature.contacts.domain.usecase.VerifyContact
 import com.cbgm.securechat.feature.contacts.presentation.screen.ContactDetailsViewModel
 import com.cbgm.securechat.feature.contacts.presentation.screen.ContactsViewModel
 import org.koin.core.module.dsl.bind
@@ -80,6 +83,18 @@ val contactsModule =
         }
 
         factory {
+            GetContactSafetyNumber(
+                localPublicIdentityProvider = get(),
+                contactRepository = get(),
+                safetyNumberGenerator = get()
+            )
+        }
+
+        factory {
+            ObserveContact(repository = get())
+        }
+
+        factory {
             ObserveContacts(repository = get())
         }
 
@@ -88,6 +103,10 @@ val contactsModule =
                 deviceContactsDataSource = get(),
                 repository = get()
             )
+        }
+
+        factory {
+            VerifyContact(repository = get())
         }
 
         viewModel {
@@ -101,9 +120,8 @@ val contactsModule =
             ContactDetailsViewModel(
                 contactId = parameters.get(),
                 getContact = get(),
-                getPublicIdentity = get(),
-                contactRepository = get(),
-                safetyNumberGenerator = get()
+                getContactSafetyNumber = get(),
+                verifyContact = get()
             )
         }
     }

@@ -1,7 +1,7 @@
 package com.cbgm.securechat.feature.chats.di
 
+import com.cbgm.securechat.core.protocol.handler.IncomingMessageHandler
 import com.cbgm.securechat.core.protocol.handler.TypedProtocolPacketHandler
-import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentityProvider
 import com.cbgm.securechat.core.protocol.outbox.OutboxDeliveryStateListener
 import com.cbgm.securechat.feature.chats.data.conversation.DirectConversationStore
 import com.cbgm.securechat.feature.chats.data.delivery.MessageDeliveryStateCoordinator
@@ -15,19 +15,24 @@ import com.cbgm.securechat.feature.chats.data.protocol.ReadReceiptPacketHandler
 import com.cbgm.securechat.feature.chats.data.repository.DefaultChatsRepository
 import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
 import com.cbgm.securechat.feature.chats.domain.usecase.CreateGroupConversation
-import com.cbgm.securechat.feature.chats.domain.usecase.GetContactSafetyNumber
 import com.cbgm.securechat.feature.chats.domain.usecase.GetOrCreateDirectConversation
 import com.cbgm.securechat.feature.chats.domain.usecase.MarkConversationRead
 import com.cbgm.securechat.feature.chats.domain.usecase.ObserveConversation
+import com.cbgm.securechat.feature.chats.domain.usecase.ObserveConversations
 import com.cbgm.securechat.feature.chats.domain.usecase.ObserveGroupConversation
+import com.cbgm.securechat.feature.chats.domain.usecase.ObserveTypingIndicator
 import com.cbgm.securechat.feature.chats.domain.usecase.RetryMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SendGroupMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SendMessage
+import com.cbgm.securechat.feature.chats.domain.usecase.SetTypingIndicator
 import com.cbgm.securechat.feature.chats.presentation.screen.ChatViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.ChatsViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.CreateGroupViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.GroupConversationViewModel
-import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
+import com.cbgm.securechat.feature.contacts.domain.usecase.GetContactSafetyNumber
+import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContact
+import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContacts
+import com.cbgm.securechat.feature.contacts.domain.usecase.VerifyContact
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModel
@@ -38,7 +43,9 @@ val chatsModule =
 
         singleOf(::MessageDeliveryStateCoordinator)
         singleOf(::DirectConversationStore)
-        singleOf(::IncomingMessageProcessor)
+        singleOf(::IncomingMessageProcessor) {
+            bind<IncomingMessageHandler>()
+        }
 
         singleOf(::ChatMessagePacketHandler) {
             bind<TypedProtocolPacketHandler>()
@@ -60,14 +67,6 @@ val chatsModule =
             bind<TypedProtocolPacketHandler>()
         }
 
-        single {
-            GetContactSafetyNumber(
-                localPublicIdentityProvider = get<LocalPublicIdentityProvider>(),
-                contactRepository = get<ContactRepository>(),
-                safetyNumberGenerator = get()
-            )
-        }
-
         single<OutboxDeliveryStateListener> {
             ChatOutboxDeliveryStateListener(
                 deliveryStateCoordinator = get()
@@ -78,10 +77,13 @@ val chatsModule =
         single { GetOrCreateDirectConversation(repository = get()) }
         single { MarkConversationRead(repository = get()) }
         single { ObserveConversation(repository = get()) }
+        single { ObserveConversations(repository = get()) }
         single { ObserveGroupConversation(repository = get()) }
+        single { ObserveTypingIndicator(gateway = get()) }
         single { RetryMessage(repository = get()) }
         single { SendMessage(repository = get()) }
         single { SendGroupMessage(repository = get()) }
+        single { SetTypingIndicator(gateway = get()) }
 
         single<ChatsRepository> {
             DefaultChatsRepository(
@@ -89,7 +91,6 @@ val chatsModule =
                 messageRecipientStateDao = get(),
                 directConversationStore = get(),
                 deliveryStateCoordinator = get(),
-                incomingMessageProcessor = get(),
                 getContact = get(),
                 localPublicIdentityProvider = get(),
                 localPhoneNumberProvider = get(),
@@ -98,7 +99,7 @@ val chatsModule =
         }
 
         viewModel {
-            ChatsViewModel(chatsRepository = get())
+            ChatsViewModel(observeConversations = get())
         }
 
         viewModel {
@@ -112,8 +113,9 @@ val chatsModule =
                 sendGroupMessage = get(),
                 markConversationReadUseCase = get(),
                 retryMessageUseCase = get(),
-                contactRepository = get(),
-                typingIndicatorGateway = get()
+                observeContacts = get<ObserveContacts>(),
+                observeTypingIndicator = get(),
+                setTypingIndicator = get()
             )
         }
 
@@ -126,9 +128,11 @@ val chatsModule =
                 sendMessageUseCase = get(),
                 markConversationReadUseCase = get(),
                 retryFailedMessage = get(),
-                contactRepository = get<ContactRepository>(),
+                observeContact = get<ObserveContact>(),
                 getContactSafetyNumber = get<GetContactSafetyNumber>(),
-                typingIndicatorGateway = get()
+                verifyContact = get<VerifyContact>(),
+                observeTypingIndicator = get(),
+                setTypingIndicator = get()
             )
         }
     }

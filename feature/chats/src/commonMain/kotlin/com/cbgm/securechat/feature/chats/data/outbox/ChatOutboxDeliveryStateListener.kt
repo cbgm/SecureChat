@@ -9,6 +9,19 @@ class ChatOutboxDeliveryStateListener(
 ) : OutboxDeliveryStateListener {
     override suspend fun onProcessing(packetId: String): Result<Unit> = applyEvent(packetId, MessageDeliveryEvent.SEND_STARTED)
 
+    override suspend fun onPrepared(
+        packetId: String,
+        encodedTransportPayload: String,
+        transportMode: String
+    ): Result<Unit> =
+        runCatching {
+            deliveryStateCoordinator.storePreparedTransport(
+                packetId = packetId,
+                encodedTransportPayload = encodedTransportPayload,
+                transportMode = transportMode
+            )
+        }
+
     override suspend fun onSent(packetId: String): Result<Unit> = applyEvent(packetId, MessageDeliveryEvent.SEND_SUCCEEDED)
 
     override suspend fun onFailed(

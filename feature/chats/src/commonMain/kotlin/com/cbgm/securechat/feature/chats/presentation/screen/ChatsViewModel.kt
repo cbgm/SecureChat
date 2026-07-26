@@ -2,7 +2,7 @@ package com.cbgm.securechat.feature.chats.presentation.screen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
+import com.cbgm.securechat.feature.chats.domain.usecase.ObserveConversations
 import com.cbgm.securechat.feature.chats.presentation.mapper.toChatListItem
 import com.cbgm.securechat.feature.chats.presentation.model.ChatsUiState
 import kotlinx.coroutines.flow.SharingStarted
@@ -11,11 +11,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 class ChatsViewModel(
-    chatsRepository: ChatsRepository
+    observeConversations: ObserveConversations
 ) : ViewModel() {
     val uiState: StateFlow<ChatsUiState> =
-        chatsRepository
-            .observeConversations()
+        observeConversations()
             .map { conversations ->
                 if (conversations.isEmpty()) {
                     return@map ChatsUiState.Empty

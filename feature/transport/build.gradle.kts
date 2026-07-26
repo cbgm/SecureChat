@@ -19,11 +19,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(projects.core)
-            implementation(projects.core.crypto)
             implementation(projects.core.protocol)
-            implementation(projects.data.database)
-            implementation(projects.feature.chats)
-            implementation(projects.feature.contacts)
 
             implementation(libs.bundles.coroutines)
             implementation(libs.bundles.koin.core)

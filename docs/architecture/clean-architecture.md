@@ -6,25 +6,21 @@ SecureChat follows the principles of Clean Architecture.
 
 The objective is to separate business rules from implementation details so that the application remains maintainable, testable and platform independent as it grows.
 
-Every feature follows the same architectural structure.
+Feature modules use presentation, domain and data packages. Application-wide messaging orchestration lives in the dedicated `:messaging` module, while `:feature:transport` contains transport mechanics only.
 
 ---
 
 # Layer Overview
 
-```
-Presentation
-      │
-      ▼
-Domain
-      │
-      ▼
-Data
+```mermaid
+flowchart TD
+    Presentation --> Domain
+    Data --> Domain
+    Composition["DI / application composition"] --> Presentation
+    Composition --> Data
 ```
 
-Dependencies always point downward.
-
-Lower layers never depend on higher layers.
+Domain is the center. Presentation and Data both depend on Domain abstractions; Domain never depends on either outer layer.
 
 ---
 
@@ -86,19 +82,13 @@ Business decisions should never originate from the data layer.
 
 # Dependency Rule
 
-The dependency rule is simple.
+Source dependencies point inward:
 
-```
-Presentation
-
-↓
-
-Domain
-
-↓
-
-Data
-```
+- Presentation may depend on Domain.
+- Data may depend on Domain.
+- Domain may not depend on Presentation or Data.
+- ViewModels invoke use cases instead of repositories or gateways directly.
+- DI modules are composition roots and may connect implementations to domain ports.
 
 Allowed
 
