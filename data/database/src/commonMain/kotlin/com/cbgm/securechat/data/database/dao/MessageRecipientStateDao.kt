@@ -61,22 +61,6 @@ interface MessageRecipientStateDao {
         SET deliveryStatus = :deliveryStatus,
             lastError = :lastError,
             updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
-        WHERE packetId = :packetId
-        """
-    )
-    suspend fun updateDeliveryStatusByPacketId(
-        packetId: String,
-        deliveryStatus: String,
-        lastError: String?,
-        updatedAtEpochMilliseconds: Long
-    ): Int
-
-    @Query(
-        """
-        UPDATE message_recipient_states
-        SET deliveryStatus = :deliveryStatus,
-            lastError = :lastError,
-            updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
         WHERE messageId = :messageId
           AND contactId = :contactId
         """

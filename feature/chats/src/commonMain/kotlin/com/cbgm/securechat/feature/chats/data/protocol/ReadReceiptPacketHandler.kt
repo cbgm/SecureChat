@@ -4,14 +4,11 @@ import com.cbgm.securechat.core.protocol.handler.IncomingPacketContext
 import com.cbgm.securechat.core.protocol.handler.TypedProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.packet.ReadReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
-import com.cbgm.securechat.core.time.SystemClock
-import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
-import com.cbgm.securechat.data.database.dao.MessageRecipientStateDao
-import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
+import com.cbgm.securechat.feature.chats.data.delivery.MessageDeliveryStateCoordinator
+import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryEvent
 
 class ReadReceiptPacketHandler(
-    private val messageDeliveryStatusDao: MessageDeliveryStatusDao,
-    private val messageRecipientStateDao: MessageRecipientStateDao
+    private val deliveryStateCoordinator: MessageDeliveryStateCoordinator
 ) : TypedProtocolPacketHandler {
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is ReadReceiptPacket
 
@@ -21,30 +18,10 @@ class ReadReceiptPacketHandler(
     ): Result<Unit> =
         runCatching {
             val receipt = packet as? ReadReceiptPacket ?: error("ReadReceiptPacketHandler received an incompatible packet")
-            val state =
-                messageRecipientStateDao
-                    .findByMessageId(receipt.messageId)
-                    .firstOrNull { it.contactId == context.contactId }
-
-            if (state == null) {
-                messageDeliveryStatusDao.markOutgoingMessageRead(receipt.messageId, context.contactId)
-                return@runCatching
-            }
-
-            messageRecipientStateDao.updateDeliveryStatus(
+            deliveryStateCoordinator.applyReceiptEvent(
                 messageId = receipt.messageId,
                 contactId = context.contactId,
-                deliveryStatus = MessageDeliveryStatus.READ.name,
-                lastError = null,
-                updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+                event = MessageDeliveryEvent.READ_CONFIRMED
             )
-            val states = messageRecipientStateDao.findByMessageId(receipt.messageId)
-            val aggregated =
-                when {
-                    states.all { it.deliveryStatus == MessageDeliveryStatus.READ.name } -> MessageDeliveryStatus.READ
-                    states.all { it.deliveryStatus == MessageDeliveryStatus.DELIVERED.name || it.deliveryStatus == MessageDeliveryStatus.READ.name } -> MessageDeliveryStatus.DELIVERED
-                    else -> MessageDeliveryStatus.SENT
-                }
-            messageDeliveryStatusDao.updateDeliveryStatusByMessageId(receipt.messageId, aggregated.name)
         }
 }

@@ -2,6 +2,8 @@ package com.cbgm.securechat.data.database.outbox
 
 import com.cbgm.securechat.core.id.IdGenerator
 import com.cbgm.securechat.core.protocol.codec.PacketCodec
+import com.cbgm.securechat.core.protocol.outbox.OutboxEvent
+import com.cbgm.securechat.core.protocol.outbox.OutboxStateMachine
 import com.cbgm.securechat.core.protocol.outbox.OutboxStatus
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutboxItem
@@ -87,12 +89,10 @@ class DefaultProtocolOutbox(
 
             val existing = outboxDao.findById(itemId = itemId) ?: error("Outbox item was not found")
 
-            check(
-                existing.status == OutboxStatus.PENDING.name ||
-                    existing.status == OutboxStatus.FAILED.name
-            ) {
-                "Only pending or failed items can start processing"
-            }
+            OutboxStateMachine.requireTransition(
+                current = existing.status.toOutboxStatus(),
+                event = OutboxEvent.PROCESSING_STARTED
+            )
 
             outboxDao.markProcessing(
                 itemId = itemId,
@@ -129,6 +129,13 @@ class DefaultProtocolOutbox(
                 "Outbox item ID must not be blank"
             }
 
+            val existing = outboxDao.findById(itemId = itemId) ?: error("Outbox item was not found")
+
+            OutboxStateMachine.requireTransition(
+                current = existing.status.toOutboxStatus(),
+                event = OutboxEvent.SEND_SUCCEEDED
+            )
+
             outboxDao.markSent(
                 itemId = itemId,
                 updatedAt = SystemClock.nowEpochMilliseconds()
@@ -148,6 +155,13 @@ class DefaultProtocolOutbox(
                 "Error message must not be blank"
             }
 
+            val existing = outboxDao.findById(itemId = itemId) ?: error("Outbox item was not found")
+
+            OutboxStateMachine.requireTransition(
+                current = existing.status.toOutboxStatus(),
+                event = OutboxEvent.SEND_FAILED
+            )
+
             outboxDao.markFailed(
                 itemId = itemId,
                 errorMessage = errorMessage.take(MAX_ERROR_LENGTH),
@@ -160,6 +174,13 @@ class DefaultProtocolOutbox(
             require(itemId.isNotBlank()) {
                 "Outbox item ID must not be blank"
             }
+
+            val existing = outboxDao.findById(itemId = itemId) ?: error("Outbox item was not found")
+
+            OutboxStateMachine.requireTransition(
+                current = existing.status.toOutboxStatus(),
+                event = OutboxEvent.RETRY_REQUESTED
+            )
 
             outboxDao.retry(
                 itemId = itemId,

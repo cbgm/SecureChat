@@ -13,7 +13,6 @@ import com.cbgm.securechat.core.protocol.outbox.ProtocolOutboxItem
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
 import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
-import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
@@ -63,56 +62,85 @@ class DefaultOutboxProcessor(
             return processingResult
         }
 
-        deliveryStateListener.onProcessing(packetId = item.packetId)
+        val sendResult =
+            runCatching {
+                deliveryStateListener.onProcessing(packetId = item.packetId).getOrThrow()
+                prepareAndSend(item)
+            }
 
-        return runCatching {
-            val contact =
-                getContact(contactId = item.contactId).getOrThrow()
-                    ?: error("Outbox contact was not found")
-
-            val transportPayload =
-                createTransportPayload(
-                    encodedPacket = item.encodedPacket,
-                    contact = contact,
-                    forcePlaintext = item.encodedPacket.isGroupCreatedPacket()
-                )
-
-            val encodedTransportPayload = transportPayloadCodec.encode(payload = transportPayload)
-
-            /*
-             * Store the exact final payload and actual encryption mode
-             * on the visible outgoing message before transmission.
-             */
-            messageDeliveryStatusDao
-                .updatePreparedTransport(
-                    packetId = item.packetId,
-                    deliveryStatus = MessageDeliveryStatus.SENDING.name,
-                    transportPayload = encodedTransportPayload,
-                    transportMode = transportPayload.mode.name
-                )
-
-            outgoingWireSender
-                .send(
-                    contactId = item.contactId,
-                    encodedTransportPayload = encodedTransportPayload
-                ).getOrThrow()
-
-            protocolOutbox.markSent(itemId = item.id).getOrThrow()
-
-            deliveryStateListener.onSent(packetId = item.packetId).getOrThrow()
-        }.onFailure { error ->
-            val errorMessage = error.message ?: "Outgoing packet could not be sent"
-
-            protocolOutbox.markFailed(
-                itemId = item.id,
-                errorMessage = errorMessage
-            )
-
-            deliveryStateListener.onFailed(
-                packetId = item.packetId,
-                errorMessage = errorMessage
+        if (sendResult.isFailure) {
+            return markFailed(
+                item = item,
+                error = sendResult.exceptionOrNull()
             )
         }
+
+        return deliveryStateListener.onSent(packetId = item.packetId)
+    }
+
+    private suspend fun markFailed(
+        item: ProtocolOutboxItem,
+        error: Throwable?
+    ): Result<Unit> {
+        val errorMessage = error?.message ?: "Outgoing packet could not be sent"
+
+        protocolOutbox
+            .markFailed(
+                itemId = item.id,
+                errorMessage = errorMessage
+            ).getOrElse { markFailedError ->
+                return Result.failure(markFailedError)
+            }
+
+        deliveryStateListener
+            .onFailed(
+                packetId = item.packetId,
+                errorMessage = errorMessage
+            ).getOrElse { listenerError ->
+                return Result.failure(listenerError)
+            }
+
+        return Result.failure(error ?: IllegalStateException(errorMessage))
+    }
+
+    /*
+     * Preparing and sending are kept together because any failure before
+     * markSent leaves the item in PROCESSING and can safely transition it
+     * to FAILED. Delivery-state persistence after markSent is separate so
+     * it cannot incorrectly move an already sent outbox item backwards.
+     */
+    private suspend fun prepareAndSend(item: ProtocolOutboxItem) {
+        val contact =
+            getContact(contactId = item.contactId).getOrThrow()
+                ?: error("Outbox contact was not found")
+
+        val transportPayload =
+            createTransportPayload(
+                encodedPacket = item.encodedPacket,
+                contact = contact,
+                forcePlaintext = item.encodedPacket.isGroupCreatedPacket()
+            )
+
+        val encodedTransportPayload = transportPayloadCodec.encode(payload = transportPayload)
+
+        /*
+         * Store the exact final payload and actual encryption mode
+         * on the visible outgoing message before transmission.
+         */
+        messageDeliveryStatusDao
+            .updatePreparedTransport(
+                packetId = item.packetId,
+                transportPayload = encodedTransportPayload,
+                transportMode = transportPayload.mode.name
+            )
+
+        outgoingWireSender
+            .send(
+                contactId = item.contactId,
+                encodedTransportPayload = encodedTransportPayload
+            ).getOrThrow()
+
+        protocolOutbox.markSent(itemId = item.id).getOrThrow()
     }
 
     private suspend fun createTransportPayload(

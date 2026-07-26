@@ -3,6 +3,9 @@ package com.cbgm.securechat.feature.chats.di
 import com.cbgm.securechat.core.protocol.handler.TypedProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentityProvider
 import com.cbgm.securechat.core.protocol.outbox.OutboxDeliveryStateListener
+import com.cbgm.securechat.feature.chats.data.conversation.DirectConversationStore
+import com.cbgm.securechat.feature.chats.data.delivery.MessageDeliveryStateCoordinator
+import com.cbgm.securechat.feature.chats.data.incoming.IncomingMessageProcessor
 import com.cbgm.securechat.feature.chats.data.outbox.ChatOutboxDeliveryStateListener
 import com.cbgm.securechat.feature.chats.data.protocol.ChatMessagePacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.DeliveryReceiptPacketHandler
@@ -32,6 +35,10 @@ import org.koin.dsl.module
 
 val chatsModule =
     module {
+
+        singleOf(::MessageDeliveryStateCoordinator)
+        singleOf(::DirectConversationStore)
+        singleOf(::IncomingMessageProcessor)
 
         singleOf(::ChatMessagePacketHandler) {
             bind<TypedProtocolPacketHandler>()
@@ -63,8 +70,7 @@ val chatsModule =
 
         single<OutboxDeliveryStateListener> {
             ChatOutboxDeliveryStateListener(
-                messageDeliveryStatusDao = get(),
-                messageRecipientStateDao = get()
+                deliveryStateCoordinator = get()
             )
         }
 
@@ -80,15 +86,14 @@ val chatsModule =
         single<ChatsRepository> {
             DefaultChatsRepository(
                 chatDao = get(),
-                messageDeliveryStatusDao = get(),
                 messageRecipientStateDao = get(),
+                directConversationStore = get(),
+                deliveryStateCoordinator = get(),
+                incomingMessageProcessor = get(),
                 getContact = get(),
                 localPublicIdentityProvider = get(),
                 localPhoneNumberProvider = get(),
-                protocolOutbox = get(),
-                incomingTransportMessageDecoder = get(),
-                packetCodec = get(),
-                protocolPacketHandler = get()
+                protocolOutbox = get()
             )
         }
 

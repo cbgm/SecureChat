@@ -31,12 +31,13 @@ sequenceDiagram
     participant ReceiverWS as Receiving DefaultWebSocketTransportClient
     participant Incoming as DefaultIncomingRelayRunner
     participant ReceiverRepo as DefaultChatsRepository
+    participant ReceiveProcessor as IncomingMessageProcessor
     participant Handler as ChatMessagePacketHandler
 
     User->>VM: Send text
     VM->>Repo: sendMessage(contactId, text)
-    Repo->>Outbox: enqueue(ChatMessagePacket)
     Repo->>Repo: store MessageEntity as QUEUED
+    Repo->>Outbox: enqueue(ChatMessagePacket)
     Outbox-->>Runner: observePending emits
     Runner->>Processor: processPending(limit = 20)
     Processor->>Processor: encode/encrypt transport payload
@@ -47,11 +48,12 @@ sequenceDiagram
     Router->>Store: enqueue(envelope)
     Relay-->>WS: EnvelopeAccepted
     Processor->>Outbox: markSent(itemId)
-    Processor->>Repo: visible message becomes SENT
+    Processor->>Repo: delivery coordinator applies SENT
     Router->>ReceiverWS: IncomingEnvelope
     ReceiverWS-->>Incoming: incomingEnvelopes flow
     Incoming->>ReceiverRepo: receiveMessage(...)
-    ReceiverRepo->>Handler: dispatch ChatMessagePacket
+    ReceiverRepo->>ReceiveProcessor: process transport payload
+    ReceiveProcessor->>Handler: dispatch ChatMessagePacket
     Handler->>Handler: persist incoming message
     Handler->>Outbox: enqueue(DeliveryReceiptPacket)
     Incoming->>ReceiverWS: acknowledgeIncomingEnvelope(envelopeId)
@@ -86,7 +88,7 @@ The outgoing flow begins in:
 
 ```kotlin
 DefaultChatsRepository.sendMessage(
-    contactId: String,
+    conversationId: String,
     text: String,
 )
 ```
@@ -94,19 +96,19 @@ DefaultChatsRepository.sendMessage(
 `DefaultChatsRepository` performs the following steps:
 
 1. Trims the message and ignores blank input.
-2. Loads the recipient using `GetContact`.
-3. Calls `IdentityExchangeStarter.ensureStarted(contactId)` so an identity packet is queued before the chat packet when key exchange is incomplete.
-4. Gets or creates the conversation.
-5. Creates a `ChatMessagePacket` containing:
+2. Loads the direct conversation and recipient.
+3. Creates a `ChatMessagePacket` containing:
    - `packetId`
    - `messageId`
    - `sentAtEpochMilliseconds`
    - message text
+4. Stores a visible `MessageEntity` with `MessageDeliveryStatus.QUEUED`.
+5. Updates the conversation timestamp.
 6. Enqueues the packet through `ProtocolOutbox.enqueue()`.
-7. Stores a visible `MessageEntity` with `MessageDeliveryStatus.QUEUED`.
-8. Updates the conversation timestamp.
 
-The protocol packet is queued before the visible message row is inserted. `ProtocolOutbox.enqueue()` is idempotent by `packetId`, so repeating the same enqueue operation does not create a duplicate outbox entry.
+The visible message is stored first so an immediately running outbox processor can always find its delivery state. If enqueueing fails, the delivery state machine moves the visible message to `FAILED`.
+
+`ProtocolOutbox.enqueue()` is idempotent by `packetId`, so repeating the same enqueue operation does not create a duplicate outbox entry.
 
 ## 2. Persistent protocol outbox
 
@@ -145,6 +147,8 @@ stateDiagram-v2
     PROCESSING --> FAILED: preparation or sending fails
     FAILED --> PENDING: retry
 ```
+
+`OutboxStateMachine` is the single definition of valid outbox transitions. Database methods persist those transitions but do not define additional lifecycle rules.
 
 `DefaultProtocolOutbox.enqueue()`:
 
@@ -190,7 +194,7 @@ Its sequence is:
 3. load the recipient through `GetContact`
 4. create an `EncryptedTransportPayload`
 5. encode it with `TransportPayloadCodec`
-6. update the visible message to `SENDING` and store the exact prepared payload
+6. store the exact prepared payload
 7. send it through `OutgoingWireSender`
 8. mark the outbox row as `SENT`
 9. update the visible message to `SENT`
@@ -208,7 +212,12 @@ The implementation of `OutboxDeliveryStateListener` is:
 ChatOutboxDeliveryStateListener
 ```
 
-It maps protocol-outbox transitions to `MessageDeliveryStatus` values through `MessageDeliveryStatusDao`:
+It translates protocol-outbox callbacks into `MessageDeliveryEvent` values. `MessageDeliveryStateCoordinator` then:
+
+- loads the current direct-message or recipient state
+- asks `MessageDeliveryStateMachine` for the next state
+- persists the transition
+- derives the group message status from all recipient states
 
 | Outbox callback | Visible message status |
 |---|---|
@@ -217,6 +226,8 @@ It maps protocol-outbox transitions to `MessageDeliveryStatus` values through `M
 | `onFailed()` | `FAILED` |
 
 Not every protocol packet has a visible chat row. Identity packets and receipt packets can therefore update zero message rows without being treated as errors.
+
+Late and duplicate events are intentional no-ops. For example, an older delivery receipt cannot move a message from `READ` back to `DELIVERED`.
 
 ## 5. Plaintext versus encrypted transport payloads
 
@@ -367,7 +378,13 @@ If processing fails, no envelope acknowledgement is sent, so the relay can deliv
 
 ## 10. Decoding and dispatching incoming protocol packets
 
-`DefaultChatsRepository.receiveMessage()` passes the encoded payload to:
+`DefaultChatsRepository.receiveMessage()` delegates the complete incoming pipeline to:
+
+```kotlin
+IncomingMessageProcessor
+```
+
+The processor passes the encoded payload to:
 
 ```kotlin
 IncomingTransportMessageDecoder
@@ -387,6 +404,14 @@ The decoder returns one of these result types:
 - `DecodedTransportMessage.DecryptionFailed`
 
 Readable packets are decoded with `PacketCodec` and dispatched through `ProtocolPacketHandler` using an `IncomingPacketContext`.
+
+The receive pipeline is deliberately separate from the outgoing state machines:
+
+```text
+decode transport -> decode packet -> resolve conversation -> dispatch handler -> persist
+```
+
+Transport failures become stored unreadable messages. Handler failures prevent relay acknowledgement unless the direct chat failure can be represented locally.
 
 The registered typed handlers include:
 
@@ -428,13 +453,13 @@ DeliveryReceiptPacket
 
 That receipt travels through the same persistent outbox, encryption, relay, and incoming-dispatch pipeline as any other protocol packet.
 
-On the original sender, `DeliveryReceiptPacketHandler` calls:
+On the original sender, `DeliveryReceiptPacketHandler` applies:
 
 ```kotlin
-MessageDeliveryStatusDao.markOutgoingMessageDelivered(...)
+MessageDeliveryEvent.DELIVERY_CONFIRMED
 ```
 
-The visible status then becomes:
+through `MessageDeliveryStateCoordinator`. Duplicate receipts and receipts arriving after `READ` do not regress the current state.
 
 ```text
 DELIVERED
@@ -454,10 +479,10 @@ read-receipt-<messageId>
 
 After successfully enqueueing the receipt, it marks the incoming message row so the same receipt is not repeatedly created.
 
-On the original sender, `ReadReceiptPacketHandler` calls:
+On the original sender, `ReadReceiptPacketHandler` applies:
 
 ```kotlin
-MessageDeliveryStatusDao.markOutgoingMessageRead(...)
+MessageDeliveryEvent.READ_CONFIRMED
 ```
 
 The visible status becomes:
@@ -481,6 +506,8 @@ READ
 | `NOT_APPLICABLE` | Used for incoming messages. |
 
 The distinction between `SENT` and `DELIVERED` is intentional. Relay acceptance is not proof that the recipient stored the message.
+
+For group messages, each recipient has its own state in `MessageRecipientStateEntity`. The visible group-message status is derived by `MessageDeliveryStateMachine.aggregate()` and is never treated as an independent source of truth.
 
 ## 15. Reconnection behavior
 
@@ -563,7 +590,11 @@ A production relay should replace `InMemoryPendingEnvelopeStore` with durable st
 
 | Class | Role |
 |---|---|
-| `DefaultChatsRepository` | Creates outgoing packets, stores visible messages, receives decoded transport payloads, queues read receipts. |
+| `DefaultChatsRepository` | Creates outgoing messages and packets, observes conversations, and queues read receipts. |
+| `IncomingMessageProcessor` | Runs the incoming decode, dispatch, and failure-persistence pipeline. |
+| `DirectConversationStore` | Reuses or creates direct conversations for outgoing and incoming flows. |
+| `MessageDeliveryStateMachine` | Defines delivery transitions and group-status aggregation. |
+| `MessageDeliveryStateCoordinator` | Loads and persists direct or per-recipient delivery transitions. |
 | `ChatMessagePacketHandler` | Persists incoming chat packets and queues delivery receipts. |
 | `DeliveryReceiptPacketHandler` | Marks outgoing messages delivered. |
 | `ReadReceiptPacketHandler` | Marks outgoing messages read. |
