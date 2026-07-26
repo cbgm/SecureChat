@@ -9,6 +9,7 @@ data class ChatUiState(
     val messages: List<ChatMessage> = emptyList(),
     val messageText: String = "",
     val isContactTyping: Boolean = false,
+    val typingDisplayName: String = "",
     val contactSecurityState: ContactSecurityState = ContactSecurityState.NO_REMOTE_PUBLIC_KEYS,
     val safetyNumber: String = "",
     val isLoadingContact: Boolean = true,

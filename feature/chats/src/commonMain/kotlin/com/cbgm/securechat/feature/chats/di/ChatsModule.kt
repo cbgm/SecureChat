@@ -107,7 +107,8 @@ val chatsModule =
                 sendGroupMessage = get(),
                 markConversationReadUseCase = get(),
                 retryMessageUseCase = get(),
-                contactRepository = get()
+                contactRepository = get(),
+                typingIndicatorGateway = get()
             )
         }
 

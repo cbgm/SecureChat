@@ -1,6 +1,7 @@
 package com.cbgm.securechat.feature.chats.presentation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -21,6 +22,10 @@ fun GroupConversationRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(conversationId) { viewModel.markConversationRead() }
+
+    DisposableEffect(conversationId) {
+        onDispose { viewModel.stopTyping() }
+    }
 
     ChatScreen(
         uiState = uiState,

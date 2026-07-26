@@ -256,7 +256,10 @@ private fun ChatBottomBar(
         Text(
             text =
                 if (uiState.isContactTyping) {
-                    stringResource(Res.string.feature_chats_chat_typing, uiState.contactName)
+                    stringResource(
+                        Res.string.feature_chats_chat_typing,
+                        uiState.typingDisplayName.ifBlank { uiState.contactName }
+                    )
                 } else {
                     ""
                 },
