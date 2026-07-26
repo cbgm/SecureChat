@@ -145,7 +145,7 @@ private fun OnboardingScreenPreview() {
 private fun OnboardingScreen2Preview() {
     SecureChatTheme {
         OnboardingScreen(
-            state = OnboardingUiState(page = OnboardingPage.PHONE),
+            state = OnboardingUiState(page = OnboardingPage.WELCOME),
             identityState = IdentityUiState.NoIdentity(),
             onNext = {},
             onRequestPermissions = {},

@@ -73,6 +73,33 @@ fun SecureChatCard(
         shadowElevation = 12.dp,
         content = content
     )
+
+    /*
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = 30.dp) // FOR SHADOW!!
+            .graphicsLayer {
+                if (isFadingEnabled) {
+                    alpha = cardAlpha
+                    translationY = cardTranslation
+                }
+            }
+            .shadow(
+                elevation = 12.dp,
+                shape = MaterialTheme.shapes.small,
+                clip = false,
+                ambientColor = Color.Black.copy(alpha = .7f),
+                spotColor = Color.Black.copy(alpha = 0.7f)
+            )
+            .background(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = MaterialTheme.shapes.small
+            )
+    ) {
+        content()
+    }
+     */
 }
 
 @Composable

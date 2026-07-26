@@ -142,7 +142,6 @@ class DefaultChatsRepository(
         chatDao.createGroupConversation(conversation, participants)
 
         contacts.forEach { contact ->
-            identityExchangeStarter.ensureStarted(contact.id).getOrThrow()
             protocolOutbox
                 .enqueue(
                     contactId = contact.id,
@@ -236,7 +235,6 @@ class DefaultChatsRepository(
             )
 
             packets.forEach { (participant, packet) ->
-                identityExchangeStarter.ensureStarted(participant.contactId).getOrThrow()
                 protocolOutbox.enqueue(participant.contactId, packet).getOrThrow()
             }
         }
@@ -463,17 +461,8 @@ class DefaultChatsRepository(
             packetCodec
                 .decode(
                     encodedPacket = decodedTransport.plaintext
-                ).getOrElse {
-                    storeFailedIncomingMessage(
-                        conversation = getOrCreateConversation(contactId),
-                        encodedTransportPayload = encodedTransportPayload,
-                        text = "Invalid protocol packet",
-                        transportMode = decodedTransport.mode.name,
-                        contentStatus = MessageContentStatus.INVALID_PACKET,
-                        receivedAt = receivedAt
-                    )
-
-                    return
+                ).getOrElse { error ->
+                    throw IllegalArgumentException("Invalid protocol packet", error)
                 }
         val conversationId =
             when (packet) {
@@ -483,8 +472,8 @@ class DefaultChatsRepository(
                 else -> chatDao.findConversationByContactId(contactId)?.id ?: "control-${packet.packetId}"
             }
 
-        protocolPacketHandler
-            .handle(
+        val handlingResult =
+            protocolPacketHandler.handle(
                 context =
                     IncomingPacketContext(
                         contactId = contactId,
@@ -494,18 +483,22 @@ class DefaultChatsRepository(
                         receivedAtEpochMilliseconds = receivedAt
                     ),
                 packet = packet
-            ).onFailure {
-                if (packet is ChatMessagePacket) {
-                    storeFailedIncomingMessage(
-                        conversation = getOrCreateConversation(contactId),
-                        encodedTransportPayload = encodedTransportPayload,
-                        text = "Unsupported or invalid protocol packet",
-                        transportMode = decodedTransport.mode.name,
-                        contentStatus = MessageContentStatus.INVALID_PACKET,
-                        receivedAt = receivedAt
-                    )
-                }
+            )
+
+        handlingResult.onFailure { error ->
+            if (packet is ChatMessagePacket) {
+                storeFailedIncomingMessage(
+                    conversation = getOrCreateConversation(contactId),
+                    encodedTransportPayload = encodedTransportPayload,
+                    text = "Unsupported or invalid protocol packet",
+                    transportMode = decodedTransport.mode.name,
+                    contentStatus = MessageContentStatus.INVALID_PACKET,
+                    receivedAt = receivedAt
+                )
+            } else {
+                throw error
             }
+        }
     }
 
     private suspend fun storeFailedIncomingMessage(

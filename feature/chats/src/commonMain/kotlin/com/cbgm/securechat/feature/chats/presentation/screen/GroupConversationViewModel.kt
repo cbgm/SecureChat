@@ -39,7 +39,7 @@ class GroupConversationViewModel(
                 conversation?.messages.orEmpty().map { message ->
                     message.copy(senderName = message.senderContactId?.let(namesById::get))
                 }
-            val memberCount = conversation?.participantContactIds?.size ?: 0
+            val memberCount = conversation?.participantContactIds?.let { it.size + 1 } ?: 0
 
             ChatUiState(
                 contactName = conversation?.contactName.orEmpty(),
