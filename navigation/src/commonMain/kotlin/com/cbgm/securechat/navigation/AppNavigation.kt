@@ -203,7 +203,7 @@ fun AppNavigation() {
                         navController.popBackStack()
                     },
                     onImportContact = {
-                        navController.navigate(AppDestination.ImportContact)
+                        navController.navigate(AppDestination.ImportContact())
                     },
                     onCreateGroup = {
                         navController.navigate(AppDestination.CreateGroup)
@@ -262,7 +262,7 @@ fun AppNavigation() {
                         navController.navigate(AppDestination.DeveloperMenu)
                     },
                     onImportContact = {
-                        navController.navigate(AppDestination.ImportContact)
+                        navController.navigate(AppDestination.ImportContact())
                     },
                     onCreateGroup = {
                         navController.navigate(AppDestination.CreateGroup)
