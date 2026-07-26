@@ -41,6 +41,13 @@ class IdentityPacketHandler(
                     signingPublicKey = identityPacket.signingPublicKey
                 ).getOrThrow()
 
+            contactKeyExchangeStore
+                .markRemoteIdentityPacketReceived(
+                    contactId = context.contactId,
+                    expectedRemoteEncryptionPublicKey = identityPacket.encryptionPublicKey,
+                    expectedRemoteSigningPublicKey = identityPacket.signingPublicKey
+                ).getOrThrow()
+
             val localSigningKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
 
             /*

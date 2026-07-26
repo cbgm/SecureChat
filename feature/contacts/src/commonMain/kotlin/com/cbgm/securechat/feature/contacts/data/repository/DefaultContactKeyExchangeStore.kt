@@ -41,15 +41,21 @@ class DefaultContactKeyExchangeStore(
 
             val identityChanged = existing != null && !sameIdentity
 
+            val remoteIdentityPacketReceived =
+                if (sameIdentity) existing.remoteIdentityPacketReceived else false
+
+            val localIdentityAcknowledged =
+                if (sameIdentity) existing.localIdentityAcknowledged else false
+
             val nextKeyExchangeStatus =
-                if (sameIdentity) {
-                    existing.keyExchangeStatus.toKeyExchangeStatus()
+                if (remoteIdentityPacketReceived && localIdentityAcknowledged) {
+                    KeyExchangeStatus.MUTUAL
                 } else {
                     KeyExchangeStatus.ONE_WAY
                 }
 
             val nextVerificationStatus =
-                if (sameIdentity) {
+                if (sameIdentity && nextKeyExchangeStatus == KeyExchangeStatus.MUTUAL) {
                     existing.verificationStatus.toVerificationStatus()
                 } else {
                     ContactVerificationStatus.UNVERIFIED
@@ -63,6 +69,8 @@ class DefaultContactKeyExchangeStore(
                         signingPublicKey = signingPublicKey.copyOf(),
                         verificationStatus = nextVerificationStatus.name,
                         keyExchangeStatus = nextKeyExchangeStatus.name,
+                        remoteIdentityPacketReceived = remoteIdentityPacketReceived,
+                        localIdentityAcknowledged = localIdentityAcknowledged,
                         updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
                     )
             )
@@ -75,6 +83,27 @@ class DefaultContactKeyExchangeStore(
                 verificationStatus = nextVerificationStatus,
                 identityChanged = identityChanged
             )
+        }
+
+    override suspend fun markRemoteIdentityPacketReceived(
+        contactId: String,
+        expectedRemoteEncryptionPublicKey: ByteArray,
+        expectedRemoteSigningPublicKey: ByteArray
+    ): Result<Unit> =
+        runCatching {
+            val updatedRows =
+                contactDao.markRemoteIdentityPacketReceivedIfKeysMatch(
+                    contactId = contactId,
+                    expectedEncryptionPublicKey = expectedRemoteEncryptionPublicKey,
+                    expectedSigningPublicKey = expectedRemoteSigningPublicKey,
+                    oneWayStatus = KeyExchangeStatus.ONE_WAY.name,
+                    mutualStatus = KeyExchangeStatus.MUTUAL.name,
+                    updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+                )
+
+            check(updatedRows == 1) {
+                "Contact identity changed before identity packet was applied"
+            }
         }
 
     override suspend fun markMutual(
@@ -96,11 +125,12 @@ class DefaultContactKeyExchangeStore(
             }
 
             val updatedRows =
-                contactDao.updateKeyExchangeStatusIfKeysMatch(
+                contactDao.markLocalIdentityAcknowledgedIfKeysMatch(
                     contactId = contactId,
                     expectedEncryptionPublicKey = expectedRemoteEncryptionPublicKey,
                     expectedSigningPublicKey = expectedRemoteSigningPublicKey,
-                    keyExchangeStatus = KeyExchangeStatus.MUTUAL.name,
+                    oneWayStatus = KeyExchangeStatus.ONE_WAY.name,
+                    mutualStatus = KeyExchangeStatus.MUTUAL.name,
                     updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
                 )
 

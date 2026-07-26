@@ -48,6 +48,8 @@ data class ContactPublicIdentityEntity(
      * MUTUAL
      */
     val keyExchangeStatus: String,
+    val remoteIdentityPacketReceived: Boolean,
+    val localIdentityAcknowledged: Boolean,
     val updatedAtEpochMilliseconds: Long
 ) {
     override fun equals(other: Any?): Boolean {
@@ -60,6 +62,8 @@ data class ContactPublicIdentityEntity(
             signingPublicKey.contentEquals(other.signingPublicKey) &&
             verificationStatus == other.verificationStatus &&
             keyExchangeStatus == other.keyExchangeStatus &&
+            remoteIdentityPacketReceived == other.remoteIdentityPacketReceived &&
+            localIdentityAcknowledged == other.localIdentityAcknowledged &&
             updatedAtEpochMilliseconds == other.updatedAtEpochMilliseconds
     }
 
@@ -73,6 +77,10 @@ data class ContactPublicIdentityEntity(
         result = 31 * result + verificationStatus.hashCode()
 
         result = 31 * result + keyExchangeStatus.hashCode()
+
+        result = 31 * result + remoteIdentityPacketReceived.hashCode()
+
+        result = 31 * result + localIdentityAcknowledged.hashCode()
 
         result = 31 * result + updatedAtEpochMilliseconds.hashCode()
 

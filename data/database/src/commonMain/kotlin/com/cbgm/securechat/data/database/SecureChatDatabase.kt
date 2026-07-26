@@ -31,7 +31,7 @@ import com.cbgm.securechat.data.database.entity.ProtocolOutboxEntity
         MessageRecipientStateEntity::class,
         ProtocolOutboxEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = true
 )
 @ConstructedBy(SecureChatDatabaseConstructor::class)

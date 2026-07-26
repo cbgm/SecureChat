@@ -9,6 +9,12 @@ interface ContactKeyExchangeStore {
         signingPublicKey: ByteArray
     ): Result<RemoteIdentityUpdate>
 
+    suspend fun markRemoteIdentityPacketReceived(
+        contactId: String,
+        expectedRemoteEncryptionPublicKey: ByteArray,
+        expectedRemoteSigningPublicKey: ByteArray
+    ): Result<Unit>
+
     suspend fun markMutual(
         contactId: String,
         expectedRemoteEncryptionPublicKey: ByteArray,
