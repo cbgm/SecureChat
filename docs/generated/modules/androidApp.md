@@ -31,10 +31,10 @@ Generated automatically by `./gradlew architectureReport`.
 - [`:feature:contactimport`](../modules/feature-contactimport.md)
 - [`:feature:contacts`](../modules/feature-contacts.md)
 - [`:feature:identity`](../modules/feature-identity.md)
+- [`:feature:messaging`](../modules/feature-messaging.md)
 - [`:feature:onboarding`](../modules/feature-onboarding.md)
 - [`:feature:settings`](../modules/feature-settings.md)
 - [`:feature:transport`](../modules/feature-transport.md)
-- [`:messaging`](../modules/messaging.md)
 - [`:shared`](../modules/shared.md)
 - [`:startup`](../modules/startup.md)
 

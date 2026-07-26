@@ -33,4 +33,4 @@ Generated automatically by `./gradlew architectureReport`.
 ## Dependents
 
 - [`:androidApp`](../modules/androidApp.md)
-- [`:messaging`](../modules/messaging.md)
+- [`:feature:messaging`](../modules/feature-messaging.md)

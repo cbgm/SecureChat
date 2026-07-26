@@ -7,15 +7,15 @@ Generated automatically by `./gradlew architectureReport`.
 | Metric | Count |
 |---|---:|
 | Modules | 22 |
-| Module groups | 10 |
+| Module groups | 9 |
 | Dependency edges | 63 |
 | Modules without project dependencies | 9 |
 | Modules without dependents | 6 |
 | Maximum direct dependencies | 14 |
 | Maximum direct dependents | 10 |
 | Distinct source sets | 8 |
-| Kotlin files | 435 |
-| Production Kotlin files | 419 |
+| Kotlin files | 441 |
+| Production Kotlin files | 425 |
 | Test Kotlin files | 16 |
 | Resource files | 54 |
 
@@ -26,8 +26,7 @@ Generated automatically by `./gradlew architectureReport`.
 | androidApp | 1 |
 | core | 4 |
 | data | 2 |
-| feature | 8 |
-| messaging | 1 |
+| feature | 9 |
 | navigation | 1 |
 | quality | 2 |
 | relay | 1 |

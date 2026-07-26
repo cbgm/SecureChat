@@ -37,7 +37,7 @@ None.
 - [`:feature:contactimport`](../modules/feature-contactimport.md)
 - [`:feature:contacts`](../modules/feature-contacts.md)
 - [`:feature:identity`](../modules/feature-identity.md)
+- [`:feature:messaging`](../modules/feature-messaging.md)
 - [`:feature:transport`](../modules/feature-transport.md)
-- [`:messaging`](../modules/messaging.md)
 - [`:navigation`](../modules/navigation.md)
 - [`:shared`](../modules/shared.md)

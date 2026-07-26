@@ -36,4 +36,4 @@ None.
 - [`:feature:chats`](../modules/feature-chats.md)
 - [`:feature:contacts`](../modules/feature-contacts.md)
 - [`:feature:identity`](../modules/feature-identity.md)
-- [`:messaging`](../modules/messaging.md)
+- [`:feature:messaging`](../modules/feature-messaging.md)

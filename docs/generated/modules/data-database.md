@@ -35,4 +35,4 @@ Generated automatically by `./gradlew architectureReport`.
 - [`:androidApp`](../modules/androidApp.md)
 - [`:feature:chats`](../modules/feature-chats.md)
 - [`:feature:contacts`](../modules/feature-contacts.md)
-- [`:messaging`](../modules/messaging.md)
+- [`:feature:messaging`](../modules/feature-messaging.md)

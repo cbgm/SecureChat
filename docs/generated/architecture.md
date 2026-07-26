@@ -7,9 +7,9 @@ Generated automatically by `./gradlew architectureReport`.
 | Metric | Count |
 |---|---:|
 | Modules | 22 |
-| Module groups | 10 |
+| Module groups | 9 |
 | Project dependencies | 63 |
-| Kotlin files | 435 |
+| Kotlin files | 441 |
 | Test Kotlin files | 16 |
 | Resource files | 54 |
 
@@ -38,13 +38,10 @@ Generated automatically by `./gradlew architectureReport`.
 - [**contactimport** (`:feature:contactimport`)](modules/feature-contactimport.md)
 - [**contacts** (`:feature:contacts`)](modules/feature-contacts.md)
 - [**identity** (`:feature:identity`)](modules/feature-identity.md)
+- [**messaging** (`:feature:messaging`)](modules/feature-messaging.md)
 - [**onboarding** (`:feature:onboarding`)](modules/feature-onboarding.md)
 - [**settings** (`:feature:settings`)](modules/feature-settings.md)
 - [**transport** (`:feature:transport`)](modules/feature-transport.md)
-
-### messaging
-
-- [**messaging** (`:messaging`)](modules/messaging.md)
 
 ### navigation
 
@@ -94,13 +91,10 @@ graph TD
         module_feature_contactimport[":feature:contactimport"]
         module_feature_contacts[":feature:contacts"]
         module_feature_identity[":feature:identity"]
+        module_feature_messaging[":feature:messaging"]
         module_feature_onboarding[":feature:onboarding"]
         module_feature_settings[":feature:settings"]
         module_feature_transport[":feature:transport"]
-    end
-
-    subgraph group_messaging["messaging"]
-        module_messaging[":messaging"]
     end
 
     subgraph group_navigation["navigation"]
@@ -132,10 +126,10 @@ graph TD
     module_androidApp --> module_feature_contactimport
     module_androidApp --> module_feature_contacts
     module_androidApp --> module_feature_identity
+    module_androidApp --> module_feature_messaging
     module_androidApp --> module_feature_onboarding
     module_androidApp --> module_feature_settings
     module_androidApp --> module_feature_transport
-    module_androidApp --> module_messaging
     module_androidApp --> module_shared
     module_androidApp --> module_startup
     module_data_database --> module_core
@@ -159,18 +153,18 @@ graph TD
     module_feature_identity --> module_core_crypto
     module_feature_identity --> module_core_protocol
     module_feature_identity --> module_core_ui
+    module_feature_messaging --> module_core
+    module_feature_messaging --> module_core_crypto
+    module_feature_messaging --> module_core_protocol
+    module_feature_messaging --> module_data_database
+    module_feature_messaging --> module_feature_chats
+    module_feature_messaging --> module_feature_contacts
+    module_feature_messaging --> module_feature_transport
     module_feature_onboarding --> module_core_ui
     module_feature_onboarding --> module_feature_identity
     module_feature_settings --> module_core_ui
     module_feature_transport --> module_core
     module_feature_transport --> module_core_protocol
-    module_messaging --> module_core
-    module_messaging --> module_core_crypto
-    module_messaging --> module_core_protocol
-    module_messaging --> module_data_database
-    module_messaging --> module_feature_chats
-    module_messaging --> module_feature_contacts
-    module_messaging --> module_feature_transport
     module_navigation --> module_core
     module_navigation --> module_core_ui
     module_navigation --> module_feature_chats
