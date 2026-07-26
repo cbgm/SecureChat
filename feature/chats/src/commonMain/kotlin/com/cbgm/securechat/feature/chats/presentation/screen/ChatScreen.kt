@@ -58,6 +58,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.ui.component.ContactAvatar
+import com.cbgm.securechat.core.ui.component.PatternBackground
 import com.cbgm.securechat.core.ui.component.SecureChatLazyScaffold
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
@@ -67,8 +69,6 @@ import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
-import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
-import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
 import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.base_verify
 import com.cbgm.securechat.resources.feature_chats_chat_key_exchange_incomplete_description

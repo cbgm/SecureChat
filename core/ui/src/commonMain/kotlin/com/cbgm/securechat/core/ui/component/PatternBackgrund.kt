@@ -1,4 +1,4 @@
-package com.cbgm.securechat.feature.chats.presentation.screen.component
+package com.cbgm.securechat.core.ui.component
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background

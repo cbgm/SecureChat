@@ -61,11 +61,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.ui.component.ContactAvatar
 import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
 import com.cbgm.securechat.core.ui.component.SecureChatLazyScaffold
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
-import com.cbgm.securechat.feature.chats.presentation.screen.component.ContactAvatar
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumber
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
@@ -335,9 +335,6 @@ private fun SearchField(
         placeholder = {
             Text(
                 text = "Name, Phone"
-                /*stringResource(
-                                        Res.string.feature_contacts_search,
-                                    )*/
             )
         },
         shape = MaterialTheme.shapes.extraSmall

@@ -25,7 +25,6 @@ kotlin {
             implementation(libs.bundles.koin.compose)
 
             implementation(compose.materialIconsExtended)
-            implementation(libs.okio)
         }
 
         commonTest.dependencies {

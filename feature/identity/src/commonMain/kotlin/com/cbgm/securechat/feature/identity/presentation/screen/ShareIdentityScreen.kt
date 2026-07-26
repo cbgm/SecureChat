@@ -249,73 +249,75 @@ private fun IdentityOptionsContent(
     uiState: ShareIdentityUiState,
     onGenerateClick: () -> Unit
 ) {
-    Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
-    Box(
-        modifier =
-            Modifier
-                .size(88.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
-                    shape = CircleShape
-                ).border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
-                    shape = CircleShape
-                ),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.QrCode2,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier.size(40.dp)
+        Box(
+            modifier =
+                Modifier
+                    .size(88.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
+                        shape = CircleShape
+                    ).border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
+                        shape = CircleShape
+                    ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.QrCode2,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.size(40.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
+
+        Text(
+            text = stringResource(Res.string.feature_identity_create_qr_description),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
+
+        Text(
+            text = stringResource(Res.string.feature_identity_public_keys_always_included),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
+
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
+
+        SecureChatApprovalButton(
+            onClick = onGenerateClick,
+            enabled = !uiState.isGenerating,
+            text =
+                if (uiState.isGenerating) {
+                    ""
+                } else {
+                    stringResource(Res.string.feature_identity_create_qr_code)
+                },
+            content = {
+                if (uiState.isGenerating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.background
+                    )
+                }
+            }
         )
     }
-
-    Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
-
-    Text(
-        text = stringResource(Res.string.feature_identity_create_qr_description),
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.SemiBold,
-        textAlign = TextAlign.Center
-    )
-
-    Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
-
-    Text(
-        text = stringResource(Res.string.feature_identity_public_keys_always_included),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-        textAlign = TextAlign.Center
-    )
-
-    Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
-
-    HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
-
-    Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
-
-    SecureChatApprovalButton(
-        onClick = onGenerateClick,
-        enabled = !uiState.isGenerating,
-        text =
-            if (uiState.isGenerating) {
-                ""
-            } else {
-                stringResource(Res.string.feature_identity_create_qr_code)
-            },
-        content = {
-            if (uiState.isGenerating) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.background
-                )
-            }
-        }
-    )
 }
 
 @Composable
@@ -324,102 +326,104 @@ private fun GeneratedIdentityContent(
     showRawIdentity: Boolean,
     onShareIdentity: () -> Unit
 ) {
-    Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
-    Text(
-        text = stringResource(Res.string.feature_identity_your_securechat_identity),
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.SemiBold,
-        textAlign = TextAlign.Center
-    )
+        Text(
+            text = stringResource(Res.string.feature_identity_your_securechat_identity),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center
+        )
 
-    Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
-    Text(
-        text = stringResource(Res.string.feature_identity_scan_to_add_you),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-        textAlign = TextAlign.Center
-    )
+        Text(
+            text = stringResource(Res.string.feature_identity_scan_to_add_you),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center
+        )
 
-    Spacer(modifier = Modifier.height(MaterialTheme.spacing.large))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.large))
 
-    SecureChatCard {
-        Column(
-            modifier = Modifier.padding(MaterialTheme.spacing.large),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier =
-                    Modifier
-                        .background(
-                            color = Color.White,
-                            shape = MaterialTheme.shapes.small
-                        ).border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f),
-                            shape = MaterialTheme.shapes.small
-                        ).padding(16.dp)
+        SecureChatCard {
+            Column(
+                modifier = Modifier.padding(MaterialTheme.spacing.large),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                QrCode(
-                    content = encodedIdentity,
-                    modifier = Modifier.size(240.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
-
-            Button(
-                onClick = onShareIdentity,
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.extraSmall,
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary,
-                        contentColor = MaterialTheme.colorScheme.background
+                Box(
+                    modifier =
+                        Modifier
+                            .background(
+                                color = Color.White,
+                                shape = MaterialTheme.shapes.small
+                            ).border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f),
+                                shape = MaterialTheme.shapes.small
+                            ).padding(16.dp)
+                ) {
+                    QrCode(
+                        content = encodedIdentity,
+                        modifier = Modifier.size(240.dp)
                     )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = null
-                )
+                }
 
-                Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
-                Text(
-                    text = stringResource(Res.string.feature_identity_share_identity),
-                    fontWeight = FontWeight.SemiBold
-                )
+                Button(
+                    onClick = onShareIdentity,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraSmall,
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = MaterialTheme.colorScheme.background
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = null
+                    )
+
+                    Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
+
+                    Text(
+                        text = stringResource(Res.string.feature_identity_share_identity),
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
-    }
 
-    AnimatedVisibility(
-        visible = showRawIdentity,
-        enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()
-    ) {
-        Column {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
+        AnimatedVisibility(
+            visible = showRawIdentity,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Column {
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
-            Text(
-                text = stringResource(Res.string.feature_identity_raw_identity),
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
-
-            SecureChatCardNoAnimation {
                 Text(
-                    modifier = Modifier.padding(MaterialTheme.spacing.small),
-                    text = encodedIdentity,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f)
+                    text = stringResource(Res.string.feature_identity_raw_identity),
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                    fontWeight = FontWeight.SemiBold
                 )
+
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
+
+                SecureChatCardNoAnimation {
+                    Text(
+                        modifier = Modifier.padding(MaterialTheme.spacing.small),
+                        text = encodedIdentity,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f)
+                    )
+                }
             }
         }
     }

@@ -56,7 +56,8 @@ val chatsModule =
         single {
             GetContactSafetyNumber(
                 localPublicIdentityProvider = get<LocalPublicIdentityProvider>(),
-                contactRepository = get<ContactRepository>()
+                contactRepository = get<ContactRepository>(),
+                safetyNumberGenerator = get()
             )
         }
 

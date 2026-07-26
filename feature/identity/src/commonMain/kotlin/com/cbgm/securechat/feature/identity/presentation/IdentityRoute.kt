@@ -19,11 +19,11 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun IdentityRoute(
-    modifier: Modifier = Modifier,
-    onIdentityReady: () -> Unit = {},
     onShareIdentity: () -> Unit,
     scrollState: ScrollState,
     innerPadding: PaddingValues,
+    modifier: Modifier = Modifier,
+    onIdentityReady: () -> Unit = {},
     viewModel: IdentityViewModel =
         koinViewModel()
 ) {

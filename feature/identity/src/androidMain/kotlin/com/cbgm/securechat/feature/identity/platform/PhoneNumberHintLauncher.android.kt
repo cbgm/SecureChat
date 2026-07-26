@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import com.google.android.gms.auth.api.identity.GetPhoneNumberHintIntentRequest
 import com.google.android.gms.auth.api.identity.Identity
@@ -21,6 +22,8 @@ actual fun PhoneNumberHintLauncher(
 ) {
     val context = LocalContext.current
 
+    val currentOnResult = rememberUpdatedState(newValue = onResult)
+
     val activity = remember(context) { context.findActivity() }
 
     val signInClient = remember(activity) { activity?.let { Identity.getSignInClient(it) } }
@@ -31,7 +34,7 @@ actual fun PhoneNumberHintLauncher(
         ) { result ->
 
             if (result.resultCode != Activity.RESULT_OK) {
-                onResult(PhoneNumberHintResult.Cancelled)
+                currentOnResult.value(PhoneNumberHintResult.Cancelled)
 
                 return@rememberLauncherForActivityResult
             }
@@ -44,9 +47,9 @@ actual fun PhoneNumberHintLauncher(
                     .orEmpty()
 
             if (selectedPhoneNumber.isBlank()) {
-                onResult(PhoneNumberHintResult.Unavailable)
+                currentOnResult.value(PhoneNumberHintResult.Unavailable)
             } else {
-                onResult(PhoneNumberHintResult.Selected(phoneNumber = selectedPhoneNumber))
+                currentOnResult.value(PhoneNumberHintResult.Selected(phoneNumber = selectedPhoneNumber))
             }
         }
 
@@ -59,7 +62,9 @@ actual fun PhoneNumberHintLauncher(
 
         val client =
             signInClient ?: run {
-                onResult(PhoneNumberHintResult.Failed(message = "Phone number picker requires an Android activity"))
+                currentOnResult.value(
+                    PhoneNumberHintResult.Failed(message = "Phone number picker requires an Android activity")
+                )
 
                 return@LaunchedEffect
             }
@@ -73,7 +78,7 @@ actual fun PhoneNumberHintLauncher(
                     IntentSenderRequest.Builder(pendingIntent.intentSender).build()
                 )
             }.addOnFailureListener { error ->
-                onResult(
+                currentOnResult.value(
                     PhoneNumberHintResult.Failed(
                         message = error.message ?: "Phone number picker is unavailable"
                     )

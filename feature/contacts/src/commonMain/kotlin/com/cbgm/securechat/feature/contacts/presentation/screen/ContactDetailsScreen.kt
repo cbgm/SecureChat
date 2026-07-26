@@ -53,12 +53,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.crypto.safety.SafetyNumber
 import com.cbgm.securechat.core.extensions.toFingerprint
+import com.cbgm.securechat.core.ui.component.PatternBackground
 import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
 import com.cbgm.securechat.core.ui.component.SecureChatCardNoAnimation
 import com.cbgm.securechat.core.ui.component.SecureChatScrollScaffold
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
-import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumber
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
@@ -112,8 +112,6 @@ import com.cbgm.securechat.resources.feature_contacts_unnamed_contact
 import com.cbgm.securechat.resources.feature_contacts_verified_securechat_contact
 import com.cbgm.securechat.resources.feature_contacts_verify_safety_number
 import org.jetbrains.compose.resources.stringResource
-
-private val CardColor = Color(0xFF102A46)
 
 @Composable
 fun ContactDetailsScreen(

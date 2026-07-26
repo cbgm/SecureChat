@@ -3,6 +3,7 @@ package com.cbgm.securechat.feature.chats.data.repository
 import com.cbgm.securechat.core.crypto.transport.DecodedTransportMessage
 import com.cbgm.securechat.core.crypto.transport.IncomingTransportMessageDecoder
 import com.cbgm.securechat.core.crypto.transport.TransportEncryptionMode
+import com.cbgm.securechat.core.id.IdGenerator
 import com.cbgm.securechat.core.protocol.codec.PacketCodec
 import com.cbgm.securechat.core.protocol.handler.IncomingPacketContext
 import com.cbgm.securechat.core.protocol.handler.ProtocolPacketHandler
@@ -38,7 +39,6 @@ import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
-import kotlin.random.Random
 
 class DefaultChatsRepository(
     private val chatDao: ChatDao,
@@ -88,7 +88,7 @@ class DefaultChatsRepository(
         val localIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
         val localPhoneNumber = localPhoneNumberProvider.getLocalPhoneNumber().getOrThrow()
         val now = SystemClock.nowEpochMilliseconds()
-        val conversationId = createId(prefix = "group")
+        val conversationId = IdGenerator.generate(prefix = "group")
         val conversation =
             ConversationEntity(
                 id = conversationId,
@@ -145,7 +145,7 @@ class DefaultChatsRepository(
                     contactId = contact.id,
                     packet =
                         GroupCreatedPacket(
-                            packetId = createId(prefix = "group-created-packet"),
+                            packetId = IdGenerator.generate(prefix = "group-created-packet"),
                             groupId = conversationId,
                             title = normalizedTitle,
                             createdAtEpochMilliseconds = now,
@@ -190,13 +190,13 @@ class DefaultChatsRepository(
             check(participants.isNotEmpty()) { "Group has no participants" }
 
             val now = SystemClock.nowEpochMilliseconds()
-            val messageId = createId(prefix = "group-message")
+            val messageId = IdGenerator.generate(prefix = "group-message")
             val localIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
             val localPhoneNumber = localPhoneNumberProvider.getLocalPhoneNumber().getOrThrow()
             val packets =
                 participants.associateWith { participant ->
                     GroupChatMessagePacket(
-                        packetId = createId(prefix = "group-message-packet"),
+                        packetId = IdGenerator.generate(prefix = "group-message-packet"),
                         groupId = conversationId,
                         messageId = messageId,
                         sentAtEpochMilliseconds = now,
@@ -259,12 +259,12 @@ class DefaultChatsRepository(
         val contact = getContact(contactId).getOrThrow() ?: error("Contact was not found")
 
         val now = SystemClock.nowEpochMilliseconds()
-        val messageId = createId(prefix = "message")
+        val messageId = IdGenerator.generate(prefix = "message")
         val localPhoneNumber = localPhoneNumberProvider.getLocalPhoneNumber().getOrThrow()
 
         val packet =
             ChatMessagePacket(
-                packetId = createId(prefix = "packet"),
+                packetId = IdGenerator.generate(prefix = "packet"),
                 messageId = messageId,
                 sentAtEpochMilliseconds = now,
                 text = normalizedText,
@@ -513,7 +513,7 @@ class DefaultChatsRepository(
     ) {
         chatDao.upsertMessage(
             MessageEntity(
-                id = createId(prefix = "failed-message"),
+                id = IdGenerator.generate(prefix = "failed-message"),
                 conversationId = conversation.id,
                 packetId = null,
                 text = text,
@@ -550,7 +550,7 @@ class DefaultChatsRepository(
 
         val conversation =
             ConversationEntity(
-                id = createId(prefix = "conversation"),
+                id = IdGenerator.generate(prefix = "conversation"),
                 contactId = contactId,
                 type = DIRECT_CONVERSATION_TYPE,
                 title = null,
@@ -715,18 +715,6 @@ class DefaultChatsRepository(
         MessageDeliveryStatus.entries.firstOrNull { status ->
             status.name == this
         } ?: MessageDeliveryStatus.NOT_APPLICABLE
-
-    private fun createId(prefix: String): String {
-        val timestamp = SystemClock.nowEpochMilliseconds()
-
-        val random =
-            Random.nextLong().toString().replace(
-                oldValue = "-",
-                newValue = ""
-            )
-
-        return "$prefix-$timestamp-$random"
-    }
 
     private companion object {
         const val DIRECT_CONVERSATION_TYPE = "DIRECT"

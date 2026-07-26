@@ -1,5 +1,6 @@
 package com.cbgm.securechat.data.database.outbox
 
+import com.cbgm.securechat.core.id.IdGenerator
 import com.cbgm.securechat.core.protocol.codec.PacketCodec
 import com.cbgm.securechat.core.protocol.outbox.OutboxStatus
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
@@ -10,7 +11,6 @@ import com.cbgm.securechat.data.database.dao.ProtocolOutboxDao
 import com.cbgm.securechat.data.database.entity.ProtocolOutboxEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlin.random.Random
 
 class DefaultProtocolOutbox(
     private val outboxDao: ProtocolOutboxDao,
@@ -41,7 +41,7 @@ class DefaultProtocolOutbox(
 
             val entity =
                 ProtocolOutboxEntity(
-                    id = createId(prefix = "outbox"),
+                    id = IdGenerator.generate(prefix = "outbox"),
                     contactId = contactId,
                     packetId = packet.packetId,
                     encodedPacket = encodedPacket,
@@ -192,14 +192,6 @@ class DefaultProtocolOutbox(
 
             else -> error("Unknown outbox status: $this")
         }
-
-    private fun createId(prefix: String): String {
-        val timestamp = SystemClock.nowEpochMilliseconds()
-
-        val random = Random.nextLong().toString().replace(oldValue = "-", newValue = "")
-
-        return "$prefix-$timestamp-$random"
-    }
 
     private companion object {
         const val MAX_ERROR_LENGTH = 1_000

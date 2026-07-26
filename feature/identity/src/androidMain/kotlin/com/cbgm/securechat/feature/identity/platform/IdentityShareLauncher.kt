@@ -34,9 +34,7 @@ actual fun rememberIdentityShareLauncher(
 
                             putExtra(
                                 Intent.EXTRA_TEXT,
-                                buildShareText(
-                                    encodedIdentity = payload
-                                )
+                                payload
                             )
                         }
 
@@ -46,10 +44,6 @@ actual fun rememberIdentityShareLauncher(
                             sendIntent,
                             currentShareTitle.value
                         ).apply {
-                        /*
-                         * LocalContext may theoretically be backed by
-                         * a non-Activity Context.
-                         */
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         }
 
@@ -58,16 +52,3 @@ actual fun rememberIdentityShareLauncher(
         }
     }
 }
-
-private fun buildShareText(encodedIdentity: String): String =
-    buildString {
-        /*appendLine("Add me on SecureChat.")
-
-        appendLine()
-
-        appendLine("Open SecureChat and import this identity:")
-
-        appendLine()*/
-
-        append(encodedIdentity)
-    }

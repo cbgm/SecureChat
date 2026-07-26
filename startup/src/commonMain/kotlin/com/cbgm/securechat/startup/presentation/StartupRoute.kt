@@ -22,7 +22,6 @@ fun StartupRoute(
     LaunchedEffect(startupUiState) {
         if (startupUiState == StartupUiState.Ready) {
             delay(1000)
-            // here goes loading of data
             onStartupComplete()
         }
     }
