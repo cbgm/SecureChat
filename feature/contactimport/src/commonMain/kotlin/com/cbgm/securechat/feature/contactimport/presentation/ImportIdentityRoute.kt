@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cbgm.securechat.core.extensions.toHexString
+import com.cbgm.securechat.feature.contactimport.presentation.model.ImportIdentityEvent
 import com.cbgm.securechat.feature.contactimport.presentation.model.ScannedIdentityPreview
 import com.cbgm.securechat.feature.contactimport.presentation.screen.ImportIdentityScreen
 import com.cbgm.securechat.feature.contactimport.presentation.screen.ImportIdentityViewModel
@@ -64,14 +65,14 @@ fun ImportIdentityRoute(
                  * the current screen can show its normal validation
                  * error when the user presses Import.
                  */
-                viewModel.onEncodedIdentityChanged(encodedIdentity)
+                viewModel.onEvent(ImportIdentityEvent.EncodedIdentityChanged(encodedIdentity))
             }
     }
 
     ImportIdentityScreen(
         uiState = uiState,
-        onEncodedIdentityChanged = viewModel::onEncodedIdentityChanged,
-        onImportClick = viewModel::importIdentity,
+        onEncodedIdentityChanged = { viewModel.onEvent(ImportIdentityEvent.EncodedIdentityChanged(it)) },
+        onImportClick = { viewModel.onEvent(ImportIdentityEvent.ImportClicked) },
         onScanQrCode = onScanQrCode,
         onBack = onBack
     )
@@ -82,9 +83,9 @@ fun ImportIdentityRoute(
             onConfirm = {
                 scannedIdentityPreview = null
 
-                viewModel.onEncodedIdentityChanged(preview.encodedIdentity)
+                viewModel.onEvent(ImportIdentityEvent.EncodedIdentityChanged(preview.encodedIdentity))
 
-                viewModel.importIdentity()
+                viewModel.onEvent(ImportIdentityEvent.ImportClicked)
             },
             onDismiss = {
                 scannedIdentityPreview = null

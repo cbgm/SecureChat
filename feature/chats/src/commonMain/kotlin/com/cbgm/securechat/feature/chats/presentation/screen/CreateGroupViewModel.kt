@@ -3,10 +3,13 @@ package com.cbgm.securechat.feature.chats.presentation.screen
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cbgm.securechat.feature.chats.domain.usecase.CreateGroupConversation
+import com.cbgm.securechat.feature.chats.presentation.model.CreateGroupEffect
+import com.cbgm.securechat.feature.chats.presentation.model.CreateGroupEvent
 import com.cbgm.securechat.feature.chats.presentation.model.CreateGroupUiState
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContacts
-import com.cbgm.securechat.feature.contacts.presentation.model.ContactGroupEntity
+import com.cbgm.securechat.feature.contacts.presentation.mapper.filterContacts
+import com.cbgm.securechat.feature.contacts.presentation.mapper.groupContactsByInitial
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,8 +26,8 @@ class CreateGroupViewModel(
     private val _uiState = MutableStateFlow(CreateGroupUiState())
     val uiState: StateFlow<CreateGroupUiState> = _uiState.asStateFlow()
 
-    private val groupCreatedChannel = Channel<String>(capacity = Channel.BUFFERED)
-    val groupCreated = groupCreatedChannel.receiveAsFlow()
+    private val _effects = Channel<CreateGroupEffect>(capacity = Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
 
     private var contacts: List<Contact> = emptyList()
 
@@ -32,20 +35,29 @@ class CreateGroupViewModel(
         observeAvailableContacts()
     }
 
-    fun onTitleChanged(title: String) {
+    fun onEvent(event: CreateGroupEvent) {
+        when (event) {
+            is CreateGroupEvent.TitleChanged -> updateTitle(event.title)
+            is CreateGroupEvent.SearchQueryChanged -> updateSearchQuery(event.query)
+            is CreateGroupEvent.ContactSelectionToggled -> toggleContactSelection(event.contactId)
+            CreateGroupEvent.CreateClicked -> createGroup()
+        }
+    }
+
+    private fun updateTitle(title: String) {
         _uiState.update { it.copy(title = title, errorMessage = null) }
     }
 
-    fun onSearchQueryChanged(query: String) {
+    private fun updateSearchQuery(query: String) {
         _uiState.update { state ->
             state.copy(
                 searchQuery = query,
-                contactGroups = contacts.filterByQuery(query).groupByLetter()
+                contactGroups = contacts.filterContacts(query).groupContactsByInitial()
             )
         }
     }
 
-    fun onContactSelected(contactId: String) {
+    private fun toggleContactSelection(contactId: String) {
         _uiState.update { state ->
             val selectedContactIds =
                 state.selectedContactIds.toMutableSet().apply {
@@ -59,22 +71,25 @@ class CreateGroupViewModel(
         }
     }
 
-    fun onCreateGroup() {
+    private fun createGroup() {
         val state = _uiState.value
-        if (!state.canCreate) return
+        if (!state.canCreate || state.isCreating) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isCreating = true, errorMessage = null) }
-            runCatching {
-                createGroupConversation(state.title, state.selectedContactIds).getOrThrow()
-            }.onSuccess { conversationId ->
-                _uiState.update { it.copy(isCreating = false) }
-                groupCreatedChannel.send(conversationId)
-            }.onFailure { error ->
-                _uiState.update {
-                    it.copy(isCreating = false, errorMessage = error.message ?: "Group could not be created")
+
+            createGroupConversation(state.title, state.selectedContactIds)
+                .onSuccess { conversationId ->
+                    _uiState.update { it.copy(isCreating = false) }
+                    _effects.send(CreateGroupEffect.GroupCreated(conversationId))
+                }.onFailure { error ->
+                    _uiState.update {
+                        it.copy(
+                            isCreating = false,
+                            errorMessage = error.message ?: "Group could not be created"
+                        )
+                    }
                 }
-            }
         }
     }
 
@@ -82,12 +97,17 @@ class CreateGroupViewModel(
         viewModelScope.launch {
             observeContacts()
                 .catch { error ->
-                    _uiState.update { it.copy(errorMessage = error.message ?: "Contacts could not be loaded") }
+                    _uiState.update {
+                        it.copy(errorMessage = error.message ?: "Contacts could not be loaded")
+                    }
                 }.collect { observedContacts ->
                     contacts = observedContacts
                     _uiState.update { state ->
                         state.copy(
-                            contactGroups = contacts.filterByQuery(state.searchQuery).groupByLetter(),
+                            contactGroups =
+                                contacts
+                                    .filterContacts(state.searchQuery)
+                                    .groupContactsByInitial(),
                             selectedContactIds =
                                 state.selectedContactIds.filterTo(mutableSetOf()) { contactId ->
                                     contacts.any { it.id == contactId }
@@ -97,30 +117,4 @@ class CreateGroupViewModel(
                 }
         }
     }
-
-    private fun List<Contact>.filterByQuery(query: String): List<Contact> {
-        val trimmedQuery = query.trim()
-        if (trimmedQuery.isEmpty()) return this
-
-        val normalizedPhoneQuery = trimmedQuery.filter(Char::isDigit)
-        return filter { contact ->
-            contact.displayName?.contains(trimmedQuery, ignoreCase = true) == true ||
-                normalizedPhoneQuery.isNotEmpty() &&
-                contact.phoneNumbers.any { phoneNumber ->
-                    phoneNumber.value.filter(Char::isDigit).contains(normalizedPhoneQuery)
-                }
-        }
-    }
-
-    private fun List<Contact>.groupByLetter(): List<ContactGroupEntity> =
-        sortedBy { it.displayName.orEmpty().lowercase() }
-            .groupBy { contact ->
-                contact.displayName
-                    ?.trim()
-                    ?.firstOrNull()
-                    ?.uppercaseChar()
-                    ?.takeIf(Char::isLetter)
-                    ?.toString()
-                    ?: "#"
-            }.map { (title, contacts) -> ContactGroupEntity(title = title, contacts = contacts) }
 }

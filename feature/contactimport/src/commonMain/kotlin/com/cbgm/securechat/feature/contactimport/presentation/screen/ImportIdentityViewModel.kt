@@ -3,6 +3,7 @@ package com.cbgm.securechat.feature.contactimport.presentation.screen
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cbgm.securechat.feature.contactimport.domain.usecase.ImportSharedIdentity
+import com.cbgm.securechat.feature.contactimport.presentation.model.ImportIdentityEvent
 import com.cbgm.securechat.feature.contactimport.presentation.model.ImportIdentityUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,12 +15,18 @@ class ImportIdentityViewModel(
     private val importSharedIdentity: ImportSharedIdentity
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ImportIdentityUiState())
-
     val uiState: StateFlow<ImportIdentityUiState> = _uiState.asStateFlow()
 
-    fun onEncodedIdentityChanged(value: String) {
-        _uiState.update { current ->
-            current.copy(
+    fun onEvent(event: ImportIdentityEvent) {
+        when (event) {
+            is ImportIdentityEvent.EncodedIdentityChanged -> updateEncodedIdentity(event.value)
+            ImportIdentityEvent.ImportClicked -> importIdentity()
+        }
+    }
+
+    private fun updateEncodedIdentity(value: String) {
+        _uiState.update {
+            it.copy(
                 encodedIdentity = value,
                 importedContactName = null,
                 errorMessage = null
@@ -27,23 +34,20 @@ class ImportIdentityViewModel(
         }
     }
 
-    fun importIdentity() {
+    private fun importIdentity() {
         val encodedIdentity = _uiState.value.encodedIdentity.trim()
 
         if (encodedIdentity.isEmpty()) {
-            _uiState.update { current ->
-                current.copy(errorMessage = "Paste a shared SecureChat identity first")
+            _uiState.update {
+                it.copy(errorMessage = "Paste a shared SecureChat identity first")
             }
-
             return
         }
 
-        if (_uiState.value.isImporting) {
-            return
-        }
+        if (_uiState.value.isImporting) return
 
-        _uiState.update { current ->
-            current.copy(
+        _uiState.update {
+            it.copy(
                 isImporting = true,
                 importedContactName = null,
                 errorMessage = null
@@ -51,18 +55,18 @@ class ImportIdentityViewModel(
         }
 
         viewModelScope.launch {
-            importSharedIdentity(encodedIdentity = encodedIdentity)
+            importSharedIdentity(encodedIdentity)
                 .onSuccess { contact ->
-                    _uiState.update { current ->
-                        current.copy(
+                    _uiState.update {
+                        it.copy(
                             isImporting = false,
                             importedContactName = contact.displayName ?: "Unnamed contact",
                             errorMessage = null
                         )
                     }
                 }.onFailure { error ->
-                    _uiState.update { current ->
-                        current.copy(
+                    _uiState.update {
+                        it.copy(
                             isImporting = false,
                             importedContactName = null,
                             errorMessage = error.message ?: "Identity import failed"

@@ -9,6 +9,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.cbgm.securechat.feature.settings.presentation.model.SettingsEffect
+import com.cbgm.securechat.feature.settings.presentation.model.SettingsEvent
 import com.cbgm.securechat.feature.settings.presentation.screen.SettingsScreen
 import com.cbgm.securechat.feature.settings.presentation.screen.SettingsViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -25,13 +27,13 @@ fun SettingsRoute(
     viewModel: SettingsViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState.snackbarMessage) {
-        uiState.snackbarMessage?.let { message ->
-            snackbarHostState.showSnackbar(message)
-            viewModel.onSnackbarShown()
+    LaunchedEffect(viewModel) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is SettingsEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+            }
         }
     }
 
@@ -42,10 +44,10 @@ fun SettingsRoute(
         onOpenDataDisclaimer = onNavigateToDataDisclaimer,
         onOpenLicenses = onNavigateToLicenses,
         onOpenDeveloperMenu = onNavigateToDeveloperMenu,
-        onOpenLanguagePicker = viewModel::onOpenLanguagePicker,
-        onDismissLanguagePicker = viewModel::onDismissLanguagePicker,
-        onLanguageSelected = viewModel::onLanguageSelected,
-        onVersionRowTapped = viewModel::onVersionRowTapped,
+        onOpenLanguagePicker = { viewModel.onEvent(SettingsEvent.LanguagePickerOpened) },
+        onDismissLanguagePicker = { viewModel.onEvent(SettingsEvent.LanguagePickerDismissed) },
+        onLanguageSelected = { viewModel.onEvent(SettingsEvent.LanguageSelected(it)) },
+        onVersionRowTapped = { viewModel.onEvent(SettingsEvent.VersionRowTapped) },
         scrollState = scrollState,
         innerPadding = innerPadding,
         modifier = modifier

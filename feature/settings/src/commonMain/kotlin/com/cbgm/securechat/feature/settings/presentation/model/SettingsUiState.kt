@@ -9,8 +9,7 @@ data class SettingsUiState(
     val isDeveloperModeEnabled: Boolean = false,
     val developerModeTapCount: Int = 0,
     val showLanguagePicker: Boolean = false,
-    val isClearingLocalData: Boolean = false,
-    val snackbarMessage: String? = null
+    val isClearingLocalData: Boolean = false
 )
 
 // Taps required on the version row to reveal developer options — classic
