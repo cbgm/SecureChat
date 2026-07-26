@@ -7,9 +7,9 @@
   "maximumDirectDependencyCount": 13,
   "maximumDirectDependentCount": 9,
   "sourceSetCount": 8,
-  "kotlinSourceFileCount": 400,
-  "productionKotlinFileCount": 387,
-  "testKotlinFileCount": 13,
+  "kotlinSourceFileCount": 427,
+  "productionKotlinFileCount": 411,
+  "testKotlinFileCount": 16,
   "resourceFileCount": 53,
   "modulesByGroup": {
     "androidApp": 1,
