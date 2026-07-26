@@ -7,7 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.cbgm.securechat.core.extensions.toHexString
+import com.cbgm.securechat.core.extensions.toFingerprint
 import com.cbgm.securechat.feature.contactimport.presentation.model.ImportIdentityEvent
 import com.cbgm.securechat.feature.contactimport.presentation.model.ScannedIdentityPreview
 import com.cbgm.securechat.feature.contactimport.presentation.screen.ImportIdentityScreen
@@ -92,19 +92,4 @@ fun ImportIdentityRoute(
             }
         )
     }
-}
-
-private fun ByteArray.toFingerprint(): String {
-    /*
-     * Full hexadecimal fingerprint grouped for readability.
-     *
-     * Example:
-     * 12AB-34CD-56EF-...
-     */
-    return toHexString()
-        .uppercase()
-        .chunked(4)
-        .joinToString(
-            separator = "-"
-        )
 }

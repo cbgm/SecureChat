@@ -52,7 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.crypto.safety.SafetyNumber
-import com.cbgm.securechat.core.extensions.toHexString
+import com.cbgm.securechat.core.extensions.toFingerprint
 import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
 import com.cbgm.securechat.core.ui.component.SecureChatCardNoAnimation
 import com.cbgm.securechat.core.ui.component.SecureChatScrollScaffold
@@ -884,12 +884,6 @@ private fun ContactPhoneNumber.displayLabel(): String {
         }
     return label?.takeIf { it.isNotBlank() } ?: typeLabel
 }
-
-private fun ByteArray.toFingerprint(): String =
-    toHexString()
-        .uppercase()
-        .chunked(4)
-        .joinToString(separator = "-")
 
 @Preview
 @Composable

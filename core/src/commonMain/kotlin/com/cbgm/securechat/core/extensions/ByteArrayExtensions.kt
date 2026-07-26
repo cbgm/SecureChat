@@ -53,3 +53,14 @@ fun String.hexToByteArray(): ByteArray {
             .toByte()
     }
 }
+
+/**
+ * Formats binary key material as an uppercase, grouped fingerprint.
+ *
+ * Example: 12AB-34CD-56EF
+ */
+fun ByteArray.toFingerprint(): String =
+    toHexString()
+        .uppercase()
+        .chunked(4)
+        .joinToString(separator = "-")

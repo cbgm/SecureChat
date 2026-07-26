@@ -11,7 +11,7 @@ import com.cbgm.securechat.resources.AppleGaramond_Bold
 import com.cbgm.securechat.resources.Res
 import org.jetbrains.compose.resources.Font
 
-val FontNAme @Composable get() =
+val SecureChatFontFamily @Composable get() =
     FontFamily(
         Font(
             resource = Res.font.AppleGaramond,
@@ -21,17 +21,13 @@ val FontNAme @Composable get() =
             resource = Res.font.AppleGaramond_Bold,
             weight = FontWeight.Bold
         )
-    /*Font(
-        resource = Res.font.roboto_medium,
-        weight = FontWeight.Medium
-    ),*/
     )
 
 val Typography @Composable get() =
     Typography(
         bodyLarge =
             TextStyle(
-                fontFamily = FontNAme,
+                fontFamily = SecureChatFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 21.sp,
                 lineHeight = 24.sp,
@@ -39,7 +35,7 @@ val Typography @Composable get() =
             ),
         bodyMedium =
             TextStyle(
-                fontFamily = FontNAme,
+                fontFamily = SecureChatFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 19.sp,
                 lineHeight = 24.sp,
@@ -47,7 +43,7 @@ val Typography @Composable get() =
             ),
         bodySmall =
             TextStyle(
-                fontFamily = FontNAme,
+                fontFamily = SecureChatFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 17.sp,
                 lineHeight = 24.sp,
@@ -55,7 +51,7 @@ val Typography @Composable get() =
             ),
         titleLarge =
             TextStyle(
-                fontFamily = FontNAme,
+                fontFamily = SecureChatFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 60.sp,
                 lineHeight = 50.sp,
@@ -63,7 +59,7 @@ val Typography @Composable get() =
             ),
         titleMedium =
             TextStyle(
-                fontFamily = FontNAme,
+                fontFamily = SecureChatFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 40.sp,
                 lineHeight = 30.sp,
@@ -71,7 +67,7 @@ val Typography @Composable get() =
             ),
         titleSmall =
             TextStyle(
-                fontFamily = FontNAme,
+                fontFamily = SecureChatFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 28.sp,
                 lineHeight = 28.sp,
@@ -79,7 +75,7 @@ val Typography @Composable get() =
             ),
         labelLarge =
             TextStyle(
-                fontFamily = FontNAme,
+                fontFamily = SecureChatFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 15.sp,
                 lineHeight = 24.sp,
@@ -87,7 +83,7 @@ val Typography @Composable get() =
             ),
         labelMedium =
             TextStyle(
-                fontFamily = FontNAme,
+                fontFamily = SecureChatFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 12.sp,
                 lineHeight = 24.sp,
@@ -95,7 +91,7 @@ val Typography @Composable get() =
             ),
         labelSmall =
             TextStyle(
-                fontFamily = FontNAme,
+                fontFamily = SecureChatFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 10.sp,
                 lineHeight = 24.sp,
@@ -103,7 +99,7 @@ val Typography @Composable get() =
             ),
         headlineLarge =
             TextStyle(
-                fontFamily = FontNAme,
+                fontFamily = SecureChatFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 30.sp,
                 lineHeight = 50.sp,
@@ -111,12 +107,10 @@ val Typography @Composable get() =
             ),
         headlineMedium =
             TextStyle(
-                fontFamily = FontNAme,
+                fontFamily = SecureChatFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 40.sp,
                 lineHeight = 28.sp,
                 letterSpacing = 0.sp
             )
     )
-
-// MaterialTheme.typography..bodysmall
