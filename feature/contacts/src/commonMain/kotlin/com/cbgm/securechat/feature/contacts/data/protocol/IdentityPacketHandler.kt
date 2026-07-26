@@ -10,6 +10,7 @@ import com.cbgm.securechat.core.protocol.packet.IdentityAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.IdentityPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactKeyExchangeStore
+import com.cbgm.securechat.feature.contacts.domain.repository.RemoteIdentityOrigin
 
 class IdentityPacketHandler(
     private val contactKeyExchangeStore: ContactKeyExchangeStore,
@@ -38,14 +39,8 @@ class IdentityPacketHandler(
                 .storeRemoteIdentity(
                     contactId = context.contactId,
                     encryptionPublicKey = identityPacket.encryptionPublicKey,
-                    signingPublicKey = identityPacket.signingPublicKey
-                ).getOrThrow()
-
-            contactKeyExchangeStore
-                .markRemoteIdentityPacketReceived(
-                    contactId = context.contactId,
-                    expectedRemoteEncryptionPublicKey = identityPacket.encryptionPublicKey,
-                    expectedRemoteSigningPublicKey = identityPacket.signingPublicKey
+                    signingPublicKey = identityPacket.signingPublicKey,
+                    origin = RemoteIdentityOrigin.REMOTE_PACKET
                 ).getOrThrow()
 
             val localSigningKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()

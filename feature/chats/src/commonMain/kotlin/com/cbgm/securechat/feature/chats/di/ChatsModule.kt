@@ -87,8 +87,7 @@ val chatsModule =
                 protocolOutbox = get(),
                 incomingTransportMessageDecoder = get(),
                 packetCodec = get(),
-                protocolPacketHandler = get(),
-                identityExchangeStarter = get()
+                protocolPacketHandler = get()
             )
         }
 

@@ -22,6 +22,7 @@ import com.cbgm.securechat.feature.contacts.domain.model.ImportDevicePhoneNumber
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactKeyExchangeStore
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
+import com.cbgm.securechat.feature.contacts.domain.repository.RemoteIdentityOrigin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -140,7 +141,8 @@ class DefaultContactRepository(
                 .storeRemoteIdentity(
                     contactId = contactId,
                     encryptionPublicKey = request.encryptionPublicKey,
-                    signingPublicKey = request.signingPublicKey
+                    signingPublicKey = request.signingPublicKey,
+                    origin = RemoteIdentityOrigin.LOCAL_IMPORT
                 ).getOrThrow()
 
             identityExchangeStarter

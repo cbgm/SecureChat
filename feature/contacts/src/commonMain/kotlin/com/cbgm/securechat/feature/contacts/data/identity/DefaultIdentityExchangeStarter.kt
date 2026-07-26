@@ -6,7 +6,6 @@ import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.packet.IdentityPacket
 import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.feature.contacts.domain.identity.IdentityExchangeStarter
-import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -38,26 +37,6 @@ class DefaultIdentityExchangeStarter(
                 val contact =
                     contactDao.findById(contactId = contactId)
                         ?: error("Contact was not found: $contactId")
-
-                val remoteIdentity = contact.publicIdentity
-
-                val currentStatus =
-                    remoteIdentity?.let { identity ->
-                        KeyExchangeStatus.entries.firstOrNull { status ->
-                            status.name == identity.keyExchangeStatus
-                        }
-                    } ?: KeyExchangeStatus.ONE_WAY
-
-                /*
-                 * MUTUAL is persistent. Once reached, no new identity
-                 * packet is needed unless the identity keys change.
-                 *
-                 * Contacts without remote keys still receive our identity
-                 * through their phone-number-derived relay address.
-                 */
-                if (currentStatus == KeyExchangeStatus.MUTUAL) {
-                    return@runCatching
-                }
 
                 val localIdentity =
                     localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()

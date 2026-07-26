@@ -32,7 +32,6 @@ import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryProgress
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
 import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
-import com.cbgm.securechat.feature.contacts.domain.identity.IdentityExchangeStarter
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
@@ -48,7 +47,6 @@ class DefaultChatsRepository(
     private val getContact: GetContact,
     private val localPublicIdentityProvider: LocalPublicIdentityProvider,
     private val localPhoneNumberProvider: LocalPhoneNumberProvider,
-    private val identityExchangeStarter: IdentityExchangeStarter,
     private val protocolOutbox: ProtocolOutbox,
     private val incomingTransportMessageDecoder: IncomingTransportMessageDecoder,
     private val packetCodec: PacketCodec,
@@ -259,8 +257,6 @@ class DefaultChatsRepository(
         check(conversation.type == DIRECT_CONVERSATION_TYPE) { "Conversation is not direct" }
         val contactId = requireNotNull(conversation.contactId) { "Direct conversation has no contact" }
         val contact = getContact(contactId).getOrThrow() ?: error("Contact was not found")
-
-        identityExchangeStarter.ensureStarted(contactId).getOrThrow()
 
         val now = SystemClock.nowEpochMilliseconds()
         val messageId = createId(prefix = "message")

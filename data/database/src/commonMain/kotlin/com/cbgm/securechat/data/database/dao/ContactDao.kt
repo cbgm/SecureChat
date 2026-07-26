@@ -183,13 +183,55 @@ interface ContactDao {
 
     @Query(
         """
+    UPDATE contact_public_identities
+    SET keyExchangeStatus = :keyExchangeStatus,
+        updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
+    WHERE contactId = :contactId
+      AND encryptionPublicKey = :expectedEncryptionPublicKey
+      AND signingPublicKey = :expectedSigningPublicKey
+      AND locallyImported = 1
+      AND remoteIdentityPacketReceived = 1
+    """
+    )
+    suspend fun updateKeyExchangeStatusIfKeysMatch(
+        contactId: String,
+        expectedEncryptionPublicKey: ByteArray,
+        expectedSigningPublicKey: ByteArray,
+        keyExchangeStatus: String,
+        updatedAtEpochMilliseconds: Long
+    ): Int
+
+    @Query(
+        """
+        UPDATE contact_public_identities
+        SET locallyImported = 1,
+            keyExchangeStatus = CASE
+                WHEN remoteIdentityPacketReceived = 1 THEN :mutualStatus
+                ELSE :oneWayStatus
+            END,
+            updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
+        WHERE contactId = :contactId
+          AND encryptionPublicKey = :expectedEncryptionPublicKey
+          AND signingPublicKey = :expectedSigningPublicKey
+        """
+    )
+    suspend fun markLocallyImportedIfKeysMatch(
+        contactId: String,
+        expectedEncryptionPublicKey: ByteArray,
+        expectedSigningPublicKey: ByteArray,
+        oneWayStatus: String,
+        mutualStatus: String,
+        updatedAtEpochMilliseconds: Long
+    ): Int
+
+    @Query(
+        """
         UPDATE contact_public_identities
         SET remoteIdentityPacketReceived = 1,
-            keyExchangeStatus =
-                CASE
-                    WHEN localIdentityAcknowledged = 1 THEN :mutualStatus
-                    ELSE :oneWayStatus
-                END,
+            keyExchangeStatus = CASE
+                WHEN locallyImported = 1 THEN :mutualStatus
+                ELSE :oneWayStatus
+            END,
             updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
         WHERE contactId = :contactId
           AND encryptionPublicKey = :expectedEncryptionPublicKey
@@ -207,34 +249,8 @@ interface ContactDao {
 
     @Query(
         """
-        UPDATE contact_public_identities
-        SET localIdentityAcknowledged = 1,
-            keyExchangeStatus =
-                CASE
-                    WHEN remoteIdentityPacketReceived = 1 THEN :mutualStatus
-                    ELSE :oneWayStatus
-                END,
-            updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
-        WHERE contactId = :contactId
-          AND encryptionPublicKey = :expectedEncryptionPublicKey
-          AND signingPublicKey = :expectedSigningPublicKey
-        """
-    )
-    suspend fun markLocalIdentityAcknowledgedIfKeysMatch(
-        contactId: String,
-        expectedEncryptionPublicKey: ByteArray,
-        expectedSigningPublicKey: ByteArray,
-        oneWayStatus: String,
-        mutualStatus: String,
-        updatedAtEpochMilliseconds: Long
-    ): Int
-
-    @Query(
-        """
     UPDATE contact_public_identities
     SET keyExchangeStatus = :keyExchangeStatus,
-        verificationStatus = 'UNVERIFIED',
-        localIdentityAcknowledged = 0,
         updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
     WHERE keyExchangeStatus = :currentKeyExchangeStatus
     """

@@ -152,25 +152,21 @@ object DatabaseMigrations {
                 )
             }
         }
-
     val Migration12To13 =
         object : Migration(12, 13) {
             override fun migrate(connection: SQLiteConnection) {
                 connection.execSQL(
                     "ALTER TABLE contact_public_identities " +
-                        "ADD COLUMN remoteIdentityPacketReceived INTEGER NOT NULL DEFAULT 0"
+                        "ADD COLUMN locallyImported INTEGER NOT NULL DEFAULT 0"
                 )
                 connection.execSQL(
                     "ALTER TABLE contact_public_identities " +
-                        "ADD COLUMN localIdentityAcknowledged INTEGER NOT NULL DEFAULT 0"
+                        "ADD COLUMN remoteIdentityPacketReceived INTEGER NOT NULL DEFAULT 0"
                 )
                 connection.execSQL(
-                    """
-                    UPDATE contact_public_identities
-                    SET keyExchangeStatus = 'ONE_WAY',
-                        verificationStatus = 'UNVERIFIED'
-                    WHERE keyExchangeStatus = 'MUTUAL'
-                    """.trimIndent()
+                    "UPDATE contact_public_identities " +
+                        "SET keyExchangeStatus = 'ONE_WAY', " +
+                        "verificationStatus = 'UNVERIFIED'"
                 )
             }
         }

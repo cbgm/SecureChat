@@ -6,12 +6,10 @@ import com.cbgm.securechat.core.protocol.handler.TypedProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentityProvider
 import com.cbgm.securechat.core.protocol.packet.IdentityAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
-import com.cbgm.securechat.feature.contacts.domain.repository.ContactKeyExchangeStore
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
 
 class IdentityAcknowledgementPacketHandler(
     private val contactRepository: ContactRepository,
-    private val contactKeyExchangeStore: ContactKeyExchangeStore,
     private val localPublicIdentityProvider: LocalPublicIdentityProvider,
     private val identityAcknowledgementCrypto: IdentityAcknowledgementCrypto
 ) : TypedProtocolPacketHandler {
@@ -74,18 +72,6 @@ class IdentityAcknowledgementPacketHandler(
 
             println("Identity acknowledgement verified: contactId=${context.contactId}")
 
-            /*
-             * The conditional DAO update additionally ensures that the
-             * remote identity did not change while verification was in
-             * progress.
-             */
-            contactKeyExchangeStore
-                .markMutual(
-                    contactId = context.contactId,
-                    expectedRemoteEncryptionPublicKey = remoteIdentity.encryptionPublicKey,
-                    expectedRemoteSigningPublicKey = remoteIdentity.signingPublicKey
-                ).getOrThrow()
-
-            println("Contact marked MUTUAL: " + "contactId=${context.contactId}")
+            // Delivery acknowledgement only. It must never change trust state.
         }
 }
