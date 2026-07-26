@@ -10,9 +10,9 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `feature` |
 | Directory | `feature/transport` |
 | Build file | `feature/transport/build.gradle.kts` |
-| Kotlin files | 21 |
+| Kotlin files | 23 |
 | Production Kotlin files | 21 |
-| Test Kotlin files | 0 |
+| Test Kotlin files | 2 |
 | Resource files | 1 |
 | Direct dependencies | 2 |
 | Direct dependents | 2 |
@@ -23,6 +23,7 @@ Generated automatically by `./gradlew architectureReport`.
 - `androidHostTest`
 - `androidMain`
 - `commonMain`
+- `commonTest`
 - `iosMain`
 
 ## Dependencies

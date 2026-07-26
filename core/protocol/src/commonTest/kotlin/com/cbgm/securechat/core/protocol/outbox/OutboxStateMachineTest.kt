@@ -3,6 +3,7 @@ package com.cbgm.securechat.core.protocol.outbox
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 
 class OutboxStateMachineTest {
     @Test
@@ -57,6 +58,56 @@ class OutboxStateMachineTest {
                 OutboxStateMachine.requireTransition(
                     current = OutboxStatus.PROCESSING,
                     event = OutboxEvent.RECOVERY_REQUESTED
+                )
+        )
+    }
+
+    @Test
+    fun pendingAcceptsOnlyProcessingStarted() {
+        OutboxEvent.entries
+            .filterNot { event -> event == OutboxEvent.PROCESSING_STARTED }
+            .forEach { event ->
+                assertNull(
+                    actual =
+                        OutboxStateMachine.transition(
+                            current = OutboxStatus.PENDING,
+                            event = event
+                        ),
+                    message = "PENDING must reject $event"
+                )
+            }
+    }
+
+    @Test
+    fun sentStateIsTerminal() {
+        OutboxEvent.entries.forEach { event ->
+            assertNull(
+                actual =
+                    OutboxStateMachine.transition(
+                        current = OutboxStatus.SENT,
+                        event = event
+                    ),
+                message = "SENT must reject $event"
+            )
+        }
+    }
+
+    @Test
+    fun failedStateCanBeRetriedOrProcessedAgain() {
+        assertEquals(
+            expected = OutboxStatus.PENDING,
+            actual =
+                OutboxStateMachine.transition(
+                    current = OutboxStatus.FAILED,
+                    event = OutboxEvent.RETRY_REQUESTED
+                )
+        )
+        assertEquals(
+            expected = OutboxStatus.PROCESSING,
+            actual =
+                OutboxStateMachine.transition(
+                    current = OutboxStatus.FAILED,
+                    event = OutboxEvent.PROCESSING_STARTED
                 )
         )
     }

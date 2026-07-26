@@ -97,9 +97,9 @@
     "group": "core",
     "directory": "core/protocol",
     "buildFile": "core/protocol/build.gradle.kts",
-    "kotlinSourceFileCount": 43,
+    "kotlinSourceFileCount": 44,
     "productionKotlinFileCount": 40,
-    "testKotlinFileCount": 3,
+    "testKotlinFileCount": 4,
     "resourceFileCount": 1,
     "sourceSets": [
       "androidDeviceTest",
@@ -280,9 +280,9 @@
     "group": "feature",
     "directory": "feature/contacts",
     "buildFile": "feature/contacts/build.gradle.kts",
-    "kotlinSourceFileCount": 63,
+    "kotlinSourceFileCount": 64,
     "productionKotlinFileCount": 62,
-    "testKotlinFileCount": 1,
+    "testKotlinFileCount": 2,
     "resourceFileCount": 1,
     "sourceSets": [
       "androidDeviceTest",
@@ -344,13 +344,14 @@
     "group": "feature",
     "directory": "feature/messaging",
     "buildFile": "feature/messaging/build.gradle.kts",
-    "kotlinSourceFileCount": 10,
+    "kotlinSourceFileCount": 15,
     "productionKotlinFileCount": 10,
-    "testKotlinFileCount": 0,
+    "testKotlinFileCount": 5,
     "resourceFileCount": 1,
     "sourceSets": [
       "androidMain",
-      "commonMain"
+      "commonMain",
+      "commonTest"
     ],
     "dependencies": [
       ":core",
@@ -424,15 +425,16 @@
     "group": "feature",
     "directory": "feature/transport",
     "buildFile": "feature/transport/build.gradle.kts",
-    "kotlinSourceFileCount": 21,
+    "kotlinSourceFileCount": 23,
     "productionKotlinFileCount": 21,
-    "testKotlinFileCount": 0,
+    "testKotlinFileCount": 2,
     "resourceFileCount": 1,
     "sourceSets": [
       "androidDeviceTest",
       "androidHostTest",
       "androidMain",
       "commonMain",
+      "commonTest",
       "iosMain"
     ],
     "dependencies": [
@@ -517,9 +519,9 @@
     "group": "relay",
     "directory": "relay",
     "buildFile": "relay/build.gradle.kts",
-    "kotlinSourceFileCount": 14,
+    "kotlinSourceFileCount": 15,
     "productionKotlinFileCount": 14,
-    "testKotlinFileCount": 0,
+    "testKotlinFileCount": 1,
     "resourceFileCount": 2,
     "sourceSets": [
       "androidDeviceTest",
@@ -527,7 +529,8 @@
       "androidMain",
       "commonMain",
       "iosMain",
-      "main"
+      "main",
+      "test"
     ],
     "dependencies": [
     ],

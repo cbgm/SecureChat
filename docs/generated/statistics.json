@@ -6,10 +6,10 @@
   "moduleWithoutDependentsCount": 6,
   "maximumDirectDependencyCount": 14,
   "maximumDirectDependentCount": 10,
-  "sourceSetCount": 8,
-  "kotlinSourceFileCount": 441,
+  "sourceSetCount": 9,
+  "kotlinSourceFileCount": 451,
   "productionKotlinFileCount": 425,
-  "testKotlinFileCount": 16,
+  "testKotlinFileCount": 26,
   "resourceFileCount": 54,
   "modulesByGroup": {
     "androidApp": 1,
@@ -27,9 +27,10 @@
     "androidHostTest": 16,
     "androidMain": 17,
     "commonMain": 17,
-    "commonTest": 5,
+    "commonTest": 7,
     "iosMain": 16,
     "iosTest": 1,
-    "main": 3
+    "main": 3,
+    "test": 1
   }
 }

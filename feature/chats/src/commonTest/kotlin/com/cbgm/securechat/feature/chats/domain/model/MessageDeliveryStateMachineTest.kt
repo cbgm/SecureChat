@@ -2,6 +2,8 @@ package com.cbgm.securechat.feature.chats.domain.model
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class MessageDeliveryStateMachineTest {
     @Test
@@ -48,6 +50,70 @@ class MessageDeliveryStateMachineTest {
     }
 
     @Test
+    fun failedMessageCanReturnToQueueAndBeSent() {
+        val failed =
+            MessageDeliveryStateMachine.transition(
+                current = MessageDeliveryStatus.SENDING,
+                event = MessageDeliveryEvent.SEND_FAILED
+            )
+        val queued =
+            MessageDeliveryStateMachine.transition(
+                current = failed,
+                event = MessageDeliveryEvent.RETRY_REQUESTED
+            )
+        val sending =
+            MessageDeliveryStateMachine.transition(
+                current = queued,
+                event = MessageDeliveryEvent.SEND_STARTED
+            )
+
+        assertEquals(MessageDeliveryStatus.FAILED, failed)
+        assertEquals(MessageDeliveryStatus.QUEUED, queued)
+        assertEquals(MessageDeliveryStatus.SENDING, sending)
+    }
+
+    @Test
+    fun deliveryReceiptCanRecoverFromEarlierLocalFailure() {
+        val delivered =
+            MessageDeliveryStateMachine.transition(
+                current = MessageDeliveryStatus.FAILED,
+                event = MessageDeliveryEvent.DELIVERY_CONFIRMED
+            )
+
+        assertEquals(MessageDeliveryStatus.DELIVERED, delivered)
+    }
+
+    @Test
+    fun incomingStatusIgnoresOutgoingEvents() {
+        MessageDeliveryEvent.entries.forEach { event ->
+            assertEquals(
+                expected = MessageDeliveryStatus.NOT_APPLICABLE,
+                actual =
+                    MessageDeliveryStateMachine.transition(
+                        current = MessageDeliveryStatus.NOT_APPLICABLE,
+                        event = event
+                    )
+            )
+        }
+    }
+
+    @Test
+    fun canTransitionReportsOnlyRealStateChanges() {
+        assertTrue(
+            MessageDeliveryStateMachine.canTransition(
+                current = MessageDeliveryStatus.FAILED,
+                event = MessageDeliveryEvent.RETRY_REQUESTED
+            )
+        )
+        assertFalse(
+            MessageDeliveryStateMachine.canTransition(
+                current = MessageDeliveryStatus.SENT,
+                event = MessageDeliveryEvent.SEND_STARTED
+            )
+        )
+    }
+
+    @Test
     fun groupStatusIsDerivedFromRecipientStates() {
         assertEquals(
             expected = MessageDeliveryStatus.SENT,
@@ -77,6 +143,44 @@ class MessageDeliveryStateMachineTest {
                     listOf(
                         MessageDeliveryStatus.READ,
                         MessageDeliveryStatus.READ
+                    )
+                )
+        )
+    }
+
+    @Test
+    fun groupAggregationHandlesEmptyFailedAndMixedRecipientStates() {
+        assertEquals(
+            expected = MessageDeliveryStatus.NOT_APPLICABLE,
+            actual = MessageDeliveryStateMachine.aggregate(emptyList())
+        )
+        assertEquals(
+            expected = MessageDeliveryStatus.FAILED,
+            actual =
+                MessageDeliveryStateMachine.aggregate(
+                    listOf(
+                        MessageDeliveryStatus.FAILED,
+                        MessageDeliveryStatus.FAILED
+                    )
+                )
+        )
+        assertEquals(
+            expected = MessageDeliveryStatus.SENDING,
+            actual =
+                MessageDeliveryStateMachine.aggregate(
+                    listOf(
+                        MessageDeliveryStatus.SENDING,
+                        MessageDeliveryStatus.SENT
+                    )
+                )
+        )
+        assertEquals(
+            expected = MessageDeliveryStatus.QUEUED,
+            actual =
+                MessageDeliveryStateMachine.aggregate(
+                    listOf(
+                        MessageDeliveryStatus.SENT,
+                        MessageDeliveryStatus.FAILED
                     )
                 )
         )
