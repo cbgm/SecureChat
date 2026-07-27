@@ -221,9 +221,9 @@
     "group": "feature",
     "directory": "feature/chats",
     "buildFile": "feature/chats/build.gradle.kts",
-    "kotlinSourceFileCount": 84,
+    "kotlinSourceFileCount": 85,
     "productionKotlinFileCount": 77,
-    "testKotlinFileCount": 7,
+    "testKotlinFileCount": 8,
     "resourceFileCount": 1,
     "sourceSets": [
       "androidDeviceTest",
