@@ -73,7 +73,11 @@ class GroupSecurityManager(
                         ?: error("Existing owner group key was not found")
                 }
 
-            groupSecurityDao.replaceCurrentEpoch(state = state, memberKeys = memberKeys)
+            if (existingState == null) {
+                groupSecurityDao.replaceCurrentEpoch(state = state, memberKeys = memberKeys)
+            } else {
+                groupSecurityDao.upsertMemberKeys(memberKeys)
+            }
 
             val packets =
                 recipients.associate { recipient ->
@@ -243,19 +247,34 @@ class GroupSecurityManager(
                     groupKey = openedWelcome.groupKey
                 ).getOrThrow()
 
-            groupSecurityDao.replaceCurrentEpoch(
-                state =
-                    GroupSecurityStateEntity(
-                        groupId = packet.groupId,
-                        currentEpoch = packet.epoch,
-                        welcomePacketId = packet.packetId,
-                        ownerContactId = ownerContactId,
-                        ownerSigningPublicKey = owner.signingPublicKey.copyOf(),
-                        localSigningPublicKey = localSigningPublicKey.copyOf(),
-                        updatedAtEpochMilliseconds = receivedAtEpochMilliseconds
-                    ),
-                memberKeys = memberKeys
-            )
+            val existingState = groupSecurityDao.findState(packet.groupId)
+            val joinedState =
+                GroupSecurityStateEntity(
+                    groupId = packet.groupId,
+                    currentEpoch = packet.epoch,
+                    welcomePacketId = packet.packetId,
+                    ownerContactId = ownerContactId,
+                    ownerSigningPublicKey = owner.signingPublicKey.copyOf(),
+                    localSigningPublicKey = localSigningPublicKey.copyOf(),
+                    updatedAtEpochMilliseconds = receivedAtEpochMilliseconds
+                )
+            if (existingState == null) {
+                groupSecurityDao.replaceCurrentEpoch(
+                    state = joinedState,
+                    memberKeys = memberKeys
+                )
+            } else {
+                check(
+                    existingState.currentEpoch == joinedState.currentEpoch &&
+                        existingState.welcomePacketId == joinedState.welcomePacketId &&
+                        existingState.ownerContactId == joinedState.ownerContactId &&
+                        existingState.ownerSigningPublicKey.contentEquals(joinedState.ownerSigningPublicKey) &&
+                        existingState.localSigningPublicKey.contentEquals(joinedState.localSigningPublicKey)
+                ) {
+                    "Repeated group welcome conflicts with the installed group state"
+                }
+                groupSecurityDao.upsertMemberKeys(memberKeys)
+            }
 
             groupKeyStorage
                 .deleteBefore(

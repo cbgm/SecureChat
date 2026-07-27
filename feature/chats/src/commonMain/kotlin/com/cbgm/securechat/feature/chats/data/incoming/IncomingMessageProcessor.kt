@@ -14,6 +14,8 @@ import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInvitePacket
 import com.cbgm.securechat.core.protocol.packet.GroupJoinRequestPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMemberActivatedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMemberActivationAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.GroupReadyAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.core.time.SystemClock
@@ -141,6 +143,8 @@ class IncomingMessageProcessor(
         when (packet) {
             is ChatMessagePacket -> directConversationStore.getOrCreate(contactId).id
             is GroupCreatedPacket -> packet.groupId
+            is GroupMemberActivatedPacket -> packet.groupId
+            is GroupMemberActivationAcknowledgementPacket -> packet.groupId
             is GroupChatMessagePacket -> packet.groupId
             is GroupInvitePacket -> packet.groupId
             is GroupJoinRequestPacket -> packet.groupId

@@ -5,6 +5,8 @@ import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInvitePacket
 import com.cbgm.securechat.core.protocol.packet.GroupJoinRequestPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMemberActivatedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMemberActivationAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
 import com.cbgm.securechat.core.protocol.packet.GroupReadyAcknowledgementPacket
 
@@ -56,6 +58,34 @@ class GroupProtocolPayloadEncoder {
             ByteArrays.encodeInt(packet.epoch),
             encodeString(packet.welcomePacketId),
             ByteArrays.withLengthPrefix(packet.keyConfirmation)
+        )
+
+    fun encodeMemberActivated(packet: GroupMemberActivatedPacket): ByteArray =
+        ByteArrays.concatenate(
+            MEMBER_ACTIVATED_DOMAIN,
+            ByteArrays.encodeInt(packet.version),
+            encodeString(packet.packetId),
+            encodeString(packet.groupId),
+            ByteArrays.encodeInt(packet.epoch),
+            encodeString(packet.activationId),
+            encodeMembers(listOf(packet.member)),
+            ByteArrays.encodeLong(packet.activatedAtEpochMilliseconds),
+            ByteArrays.encodeInt(packet.activationRound)
+        )
+
+    fun encodeMemberActivationAcknowledgement(packet: GroupMemberActivationAcknowledgementPacket): ByteArray =
+        ByteArrays.concatenate(
+            MEMBER_ACTIVATION_ACKNOWLEDGEMENT_DOMAIN,
+            ByteArrays.encodeInt(packet.version),
+            encodeString(packet.packetId),
+            encodeString(packet.groupId),
+            ByteArrays.encodeInt(packet.epoch),
+            encodeString(packet.activationPacketId),
+            encodeString(packet.activationId),
+            ByteArrays.encodeInt(packet.activationRound),
+            ByteArrays.withLengthPrefix(packet.activatedMemberSigningPublicKey),
+            ByteArrays.withLengthPrefix(packet.acknowledgingMemberSigningPublicKey),
+            ByteArrays.encodeLong(packet.acknowledgedAtEpochMilliseconds)
         )
 
     fun encodeWelcome(packet: GroupCreatedPacket): ByteArray =
@@ -127,6 +157,9 @@ class GroupProtocolPayloadEncoder {
         }
 
     private companion object {
+        val MEMBER_ACTIVATED_DOMAIN = "securechat.group-member-activated.v1".encodeToByteArray()
+        val MEMBER_ACTIVATION_ACKNOWLEDGEMENT_DOMAIN =
+            "securechat.group-member-activation-acknowledgement.v1".encodeToByteArray()
         val INVITE_DOMAIN = "securechat.group-invite.v1".encodeToByteArray()
         val JOIN_REQUEST_DOMAIN = "securechat.group-join-request.v1".encodeToByteArray()
         val INVITE_DECLINED_DOMAIN = "securechat.group-invite-declined.v1".encodeToByteArray()

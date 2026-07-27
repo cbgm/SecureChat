@@ -3,11 +3,14 @@ package com.cbgm.securechat.feature.chats.data.invitation
 import com.cbgm.securechat.core.id.IdGenerator
 import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentity
 import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentityProvider
+import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPair
 import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPairProvider
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInvitePacket
 import com.cbgm.securechat.core.protocol.packet.GroupJoinRequestPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMemberActivatedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMemberActivationAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
 import com.cbgm.securechat.core.protocol.packet.GroupReadyAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.phone.LocalPhoneNumberProvider
@@ -360,143 +363,260 @@ class GroupInvitationCoordinator(
         receivedAtEpochMilliseconds: Long
     ): Result<Unit> =
         runCatching {
-            val invitation =
-                groupInvitationDao.findByGroupAndContact(packet.groupId, memberContactId)
-                    ?: error("Group invitation was not found")
-            val expectedIdentity =
-                loadContact(memberContactId).secureChatIdentity
-                    ?: error("Group member identity was not found")
-            check(
-                packet.welcomePacketId ==
-                    groupSecurityManager.welcomePacketId(packet.groupId, packet.epoch, memberContactId)
-            ) {
-                "Ready acknowledgement references the wrong welcome"
-            }
-            groupInvitationManager
-                .verifyReadyAcknowledgement(packet, expectedIdentity.signingPublicKey)
-                .getOrThrow()
-            groupSecurityManager
-                .verifyKeyConfirmation(
+            activationMutex.withLock {
+                val invitation =
+                    groupInvitationDao.findByGroupAndContact(packet.groupId, memberContactId)
+                        ?: error("Group invitation was not found")
+                val expectedIdentity =
+                    loadContact(memberContactId).secureChatIdentity
+                        ?: error("Group member identity was not found")
+                check(
+                    packet.welcomePacketId ==
+                        groupSecurityManager.welcomePacketId(packet.groupId, packet.epoch, memberContactId)
+                ) {
+                    "Ready acknowledgement references the wrong welcome"
+                }
+                groupInvitationManager
+                    .verifyReadyAcknowledgement(packet, expectedIdentity.signingPublicKey)
+                    .getOrThrow()
+                groupSecurityManager
+                    .verifyKeyConfirmation(
+                        groupId = packet.groupId,
+                        epoch = packet.epoch,
+                        keyConfirmation = packet.keyConfirmation
+                    ).getOrThrow()
+
+                if (invitation.status == GroupInvitationStatus.ACTIVE.name) {
+                    flushQueuedIfGroupHasActiveMembers(packet.groupId)
+                    return@withLock
+                }
+                check(invitation.status == GroupInvitationStatus.WELCOME_SENT.name) {
+                    "Group member is not waiting for a ready acknowledgement"
+                }
+
+                val activatedContact = loadContact(memberContactId)
+                val activeContacts =
+                    groupInvitationDao
+                        .findByGroupId(packet.groupId)
+                        .filter { activeInvitation -> activeInvitation.status == GroupInvitationStatus.ACTIVE.name }
+                        .map { activeInvitation -> loadContact(activeInvitation.contactId) }
+                        .filterNot { contact -> contact.id == memberContactId }
+                        .sortedBy(Contact::id)
+                val ownerSigningKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
+                val activationTimestamp =
+                    maxOf(
+                        invitation.createdAtEpochMilliseconds,
+                        receivedAtEpochMilliseconds
+                    )
+
+                activeContacts.forEach { activeContact ->
+                    enqueueMemberActivation(
+                        groupId = packet.groupId,
+                        epoch = packet.epoch,
+                        activationId = packet.packetId,
+                        activatedAtEpochMilliseconds = activationTimestamp,
+                        activationRound = GroupMemberActivatedPacket.DISCOVERY_ROUND,
+                        memberContact = activatedContact,
+                        recipientContactId = activeContact.id,
+                        ownerSigningKeyPair = ownerSigningKeyPair
+                    )
+                }
+                enqueueMemberActivation(
                     groupId = packet.groupId,
                     epoch = packet.epoch,
-                    keyConfirmation = packet.keyConfirmation
-                ).getOrThrow()
-
-            if (invitation.status == GroupInvitationStatus.ACTIVE.name) {
-                flushQueuedIfGroupActive(packet.groupId)
-                return@runCatching
-            }
-            check(
-                invitation.status == GroupInvitationStatus.WELCOME_SENT.name ||
-                    invitation.status == GroupInvitationStatus.IDENTITY_READY.name
-            ) {
-                "Group member is not waiting for a ready acknowledgement"
-            }
-            val updated =
-                groupInvitationDao.updateStatus(
-                    invitationId = invitation.invitationId,
-                    expectedStatus = invitation.status,
-                    newStatus = GroupInvitationStatus.ACTIVE.name,
-                    updatedAt = receivedAtEpochMilliseconds
+                    activationId = packet.packetId,
+                    activatedAtEpochMilliseconds = activationTimestamp,
+                    activationRound = GroupMemberActivatedPacket.FINAL_ROUND,
+                    memberContact = activatedContact,
+                    recipientContactId = memberContactId,
+                    ownerSigningKeyPair = ownerSigningKeyPair
                 )
-            check(updated == 1) { "Group invitation changed while readiness was applied" }
 
-            flushQueuedIfGroupActive(packet.groupId)
+                val updated =
+                    groupInvitationDao.updateStatus(
+                        invitationId = invitation.invitationId,
+                        expectedStatus = GroupInvitationStatus.WELCOME_SENT.name,
+                        newStatus = GroupInvitationStatus.ACTIVE.name,
+                        updatedAt = activationTimestamp
+                    )
+                check(updated == 1) { "Group invitation changed while readiness was applied" }
+
+                chatDao.upsertConversationParticipant(
+                    ConversationParticipantEntity(
+                        conversationId = packet.groupId,
+                        contactId = memberContactId,
+                        role = GROUP_MEMBER_ROLE,
+                        joinedAtEpochMilliseconds = activationTimestamp
+                    )
+                )
+
+                flushQueuedIfGroupHasActiveMembers(packet.groupId)
+            }
         }
 
     suspend fun activateGroupIfReady(groupId: String): Result<Unit> =
         runCatching {
             activationMutex.withLock {
-                val invitations = groupInvitationDao.findByGroupId(groupId)
-                check(invitations.isNotEmpty()) { "Group has no planned members" }
+                val readyInvitations =
+                    groupInvitationDao
+                        .findByGroupId(groupId)
+                        .filter { invitation -> invitation.status == GroupInvitationStatus.IDENTITY_READY.name }
+                        .sortedBy(GroupInvitationEntity::invitationId)
 
-                if (invitations.all { it.status == GroupInvitationStatus.ACTIVE.name }) {
-                    return@withLock
+                readyInvitations.forEach { invitation ->
+                    distributeGroupKeyToMember(groupId, invitation)
                 }
-
-                if (
-                    invitations.any {
-                        it.status == GroupInvitationStatus.INVITE_SENT.name ||
-                            it.status == GroupInvitationStatus.WAITING_FOR_IDENTITY.name ||
-                            it.status == GroupInvitationStatus.DECLINED.name ||
-                            it.status == GroupInvitationStatus.EXPIRED.name ||
-                            it.status == GroupInvitationStatus.FAILED.name
-                    }
-                ) {
-                    return@withLock
-                }
-
-                if (invitations.any { it.status == GroupInvitationStatus.WELCOME_SENT.name }) {
-                    return@withLock
-                }
-
-                check(invitations.all { it.status == GroupInvitationStatus.IDENTITY_READY.name }) {
-                    "Group invitations are in an inconsistent state"
-                }
-
-                activateGroup(groupId, invitations)
             }
         }
 
-    private suspend fun activateGroup(
+    suspend fun receiveMemberActivationAcknowledgement(
+        packet: GroupMemberActivationAcknowledgementPacket,
+        acknowledgingContactId: String
+    ): Result<Unit> =
+        runCatching {
+            activationMutex.withLock {
+                val acknowledgingInvitation =
+                    groupInvitationDao.findByGroupAndContact(packet.groupId, acknowledgingContactId)
+                        ?: error("Acknowledging group member was not found")
+                check(acknowledgingInvitation.status == GroupInvitationStatus.ACTIVE.name) {
+                    "Only an active group member may acknowledge another member"
+                }
+
+                val activatedContact =
+                    groupInvitationDao
+                        .findByGroupId(packet.groupId)
+                        .filter { invitation -> invitation.status == GroupInvitationStatus.ACTIVE.name }
+                        .map { invitation -> loadContact(invitation.contactId) }
+                        .singleOrNull { contact ->
+                            contact.secureChatIdentity
+                                ?.signingPublicKey
+                                ?.contentEquals(packet.activatedMemberSigningPublicKey) == true
+                        } ?: error("Activated group member was not found")
+                check(activatedContact.id != acknowledgingContactId) {
+                    "A group member cannot acknowledge its own activation"
+                }
+
+                val ownerSigningKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
+                val acknowledgingContact = loadContact(acknowledgingContactId)
+
+                when (packet.activationRound) {
+                    GroupMemberActivatedPacket.DISCOVERY_ROUND ->
+                        enqueueMemberActivation(
+                            groupId = packet.groupId,
+                            epoch = packet.epoch,
+                            activationId = packet.activationId,
+                            activatedAtEpochMilliseconds = acknowledgingInvitation.updatedAtEpochMilliseconds,
+                            activationRound = GroupMemberActivatedPacket.RECIPROCAL_ROUND,
+                            memberContact = acknowledgingContact,
+                            recipientContactId = activatedContact.id,
+                            ownerSigningKeyPair = ownerSigningKeyPair
+                        )
+
+                    GroupMemberActivatedPacket.RECIPROCAL_ROUND -> {
+                        enqueueMemberActivation(
+                            groupId = packet.groupId,
+                            epoch = packet.epoch,
+                            activationId = packet.activationId,
+                            activatedAtEpochMilliseconds =
+                                groupInvitationDao
+                                    .findByGroupAndContact(packet.groupId, activatedContact.id)
+                                    ?.updatedAtEpochMilliseconds
+                                    ?: packet.acknowledgedAtEpochMilliseconds,
+                            activationRound = GroupMemberActivatedPacket.FINAL_ROUND,
+                            memberContact = activatedContact,
+                            recipientContactId = acknowledgingContactId,
+                            ownerSigningKeyPair = ownerSigningKeyPair
+                        )
+                        enqueueMemberActivation(
+                            groupId = packet.groupId,
+                            epoch = packet.epoch,
+                            activationId = packet.activationId,
+                            activatedAtEpochMilliseconds = acknowledgingInvitation.updatedAtEpochMilliseconds,
+                            activationRound = GroupMemberActivatedPacket.FINAL_ROUND,
+                            memberContact = acknowledgingContact,
+                            recipientContactId = activatedContact.id,
+                            ownerSigningKeyPair = ownerSigningKeyPair
+                        )
+                    }
+
+                    else -> error("Unsupported member activation acknowledgement round")
+                }
+            }
+        }
+
+    private suspend fun distributeGroupKeyToMember(
         groupId: String,
-        invitations: List<GroupInvitationEntity>
+        invitation: GroupInvitationEntity
     ) {
         val conversation = chatDao.findConversationById(groupId) ?: error("Pending group was not found")
-        val contacts = invitations.map { invitation -> loadContact(invitation.contactId) }.sortedBy(Contact::id)
-        contacts.forEach { contact ->
-            check(contact.hasMutualIdentity()) { "Group member identity is not ready: ${contact.id}" }
-        }
+        val contact = loadContact(invitation.contactId)
+        check(contact.hasMutualIdentity()) { "Group member identity is not ready: ${contact.id}" }
 
         val localIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
         val localSigningKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
         val localPhoneNumber = localPhoneNumberProvider.getLocalPhoneNumber().getOrThrow()
-        val memberPayloads = createMemberPayloads(localIdentity, localPhoneNumber, contacts)
-        val memberKeys = createMemberKeys(groupId, contacts)
-        val recipients = createRecipients(contacts)
-        val participants =
-            contacts.map { contact ->
-                ConversationParticipantEntity(
-                    conversationId = groupId,
-                    contactId = contact.id,
-                    role = GROUP_MEMBER_ROLE,
-                    joinedAtEpochMilliseconds = conversation.createdAtEpochMilliseconds
-                )
-            }
-
-        chatDao.createGroupConversation(conversation, participants)
-
         val securedGroup =
             groupSecurityManager
                 .createOwnedGroup(
                     groupId = groupId,
                     title = requireNotNull(conversation.title),
                     createdAtEpochMilliseconds = conversation.createdAtEpochMilliseconds,
-                    memberPayloads = memberPayloads,
-                    memberKeys = memberKeys,
-                    recipients = recipients,
+                    memberPayloads = createMemberPayloads(localIdentity, localPhoneNumber, listOf(contact)),
+                    memberKeys = createMemberKeys(groupId, listOf(contact)),
+                    recipients = createRecipients(listOf(contact)),
                     localSigningKeyPair = localSigningKeyPair
                 ).getOrThrow()
+        val welcomePacket =
+            securedGroup.welcomePacketsByContactId[contact.id]
+                ?: error("Recipient welcome packet was not created")
 
-        securedGroup.welcomePacketsByContactId.forEach { (contactId, packet) ->
-            protocolOutbox.enqueue(contactId, packet).getOrThrow()
-        }
+        protocolOutbox.enqueue(contact.id, welcomePacket).getOrThrow()
 
-        groupInvitationDao.markGroupActive(
-            groupId = groupId,
-            readyStatus = GroupInvitationStatus.IDENTITY_READY.name,
-            activeStatus = GroupInvitationStatus.WELCOME_SENT.name,
-            updatedAt = SystemClock.nowEpochMilliseconds()
-        )
-        val updatedInvitations = groupInvitationDao.findByGroupId(groupId)
-        check(
-            updatedInvitations.all {
-                it.status == GroupInvitationStatus.WELCOME_SENT.name ||
-                    it.status == GroupInvitationStatus.ACTIVE.name
-            }
-        ) {
-            "Not every group welcome was recorded"
-        }
+        val updated =
+            groupInvitationDao.updateStatus(
+                invitationId = invitation.invitationId,
+                expectedStatus = GroupInvitationStatus.IDENTITY_READY.name,
+                newStatus = GroupInvitationStatus.WELCOME_SENT.name,
+                updatedAt = maxOf(invitation.createdAtEpochMilliseconds, SystemClock.nowEpochMilliseconds())
+            )
+        check(updated == 1) { "Group invitation changed while its welcome was recorded" }
+    }
+
+    private suspend fun enqueueMemberActivation(
+        groupId: String,
+        epoch: Int,
+        activationId: String,
+        activatedAtEpochMilliseconds: Long,
+        activationRound: Int,
+        memberContact: Contact,
+        recipientContactId: String,
+        ownerSigningKeyPair: LocalSigningKeyPair
+    ) {
+        val identity =
+            memberContact.secureChatIdentity
+                ?: error("Activated group member has no SecureChat identity")
+        val packet =
+            groupInvitationManager
+                .createMemberActivated(
+                    groupId = groupId,
+                    epoch = epoch,
+                    member =
+                        GroupMemberPayload(
+                            displayName = memberContact.displayName,
+                            encryptionPublicKey = identity.encryptionPublicKey.copyOf(),
+                            signingPublicKey = identity.signingPublicKey.copyOf(),
+                            role = GROUP_MEMBER_ROLE,
+                            phoneNumber = memberContact.requirePhoneNumber()
+                        ),
+                    activatedAtEpochMilliseconds = activatedAtEpochMilliseconds,
+                    activationRound = activationRound,
+                    activationId = activationId,
+                    memberReferenceId = memberContact.id,
+                    recipientContactId = recipientContactId,
+                    ownerSigningKeyPair = ownerSigningKeyPair
+                ).getOrThrow()
+
+        protocolOutbox.enqueue(recipientContactId, packet).getOrThrow()
     }
 
     private suspend fun loadContact(contactId: String): Contact = getContact(contactId).getOrThrow() ?: error("Contact was not found: $contactId")
@@ -573,9 +693,8 @@ class GroupInvitationCoordinator(
             ?: error("Incoming group invitation was not found")
     }
 
-    private suspend fun flushQueuedIfGroupActive(groupId: String) {
-        val invitations = groupInvitationDao.findByGroupId(groupId)
-        if (invitations.isNotEmpty() && invitations.all { it.status == GroupInvitationStatus.ACTIVE.name }) {
+    private suspend fun flushQueuedIfGroupHasActiveMembers(groupId: String) {
+        if (chatDao.findConversationParticipants(groupId).isNotEmpty()) {
             groupMessageSender.flushQueued(groupId).getOrThrow()
         }
     }

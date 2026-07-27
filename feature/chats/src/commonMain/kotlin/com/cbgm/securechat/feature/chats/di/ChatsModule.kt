@@ -16,6 +16,8 @@ import com.cbgm.securechat.feature.chats.data.protocol.GroupCreatedPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupInviteDeclinedPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupInvitePacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupJoinRequestPacketHandler
+import com.cbgm.securechat.feature.chats.data.protocol.GroupMemberActivatedPacketHandler
+import com.cbgm.securechat.feature.chats.data.protocol.GroupMemberActivationAcknowledgementPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupReadyAcknowledgementPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.ReadReceiptPacketHandler
 import com.cbgm.securechat.feature.chats.data.repository.DefaultChatsRepository
@@ -97,6 +99,13 @@ val chatsModule =
             bind<TypedProtocolPacketHandler>()
         }
 
+        singleOf(::GroupMemberActivatedPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
+        singleOf(::GroupMemberActivationAcknowledgementPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
         singleOf(::GroupChatMessagePacketHandler) {
             bind<TypedProtocolPacketHandler>()
         }

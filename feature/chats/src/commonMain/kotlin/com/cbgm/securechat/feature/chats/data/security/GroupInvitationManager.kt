@@ -6,6 +6,9 @@ import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPair
 import com.cbgm.securechat.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInvitePacket
 import com.cbgm.securechat.core.protocol.packet.GroupJoinRequestPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMemberActivatedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMemberActivationAcknowledgementPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
 import com.cbgm.securechat.core.protocol.packet.GroupReadyAcknowledgementPacket
 
 class GroupInvitationManager(
@@ -177,6 +180,107 @@ class GroupInvitationManager(
             signature = packet.memberSignature,
             signingPublicKey = expectedMemberSigningPublicKey
         )
+
+    suspend fun createMemberActivated(
+        groupId: String,
+        epoch: Int,
+        member: GroupMemberPayload,
+        activatedAtEpochMilliseconds: Long,
+        activationRound: Int,
+        activationId: String,
+        memberReferenceId: String,
+        recipientContactId: String,
+        ownerSigningKeyPair: LocalSigningKeyPair
+    ): Result<GroupMemberActivatedPacket> =
+        runCatching {
+            val unsignedPacket =
+                GroupMemberActivatedPacket(
+                    packetId =
+                        memberActivatedPacketId(
+                            groupId = groupId,
+                            epoch = epoch,
+                            activationId = activationId,
+                            activationRound = activationRound,
+                            memberReferenceId = memberReferenceId,
+                            recipientContactId = recipientContactId
+                        ),
+                    groupId = groupId,
+                    epoch = epoch,
+                    activationId = activationId,
+                    member = member,
+                    activatedAtEpochMilliseconds = activatedAtEpochMilliseconds,
+                    activationRound = activationRound,
+                    ownerSignature = UNSIGNED_PACKET_MARKER
+                )
+            val signature =
+                groupCrypto
+                    .sign(
+                        payload = payloadEncoder.encodeMemberActivated(unsignedPacket),
+                        signingPrivateKey = ownerSigningKeyPair.privateKey
+                    ).getOrThrow()
+
+            unsignedPacket.copy(ownerSignature = signature)
+        }
+
+    suspend fun verifyMemberActivated(
+        packet: GroupMemberActivatedPacket,
+        expectedOwnerSigningPublicKey: ByteArray
+    ): Result<Unit> =
+        groupCrypto.verify(
+            payload = payloadEncoder.encodeMemberActivated(packet),
+            signature = packet.ownerSignature,
+            signingPublicKey = expectedOwnerSigningPublicKey
+        )
+
+    suspend fun createMemberActivationAcknowledgement(
+        activationPacket: GroupMemberActivatedPacket,
+        acknowledgedAtEpochMilliseconds: Long,
+        memberSigningKeyPair: LocalSigningKeyPair
+    ): Result<GroupMemberActivationAcknowledgementPacket> =
+        runCatching {
+            val unsignedPacket =
+                GroupMemberActivationAcknowledgementPacket(
+                    packetId = memberActivationAcknowledgementPacketId(activationPacket.packetId),
+                    groupId = activationPacket.groupId,
+                    epoch = activationPacket.epoch,
+                    activationPacketId = activationPacket.packetId,
+                    activationId = activationPacket.activationId,
+                    activationRound = activationPacket.activationRound,
+                    activatedMemberSigningPublicKey = activationPacket.member.signingPublicKey.copyOf(),
+                    acknowledgingMemberSigningPublicKey = memberSigningKeyPair.publicKey.copyOf(),
+                    acknowledgedAtEpochMilliseconds = acknowledgedAtEpochMilliseconds,
+                    memberSignature = UNSIGNED_PACKET_MARKER
+                )
+            val signature =
+                groupCrypto
+                    .sign(
+                        payload = payloadEncoder.encodeMemberActivationAcknowledgement(unsignedPacket),
+                        signingPrivateKey = memberSigningKeyPair.privateKey
+                    ).getOrThrow()
+
+            unsignedPacket.copy(memberSignature = signature)
+        }
+
+    suspend fun verifyMemberActivationAcknowledgement(
+        packet: GroupMemberActivationAcknowledgementPacket,
+        expectedMemberSigningPublicKey: ByteArray
+    ): Result<Unit> =
+        groupCrypto.verify(
+            payload = payloadEncoder.encodeMemberActivationAcknowledgement(packet),
+            signature = packet.memberSignature,
+            signingPublicKey = expectedMemberSigningPublicKey
+        )
+
+    fun memberActivatedPacketId(
+        groupId: String,
+        epoch: Int,
+        activationId: String,
+        activationRound: Int,
+        memberReferenceId: String,
+        recipientContactId: String
+    ): String = "group-member-activated-$groupId-$epoch-$activationId-$activationRound-$memberReferenceId-$recipientContactId"
+
+    private fun memberActivationAcknowledgementPacketId(activationPacketId: String): String = "group-member-activation-acknowledgement-$activationPacketId"
 
     private fun invitePacketId(invitationId: String): String = "group-invite-$invitationId"
 

@@ -11,6 +11,7 @@ import com.cbgm.securechat.data.database.entity.MessageEntity
 import com.cbgm.securechat.data.database.entity.MessageRecipientStateEntity
 import com.cbgm.securechat.feature.chats.data.delivery.MessageDeliveryStateCoordinator
 import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationStatus
+import com.cbgm.securechat.feature.chats.data.invitation.canSendToActiveGroupMembers
 import com.cbgm.securechat.feature.chats.data.security.GROUP_END_TO_END_ENCRYPTED_MODE
 import com.cbgm.securechat.feature.chats.data.security.GroupSecurityManager
 import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
@@ -61,7 +62,8 @@ class GroupMessageSender(
                         createdAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
                     )
 
-                if (invitations.isNotEmpty() && invitations.any { it.status != GroupInvitationStatus.ACTIVE.name }) {
+                val activeParticipants = chatDao.findConversationParticipants(conversationId)
+                if (!canSendToActiveGroupMembers(activeParticipants.size)) {
                     chatDao.upsertMessage(message)
                     chatDao.updateConversationTimestamp(conversationId, message.createdAtEpochMilliseconds)
                 } else {
@@ -143,7 +145,8 @@ class GroupMessageSender(
 
     private fun String.isIncomingPendingStatus(): Boolean =
         this == GroupInvitationStatus.AWAITING_ACCEPTANCE.name ||
-            this == GroupInvitationStatus.JOIN_SENT.name
+            this == GroupInvitationStatus.JOIN_SENT.name ||
+            this == GroupInvitationStatus.WAITING_FOR_ACTIVATION.name
 
     private fun packetId(
         messageId: String,

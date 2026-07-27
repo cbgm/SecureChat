@@ -13,6 +13,8 @@ import com.cbgm.securechat.core.protocol.outbox.ProtocolOutboxItem
 import com.cbgm.securechat.core.protocol.packet.ContactReadyPacket
 import com.cbgm.securechat.core.protocol.packet.ContactVerificationReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMemberActivatedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMemberActivationAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
@@ -206,7 +208,9 @@ class DefaultOutboxProcessor(
         if (!canEncrypt) {
             val encryptionError =
                 when (packet) {
-                    is GroupCreatedPacket ->
+                    is GroupCreatedPacket,
+                    is GroupMemberActivatedPacket,
+                    is GroupMemberActivationAcknowledgementPacket ->
                         "Group packets require a mutual SecureChat key exchange"
 
                     is ContactReadyPacket ->
@@ -246,7 +250,9 @@ class DefaultOutboxProcessor(
         when (this) {
             is ContactReadyPacket,
             is ContactVerificationReceiptPacket,
-            is GroupCreatedPacket -> true
+            is GroupCreatedPacket,
+            is GroupMemberActivatedPacket,
+            is GroupMemberActivationAcknowledgementPacket -> true
 
             else -> false
         }

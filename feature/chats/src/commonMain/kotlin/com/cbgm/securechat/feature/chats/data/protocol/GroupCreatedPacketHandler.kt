@@ -26,6 +26,7 @@ import com.cbgm.securechat.feature.chats.data.security.GroupInvitationManager
 import com.cbgm.securechat.feature.chats.data.security.GroupSecurityManager
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
+import com.cbgm.securechat.feature.contacts.domain.repository.ContactKeyExchangeStore
 
 class GroupCreatedPacketHandler(
     private val chatDao: ChatDao,
@@ -38,7 +39,8 @@ class GroupCreatedPacketHandler(
     private val groupSecurityManager: GroupSecurityManager,
     private val groupInvitationDao: GroupInvitationDao,
     private val groupInvitationManager: GroupInvitationManager,
-    private val protocolOutbox: ProtocolOutbox
+    private val protocolOutbox: ProtocolOutbox,
+    private val contactKeyExchangeStore: ContactKeyExchangeStore
 ) : TypedProtocolPacketHandler {
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is GroupCreatedPacket
 
@@ -50,12 +52,24 @@ class GroupCreatedPacketHandler(
             val groupPacket =
                 packet as? GroupCreatedPacket
                     ?: error("GroupCreatedPacketHandler received an incompatible packet")
+            val invitation =
+                groupInvitationDao.findByGroupAndContact(groupPacket.groupId, context.contactId)
+                    ?: error("Accepted group invitation was not found")
+            check(
+                invitation.status == GroupInvitationStatus.JOIN_SENT.name ||
+                    invitation.status == GroupInvitationStatus.WAITING_FOR_ACTIVATION.name ||
+                    invitation.status == GroupInvitationStatus.ACTIVE.name
+            ) {
+                "Group welcome arrived before the invitation was accepted"
+            }
+            val persistedAtEpochMilliseconds =
+                maxOf(
+                    groupPacket.createdAtEpochMilliseconds,
+                    context.receivedAtEpochMilliseconds
+                )
             val ownerIdentity =
                 contactDao.findPublicIdentityByContactId(context.contactId)
                     ?: error("Group owner has no SecureChat identity")
-            check(ownerIdentity.keyExchangeStatus == MUTUAL_KEY_EXCHANGE_STATUS) {
-                "Group owner key exchange is not mutual"
-            }
             val localIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
             val localEncryptionKeyPair =
                 localEncryptionKeyPairProvider.getEncryptionKeyPair().getOrThrow()
@@ -69,6 +83,13 @@ class GroupCreatedPacketHandler(
                         localSigningPublicKey = localIdentity.signingPublicKey
                     ).getOrThrow()
 
+            contactKeyExchangeStore
+                .markMutual(
+                    contactId = context.contactId,
+                    expectedRemoteEncryptionPublicKey = ownerIdentity.encryptionPublicKey,
+                    expectedRemoteSigningPublicKey = ownerIdentity.signingPublicKey
+                ).getOrThrow()
+
             chatDao.upsertConversation(
                 ConversationEntity(
                     id = groupPacket.groupId,
@@ -76,7 +97,7 @@ class GroupCreatedPacketHandler(
                     type = GROUP_CONVERSATION_TYPE,
                     title = groupPacket.title,
                     createdAtEpochMilliseconds = groupPacket.createdAtEpochMilliseconds,
-                    updatedAtEpochMilliseconds = context.receivedAtEpochMilliseconds
+                    updatedAtEpochMilliseconds = persistedAtEpochMilliseconds
                 )
             )
 
@@ -124,42 +145,41 @@ class GroupCreatedPacketHandler(
                     ownerContactId = context.contactId,
                     localSigningPublicKey = localIdentity.signingPublicKey,
                     memberKeys = memberKeys,
-                    receivedAtEpochMilliseconds = context.receivedAtEpochMilliseconds
+                    receivedAtEpochMilliseconds = persistedAtEpochMilliseconds
                 ).getOrThrow()
 
-            val invitation =
-                groupInvitationDao.findByGroupAndContact(groupPacket.groupId, context.contactId)
-            if (invitation != null) {
-                val readyAcknowledgement =
-                    groupInvitationManager
-                        .createReadyAcknowledgement(
-                            groupId = groupPacket.groupId,
-                            epoch = groupPacket.epoch,
-                            welcomePacketId = groupPacket.packetId,
-                            keyConfirmation =
-                                groupSecurityManager.createKeyConfirmation(
-                                    groupId = groupPacket.groupId,
-                                    epoch = groupPacket.epoch,
-                                    groupKey = openedWelcome.groupKey
-                                ),
-                            memberSigningKeyPair =
-                                localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
-                        ).getOrThrow()
-                protocolOutbox.enqueue(context.contactId, readyAcknowledgement).getOrThrow()
+            val readyAcknowledgement =
+                groupInvitationManager
+                    .createReadyAcknowledgement(
+                        groupId = groupPacket.groupId,
+                        epoch = groupPacket.epoch,
+                        welcomePacketId = groupPacket.packetId,
+                        keyConfirmation =
+                            groupSecurityManager.createKeyConfirmation(
+                                groupId = groupPacket.groupId,
+                                epoch = groupPacket.epoch,
+                                groupKey = openedWelcome.groupKey
+                            ),
+                        memberSigningKeyPair =
+                            localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
+                    ).getOrThrow()
+            protocolOutbox.enqueue(context.contactId, readyAcknowledgement).getOrThrow()
 
-                if (invitation.status != GroupInvitationStatus.ACTIVE.name) {
-                    check(invitation.status == GroupInvitationStatus.JOIN_SENT.name) {
-                        "Group welcome arrived before the invitation was accepted"
-                    }
+            when (invitation.status) {
+                GroupInvitationStatus.JOIN_SENT.name -> {
                     val updated =
                         groupInvitationDao.updateStatus(
                             invitationId = invitation.invitationId,
                             expectedStatus = GroupInvitationStatus.JOIN_SENT.name,
-                            newStatus = GroupInvitationStatus.ACTIVE.name,
-                            updatedAt = context.receivedAtEpochMilliseconds
+                            newStatus = GroupInvitationStatus.WAITING_FOR_ACTIVATION.name,
+                            updatedAt = maxOf(invitation.createdAtEpochMilliseconds, persistedAtEpochMilliseconds)
                         )
                     check(updated == 1) { "Group invitation changed while the welcome was applied" }
                 }
+
+                GroupInvitationStatus.WAITING_FOR_ACTIVATION.name,
+                GroupInvitationStatus.ACTIVE.name -> Unit
+                else -> error("Group welcome arrived before the invitation was accepted")
             }
         }
 
@@ -291,6 +311,5 @@ class GroupCreatedPacketHandler(
     private companion object {
         const val GROUP_CONVERSATION_TYPE = "GROUP"
         const val GROUP_OWNER_ROLE = "OWNER"
-        const val MUTUAL_KEY_EXCHANGE_STATUS = "MUTUAL"
     }
 }

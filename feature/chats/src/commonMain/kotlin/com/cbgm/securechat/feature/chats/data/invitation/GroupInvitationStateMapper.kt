@@ -13,8 +13,17 @@ internal object GroupInvitationStateMapper {
         if (invitations.anyWithStatus(GroupInvitationStatus.AWAITING_ACCEPTANCE)) {
             return GroupConversationState.INVITED
         }
-        if (invitations.anyWithStatus(GroupInvitationStatus.JOIN_SENT)) {
+        if (
+            invitations.anyWithStatus(GroupInvitationStatus.JOIN_SENT) ||
+            invitations.anyWithStatus(GroupInvitationStatus.WAITING_FOR_ACTIVATION)
+        ) {
             return GroupConversationState.JOINING
+        }
+        if (invitations.anyWithStatus(GroupInvitationStatus.ACTIVE)) {
+            return GroupConversationState.READY
+        }
+        if (invitations.anyWithStatus(GroupInvitationStatus.WELCOME_SENT)) {
+            return GroupConversationState.DISTRIBUTING_KEYS
         }
         if (invitations.anyWithStatus(GroupInvitationStatus.DECLINED)) {
             return GroupConversationState.DECLINED
@@ -25,15 +34,13 @@ internal object GroupInvitationStateMapper {
         if (invitations.anyWithStatus(GroupInvitationStatus.FAILED)) {
             return GroupConversationState.FAILED
         }
-        if (invitations.anyWithStatus(GroupInvitationStatus.WELCOME_SENT)) {
-            return GroupConversationState.DISTRIBUTING_KEYS
-        }
         return GroupConversationState.WAITING_FOR_MEMBERS
     }
 
     fun isIncoming(invitations: List<GroupInvitationEntity>): Boolean =
         invitations.anyWithStatus(GroupInvitationStatus.AWAITING_ACCEPTANCE) ||
-            invitations.anyWithStatus(GroupInvitationStatus.JOIN_SENT)
+            invitations.anyWithStatus(GroupInvitationStatus.JOIN_SENT) ||
+            invitations.anyWithStatus(GroupInvitationStatus.WAITING_FOR_ACTIVATION)
 
     fun memberStates(invitations: List<GroupInvitationEntity>): List<GroupMemberInvitationState> =
         invitations.map { invitation ->
@@ -49,19 +56,13 @@ internal object GroupInvitationStateMapper {
 
     private fun String.toMemberStatus(): GroupMemberInvitationStatus =
         when (this) {
-            GroupInvitationStatus.IDENTITY_READY.name ->
-                GroupMemberInvitationStatus.ACCEPTED
-            GroupInvitationStatus.WELCOME_SENT.name ->
-                GroupMemberInvitationStatus.KEY_SENT
-            GroupInvitationStatus.ACTIVE.name ->
-                GroupMemberInvitationStatus.ACTIVE
-            GroupInvitationStatus.DECLINED.name ->
-                GroupMemberInvitationStatus.DECLINED
-            GroupInvitationStatus.EXPIRED.name ->
-                GroupMemberInvitationStatus.EXPIRED
-            GroupInvitationStatus.FAILED.name ->
-                GroupMemberInvitationStatus.FAILED
-            else ->
-                GroupMemberInvitationStatus.INVITED
+            GroupInvitationStatus.IDENTITY_READY.name -> GroupMemberInvitationStatus.ACCEPTED
+            GroupInvitationStatus.WELCOME_SENT.name,
+            GroupInvitationStatus.WAITING_FOR_ACTIVATION.name -> GroupMemberInvitationStatus.KEY_SENT
+            GroupInvitationStatus.ACTIVE.name -> GroupMemberInvitationStatus.ACTIVE
+            GroupInvitationStatus.DECLINED.name -> GroupMemberInvitationStatus.DECLINED
+            GroupInvitationStatus.EXPIRED.name -> GroupMemberInvitationStatus.EXPIRED
+            GroupInvitationStatus.FAILED.name -> GroupMemberInvitationStatus.FAILED
+            else -> GroupMemberInvitationStatus.INVITED
         }
 }

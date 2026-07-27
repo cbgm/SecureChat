@@ -7,6 +7,7 @@ enum class GroupInvitationStatus {
     AWAITING_ACCEPTANCE,
     JOIN_SENT,
     WELCOME_SENT,
+    WAITING_FOR_ACTIVATION,
     DECLINED,
     EXPIRED,
     FAILED,
