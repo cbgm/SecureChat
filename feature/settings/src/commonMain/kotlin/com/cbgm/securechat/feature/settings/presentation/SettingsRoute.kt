@@ -47,6 +47,9 @@ fun SettingsRoute(
         onOpenLanguagePicker = { viewModel.onEvent(SettingsEvent.LanguagePickerOpened) },
         onDismissLanguagePicker = { viewModel.onEvent(SettingsEvent.LanguagePickerDismissed) },
         onLanguageSelected = { viewModel.onEvent(SettingsEvent.LanguageSelected(it)) },
+        onDirectIdentitySetupModeChanged = {
+            viewModel.onEvent(SettingsEvent.DirectIdentitySetupModeChanged(it))
+        },
         onVersionRowTapped = { viewModel.onEvent(SettingsEvent.VersionRowTapped) },
         scrollState = scrollState,
         innerPadding = innerPadding,

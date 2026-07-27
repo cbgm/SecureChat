@@ -294,4 +294,16 @@
     <string name="feature_startup_setup_failed">SecureChat could not finish setup.</string>
     <string name="feature_startup_verify_phone_number">Verify your phone number</string>
     <string name="feature_chats_sender_not_in_contacts">%1$s (not in contacts)</string>
+    <string name="feature_settings_security">Security</string>
+    <string name="feature_settings_automatic_secure_setup">Automatic secure setup</string>
+    <string name="feature_settings_automatic_secure_setup_enabled_subtitle">Opening a direct chat automatically sends a signed identity invitation.</string>
+    <string name="feature_settings_automatic_secure_setup_disabled_subtitle">Identities must be shared or scanned manually on both devices.</string>
+    <string name="feature_chats_manual_identity_setup_title">Manual identity setup</string>
+    <string name="feature_chats_manual_identity_setup_description">Share your identity, then import or scan the contact identity on both devices. Opening the chat does not send an automatic invitation.</string>
+    <string name="feature_chats_manual_identity_required_title">Manual identity exchange required</string>
+    <string name="feature_chats_manual_identity_required_description">Share your identity and import the contact identity before end-to-end encryption can start.</string>
+    <string name="feature_chats_manual_identity_incomplete_title">Manual identity exchange incomplete</string>
+    <string name="feature_chats_manual_identity_incomplete_description">One identity is known. The other device must also import the matching identity.</string>
+    <string name="feature_chats_manual_identity_setup_action">Set up</string>
+    <string name="feature_chats_import_contact_identity">Import contact identity</string>
 </resources>

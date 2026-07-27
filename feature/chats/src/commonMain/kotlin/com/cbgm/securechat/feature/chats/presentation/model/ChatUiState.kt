@@ -1,5 +1,6 @@
 package com.cbgm.securechat.feature.chats.presentation.model
 
+import com.cbgm.securechat.core.security.DirectIdentitySetupMode
 import com.cbgm.securechat.feature.chats.domain.model.ChatMessage
 import com.cbgm.securechat.feature.chats.domain.model.ContactSecurityState
 import com.cbgm.securechat.feature.chats.domain.model.GroupConversationState
@@ -20,6 +21,7 @@ data class ChatUiState(
     val typingDisplayName: String = "",
     val contactSecurityState: ContactSecurityState = ContactSecurityState.NO_REMOTE_PUBLIC_KEYS,
     val identityHandshakeState: IdentityHandshakeState? = null,
+    val directIdentitySetupMode: DirectIdentitySetupMode = DirectIdentitySetupMode.MANUAL_IDENTITY_SHARING,
     val safetyNumber: String = "",
     val isLoadingContact: Boolean = true,
     val isLoadingSafetyNumber: Boolean = false,

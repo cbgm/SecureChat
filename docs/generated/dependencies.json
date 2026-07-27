@@ -43,6 +43,7 @@
   {"source": ":feature:messaging", "target": ":feature:transport"},
   {"source": ":feature:onboarding", "target": ":core:ui"},
   {"source": ":feature:onboarding", "target": ":feature:identity"},
+  {"source": ":feature:settings", "target": ":core"},
   {"source": ":feature:settings", "target": ":core:ui"},
   {"source": ":feature:transport", "target": ":core"},
   {"source": ":feature:transport", "target": ":core:protocol"},

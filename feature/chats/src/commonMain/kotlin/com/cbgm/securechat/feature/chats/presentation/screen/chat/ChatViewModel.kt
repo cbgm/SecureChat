@@ -2,6 +2,8 @@ package com.cbgm.securechat.feature.chats.presentation.screen.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cbgm.securechat.core.security.DirectIdentitySetupMode
+import com.cbgm.securechat.core.security.DirectIdentitySetupModeRepository
 import com.cbgm.securechat.feature.chats.domain.model.ContactSecurityState
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
 import com.cbgm.securechat.feature.chats.domain.usecase.MarkConversationRead
@@ -42,6 +44,7 @@ class ChatViewModel(
     private val sendMessageUseCase: SendMessage,
     private val markConversationReadUseCase: MarkConversationRead,
     private val retryFailedMessage: RetryMessage,
+    private val directIdentitySetupModeRepository: DirectIdentitySetupModeRepository,
     private val identityExchangeStarter: IdentityExchangeStarter,
     identityInvitationService: IdentityInvitationService,
     observeContact: ObserveContact,
@@ -77,16 +80,27 @@ class ChatViewModel(
     private val identityHandshakeStateFlow: Flow<IdentityHandshakeState?> =
         identityInvitationService.observeState(contactId)
 
+    private val directIdentitySetupModeFlow: StateFlow<DirectIdentitySetupMode> =
+        directIdentitySetupModeRepository
+            .observeMode()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.Eagerly,
+                initialValue = DirectIdentitySetupMode.MANUAL_IDENTITY_SHARING
+            )
+
     private val chatContentFlow: Flow<ChatContentState> =
         combine(
             conversationFlow,
             contactFlow,
-            identityHandshakeStateFlow
-        ) { conversation, contact, identityHandshakeState ->
+            identityHandshakeStateFlow,
+            directIdentitySetupModeFlow
+        ) { conversation, contact, identityHandshakeState, directIdentitySetupMode ->
             ChatContentState(
                 conversation = conversation,
                 contact = contact,
-                identityHandshakeState = identityHandshakeState
+                identityHandshakeState = identityHandshakeState,
+                directIdentitySetupMode = directIdentitySetupMode
             )
         }
 
@@ -158,6 +172,7 @@ class ChatViewModel(
                 isContactTyping = composer.isContactTyping,
                 contactSecurityState = contact.toSecurityState(),
                 identityHandshakeState = screenContent.chatContent.identityHandshakeState,
+                directIdentitySetupMode = screenContent.chatContent.directIdentitySetupMode,
                 safetyNumber = verification.safetyNumber,
                 isLoadingContact = contact == null,
                 isLoadingSafetyNumber = verification.isLoadingSafetyNumber,
@@ -175,17 +190,22 @@ class ChatViewModel(
         )
 
     init {
-        startIdentityExchange()
+        observeIdentitySetupMode()
         observeContactSecurity()
         observeIncomingTypingEvents()
     }
 
-    private fun startIdentityExchange() {
+    private fun observeIdentitySetupMode() {
         viewModelScope.launch {
-            identityExchangeStarter
-                .ensureStarted(contactId)
-                .onFailure { error ->
-                    errorMessage.value = error.message ?: "Contact invitation could not be started"
+            directIdentitySetupModeFlow
+                .collect { mode ->
+                    if (mode == DirectIdentitySetupMode.AUTOMATIC_INVITATION) {
+                        identityExchangeStarter
+                            .ensureStarted(contactId)
+                            .onFailure { error ->
+                                errorMessage.value = error.message ?: "Contact invitation could not be started"
+                            }
+                    }
                 }
         }
     }
@@ -466,7 +486,8 @@ class ChatViewModel(
     private data class ChatContentState(
         val conversation: Conversation?,
         val contact: Contact?,
-        val identityHandshakeState: IdentityHandshakeState?
+        val identityHandshakeState: IdentityHandshakeState?,
+        val directIdentitySetupMode: DirectIdentitySetupMode
     )
 
     private data class ComposerState(

@@ -13,6 +13,7 @@ import com.cbgm.securechat.feature.chats.domain.model.ContactSecurityState
 import com.cbgm.securechat.feature.chats.presentation.component.chat.VerifyIdentityDialog
 import com.cbgm.securechat.feature.chats.presentation.screen.ChatScreen
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.ChatViewModel
+import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.ManualIdentitySetupDialog
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -24,6 +25,8 @@ fun ChatRoute(
     onBack: () -> Unit,
     onClickHeader: () -> Unit,
     onScanIdentityQr: () -> Unit,
+    onShareIdentity: () -> Unit,
+    onImportIdentity: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ChatViewModel =
         koinViewModel {
@@ -37,6 +40,7 @@ fun ChatRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var showVerificationDialog by remember(contactId) { mutableStateOf(false) }
+    var showManualIdentitySetupDialog by remember(contactId) { mutableStateOf(false) }
 
     LaunchedEffect(key1 = contactId) {
         viewModel.markConversationRead()
@@ -81,6 +85,9 @@ fun ChatRoute(
             viewModel.refreshSafetyNumber()
             showVerificationDialog = true
         },
+        onManualIdentitySetup = {
+            showManualIdentitySetupDialog = true
+        },
         onClickHeader = onClickHeader,
         onBack = onBack,
         modifier = modifier
@@ -101,6 +108,22 @@ fun ChatRoute(
             },
             onDismiss = {
                 showVerificationDialog = false
+            }
+        )
+    }
+
+    if (showManualIdentitySetupDialog) {
+        ManualIdentitySetupDialog(
+            onShareIdentity = {
+                showManualIdentitySetupDialog = false
+                onShareIdentity()
+            },
+            onImportIdentity = {
+                showManualIdentitySetupDialog = false
+                onImportIdentity()
+            },
+            onDismiss = {
+                showManualIdentitySetupDialog = false
             }
         )
     }

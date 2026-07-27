@@ -10,6 +10,7 @@ import com.cbgm.securechat.feature.contacts.data.identity.ContactVerificationPay
 import com.cbgm.securechat.feature.contacts.data.identity.DefaultIdentityExchangeStarter
 import com.cbgm.securechat.feature.contacts.data.identity.IdentityInvitationCoordinator
 import com.cbgm.securechat.feature.contacts.data.identity.IdentityInvitationPayloadEncoder
+import com.cbgm.securechat.feature.contacts.data.identity.ManualIdentityExchangeStarter
 import com.cbgm.securechat.feature.contacts.data.merge.ContactMergeService
 import com.cbgm.securechat.feature.contacts.data.merge.DefaultContactMergeService
 import com.cbgm.securechat.feature.contacts.data.protocol.ContactInviteAcceptedPacketHandler
@@ -17,6 +18,8 @@ import com.cbgm.securechat.feature.contacts.data.protocol.ContactInviteDeclinedP
 import com.cbgm.securechat.feature.contacts.data.protocol.ContactInvitePacketHandler
 import com.cbgm.securechat.feature.contacts.data.protocol.ContactReadyPacketHandler
 import com.cbgm.securechat.feature.contacts.data.protocol.ContactVerificationReceiptPacketHandler
+import com.cbgm.securechat.feature.contacts.data.protocol.IdentityAcknowledgementPacketHandler
+import com.cbgm.securechat.feature.contacts.data.protocol.IdentityPacketHandler
 import com.cbgm.securechat.feature.contacts.data.repository.DefaultContactKeyExchangeStore
 import com.cbgm.securechat.feature.contacts.data.repository.DefaultContactRepository
 import com.cbgm.securechat.feature.contacts.domain.identity.ContactVerificationService
@@ -91,12 +94,22 @@ val contactsModule =
                 secureRandomGenerator = get(),
                 payloadEncoder = get(),
                 protocolOutbox = get(),
-                contactVerificationService = get()
+                contactVerificationService = get(),
+                modeRepository = get()
             )
         }
 
         single<IdentityInvitationService> {
             get<IdentityInvitationCoordinator>()
+        }
+
+        single {
+            ManualIdentityExchangeStarter(
+                contactDao = get(),
+                localPublicIdentityProvider = get(),
+                protocolOutbox = get(),
+                identityInvitationService = get()
+            )
         }
 
         singleOf(::ContactInvitePacketHandler) {
@@ -119,8 +132,20 @@ val contactsModule =
             bind<TypedProtocolPacketHandler>()
         }
 
+        singleOf(::IdentityPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
+        singleOf(::IdentityAcknowledgementPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
         single<IdentityExchangeStarter> {
-            DefaultIdentityExchangeStarter(identityInvitationService = get())
+            DefaultIdentityExchangeStarter(
+                modeRepository = get(),
+                identityInvitationService = get(),
+                manualIdentityExchangeStarter = get()
+            )
         }
 
         single<ContactRepository> {
@@ -173,7 +198,10 @@ val contactsModule =
         }
 
         viewModel {
-            ContactInvitationViewModel(identityInvitationService = get())
+            ContactInvitationViewModel(
+                identityInvitationService = get(),
+                modeRepository = get()
+            )
         }
 
         viewModel {

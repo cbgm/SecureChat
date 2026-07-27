@@ -1,14 +1,14 @@
 {
   "moduleCount": 22,
   "groupCount": 9,
-  "dependencyCount": 63,
+  "dependencyCount": 64,
   "moduleWithoutDependenciesCount": 9,
   "moduleWithoutDependentsCount": 6,
   "maximumDirectDependencyCount": 14,
-  "maximumDirectDependentCount": 10,
+  "maximumDirectDependentCount": 11,
   "sourceSetCount": 9,
-  "kotlinSourceFileCount": 519,
-  "productionKotlinFileCount": 482,
+  "kotlinSourceFileCount": 534,
+  "productionKotlinFileCount": 497,
   "testKotlinFileCount": 37,
   "resourceFileCount": 56,
   "modulesByGroup": {

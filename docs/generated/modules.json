@@ -37,8 +37,8 @@
     "group": "core",
     "directory": "core",
     "buildFile": "core/build.gradle.kts",
-    "kotlinSourceFileCount": 7,
-    "productionKotlinFileCount": 7,
+    "kotlinSourceFileCount": 8,
+    "productionKotlinFileCount": 8,
     "testKotlinFileCount": 0,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -58,6 +58,7 @@
       ":feature:contacts",
       ":feature:identity",
       ":feature:messaging",
+      ":feature:settings",
       ":feature:transport",
       ":navigation",
       ":shared"
@@ -127,8 +128,8 @@
     "group": "core",
     "directory": "core/ui",
     "buildFile": "core/ui/build.gradle.kts",
-    "kotlinSourceFileCount": 22,
-    "productionKotlinFileCount": 22,
+    "kotlinSourceFileCount": 25,
+    "productionKotlinFileCount": 25,
     "testKotlinFileCount": 0,
     "resourceFileCount": 18,
     "sourceSets": [
@@ -220,8 +221,8 @@
     "group": "feature",
     "directory": "feature/chats",
     "buildFile": "feature/chats/build.gradle.kts",
-    "kotlinSourceFileCount": 83,
-    "productionKotlinFileCount": 76,
+    "kotlinSourceFileCount": 84,
+    "productionKotlinFileCount": 77,
     "testKotlinFileCount": 7,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -280,8 +281,8 @@
     "group": "feature",
     "directory": "feature/contacts",
     "buildFile": "feature/contacts/build.gradle.kts",
-    "kotlinSourceFileCount": 78,
-    "productionKotlinFileCount": 75,
+    "kotlinSourceFileCount": 79,
+    "productionKotlinFileCount": 76,
     "testKotlinFileCount": 3,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -399,8 +400,8 @@
     "group": "feature",
     "directory": "feature/settings",
     "buildFile": "feature/settings/build.gradle.kts",
-    "kotlinSourceFileCount": 33,
-    "productionKotlinFileCount": 33,
+    "kotlinSourceFileCount": 42,
+    "productionKotlinFileCount": 42,
     "testKotlinFileCount": 0,
     "resourceFileCount": 2,
     "sourceSets": [
@@ -411,6 +412,7 @@
       "iosMain"
     ],
     "dependencies": [
+      ":core",
       ":core:ui"
     ],
     "dependents": [

@@ -2,11 +2,14 @@ package com.cbgm.securechat.feature.settings.presentation.screen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cbgm.securechat.core.security.DirectIdentitySetupMode
 import com.cbgm.securechat.feature.settings.domain.usecase.GetAppLanguageUseCase
 import com.cbgm.securechat.feature.settings.domain.usecase.GetBuildInfoUseCase
 import com.cbgm.securechat.feature.settings.domain.usecase.GetDeveloperEnabledUseCase
+import com.cbgm.securechat.feature.settings.domain.usecase.ObserveDirectIdentitySetupMode
 import com.cbgm.securechat.feature.settings.domain.usecase.SetAppLanguageUseCase
 import com.cbgm.securechat.feature.settings.domain.usecase.SetDeveloperEnabledUseCase
+import com.cbgm.securechat.feature.settings.domain.usecase.SetDirectIdentitySetupMode
 import com.cbgm.securechat.feature.settings.presentation.model.DEVELOPER_MODE_TAP_THRESHOLD
 import com.cbgm.securechat.feature.settings.presentation.model.SettingsEffect
 import com.cbgm.securechat.feature.settings.presentation.model.SettingsEvent
@@ -24,7 +27,9 @@ class SettingsViewModel(
     private val getAppLanguageUseCase: GetAppLanguageUseCase,
     private val getDeveloperEnabledUseCase: GetDeveloperEnabledUseCase,
     private val getBuildInfoUseCase: GetBuildInfoUseCase,
-    private val setDeveloperModeEnabledUseCase: SetDeveloperEnabledUseCase
+    private val setDeveloperModeEnabledUseCase: SetDeveloperEnabledUseCase,
+    private val observeDirectIdentitySetupMode: ObserveDirectIdentitySetupMode,
+    private val setDirectIdentitySetupMode: SetDirectIdentitySetupMode
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -34,6 +39,7 @@ class SettingsViewModel(
 
     init {
         loadSettings()
+        observeIdentitySetupMode()
     }
 
     fun onEvent(event: SettingsEvent) {
@@ -43,6 +49,7 @@ class SettingsViewModel(
             SettingsEvent.LanguagePickerDismissed ->
                 _uiState.update { it.copy(showLanguagePicker = false) }
             is SettingsEvent.LanguageSelected -> selectLanguage(event.language)
+            is SettingsEvent.DirectIdentitySetupModeChanged -> changeDirectIdentitySetupMode(event.mode)
             SettingsEvent.VersionRowTapped -> handleVersionTap()
         }
     }
@@ -56,6 +63,32 @@ class SettingsViewModel(
                     buildInfo = getBuildInfoUseCase()
                 )
             }
+        }
+    }
+
+    private fun observeIdentitySetupMode() {
+        viewModelScope.launch {
+            observeDirectIdentitySetupMode().collect { mode ->
+                _uiState.update {
+                    it.copy(directIdentitySetupMode = mode)
+                }
+            }
+        }
+    }
+
+    private fun changeDirectIdentitySetupMode(mode: DirectIdentitySetupMode) {
+        viewModelScope.launch {
+            setDirectIdentitySetupMode(mode)
+
+            val message =
+                when (mode) {
+                    DirectIdentitySetupMode.AUTOMATIC_INVITATION ->
+                        "Automatic secure contact setup enabled"
+                    DirectIdentitySetupMode.MANUAL_IDENTITY_SHARING ->
+                        "Manual identity sharing enabled"
+                }
+
+            _effects.send(SettingsEffect.ShowSnackbar(message))
         }
     }
 

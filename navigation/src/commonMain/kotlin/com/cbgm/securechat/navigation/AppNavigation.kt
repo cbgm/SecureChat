@@ -165,6 +165,7 @@ fun AppNavigation() {
                     }
 
                 ImportIdentityRoute(
+                    contactId = destination.contactId,
                     scannedIdentity = scannedIdentityFromScanner ?: destinationScannedIdentity,
                     onScannedIdentityConsumed = {
                         backStackEntry.savedStateHandle.remove<String>("scannedIdentity")
@@ -305,6 +306,14 @@ fun AppNavigation() {
                     },
                     onScanIdentityQr = {
                         navController.navigate(AppDestination.VerifyContactQr(destination.contactId))
+                    },
+                    onShareIdentity = {
+                        navController.navigate(AppDestination.ShareIdentity)
+                    },
+                    onImportIdentity = {
+                        navController.navigate(
+                            AppDestination.ImportContact(contactId = destination.contactId)
+                        )
                     }
                 )
             }

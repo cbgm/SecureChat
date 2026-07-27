@@ -168,6 +168,7 @@ val chatsModule =
                 sendMessageUseCase = get(),
                 markConversationReadUseCase = get(),
                 retryFailedMessage = get(),
+                directIdentitySetupModeRepository = get(),
                 identityExchangeStarter = get<IdentityExchangeStarter>(),
                 identityInvitationService = get<IdentityInvitationService>(),
                 observeContact = get<ObserveContact>(),

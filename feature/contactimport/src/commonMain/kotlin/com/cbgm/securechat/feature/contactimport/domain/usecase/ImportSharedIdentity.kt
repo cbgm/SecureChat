@@ -19,6 +19,7 @@ class ImportSharedIdentity(
 ) {
     suspend operator fun invoke(
         encodedIdentity: String,
+        contactId: String? = null,
         identityImportTrust: IdentityImportTrust = IdentityImportTrust.UNVERIFIED
     ): Result<Contact> =
         runCatching {
@@ -37,6 +38,7 @@ class ImportSharedIdentity(
             importContact(
                 request =
                     ImportContactRequest(
+                        contactId = contactId,
                         encryptionPublicKey = sharedIdentity.encryptionPublicKey.copyOf(),
                         signingPublicKey = sharedIdentity.signingPublicKey.copyOf(),
                         displayName = sharedIdentity.contactDetails.displayName,

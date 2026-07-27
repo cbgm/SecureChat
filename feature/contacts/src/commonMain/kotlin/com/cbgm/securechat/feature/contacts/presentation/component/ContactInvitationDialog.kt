@@ -1,9 +1,9 @@
 package com.cbgm.securechat.feature.contacts.presentation.component
 
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import com.cbgm.securechat.core.ui.component.SecureChatAlertDialog
 import com.cbgm.securechat.feature.contacts.domain.model.PendingContactInvitation
 import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.base_unknown
@@ -21,11 +21,9 @@ fun ContactInvitationDialog(
     onAccept: () -> Unit,
     onDecline: () -> Unit
 ) {
-    AlertDialog(
+    SecureChatAlertDialog(
         onDismissRequest = {},
-        title = {
-            Text(text = stringResource(Res.string.feature_contacts_contact_invitation_title))
-        },
+        title = stringResource(Res.string.feature_contacts_contact_invitation_title),
         text = {
             Text(
                 text =

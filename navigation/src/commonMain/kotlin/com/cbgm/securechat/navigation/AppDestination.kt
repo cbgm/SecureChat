@@ -54,6 +54,7 @@ sealed interface AppDestination {
 
     @Serializable
     data class ImportContact(
-        val scannedIdentity: String? = null
+        val scannedIdentity: String? = null,
+        val contactId: String? = null
     ) : AppDestination
 }

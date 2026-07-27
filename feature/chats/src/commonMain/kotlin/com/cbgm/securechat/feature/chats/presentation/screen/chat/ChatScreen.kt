@@ -59,6 +59,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.security.DirectIdentitySetupMode
 import com.cbgm.securechat.core.ui.component.ContactAvatar
 import com.cbgm.securechat.core.ui.component.PatternBackground
 import com.cbgm.securechat.core.ui.component.SecureChatLazyScaffold
@@ -128,6 +129,11 @@ import com.cbgm.securechat.resources.feature_chats_invalid_message_packet
 import com.cbgm.securechat.resources.feature_chats_invalid_packet
 import com.cbgm.securechat.resources.feature_chats_invalid_plaintext
 import com.cbgm.securechat.resources.feature_chats_loading_chat
+import com.cbgm.securechat.resources.feature_chats_manual_identity_incomplete_description
+import com.cbgm.securechat.resources.feature_chats_manual_identity_incomplete_title
+import com.cbgm.securechat.resources.feature_chats_manual_identity_required_description
+import com.cbgm.securechat.resources.feature_chats_manual_identity_required_title
+import com.cbgm.securechat.resources.feature_chats_manual_identity_setup_action
 import com.cbgm.securechat.resources.feature_chats_not_encrypted
 import com.cbgm.securechat.resources.feature_chats_queued
 import com.cbgm.securechat.resources.feature_chats_read
@@ -151,6 +157,7 @@ fun ChatScreen(
     onClickHeader: () -> Unit,
     onRetryMessage: (String) -> Unit,
     onVerifyIdentity: () -> Unit,
+    onManualIdentitySetup: () -> Unit,
     onBack: () -> Unit,
     onAcceptGroupInvitation: () -> Unit = {},
     onDeclineGroupInvitation: () -> Unit = {},
@@ -172,6 +179,7 @@ fun ChatScreen(
                 containerColor = containerColor,
                 onClickHeader = onClickHeader,
                 onVerifyIdentity = onVerifyIdentity,
+                onManualIdentitySetup = onManualIdentitySetup,
                 onAcceptGroupInvitation = onAcceptGroupInvitation,
                 onDeclineGroupInvitation = onDeclineGroupInvitation,
                 onBack = onBack
@@ -202,6 +210,7 @@ private fun ChatTopBar(
     containerColor: Color,
     onClickHeader: () -> Unit,
     onVerifyIdentity: () -> Unit,
+    onManualIdentitySetup: () -> Unit,
     onAcceptGroupInvitation: () -> Unit,
     onDeclineGroupInvitation: () -> Unit,
     onBack: () -> Unit
@@ -280,7 +289,9 @@ private fun ChatTopBar(
             SecurityBanner(
                 securityState = uiState.contactSecurityState,
                 identityHandshakeState = uiState.identityHandshakeState,
-                onVerifyIdentity = onVerifyIdentity
+                directIdentitySetupMode = uiState.directIdentitySetupMode,
+                onVerifyIdentity = onVerifyIdentity,
+                onManualIdentitySetup = onManualIdentitySetup
             )
         }
 
@@ -519,7 +530,9 @@ private fun GroupAvatar() {
 private fun SecurityBanner(
     securityState: ContactSecurityState,
     identityHandshakeState: IdentityHandshakeState?,
+    directIdentitySetupMode: DirectIdentitySetupMode,
     onVerifyIdentity: () -> Unit,
+    onManualIdentitySetup: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (securityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED) {
@@ -536,40 +549,44 @@ private fun SecurityBanner(
     )
 
     val invitationState =
-        when (identityHandshakeState) {
-            IdentityHandshakeState.INVITE_SENT ->
-                CombinedState(
-                    icon = Icons.Default.Schedule,
-                    title = stringResource(Res.string.feature_chats_contact_invitation_sent_title),
-                    description = stringResource(Res.string.feature_chats_contact_invitation_sent_description),
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                )
+        if (directIdentitySetupMode == DirectIdentitySetupMode.AUTOMATIC_INVITATION) {
+            when (identityHandshakeState) {
+                IdentityHandshakeState.INVITE_SENT ->
+                    CombinedState(
+                        icon = Icons.Default.Schedule,
+                        title = stringResource(Res.string.feature_chats_contact_invitation_sent_title),
+                        description = stringResource(Res.string.feature_chats_contact_invitation_sent_description),
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
 
-            IdentityHandshakeState.AWAITING_ACCEPTANCE ->
-                CombinedState(
-                    icon = Icons.Default.Warning,
-                    title = stringResource(Res.string.feature_chats_contact_invitation_received_title),
-                    description = stringResource(Res.string.feature_chats_contact_invitation_received_description),
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                )
+                IdentityHandshakeState.AWAITING_ACCEPTANCE ->
+                    CombinedState(
+                        icon = Icons.Default.Warning,
+                        title = stringResource(Res.string.feature_chats_contact_invitation_received_title),
+                        description = stringResource(Res.string.feature_chats_contact_invitation_received_description),
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
 
-            IdentityHandshakeState.ACCEPTANCE_SENT,
-            IdentityHandshakeState.WAITING_FOR_READY ->
-                CombinedState(
-                    icon = Icons.Default.Schedule,
-                    title = stringResource(Res.string.feature_chats_contact_invitation_finishing_title),
-                    description = stringResource(Res.string.feature_chats_contact_invitation_finishing_description),
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                )
+                IdentityHandshakeState.ACCEPTANCE_SENT,
+                IdentityHandshakeState.WAITING_FOR_READY ->
+                    CombinedState(
+                        icon = Icons.Default.Schedule,
+                        title = stringResource(Res.string.feature_chats_contact_invitation_finishing_title),
+                        description = stringResource(Res.string.feature_chats_contact_invitation_finishing_description),
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
 
-            IdentityHandshakeState.MUTUAL_UNVERIFIED,
-            IdentityHandshakeState.DECLINED,
-            IdentityHandshakeState.EXPIRED,
-            IdentityHandshakeState.FAILED,
-            null -> null
+                IdentityHandshakeState.MUTUAL_UNVERIFIED,
+                IdentityHandshakeState.DECLINED,
+                IdentityHandshakeState.EXPIRED,
+                IdentityHandshakeState.FAILED,
+                null -> null
+            }
+        } else {
+            null
         }
 
     val combinedState =
@@ -577,8 +594,18 @@ private fun SecurityBanner(
             ContactSecurityState.NO_REMOTE_PUBLIC_KEYS ->
                 CombinedState(
                     icon = Icons.Default.LockOpen,
-                    title = stringResource(Res.string.feature_chats_chat_unencrypted_title),
-                    description = stringResource(Res.string.feature_chats_chat_unencrypted_description),
+                    title =
+                        if (directIdentitySetupMode == DirectIdentitySetupMode.MANUAL_IDENTITY_SHARING) {
+                            stringResource(Res.string.feature_chats_manual_identity_required_title)
+                        } else {
+                            stringResource(Res.string.feature_chats_chat_unencrypted_title)
+                        },
+                    description =
+                        if (directIdentitySetupMode == DirectIdentitySetupMode.MANUAL_IDENTITY_SHARING) {
+                            stringResource(Res.string.feature_chats_manual_identity_required_description)
+                        } else {
+                            stringResource(Res.string.feature_chats_chat_unencrypted_description)
+                        },
                     containerColor = MaterialTheme.colorScheme.errorContainer,
                     contentColor = MaterialTheme.colorScheme.onErrorContainer
                 )
@@ -586,8 +613,18 @@ private fun SecurityBanner(
             ContactSecurityState.ONE_WAY_KEYS ->
                 CombinedState(
                     icon = Icons.Default.LockOpen,
-                    title = stringResource(Res.string.feature_chats_chat_key_exchange_incomplete_title),
-                    description = stringResource(Res.string.feature_chats_chat_key_exchange_incomplete_description),
+                    title =
+                        if (directIdentitySetupMode == DirectIdentitySetupMode.MANUAL_IDENTITY_SHARING) {
+                            stringResource(Res.string.feature_chats_manual_identity_incomplete_title)
+                        } else {
+                            stringResource(Res.string.feature_chats_chat_key_exchange_incomplete_title)
+                        },
+                    description =
+                        if (directIdentitySetupMode == DirectIdentitySetupMode.MANUAL_IDENTITY_SHARING) {
+                            stringResource(Res.string.feature_chats_manual_identity_incomplete_description)
+                        } else {
+                            stringResource(Res.string.feature_chats_chat_key_exchange_incomplete_description)
+                        },
                     containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f),
                     contentColor = MaterialTheme.colorScheme.onErrorContainer
                 )
@@ -659,17 +696,32 @@ private fun SecurityBanner(
                 )
             }
 
-            if (
+            when {
+                directIdentitySetupMode == DirectIdentitySetupMode.MANUAL_IDENTITY_SHARING &&
+                    (
+                        securityState == ContactSecurityState.NO_REMOTE_PUBLIC_KEYS ||
+                            securityState == ContactSecurityState.ONE_WAY_KEYS
+                    ) -> {
+                    TextButton(onClick = onManualIdentitySetup) {
+                        Text(
+                            text = stringResource(Res.string.feature_chats_manual_identity_setup_action),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = combinedState.contentColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
                 securityState == ContactSecurityState.MUTUAL_KEYS_UNVERIFIED ||
-                securityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_CONTACT
-            ) {
-                TextButton(onClick = onVerifyIdentity) {
-                    Text(
-                        text = stringResource(Res.string.base_verify),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = combinedState.contentColor,
-                        fontWeight = FontWeight.Bold
-                    )
+                    securityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_CONTACT -> {
+                    TextButton(onClick = onVerifyIdentity) {
+                        Text(
+                            text = stringResource(Res.string.base_verify),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = combinedState.contentColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
@@ -1230,6 +1282,7 @@ private fun ChatScreenPreview() {
             onClickHeader = {},
             onRetryMessage = {},
             onVerifyIdentity = {},
+            onManualIdentitySetup = {},
             onBack = {}
         )
     }
@@ -1276,6 +1329,7 @@ private fun ChatScreenMessagesPreview() {
             onClickHeader = {},
             onRetryMessage = {},
             onVerifyIdentity = {},
+            onManualIdentitySetup = {},
             onBack = {}
         )
     }

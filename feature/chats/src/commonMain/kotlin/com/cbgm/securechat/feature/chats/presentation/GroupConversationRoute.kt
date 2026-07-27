@@ -36,6 +36,7 @@ fun GroupConversationRoute(
         onAcceptGroupInvitation = viewModel::acceptInvitation,
         onDeclineGroupInvitation = viewModel::declineInvitation,
         onVerifyIdentity = {},
+        onManualIdentitySetup = {},
         onBack = onBack,
         modifier = modifier
     )

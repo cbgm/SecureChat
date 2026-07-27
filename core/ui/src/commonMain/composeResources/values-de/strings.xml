@@ -295,4 +295,16 @@
     <string name="feature_startup_setup_failed">Die Einrichtung von SecureChat konnte nicht abgeschlossen werden.</string>
     <string name="feature_startup_verify_phone_number">Bestätige deine Telefonnummer</string>
     <string name="feature_chats_sender_not_in_contacts">%1$s (nicht in Kontakten)</string>
+    <string name="feature_settings_security">Sicherheit</string>
+    <string name="feature_settings_automatic_secure_setup">Automatische sichere Einrichtung</string>
+    <string name="feature_settings_automatic_secure_setup_enabled_subtitle">Beim Öffnen eines direkten Chats wird automatisch eine signierte Identitätseinladung gesendet.</string>
+    <string name="feature_settings_automatic_secure_setup_disabled_subtitle">Identitäten müssen auf beiden Geräten manuell geteilt oder gescannt werden.</string>
+    <string name="feature_chats_manual_identity_setup_title">Manuelle Identitätseinrichtung</string>
+    <string name="feature_chats_manual_identity_setup_description">Teile deine Identität und importiere oder scanne anschließend die Identität des Kontakts auf beiden Geräten. Beim Öffnen des Chats wird keine automatische Einladung gesendet.</string>
+    <string name="feature_chats_manual_identity_required_title">Manueller Identitätsaustausch erforderlich</string>
+    <string name="feature_chats_manual_identity_required_description">Teile deine Identität und importiere die Identität des Kontakts, bevor Ende-zu-Ende-Verschlüsselung beginnen kann.</string>
+    <string name="feature_chats_manual_identity_incomplete_title">Manueller Identitätsaustausch unvollständig</string>
+    <string name="feature_chats_manual_identity_incomplete_description">Eine Identität ist bekannt. Auch das andere Gerät muss die passende Identität importieren.</string>
+    <string name="feature_chats_manual_identity_setup_action">Einrichten</string>
+    <string name="feature_chats_import_contact_identity">Kontaktidentität importieren</string>
 </resources>

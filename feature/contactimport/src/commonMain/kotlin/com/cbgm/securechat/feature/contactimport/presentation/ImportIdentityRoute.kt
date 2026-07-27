@@ -23,6 +23,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun ImportIdentityRoute(
+    contactId: String?,
     scannedIdentity: String?,
     onScannedIdentityConsumed: () -> Unit,
     onScanQrCode: () -> Unit,
@@ -70,6 +71,7 @@ fun ImportIdentityRoute(
         onImportClick = {
             viewModel.onEvent(
                 ImportIdentityEvent.ImportClicked(
+                    contactId = contactId,
                     identityImportTrust = IdentityImportTrust.UNVERIFIED
                 )
             )
@@ -89,6 +91,7 @@ fun ImportIdentityRoute(
 
                 viewModel.onEvent(
                     ImportIdentityEvent.ImportClicked(
+                        contactId = contactId,
                         identityImportTrust = IdentityImportTrust.VERIFIED_IN_PERSON
                     )
                 )

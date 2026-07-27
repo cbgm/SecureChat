@@ -21,7 +21,7 @@ class ImportIdentityViewModel(
     fun onEvent(event: ImportIdentityEvent) {
         when (event) {
             is ImportIdentityEvent.EncodedIdentityChanged -> updateEncodedIdentity(event.value)
-            is ImportIdentityEvent.ImportClicked -> importIdentity(event.identityImportTrust)
+            is ImportIdentityEvent.ImportClicked -> importIdentity(event.contactId, event.identityImportTrust)
         }
     }
 
@@ -36,7 +36,10 @@ class ImportIdentityViewModel(
         }
     }
 
-    private fun importIdentity(identityImportTrust: IdentityImportTrust) {
+    private fun importIdentity(
+        contactId: String?,
+        identityImportTrust: IdentityImportTrust
+    ) {
         val encodedIdentity = _uiState.value.encodedIdentity.trim()
 
         if (encodedIdentity.isEmpty()) {
@@ -60,6 +63,7 @@ class ImportIdentityViewModel(
         viewModelScope.launch {
             importSharedIdentity(
                 encodedIdentity = encodedIdentity,
+                contactId = contactId,
                 identityImportTrust = identityImportTrust
             ).onSuccess { contact ->
                 _uiState.update {

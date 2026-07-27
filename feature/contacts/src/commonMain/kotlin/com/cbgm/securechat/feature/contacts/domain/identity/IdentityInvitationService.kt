@@ -14,4 +14,6 @@ interface IdentityInvitationService {
     suspend fun accept(invitationId: String): Result<Unit>
 
     suspend fun decline(invitationId: String): Result<Unit>
+
+    suspend fun cancelForManualSetup(contactId: String): Result<Unit>
 }

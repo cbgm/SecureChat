@@ -12,6 +12,7 @@ import com.cbgm.securechat.core.protocol.outbox.ProtocolOutboxItem
 import com.cbgm.securechat.core.protocol.packet.IdentityAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.IdentityPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
+import com.cbgm.securechat.feature.contacts.domain.identity.ContactVerificationService
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
@@ -41,6 +42,7 @@ class IdentityPacketHandlerTest {
             val outbox = RecordingProtocolOutbox()
             val handler =
                 IdentityPacketHandler(
+                    contactRepository = FakeContactRepository(createContact()),
                     contactKeyExchangeStore = keyExchangeStore,
                     localSigningKeyPairProvider =
                         object : LocalSigningKeyPairProvider {
@@ -53,7 +55,8 @@ class IdentityPacketHandlerTest {
                                 )
                         },
                     identityAcknowledgementCrypto = crypto,
-                    protocolOutbox = outbox
+                    protocolOutbox = outbox,
+                    contactVerificationService = noOpContactVerificationService
                 )
             val packet = createIdentityPacket()
 
@@ -92,6 +95,7 @@ class IdentityPacketHandlerTest {
             val outbox = RecordingProtocolOutbox()
             val handler =
                 IdentityPacketHandler(
+                    contactRepository = FakeContactRepository(createContact()),
                     contactKeyExchangeStore = keyExchangeStore,
                     localSigningKeyPairProvider =
                         object : LocalSigningKeyPairProvider {
@@ -104,7 +108,8 @@ class IdentityPacketHandlerTest {
                                 )
                         },
                     identityAcknowledgementCrypto = crypto,
-                    protocolOutbox = outbox
+                    protocolOutbox = outbox,
+                    contactVerificationService = noOpContactVerificationService
                 )
 
             val result =
@@ -125,8 +130,10 @@ class IdentityPacketHandlerTest {
             val handler =
                 IdentityAcknowledgementPacketHandler(
                     contactRepository = FakeContactRepository(createContact()),
+                    contactKeyExchangeStore = RecordingContactKeyExchangeStore(),
                     localPublicIdentityProvider = createLocalPublicIdentityProvider(),
-                    identityAcknowledgementCrypto = crypto
+                    identityAcknowledgementCrypto = crypto,
+                    contactVerificationService = noOpContactVerificationService
                 )
             val packet = createAcknowledgementPacket()
 
@@ -151,8 +158,10 @@ class IdentityPacketHandlerTest {
             val handler =
                 IdentityAcknowledgementPacketHandler(
                     contactRepository = FakeContactRepository(createContact()),
+                    contactKeyExchangeStore = RecordingContactKeyExchangeStore(),
                     localPublicIdentityProvider = createLocalPublicIdentityProvider(),
-                    identityAcknowledgementCrypto = crypto
+                    identityAcknowledgementCrypto = crypto,
+                    contactVerificationService = noOpContactVerificationService
                 )
             val packet =
                 createAcknowledgementPacket(
@@ -176,8 +185,10 @@ class IdentityPacketHandlerTest {
             val handler =
                 IdentityAcknowledgementPacketHandler(
                     contactRepository = FakeContactRepository(createContact()),
+                    contactKeyExchangeStore = RecordingContactKeyExchangeStore(),
                     localPublicIdentityProvider = createLocalPublicIdentityProvider(),
-                    identityAcknowledgementCrypto = crypto
+                    identityAcknowledgementCrypto = crypto,
+                    contactVerificationService = noOpContactVerificationService
                 )
             val packet =
                 createAcknowledgementPacket(
@@ -204,8 +215,10 @@ class IdentityPacketHandlerTest {
             val handler =
                 IdentityAcknowledgementPacketHandler(
                     contactRepository = FakeContactRepository(createContact()),
+                    contactKeyExchangeStore = RecordingContactKeyExchangeStore(),
                     localPublicIdentityProvider = createLocalPublicIdentityProvider(),
-                    identityAcknowledgementCrypto = crypto
+                    identityAcknowledgementCrypto = crypto,
+                    contactVerificationService = noOpContactVerificationService
                 )
 
             val result =
@@ -217,6 +230,13 @@ class IdentityPacketHandlerTest {
             assertTrue(result.isFailure)
             assertEquals("invalid signature", result.exceptionOrNull()?.message)
             assertEquals(1, crypto.verifyCallCount)
+        }
+
+    private val noOpContactVerificationService =
+        object : ContactVerificationService {
+            override suspend fun verify(contactId: String): Result<Unit> = Result.success(Unit)
+
+            override suspend fun sendReceiptIfLocallyVerified(contactId: String): Result<Unit> = Result.success(Unit)
         }
 
     private fun createIdentityPacket(): IdentityPacket =
@@ -262,6 +282,7 @@ class IdentityPacketHandlerTest {
                     encryptionPublicKey = REMOTE_ENCRYPTION_KEY,
                     signingPublicKey = REMOTE_SIGNING_KEY,
                     verificationStatus = ContactVerificationStatus.UNVERIFIED,
+                    locallyImported = true,
                     keyExchangeStatus = KeyExchangeStatus.ONE_WAY,
                     updatedAtEpochMilliseconds = 1L
                 ),
@@ -328,7 +349,7 @@ class IdentityPacketHandlerTest {
             contactId: String,
             expectedRemoteEncryptionPublicKey: ByteArray,
             expectedRemoteSigningPublicKey: ByteArray
-        ): Result<Unit> = Result.failure(UnsupportedOperationException())
+        ): Result<Unit> = Result.success(Unit)
 
         override suspend fun resetAllAfterLocalIdentityChange(): Result<Unit> = Result.failure(UnsupportedOperationException())
     }

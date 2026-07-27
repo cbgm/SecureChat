@@ -1083,6 +1083,8 @@ class DefaultContactRepositoryIntegrationTest {
 
 private object TestIdentityExchangeStarter : IdentityExchangeStarter {
     override suspend fun ensureStarted(contactId: String): Result<Unit> = Result.success(Unit)
+
+    override suspend fun startManualExchange(contactId: String): Result<Unit> = Result.success(Unit)
 }
 
 private object TestDeviceContactWriter : DeviceContactWriter {

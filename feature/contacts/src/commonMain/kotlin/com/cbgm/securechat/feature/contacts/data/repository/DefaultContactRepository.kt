@@ -151,7 +151,7 @@ class DefaultContactRepository(
                 ).getOrThrow()
 
             identityExchangeStarter
-                .ensureStarted(
+                .startManualExchange(
                     contactId = contactId
                 ).getOrThrow()
 

@@ -2,11 +2,18 @@ package com.cbgm.securechat.feature.contacts.domain.identity
 
 interface IdentityExchangeStarter {
     /**
-     * Starts the explicit direct-contact invitation handshake when the contact
-     * is not already mutual and no unexpired invitation is active.
+     * Starts the configured direct-contact setup when the contact is not already mutual.
      *
-     * A phone number is enough to route the signed invitation. Remote keys are
-     * accepted only through the challenge-bound invitation response.
+     * Automatic mode uses the signed invitation handshake. Manual mode sends the local
+     * identity only after the remote identity was explicitly imported or scanned.
      */
     suspend fun ensureStarted(contactId: String): Result<Unit>
+
+    /**
+     * Starts only the explicit manual identity exchange.
+     *
+     * This is used after a QR or identity-text import and must never create an automatic
+     * contact invitation or an invitation-acceptance dialog.
+     */
+    suspend fun startManualExchange(contactId: String): Result<Unit>
 }

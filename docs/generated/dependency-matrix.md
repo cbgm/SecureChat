@@ -18,7 +18,7 @@ A check mark means the row module directly depends on the column module.
 | `:feature:identity` |  | ✓ | ✓ | ✓ | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | `:feature:messaging` |  | ✓ | ✓ | ✓ |  |  | ✓ |  | ✓ |  | ✓ |  |  |  |  | ✓ |  |  |  |  |  |  |
 | `:feature:onboarding` |  |  |  |  | ✓ |  |  |  |  |  |  | ✓ |  |  |  |  |  |  |  |  |  |  |
-| `:feature:settings` |  |  |  |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| `:feature:settings` |  | ✓ |  |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | `:feature:transport` |  | ✓ |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | `:navigation` |  | ✓ |  |  | ✓ |  |  |  | ✓ | ✓ | ✓ | ✓ |  | ✓ | ✓ |  |  |  |  |  |  | ✓ |
 | `:quality` |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |

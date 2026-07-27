@@ -14,6 +14,8 @@ import com.cbgm.securechat.core.protocol.packet.ContactInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.ContactInvitePacket
 import com.cbgm.securechat.core.protocol.packet.ContactReadyPacket
 import com.cbgm.securechat.core.protocol.version.ProtocolVersion
+import com.cbgm.securechat.core.security.DirectIdentitySetupMode
+import com.cbgm.securechat.core.security.DirectIdentitySetupModeRepository
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.data.database.dao.IdentityInvitationDao
@@ -41,12 +43,15 @@ class IdentityInvitationCoordinator(
     private val secureRandomGenerator: SecureRandomGenerator,
     private val payloadEncoder: IdentityInvitationPayloadEncoder,
     private val protocolOutbox: ProtocolOutbox,
-    private val contactVerificationService: ContactVerificationService
+    private val contactVerificationService: ContactVerificationService,
+    private val modeRepository: DirectIdentitySetupModeRepository
 ) : IdentityInvitationService {
     private val mutex = Mutex()
 
     override suspend fun start(contactId: String): Result<Unit> =
         runCatching {
+            requireAutomaticSetupEnabled()
+
             require(contactId.isNotBlank()) {
                 "Contact ID must not be blank"
             }
@@ -55,6 +60,10 @@ class IdentityInvitationCoordinator(
                 val contact = contactDao.findById(contactId) ?: error("Contact was not found: $contactId")
 
                 if (contact.publicIdentity?.keyExchangeStatus == KeyExchangeStatus.MUTUAL.name) {
+                    return@withLock
+                }
+
+                if (contact.publicIdentity?.locallyImported == true) {
                     return@withLock
                 }
 
@@ -195,6 +204,8 @@ class IdentityInvitationCoordinator(
 
     override suspend fun accept(invitationId: String): Result<Unit> =
         runCatching {
+            requireAutomaticSetupEnabled()
+
             mutex.withLock {
                 val invitation = requireInvitation(invitationId, IdentityInvitationDirection.INCOMING)
                 requireState(invitation, IdentityHandshakeState.AWAITING_ACCEPTANCE)
@@ -317,6 +328,56 @@ class IdentityInvitationCoordinator(
             }
         }
 
+    override suspend fun cancelForManualSetup(contactId: String): Result<Unit> =
+        runCatching {
+            require(contactId.isNotBlank()) {
+                "Contact ID must not be blank"
+            }
+
+            mutex.withLock {
+                val invitation =
+                    invitationDao.findActiveForContact(
+                        contactId = contactId,
+                        terminalStates = TERMINAL_STATES
+                    ) ?: return@withLock
+
+                val state =
+                    IdentityHandshakeState.entries.firstOrNull { candidate ->
+                        candidate.name == invitation.state
+                    } ?: return@withLock
+
+                when {
+                    invitation.direction == IdentityInvitationDirection.INCOMING.name &&
+                        state == IdentityHandshakeState.AWAITING_ACCEPTANCE -> {
+                        queueDeclineForManualMode(
+                            contactId = invitation.contactId,
+                            invitationId = invitation.invitationId,
+                            inviteChallenge = invitation.inviteChallenge
+                        )
+
+                        invitationDao.upsert(
+                            invitation.copy(
+                                state = IdentityHandshakeState.DECLINED.name,
+                                updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
+                                lastError = "Manual identity exchange selected"
+                            )
+                        )
+                    }
+
+                    invitation.direction == IdentityInvitationDirection.OUTGOING.name &&
+                        state == IdentityHandshakeState.INVITE_SENT -> {
+                        invitationDao.upsert(
+                            invitation.copy(
+                                state = IdentityHandshakeState.DECLINED.name,
+                                updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
+                                lastError = "Manual identity exchange selected"
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
     suspend fun receiveInvite(
         context: IncomingPacketContext,
         packet: ContactInvitePacket
@@ -360,6 +421,29 @@ class IdentityInvitationCoordinator(
                     "Invitation has expired"
                 }
 
+                val storedIdentity = contactDao.findPublicIdentityByContactId(context.contactId)
+
+                if (storedIdentity != null) {
+                    check(storedIdentity.encryptionPublicKey.contentEquals(packet.encryptionPublicKey)) {
+                        "Contact encryption identity changed; reset the contact before accepting new keys"
+                    }
+                    check(storedIdentity.signingPublicKey.contentEquals(packet.signingPublicKey)) {
+                        "Contact signing identity changed; reset the contact before accepting new keys"
+                    }
+                }
+
+                if (
+                    modeRepository.getMode() == DirectIdentitySetupMode.MANUAL_IDENTITY_SHARING ||
+                    storedIdentity?.locallyImported == true
+                ) {
+                    queueDeclineForManualMode(
+                        contactId = context.contactId,
+                        invitationId = packet.invitationId,
+                        inviteChallenge = packet.inviteChallenge
+                    )
+                    return@withLock
+                }
+
                 invitationDao.findById(packet.invitationId)?.let { existing ->
                     check(existing.direction == IdentityInvitationDirection.INCOMING.name) {
                         "Invitation replay changed its direction"
@@ -388,18 +472,8 @@ class IdentityInvitationCoordinator(
                     return@withLock
                 }
 
-                val storedIdentity = contactDao.findPublicIdentityByContactId(context.contactId)
-                if (storedIdentity != null) {
-                    check(storedIdentity.encryptionPublicKey.contentEquals(packet.encryptionPublicKey)) {
-                        "Contact encryption identity changed; reset the contact before accepting new keys"
-                    }
-                    check(storedIdentity.signingPublicKey.contentEquals(packet.signingPublicKey)) {
-                        "Contact signing identity changed; reset the contact before accepting new keys"
-                    }
-
-                    if (storedIdentity.keyExchangeStatus == KeyExchangeStatus.MUTUAL.name) {
-                        return@withLock
-                    }
+                if (storedIdentity?.keyExchangeStatus == KeyExchangeStatus.MUTUAL.name) {
+                    return@withLock
                 }
 
                 invitationDao
@@ -830,6 +904,46 @@ class IdentityInvitationCoordinator(
         check(identity.signingPublicKey.contentEquals(signingKeyPair.publicKey)) {
             "Local signing key pair does not match the public identity"
         }
+    }
+
+    private suspend fun requireAutomaticSetupEnabled() {
+        check(modeRepository.getMode() == DirectIdentitySetupMode.AUTOMATIC_INVITATION) {
+            "Automatic identity invitations are disabled"
+        }
+    }
+
+    private suspend fun queueDeclineForManualMode(
+        contactId: String,
+        invitationId: String,
+        inviteChallenge: ByteArray
+    ) {
+        val signingKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
+        val declinedAt = SystemClock.nowEpochMilliseconds()
+        val packetId = "contact-invite-declined-$invitationId"
+        val payload =
+            payloadEncoder.encodeDeclined(
+                packetId = packetId,
+                version = ProtocolVersion.CURRENT,
+                invitationId = invitationId,
+                declinedAtEpochMilliseconds = declinedAt,
+                inviteChallenge = inviteChallenge,
+                declinerSigningPublicKey = signingKeyPair.publicKey
+            )
+        val signature = detachedSignatureCrypto.sign(payload, signingKeyPair.privateKey).getOrThrow()
+
+        protocolOutbox
+            .enqueue(
+                contactId = contactId,
+                packet =
+                    ContactInviteDeclinedPacket(
+                        packetId = packetId,
+                        invitationId = invitationId,
+                        declinedAtEpochMilliseconds = declinedAt,
+                        inviteChallenge = inviteChallenge.copyOf(),
+                        declinerSigningPublicKey = signingKeyPair.publicKey.copyOf(),
+                        signature = signature.copyOf()
+                    )
+            ).getOrThrow()
     }
 
     private companion object {

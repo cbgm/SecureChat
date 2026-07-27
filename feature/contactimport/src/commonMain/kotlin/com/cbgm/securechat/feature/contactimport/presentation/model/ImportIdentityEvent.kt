@@ -8,6 +8,7 @@ sealed interface ImportIdentityEvent {
     ) : ImportIdentityEvent
 
     data class ImportClicked(
+        val contactId: String?,
         val identityImportTrust: IdentityImportTrust = IdentityImportTrust.UNVERIFIED
     ) : ImportIdentityEvent
 }

@@ -25,6 +25,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -34,6 +35,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.security.DirectIdentitySetupMode
 import com.cbgm.securechat.core.ui.component.SecureChatCardNoAnimation
 import com.cbgm.securechat.core.ui.locale.AppLanguage
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
@@ -46,6 +48,9 @@ import com.cbgm.securechat.resources.base_developer
 import com.cbgm.securechat.resources.base_language
 import com.cbgm.securechat.resources.base_version
 import com.cbgm.securechat.resources.feature_settings_about
+import com.cbgm.securechat.resources.feature_settings_automatic_secure_setup
+import com.cbgm.securechat.resources.feature_settings_automatic_secure_setup_disabled_subtitle
+import com.cbgm.securechat.resources.feature_settings_automatic_secure_setup_enabled_subtitle
 import com.cbgm.securechat.resources.feature_settings_data_disclaimer
 import com.cbgm.securechat.resources.feature_settings_data_disclaimer_subtitle
 import com.cbgm.securechat.resources.feature_settings_developer_menu
@@ -56,6 +61,7 @@ import com.cbgm.securechat.resources.feature_settings_open_source_licenses
 import com.cbgm.securechat.resources.feature_settings_privacy_and_data
 import com.cbgm.securechat.resources.feature_settings_privacy_policy
 import com.cbgm.securechat.resources.feature_settings_privacy_policy_subtitle
+import com.cbgm.securechat.resources.feature_settings_security
 import org.jetbrains.compose.resources.stringResource
 
 private val CardColor = Color(0xFF102A46)
@@ -71,6 +77,7 @@ fun SettingsScreen(
     onOpenLanguagePicker: () -> Unit,
     onDismissLanguagePicker: () -> Unit,
     onLanguageSelected: (AppLanguage) -> Unit,
+    onDirectIdentitySetupModeChanged: (DirectIdentitySetupMode) -> Unit,
     onVersionRowTapped: () -> Unit,
     scrollState: ScrollState,
     innerPadding: PaddingValues,
@@ -94,6 +101,29 @@ fun SettingsScreen(
                 subtitle = uiState.currentLanguage.nativeName,
                 onClick = onOpenLanguagePicker,
                 showChevron = false
+            )
+        }
+
+        SettingsSection(title = stringResource(Res.string.feature_settings_security)) {
+            SettingsSwitchRow(
+                icon = Icons.Default.Lock,
+                title = stringResource(Res.string.feature_settings_automatic_secure_setup),
+                subtitle =
+                    if (uiState.directIdentitySetupMode == DirectIdentitySetupMode.AUTOMATIC_INVITATION) {
+                        stringResource(Res.string.feature_settings_automatic_secure_setup_enabled_subtitle)
+                    } else {
+                        stringResource(Res.string.feature_settings_automatic_secure_setup_disabled_subtitle)
+                    },
+                checked = uiState.directIdentitySetupMode == DirectIdentitySetupMode.AUTOMATIC_INVITATION,
+                onCheckedChange = { enabled ->
+                    onDirectIdentitySetupModeChanged(
+                        if (enabled) {
+                            DirectIdentitySetupMode.AUTOMATIC_INVITATION
+                        } else {
+                            DirectIdentitySetupMode.MANUAL_IDENTITY_SHARING
+                        }
+                    )
+                }
             )
         }
 
@@ -128,7 +158,7 @@ fun SettingsScreen(
             SettingsRow(
                 icon = Icons.Default.Description,
                 title = stringResource(Res.string.base_version),
-                subtitle = "${uiState.buildInfo.versionName} (${uiState.buildInfo.versionCode}",
+                subtitle = "${uiState.buildInfo.versionName} (${uiState.buildInfo.versionCode})",
                 showChevron = false,
                 onClick = onVersionRowTapped
             )
@@ -237,6 +267,56 @@ private fun SettingsRow(
 }
 
 @Composable
+private fun SettingsSwitchRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable {
+                    onCheckedChange(!checked)
+                }.padding(
+                    horizontal = MaterialTheme.spacing.small,
+                    vertical = MaterialTheme.spacing.small
+                ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+            modifier = Modifier.size(22.dp)
+        )
+
+        Spacer(modifier = Modifier.size(MaterialTheme.spacing.small))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+            )
+        }
+
+        Switch(
+            checked = checked,
+            onCheckedChange = null
+        )
+    }
+}
+
+@Composable
 private fun SettingsDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(start = MaterialTheme.spacing.times(5)),
@@ -269,6 +349,7 @@ fun SettingsScreenPreview() {
             onOpenLanguagePicker = {},
             onDismissLanguagePicker = {},
             onLanguageSelected = {},
+            onDirectIdentitySetupModeChanged = {},
             onVersionRowTapped = {},
             snackbarHostState = SnackbarHostState(),
             scrollState = ScrollState(0),

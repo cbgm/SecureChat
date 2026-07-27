@@ -8,8 +8,8 @@ Generated automatically by `./gradlew architectureReport`.
 |---|---:|
 | Modules | 22 |
 | Module groups | 9 |
-| Project dependencies | 63 |
-| Kotlin files | 519 |
+| Project dependencies | 64 |
+| Kotlin files | 534 |
 | Test Kotlin files | 37 |
 | Resource files | 56 |
 
@@ -162,6 +162,7 @@ graph TD
     module_feature_messaging --> module_feature_transport
     module_feature_onboarding --> module_core_ui
     module_feature_onboarding --> module_feature_identity
+    module_feature_settings --> module_core
     module_feature_settings --> module_core_ui
     module_feature_transport --> module_core
     module_feature_transport --> module_core_protocol
