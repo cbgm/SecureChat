@@ -18,6 +18,7 @@ import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.data.database.dao.IdentityInvitationDao
 import com.cbgm.securechat.data.database.entity.IdentityInvitationEntity
+import com.cbgm.securechat.feature.contacts.domain.identity.ContactVerificationService
 import com.cbgm.securechat.feature.contacts.domain.identity.IdentityInvitationService
 import com.cbgm.securechat.feature.contacts.domain.model.IdentityHandshakeState
 import com.cbgm.securechat.feature.contacts.domain.model.IdentityInvitationDirection
@@ -39,7 +40,8 @@ class IdentityInvitationCoordinator(
     private val detachedSignatureCrypto: DetachedSignatureCrypto,
     private val secureRandomGenerator: SecureRandomGenerator,
     private val payloadEncoder: IdentityInvitationPayloadEncoder,
-    private val protocolOutbox: ProtocolOutbox
+    private val protocolOutbox: ProtocolOutbox,
+    private val contactVerificationService: ContactVerificationService
 ) : IdentityInvitationService {
     private val mutex = Mutex()
 
@@ -605,6 +607,12 @@ class IdentityInvitationCoordinator(
                         lastError = null
                     )
                 )
+
+                contactVerificationService
+                    .sendReceiptIfLocallyVerified(context.contactId)
+                    .onFailure { error ->
+                        println("Could not queue contact verification receipt: ${error.message}")
+                    }
             }
         }
 
@@ -692,6 +700,12 @@ class IdentityInvitationCoordinator(
                         lastError = null
                     )
                 )
+
+                contactVerificationService
+                    .sendReceiptIfLocallyVerified(context.contactId)
+                    .onFailure { error ->
+                        println("Could not queue contact verification receipt: ${error.message}")
+                    }
             }
         }
 

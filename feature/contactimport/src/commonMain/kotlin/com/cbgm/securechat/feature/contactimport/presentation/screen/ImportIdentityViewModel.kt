@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.cbgm.securechat.feature.contactimport.domain.usecase.ImportSharedIdentity
 import com.cbgm.securechat.feature.contactimport.presentation.model.ImportIdentityEvent
 import com.cbgm.securechat.feature.contactimport.presentation.model.ImportIdentityUiState
+import com.cbgm.securechat.feature.contacts.domain.model.IdentityImportTrust
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +21,7 @@ class ImportIdentityViewModel(
     fun onEvent(event: ImportIdentityEvent) {
         when (event) {
             is ImportIdentityEvent.EncodedIdentityChanged -> updateEncodedIdentity(event.value)
-            ImportIdentityEvent.ImportClicked -> importIdentity()
+            is ImportIdentityEvent.ImportClicked -> importIdentity(event.identityImportTrust)
         }
     }
 
@@ -29,12 +30,13 @@ class ImportIdentityViewModel(
             it.copy(
                 encodedIdentity = value,
                 importedContactName = null,
+                importedIdentityTrust = null,
                 errorMessage = null
             )
         }
     }
 
-    private fun importIdentity() {
+    private fun importIdentity(identityImportTrust: IdentityImportTrust) {
         val encodedIdentity = _uiState.value.encodedIdentity.trim()
 
         if (encodedIdentity.isEmpty()) {
@@ -50,29 +52,34 @@ class ImportIdentityViewModel(
             it.copy(
                 isImporting = true,
                 importedContactName = null,
+                importedIdentityTrust = null,
                 errorMessage = null
             )
         }
 
         viewModelScope.launch {
-            importSharedIdentity(encodedIdentity)
-                .onSuccess { contact ->
-                    _uiState.update {
-                        it.copy(
-                            isImporting = false,
-                            importedContactName = contact.displayName ?: "Unnamed contact",
-                            errorMessage = null
-                        )
-                    }
-                }.onFailure { error ->
-                    _uiState.update {
-                        it.copy(
-                            isImporting = false,
-                            importedContactName = null,
-                            errorMessage = error.message ?: "Identity import failed"
-                        )
-                    }
+            importSharedIdentity(
+                encodedIdentity = encodedIdentity,
+                identityImportTrust = identityImportTrust
+            ).onSuccess { contact ->
+                _uiState.update {
+                    it.copy(
+                        isImporting = false,
+                        importedContactName = contact.displayName ?: "Unnamed contact",
+                        importedIdentityTrust = identityImportTrust,
+                        errorMessage = null
+                    )
                 }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        isImporting = false,
+                        importedContactName = null,
+                        importedIdentityTrust = null,
+                        errorMessage = error.message ?: "Identity import failed"
+                    )
+                }
+            }
         }
     }
 }

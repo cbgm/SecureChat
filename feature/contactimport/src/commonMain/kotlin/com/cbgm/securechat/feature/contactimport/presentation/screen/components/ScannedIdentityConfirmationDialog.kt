@@ -16,9 +16,9 @@ import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.feature.contactimport.presentation.model.ScannedIdentityPreview
 import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.base_cancel
-import com.cbgm.securechat.resources.base_import_action
-import com.cbgm.securechat.resources.base_import_securechat_contact
 import com.cbgm.securechat.resources.feature_contactimport_encryption_key
+import com.cbgm.securechat.resources.feature_contactimport_in_person_qr_title
+import com.cbgm.securechat.resources.feature_contactimport_qr_trust_warning
 import com.cbgm.securechat.resources.feature_contactimport_securechat_identity_found
 import com.cbgm.securechat.resources.feature_contactimport_signing_key
 import com.cbgm.securechat.resources.feature_contactimport_unnamed_securechat_contact
@@ -27,13 +27,14 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun ScannedIdentityConfirmationDialog(
     preview: ScannedIdentityPreview,
+    confirmButtonText: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(text = stringResource(Res.string.base_import_securechat_contact))
+            Text(text = stringResource(Res.string.feature_contactimport_in_person_qr_title))
         },
         text = {
             Column(
@@ -60,6 +61,12 @@ fun ScannedIdentityConfirmationDialog(
                     color = MaterialTheme.colorScheme.primary
                 )
 
+                Text(
+                    text = stringResource(Res.string.feature_contactimport_qr_trust_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+
                 Spacer(modifier = Modifier.height(8.dp))
 
                 FingerprintSection(
@@ -77,7 +84,7 @@ fun ScannedIdentityConfirmationDialog(
             TextButton(
                 onClick = onConfirm
             ) {
-                Text(stringResource(Res.string.base_import_action))
+                Text(text = confirmButtonText)
             }
         },
         dismissButton = {

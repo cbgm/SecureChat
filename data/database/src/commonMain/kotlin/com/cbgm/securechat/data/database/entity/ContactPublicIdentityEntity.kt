@@ -41,6 +41,8 @@ data class ContactPublicIdentityEntity(
      * ContactVerificationStatus enum name.
      */
     val verificationStatus: String,
+    /** True when the contact verified this device's current identity keys. */
+    val verifiedByContact: Boolean = false,
     /**
      * KeyExchangeStatus enum name:
      *
@@ -63,6 +65,7 @@ data class ContactPublicIdentityEntity(
             encryptionPublicKey.contentEquals(other.encryptionPublicKey) &&
             signingPublicKey.contentEquals(other.signingPublicKey) &&
             verificationStatus == other.verificationStatus &&
+            verifiedByContact == other.verifiedByContact &&
             keyExchangeStatus == other.keyExchangeStatus &&
             locallyImported == other.locallyImported &&
             remoteIdentityPacketReceived == other.remoteIdentityPacketReceived &&
@@ -77,6 +80,8 @@ data class ContactPublicIdentityEntity(
         result = 31 * result + signingPublicKey.contentHashCode()
 
         result = 31 * result + verificationStatus.hashCode()
+
+        result = 31 * result + verifiedByContact.hashCode()
 
         result = 31 * result + keyExchangeStatus.hashCode()
 

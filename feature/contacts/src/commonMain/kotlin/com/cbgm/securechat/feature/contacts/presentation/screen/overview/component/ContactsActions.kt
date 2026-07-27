@@ -36,12 +36,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.resources.Res
-import com.cbgm.securechat.resources.base_import_securechat_contact
 import com.cbgm.securechat.resources.feature_chats_create_group
 import com.cbgm.securechat.resources.feature_contacts_add_contact_title
 import com.cbgm.securechat.resources.feature_contacts_import_from_device
 import com.cbgm.securechat.resources.feature_contacts_import_from_device_description
 import com.cbgm.securechat.resources.feature_contacts_import_securechat_contact_description
+import com.cbgm.securechat.resources.feature_contacts_verify_or_import_identity
 import org.jetbrains.compose.resources.stringResource
 
 private val SheetColor = Color(0xFF102A46)
@@ -177,18 +177,18 @@ private fun ImportContactSheet(
         }
 
         ImportOptionRow(
-            icon = Icons.Default.PersonAdd,
-            title = stringResource(Res.string.base_import_securechat_contact),
-            description =
-                stringResource(Res.string.feature_contacts_import_securechat_contact_description),
-            onClick = onImportContact
-        )
-
-        ImportOptionRow(
             icon = Icons.Default.Contacts,
             title = stringResource(Res.string.feature_contacts_import_from_device),
             description = stringResource(Res.string.feature_contacts_import_from_device_description),
             onClick = onImportDeviceContacts
+        )
+
+        ImportOptionRow(
+            icon = Icons.Default.PersonAdd,
+            title = stringResource(Res.string.feature_contacts_verify_or_import_identity),
+            description =
+                stringResource(Res.string.feature_contacts_import_securechat_contact_description),
+            onClick = onImportContact
         )
     }
 }

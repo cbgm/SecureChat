@@ -4,6 +4,7 @@ import com.cbgm.securechat.core.protocol.packet.ContactInviteAcceptedPacket
 import com.cbgm.securechat.core.protocol.packet.ContactInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.ContactInvitePacket
 import com.cbgm.securechat.core.protocol.packet.ContactReadyPacket
+import com.cbgm.securechat.core.protocol.packet.ContactVerificationReceiptPacket
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -64,6 +65,23 @@ class ContactInvitationPacketCodecTest {
             )
 
         assertEquals(original, roundTrip<ContactReadyPacket>(original))
+    }
+
+    @Test
+    fun contactVerificationReceiptRoundTrip() {
+        val original =
+            ContactVerificationReceiptPacket(
+                packetId = "contact-verification-receipt-receipt-1",
+                receiptId = "receipt-1",
+                verifiedAtEpochMilliseconds = 180L,
+                senderEncryptionPublicKey = key(1),
+                senderSigningPublicKey = key(2),
+                verifiedEncryptionPublicKey = key(3),
+                verifiedSigningPublicKey = key(4),
+                signature = signature(5)
+            )
+
+        assertEquals(original, roundTrip<ContactVerificationReceiptPacket>(original))
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.cbgm.securechat.feature.contactimport.domain.usecase
 
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
+import com.cbgm.securechat.feature.contacts.domain.model.IdentityImportTrust
 import com.cbgm.securechat.feature.contacts.domain.model.ImportContactRequest
 import com.cbgm.securechat.feature.contacts.domain.usecase.ImportContact
 import com.cbgm.securechat.feature.identity.domain.service.IdentityShareCodec
@@ -16,7 +17,10 @@ class ImportSharedIdentity(
     private val identityShareCodec: IdentityShareCodec,
     private val importContact: ImportContact
 ) {
-    suspend operator fun invoke(encodedIdentity: String): Result<Contact> =
+    suspend operator fun invoke(
+        encodedIdentity: String,
+        identityImportTrust: IdentityImportTrust = IdentityImportTrust.UNVERIFIED
+    ): Result<Contact> =
         runCatching {
             val sharedIdentity = identityShareCodec.decode(encodedIdentity).getOrThrow()
 
@@ -36,7 +40,8 @@ class ImportSharedIdentity(
                         encryptionPublicKey = sharedIdentity.encryptionPublicKey.copyOf(),
                         signingPublicKey = sharedIdentity.signingPublicKey.copyOf(),
                         displayName = sharedIdentity.contactDetails.displayName,
-                        phoneNumber = phoneNumber
+                        phoneNumber = phoneNumber,
+                        identityImportTrust = identityImportTrust
                     )
             ).getOrThrow()
         }

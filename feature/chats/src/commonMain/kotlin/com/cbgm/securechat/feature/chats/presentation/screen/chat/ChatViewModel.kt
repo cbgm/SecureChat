@@ -279,7 +279,11 @@ class ChatViewModel(
     fun verifyIdentity() {
         val currentSecurityState = uiState.value.contactSecurityState
 
-        if (currentSecurityState != ContactSecurityState.MUTUAL_KEYS_UNVERIFIED) {
+        val canVerify =
+            currentSecurityState == ContactSecurityState.MUTUAL_KEYS_UNVERIFIED ||
+                currentSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_CONTACT
+
+        if (!canVerify) {
             return
         }
 
@@ -315,6 +319,8 @@ class ChatViewModel(
 
         val supportsSafetyNumber =
             currentSecurityState == ContactSecurityState.MUTUAL_KEYS_UNVERIFIED ||
+                currentSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_ME ||
+                currentSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_CONTACT ||
                 currentSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED
 
         if (!supportsSafetyNumber) {
@@ -402,6 +408,8 @@ class ChatViewModel(
 
                     when (securityState) {
                         ContactSecurityState.MUTUAL_KEYS_UNVERIFIED,
+                        ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_ME,
+                        ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_CONTACT,
                         ContactSecurityState.MUTUAL_KEYS_VERIFIED
                         -> {
                             refreshSafetyNumber()
@@ -444,10 +452,14 @@ class ChatViewModel(
             return ContactSecurityState.ONE_WAY_KEYS
         }
 
-        return if (identity.verificationStatus == ContactVerificationStatus.VERIFIED) {
-            ContactSecurityState.MUTUAL_KEYS_VERIFIED
-        } else {
-            ContactSecurityState.MUTUAL_KEYS_UNVERIFIED
+        val verifiedByMe = identity.verificationStatus == ContactVerificationStatus.VERIFIED
+        val verifiedByContact = identity.verifiedByContact
+
+        return when {
+            verifiedByMe && verifiedByContact -> ContactSecurityState.MUTUAL_KEYS_VERIFIED
+            verifiedByMe -> ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_ME
+            verifiedByContact -> ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_CONTACT
+            else -> ContactSecurityState.MUTUAL_KEYS_UNVERIFIED
         }
     }
 

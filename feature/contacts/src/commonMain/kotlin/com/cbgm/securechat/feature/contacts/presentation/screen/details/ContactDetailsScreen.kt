@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.ContactPhone
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Warning
@@ -83,7 +84,6 @@ import com.cbgm.securechat.resources.base_preferred
 import com.cbgm.securechat.resources.base_retry
 import com.cbgm.securechat.resources.base_securechat
 import com.cbgm.securechat.resources.base_share_contact
-import com.cbgm.securechat.resources.base_verified
 import com.cbgm.securechat.resources.base_work
 import com.cbgm.securechat.resources.base_work_mobile
 import com.cbgm.securechat.resources.feature_contacts_compare_before_trusting
@@ -98,6 +98,7 @@ import com.cbgm.securechat.resources.feature_contacts_device_contact_missing_des
 import com.cbgm.securechat.resources.feature_contacts_device_contact_not_linked_description
 import com.cbgm.securechat.resources.feature_contacts_encryption_fingerprint
 import com.cbgm.securechat.resources.feature_contacts_identity_verified_description
+import com.cbgm.securechat.resources.feature_contacts_mutually_verified
 import com.cbgm.securechat.resources.feature_contacts_no_phone_numbers_stored
 import com.cbgm.securechat.resources.feature_contacts_no_securechat_identity
 import com.cbgm.securechat.resources.feature_contacts_not_linked
@@ -110,6 +111,10 @@ import com.cbgm.securechat.resources.feature_contacts_securechat_not_enabled
 import com.cbgm.securechat.resources.feature_contacts_share_contact_missing_keys
 import com.cbgm.securechat.resources.feature_contacts_signing_fingerprint
 import com.cbgm.securechat.resources.feature_contacts_unnamed_contact
+import com.cbgm.securechat.resources.feature_contacts_verified_by_contact
+import com.cbgm.securechat.resources.feature_contacts_verified_by_contact_description
+import com.cbgm.securechat.resources.feature_contacts_verified_by_you
+import com.cbgm.securechat.resources.feature_contacts_verified_by_you_description
 import com.cbgm.securechat.resources.feature_contacts_verified_securechat_contact
 import com.cbgm.securechat.resources.feature_contacts_verify_safety_number
 import org.jetbrains.compose.resources.stringResource
@@ -375,9 +380,12 @@ private fun SectionCard(content: @Composable () -> Unit) {
 
 @Composable
 private fun ContactHeader(contact: Contact) {
-    val isVerified =
-        contact.secureChatIdentity?.verificationStatus == ContactVerificationStatus.VERIFIED
-    val hasNoIdentity = contact.secureChatIdentity == null
+    val identity = contact.secureChatIdentity
+    val verifiedByMe = identity?.verificationStatus == ContactVerificationStatus.VERIFIED
+    val verifiedByContact =
+        identity?.keyExchangeStatus == KeyExchangeStatus.MUTUAL && identity.verifiedByContact
+    val isMutuallyVerified = verifiedByMe && verifiedByContact
+    val hasNoIdentity = identity == null
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -401,35 +409,43 @@ private fun ContactHeader(contact: Contact) {
 
             // A small badge on the avatar itself communicates verification
             // status immediately, before the eye even reaches the text below.
-            if (isVerified) {
-                Surface(
-                    modifier = Modifier.size(26.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.secondary
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = Color(0xFF071A2E),
-                            modifier = Modifier.size(16.dp)
-                        )
+            when {
+                isMutuallyVerified -> {
+                    Surface(
+                        modifier = Modifier.size(26.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.secondary
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = Color(0xFF071A2E),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
-            } else if (!hasNoIdentity) {
-                Surface(
-                    modifier = Modifier.size(26.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.error
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
+
+                verifiedByMe -> {
+                    ContactVerificationBadge(
+                        icon = Icons.Default.Schedule,
+                        containerColor = MaterialTheme.colorScheme.secondary
+                    )
+                }
+
+                verifiedByContact -> {
+                    ContactVerificationBadge(
+                        icon = Icons.Default.Security,
+                        containerColor = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+
+                !hasNoIdentity -> {
+                    ContactVerificationBadge(
+                        icon = Icons.Default.Warning,
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }
@@ -451,14 +467,17 @@ private fun ContactHeader(contact: Contact) {
         val statusText =
             when {
                 hasNoIdentity -> stringResource(Res.string.feature_contacts_no_securechat_identity)
-                isVerified -> stringResource(Res.string.feature_contacts_verified_securechat_contact)
+                isMutuallyVerified -> stringResource(Res.string.feature_contacts_verified_securechat_contact)
+                verifiedByMe -> stringResource(Res.string.feature_contacts_verified_by_you)
+                verifiedByContact -> stringResource(Res.string.feature_contacts_verified_by_contact)
                 else -> stringResource(Res.string.feature_contacts_securechat_contact_not_verified)
             }
 
         val statusColor =
             when {
                 hasNoIdentity -> MaterialTheme.colorScheme.error
-                isVerified -> MaterialTheme.colorScheme.secondary
+                isMutuallyVerified || verifiedByMe -> MaterialTheme.colorScheme.secondary
+                verifiedByContact -> MaterialTheme.colorScheme.tertiary
                 else -> MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
             }
 
@@ -468,6 +487,27 @@ private fun ContactHeader(contact: Contact) {
             color = statusColor,
             textAlign = TextAlign.Center
         )
+    }
+}
+
+@Composable
+private fun ContactVerificationBadge(
+    icon: ImageVector,
+    containerColor: Color
+) {
+    Surface(
+        modifier = Modifier.size(26.dp),
+        shape = CircleShape,
+        color = containerColor
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(14.dp)
+            )
+        }
     }
 }
 
@@ -657,24 +697,47 @@ private fun SecureChatIdentitySection(
 
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
-    when (identity.verificationStatus) {
-        ContactVerificationStatus.UNVERIFIED -> {
+    val verifiedByContact =
+        identity.keyExchangeStatus == KeyExchangeStatus.MUTUAL && identity.verifiedByContact
+
+    when {
+        identity.verificationStatus == ContactVerificationStatus.VERIFIED && verifiedByContact -> {
+            StatusRow(
+                icon = Icons.Default.Link,
+                iconColor = MaterialTheme.colorScheme.secondary,
+                title = stringResource(Res.string.feature_contacts_mutually_verified),
+                titleColor = MaterialTheme.colorScheme.secondary,
+                description = stringResource(Res.string.feature_contacts_identity_verified_description)
+            )
+        }
+
+        identity.verificationStatus == ContactVerificationStatus.VERIFIED -> {
+            StatusRow(
+                icon = Icons.Default.Schedule,
+                iconColor = MaterialTheme.colorScheme.secondary,
+                title = stringResource(Res.string.feature_contacts_verified_by_you),
+                titleColor = MaterialTheme.colorScheme.secondary,
+                description = stringResource(Res.string.feature_contacts_verified_by_you_description)
+            )
+        }
+
+        verifiedByContact -> {
+            StatusRow(
+                icon = Icons.Default.Security,
+                iconColor = MaterialTheme.colorScheme.tertiary,
+                title = stringResource(Res.string.feature_contacts_verified_by_contact),
+                titleColor = MaterialTheme.colorScheme.tertiary,
+                description = stringResource(Res.string.feature_contacts_verified_by_contact_description)
+            )
+        }
+
+        else -> {
             StatusRow(
                 icon = Icons.Default.LinkOff,
                 iconColor = MaterialTheme.colorScheme.error,
                 title = stringResource(Res.string.base_not_verified),
                 titleColor = MaterialTheme.colorScheme.error,
                 description = stringResource(Res.string.feature_contacts_compare_before_trusting)
-            )
-        }
-
-        ContactVerificationStatus.VERIFIED -> {
-            StatusRow(
-                icon = Icons.Default.Link,
-                iconColor = MaterialTheme.colorScheme.secondary,
-                title = stringResource(Res.string.base_verified),
-                titleColor = MaterialTheme.colorScheme.secondary,
-                description = stringResource(Res.string.feature_contacts_identity_verified_description)
             )
         }
     }

@@ -6,6 +6,7 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.test.core.app.ApplicationProvider
 import com.cbgm.securechat.data.database.SecureChatDatabase
 import com.cbgm.securechat.data.database.entity.ContactEntity
+import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.repository.RemoteIdentityOrigin
@@ -114,6 +115,67 @@ class DefaultContactKeyExchangeStoreIntegrationTest {
                     database.contactDao().findPublicIdentityByContactId(CONTACT_ID)
                 )
             assertEquals(KeyExchangeStatus.MUTUAL.name, identity.keyExchangeStatus)
+        }
+
+    @Test
+    fun trustedQrIdentityIsVerifiedBeforeHandshakeCompletes() =
+        runBlocking {
+            createContact()
+
+            store
+                .storeRemoteIdentity(
+                    contactId = CONTACT_ID,
+                    encryptionPublicKey = ENCRYPTION_KEY,
+                    signingPublicKey = SIGNING_KEY,
+                    origin = RemoteIdentityOrigin.TRUSTED_QR_IMPORT
+                ).getOrThrow()
+
+            val identity =
+                requireNotNull(
+                    database.contactDao().findPublicIdentityByContactId(CONTACT_ID)
+                )
+
+            assertEquals(KeyExchangeStatus.ONE_WAY.name, identity.keyExchangeStatus)
+            assertEquals(ContactVerificationStatus.VERIFIED.name, identity.verificationStatus)
+            assertTrue(identity.locallyImported)
+            assertFalse(identity.remoteIdentityPacketReceived)
+        }
+
+    @Test
+    fun directHandshakePreservesTrustedQrVerificationForSameKeys() =
+        runBlocking {
+            createContact()
+
+            store
+                .storeRemoteIdentity(
+                    contactId = CONTACT_ID,
+                    encryptionPublicKey = ENCRYPTION_KEY,
+                    signingPublicKey = SIGNING_KEY,
+                    origin = RemoteIdentityOrigin.TRUSTED_QR_IMPORT
+                ).getOrThrow()
+
+            store
+                .storeRemoteIdentity(
+                    contactId = CONTACT_ID,
+                    encryptionPublicKey = ENCRYPTION_KEY,
+                    signingPublicKey = SIGNING_KEY,
+                    origin = RemoteIdentityOrigin.CONTACT_INVITATION
+                ).getOrThrow()
+
+            store
+                .markMutual(
+                    contactId = CONTACT_ID,
+                    expectedRemoteEncryptionPublicKey = ENCRYPTION_KEY,
+                    expectedRemoteSigningPublicKey = SIGNING_KEY
+                ).getOrThrow()
+
+            val identity =
+                requireNotNull(
+                    database.contactDao().findPublicIdentityByContactId(CONTACT_ID)
+                )
+
+            assertEquals(KeyExchangeStatus.MUTUAL.name, identity.keyExchangeStatus)
+            assertEquals(ContactVerificationStatus.VERIFIED.name, identity.verificationStatus)
         }
 
     @Test

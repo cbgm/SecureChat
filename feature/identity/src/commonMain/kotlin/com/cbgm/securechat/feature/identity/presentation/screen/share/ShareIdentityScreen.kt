@@ -62,12 +62,13 @@ import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.feature_identity_create_qr_code
 import com.cbgm.securechat.resources.feature_identity_create_qr_description
 import com.cbgm.securechat.resources.feature_identity_hide_raw_identity
+import com.cbgm.securechat.resources.feature_identity_my_identity_qr
 import com.cbgm.securechat.resources.feature_identity_public_keys_always_included
 import com.cbgm.securechat.resources.feature_identity_raw_identity
 import com.cbgm.securechat.resources.feature_identity_scan_to_add_you
-import com.cbgm.securechat.resources.feature_identity_share_identity
+import com.cbgm.securechat.resources.feature_identity_share_identity_text
+import com.cbgm.securechat.resources.feature_identity_share_identity_text_warning
 import com.cbgm.securechat.resources.feature_identity_show_raw_identity
-import com.cbgm.securechat.resources.feature_identity_your_securechat_identity
 import org.jetbrains.compose.resources.stringResource
 
 /** Public identity-sharing screen contract. */
@@ -171,7 +172,7 @@ private fun ShareIdentityTopBar(
             ),
         title = {
             Text(
-                text = stringResource(Res.string.feature_identity_share_identity),
+                text = stringResource(Res.string.feature_identity_my_identity_qr),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold
             )
@@ -331,7 +332,7 @@ private fun GeneratedIdentityContent(
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
         Text(
-            text = stringResource(Res.string.feature_identity_your_securechat_identity),
+            text = stringResource(Res.string.feature_identity_my_identity_qr),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center
@@ -391,10 +392,19 @@ private fun GeneratedIdentityContent(
                     Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
 
                     Text(
-                        text = stringResource(Res.string.feature_identity_share_identity),
+                        text = stringResource(Res.string.feature_identity_share_identity_text),
                         fontWeight = FontWeight.SemiBold
                     )
                 }
+
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
+
+                Text(
+                    text = stringResource(Res.string.feature_identity_share_identity_text_warning),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f),
+                    textAlign = TextAlign.Center
+                )
             }
         }
 

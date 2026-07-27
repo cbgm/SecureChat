@@ -11,6 +11,7 @@ import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutboxItem
 import com.cbgm.securechat.core.protocol.packet.ChatMessagePacket
 import com.cbgm.securechat.core.protocol.packet.ContactReadyPacket
+import com.cbgm.securechat.core.protocol.packet.ContactVerificationReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.GroupChatMessagePacket
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
@@ -222,6 +223,70 @@ class DefaultOutboxProcessorTest {
                             keyExchangeStatus = KeyExchangeStatus.ONE_WAY,
                             encryptionPublicKey = byteArrayOf(99),
                             signingPublicKey = byteArrayOf(98)
+                        ),
+                    cipher = cipher,
+                    payloadCodec = payloadCodec,
+                    packetCodec = TestPacketCodec()
+                )
+
+            val result = processor.processPending().getOrThrow()
+
+            assertEquals(0, result.sentCount)
+            assertEquals(1, result.failedCount)
+            assertEquals(0, cipher.callCount)
+            assertTrue(payloadCodec.payloads.isEmpty())
+            assertTrue(
+                outbox.failedItems
+                    .single()
+                    .second
+                    .contains("identity changed")
+            )
+        }
+
+    @Test
+    fun verificationReceiptRequiresEncryptedTransport() =
+        runTest {
+            val outbox =
+                FakeProtocolOutbox(
+                    listOf(createItem(encodedPacket = VERIFICATION_RECEIPT_PACKET_BYTES))
+                )
+            val cipher = RecordingTransportMessageCipher()
+            val payloadCodec = RecordingTransportPayloadCodec()
+            val processor =
+                createProcessor(
+                    outbox = outbox,
+                    contact = createContact(keyExchangeStatus = KeyExchangeStatus.MUTUAL),
+                    cipher = cipher,
+                    payloadCodec = payloadCodec,
+                    packetCodec = TestPacketCodec()
+                )
+
+            val result = processor.processPending().getOrThrow()
+
+            assertEquals(1, result.sentCount)
+            assertEquals(1, cipher.callCount)
+            assertContentEquals(VERIFICATION_RECEIPT_PACKET_BYTES, cipher.plaintext)
+            assertContentEquals(REMOTE_ENCRYPTION_KEY, cipher.recipientPublicKey)
+            assertEquals(TransportEncryptionMode.SEALED_BOX, payloadCodec.payloads.single().mode)
+        }
+
+    @Test
+    fun verificationReceiptRejectsChangedRecipientIdentity() =
+        runTest {
+            val outbox =
+                FakeProtocolOutbox(
+                    listOf(createItem(encodedPacket = VERIFICATION_RECEIPT_PACKET_BYTES))
+                )
+            val cipher = RecordingTransportMessageCipher()
+            val payloadCodec = RecordingTransportPayloadCodec()
+            val processor =
+                createProcessor(
+                    outbox = outbox,
+                    contact =
+                        createContact(
+                            keyExchangeStatus = KeyExchangeStatus.MUTUAL,
+                            encryptionPublicKey = ByteArray(32) { 99 },
+                            signingPublicKey = ByteArray(32) { 98 }
                         ),
                     cipher = cipher,
                     payloadCodec = payloadCodec,
@@ -491,6 +556,19 @@ class DefaultOutboxProcessorTest {
                         signature = ByteArray(64) { 26 }
                     )
                 )
+            } else if (encodedPacket.contentEquals(VERIFICATION_RECEIPT_PACKET_BYTES)) {
+                Result.success(
+                    ContactVerificationReceiptPacket(
+                        packetId = "contact-verification-receipt-receipt-1",
+                        receiptId = "receipt-1",
+                        verifiedAtEpochMilliseconds = 1L,
+                        senderEncryptionPublicKey = ByteArray(32) { 20 },
+                        senderSigningPublicKey = ByteArray(32) { 23 },
+                        verifiedEncryptionPublicKey = REMOTE_ENCRYPTION_KEY,
+                        verifiedSigningPublicKey = REMOTE_SIGNING_KEY,
+                        signature = ByteArray(64) { 26 }
+                    )
+                )
             } else {
                 Result.success(
                     ChatMessagePacket(
@@ -589,6 +667,7 @@ class DefaultOutboxProcessorTest {
         val GROUP_PACKET_BYTES = byteArrayOf(4, 5, 6)
         val GROUP_MESSAGE_PACKET_BYTES = byteArrayOf(7, 8, 9)
         val CONTACT_READY_PACKET_BYTES = byteArrayOf(10, 11, 12)
+        val VERIFICATION_RECEIPT_PACKET_BYTES = byteArrayOf(13, 14, 15)
         val REMOTE_ENCRYPTION_KEY = ByteArray(32) { 13 }
         val REMOTE_SIGNING_KEY = ByteArray(32) { 16 }
     }

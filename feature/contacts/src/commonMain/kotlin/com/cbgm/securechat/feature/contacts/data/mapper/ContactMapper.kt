@@ -41,6 +41,7 @@ private fun ContactPublicIdentityEntity.toDomain(): SecureChatIdentity =
         encryptionPublicKey = encryptionPublicKey.copyOf(),
         signingPublicKey = signingPublicKey.copyOf(),
         verificationStatus = verificationStatus.toContactVerificationStatus(),
+        verifiedByContact = verifiedByContact,
         keyExchangeStatus = keyExchangeStatus.toKeyExchangeStatus(),
         updatedAtEpochMilliseconds = updatedAtEpochMilliseconds
     )

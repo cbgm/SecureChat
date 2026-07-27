@@ -16,6 +16,7 @@ import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
 import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
+import com.cbgm.securechat.feature.contacts.domain.model.IdentityImportTrust
 import com.cbgm.securechat.feature.contacts.domain.model.ImportContactRequest
 import com.cbgm.securechat.feature.contacts.domain.model.ImportDeviceContactRequest
 import com.cbgm.securechat.feature.contacts.domain.model.ImportDevicePhoneNumber
@@ -142,7 +143,11 @@ class DefaultContactRepository(
                     contactId = contactId,
                     encryptionPublicKey = request.encryptionPublicKey,
                     signingPublicKey = request.signingPublicKey,
-                    origin = RemoteIdentityOrigin.LOCAL_IMPORT
+                    origin =
+                        when (request.identityImportTrust) {
+                            IdentityImportTrust.UNVERIFIED -> RemoteIdentityOrigin.LOCAL_IMPORT
+                            IdentityImportTrust.VERIFIED_IN_PERSON -> RemoteIdentityOrigin.TRUSTED_QR_IMPORT
+                        }
                 ).getOrThrow()
 
             identityExchangeStarter
@@ -380,11 +385,18 @@ class DefaultContactRepository(
                 "Contact identity cannot be verified before mutual key exchange"
             }
 
-            contactDao.updateVerificationStatus(
-                contactId = contactId,
-                status = ContactVerificationStatus.VERIFIED.name,
-                updatedAt = SystemClock.nowEpochMilliseconds()
-            )
+            val updatedRows =
+                contactDao.updateVerificationStatusIfKeysMatch(
+                    contactId = contactId,
+                    expectedEncryptionPublicKey = publicIdentity.encryptionPublicKey,
+                    expectedSigningPublicKey = publicIdentity.signingPublicKey,
+                    verificationStatus = ContactVerificationStatus.VERIFIED.name,
+                    updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+                )
+
+            check(updatedRows == 1) {
+                "Contact identity changed before verification was saved"
+            }
 
             loadContactOrThrow(
                 contactId = contactId,
@@ -447,6 +459,11 @@ class DefaultContactRepository(
             contactDao.updateVerificationStatus(
                 contactId = contactId,
                 status = ContactVerificationStatus.UNVERIFIED.name,
+                updatedAt = now
+            )
+
+            contactDao.clearVerifiedByContact(
+                contactId = contactId,
                 updatedAt = now
             )
 

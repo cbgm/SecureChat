@@ -193,6 +193,62 @@ data class ContactReadyPacket(
 }
 
 @Serializable
+@SerialName("contact_verification_receipt")
+data class ContactVerificationReceiptPacket(
+    override val packetId: String,
+    override val version: Int = ProtocolVersion.CURRENT,
+    val receiptId: String,
+    val verifiedAtEpochMilliseconds: Long,
+    @Serializable(with = ByteArrayAsBase64Serializer::class)
+    val senderEncryptionPublicKey: ByteArray,
+    @Serializable(with = ByteArrayAsBase64Serializer::class)
+    val senderSigningPublicKey: ByteArray,
+    @Serializable(with = ByteArrayAsBase64Serializer::class)
+    val verifiedEncryptionPublicKey: ByteArray,
+    @Serializable(with = ByteArrayAsBase64Serializer::class)
+    val verifiedSigningPublicKey: ByteArray,
+    @Serializable(with = ByteArrayAsBase64Serializer::class)
+    val signature: ByteArray
+) : SecureChatPacket {
+    init {
+        require(packetId.isNotBlank()) { "Packet ID must not be blank" }
+        require(version > 0) { "Protocol version must be positive" }
+        require(receiptId.isNotBlank()) { "Receipt ID must not be blank" }
+        require(verifiedAtEpochMilliseconds >= 0L) { "Verification timestamp must not be negative" }
+        require(senderEncryptionPublicKey.size == PUBLIC_KEY_SIZE) { "Sender encryption key must contain $PUBLIC_KEY_SIZE bytes" }
+        require(senderSigningPublicKey.size == PUBLIC_KEY_SIZE) { "Sender signing key must contain $PUBLIC_KEY_SIZE bytes" }
+        require(verifiedEncryptionPublicKey.size == PUBLIC_KEY_SIZE) { "Verified encryption key must contain $PUBLIC_KEY_SIZE bytes" }
+        require(verifiedSigningPublicKey.size == PUBLIC_KEY_SIZE) { "Verified signing key must contain $PUBLIC_KEY_SIZE bytes" }
+        require(signature.size == SIGNATURE_SIZE) { "Verification signature must contain $SIGNATURE_SIZE bytes" }
+    }
+
+    override fun equals(other: Any?): Boolean =
+        other is ContactVerificationReceiptPacket &&
+            packetId == other.packetId &&
+            version == other.version &&
+            receiptId == other.receiptId &&
+            verifiedAtEpochMilliseconds == other.verifiedAtEpochMilliseconds &&
+            senderEncryptionPublicKey.contentEquals(other.senderEncryptionPublicKey) &&
+            senderSigningPublicKey.contentEquals(other.senderSigningPublicKey) &&
+            verifiedEncryptionPublicKey.contentEquals(other.verifiedEncryptionPublicKey) &&
+            verifiedSigningPublicKey.contentEquals(other.verifiedSigningPublicKey) &&
+            signature.contentEquals(other.signature)
+
+    override fun hashCode(): Int {
+        var result = packetId.hashCode()
+        result = 31 * result + version
+        result = 31 * result + receiptId.hashCode()
+        result = 31 * result + verifiedAtEpochMilliseconds.hashCode()
+        result = 31 * result + senderEncryptionPublicKey.contentHashCode()
+        result = 31 * result + senderSigningPublicKey.contentHashCode()
+        result = 31 * result + verifiedEncryptionPublicKey.contentHashCode()
+        result = 31 * result + verifiedSigningPublicKey.contentHashCode()
+        result = 31 * result + signature.contentHashCode()
+        return result
+    }
+}
+
+@Serializable
 @SerialName("contact_invite_declined")
 data class ContactInviteDeclinedPacket(
     override val packetId: String,

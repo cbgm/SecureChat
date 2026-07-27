@@ -284,4 +284,14 @@ object DatabaseMigrations {
                 )
             }
         }
+
+    val Migration16To17 =
+        object : Migration(16, 17) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    "ALTER TABLE contact_public_identities " +
+                        "ADD COLUMN verifiedByContact INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
 }

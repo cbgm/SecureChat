@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -23,6 +24,7 @@ import com.cbgm.securechat.feature.chats.presentation.ChatRoute
 import com.cbgm.securechat.feature.chats.presentation.GroupConversationRoute
 import com.cbgm.securechat.feature.contactimport.presentation.ImportIdentityRoute
 import com.cbgm.securechat.feature.contactimport.presentation.ScanIdentityRoute
+import com.cbgm.securechat.feature.contactimport.presentation.VerifyContactQrRoute
 import com.cbgm.securechat.feature.contacts.presentation.ContactDetailsRoute
 import com.cbgm.securechat.feature.contacts.presentation.ContactInvitationRoute
 import com.cbgm.securechat.feature.identity.domain.model.SharedContactDetails
@@ -151,10 +153,23 @@ fun AppNavigation() {
             }
 
             composable<AppDestination.ImportContact> { backStackEntry ->
-                val scannedIdentity = backStackEntry.toRoute<AppDestination.ImportContact>()
+                val destination = backStackEntry.toRoute<AppDestination.ImportContact>()
+                val scannedIdentityFromScanner by
+                    backStackEntry.savedStateHandle
+                        .getStateFlow<String?>("scannedIdentity", null)
+                        .collectAsStateWithLifecycle()
+
+                var destinationScannedIdentity by
+                    remember(destination.scannedIdentity) {
+                        mutableStateOf(destination.scannedIdentity)
+                    }
 
                 ImportIdentityRoute(
-                    scannedIdentity = scannedIdentity.scannedIdentity,
+                    scannedIdentity = scannedIdentityFromScanner ?: destinationScannedIdentity,
+                    onScannedIdentityConsumed = {
+                        backStackEntry.savedStateHandle.remove<String>("scannedIdentity")
+                        destinationScannedIdentity = null
+                    },
                     onScanQrCode = {
                         navController.navigate(AppDestination.ScanIdentity)
                     },
@@ -251,7 +266,7 @@ fun AppNavigation() {
                         navController.navigate(AppDestination.DeveloperMenu)
                     },
                     onImportContact = {
-                        navController.navigate(AppDestination.ImportContact)
+                        navController.navigate(AppDestination.ImportContact())
                     }
                 )
             }
@@ -287,6 +302,9 @@ fun AppNavigation() {
                     },
                     onClickHeader = {
                         navController.navigate(AppDestination.ContactDetails(destination.contactId))
+                    },
+                    onScanIdentityQr = {
+                        navController.navigate(AppDestination.VerifyContactQr(destination.contactId))
                     }
                 )
             }
@@ -351,6 +369,20 @@ fun AppNavigation() {
                                     shouldLaunchShare = true
                                 }
                         }
+                    }
+                )
+            }
+
+            composable<AppDestination.VerifyContactQr> { backStackEntry ->
+                val destination = backStackEntry.toRoute<AppDestination.VerifyContactQr>()
+
+                VerifyContactQrRoute(
+                    contactId = destination.contactId,
+                    onVerified = {
+                        navController.popBackStack()
+                    },
+                    onBack = {
+                        navController.popBackStack()
                     }
                 )
             }

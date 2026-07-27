@@ -41,12 +41,18 @@ import com.cbgm.securechat.core.ui.component.SecureChatScrollScaffold
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.contactimport.presentation.model.ImportIdentityUiState
+import com.cbgm.securechat.feature.contacts.domain.model.IdentityImportTrust
 import com.cbgm.securechat.resources.Res
-import com.cbgm.securechat.resources.base_import_action
-import com.cbgm.securechat.resources.base_import_contact
 import com.cbgm.securechat.resources.feature_contactimport_import_identity
+import com.cbgm.securechat.resources.feature_contactimport_import_unverified_identity
 import com.cbgm.securechat.resources.feature_contactimport_imported_name
+import com.cbgm.securechat.resources.feature_contactimport_imported_unverified_name
+import com.cbgm.securechat.resources.feature_contactimport_imported_verified_name
+import com.cbgm.securechat.resources.feature_contactimport_in_person_qr_description
+import com.cbgm.securechat.resources.feature_contactimport_in_person_qr_title
+import com.cbgm.securechat.resources.feature_contactimport_normal_invitation_description
 import com.cbgm.securechat.resources.feature_contactimport_or_paste_manually
+import com.cbgm.securechat.resources.feature_contactimport_paste_identity_title
 import com.cbgm.securechat.resources.feature_contactimport_paste_shared_identity_description
 import com.cbgm.securechat.resources.feature_contactimport_scan_qr_code
 import com.cbgm.securechat.resources.feature_contactimport_shared_identity
@@ -93,14 +99,20 @@ fun ImportIdentityScreen(
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
         ) {
             Text(
-                text = stringResource(Res.string.base_import_contact),
+                text = stringResource(Res.string.feature_contactimport_normal_invitation_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            )
+
+            Text(
+                text = stringResource(Res.string.feature_contactimport_in_person_qr_title),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
 
             Text(
-                text = stringResource(Res.string.feature_contactimport_paste_shared_identity_description),
+                text = stringResource(Res.string.feature_contactimport_in_person_qr_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
             )
@@ -122,6 +134,19 @@ fun ImportIdentityScreen(
             }
 
             ManualInputDivider()
+
+            Text(
+                text = stringResource(Res.string.feature_contactimport_paste_identity_title),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+
+            Text(
+                text = stringResource(Res.string.feature_contactimport_paste_shared_identity_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            )
 
             OutlinedTextField(
                 value = uiState.encodedIdentity,
@@ -157,10 +182,30 @@ fun ImportIdentityScreen(
             )
 
             uiState.importedContactName?.let { name ->
+                val statusText =
+                    when (uiState.importedIdentityTrust) {
+                        IdentityImportTrust.VERIFIED_IN_PERSON -> {
+                            stringResource(Res.string.feature_contactimport_imported_verified_name, name)
+                        }
+
+                        IdentityImportTrust.UNVERIFIED -> {
+                            stringResource(Res.string.feature_contactimport_imported_unverified_name, name)
+                        }
+
+                        null -> {
+                            stringResource(Res.string.feature_contactimport_imported_name, name)
+                        }
+                    }
+
                 StatusBanner(
                     icon = Icons.Default.CheckCircle,
-                    text = stringResource(Res.string.feature_contactimport_imported_name, name),
-                    color = MaterialTheme.colorScheme.secondary
+                    text = statusText,
+                    color =
+                        if (uiState.importedIdentityTrust == IdentityImportTrust.VERIFIED_IN_PERSON) {
+                            MaterialTheme.colorScheme.secondary
+                        } else {
+                            MaterialTheme.colorScheme.tertiary
+                        }
                 )
             }
 
@@ -261,7 +306,7 @@ private fun ImportButton(
             )
         } else {
             Text(
-                text = stringResource(Res.string.base_import_action),
+                text = stringResource(Res.string.feature_contactimport_import_unverified_identity),
                 fontWeight = FontWeight.SemiBold
             )
         }

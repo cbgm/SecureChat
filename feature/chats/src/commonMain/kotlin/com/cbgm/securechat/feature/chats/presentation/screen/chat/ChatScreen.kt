@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -85,6 +86,12 @@ import com.cbgm.securechat.resources.feature_chats_chat_unencrypted_title
 import com.cbgm.securechat.resources.feature_chats_chat_unverified_description
 import com.cbgm.securechat.resources.feature_chats_chat_unverified_keys_description
 import com.cbgm.securechat.resources.feature_chats_chat_unverified_title
+import com.cbgm.securechat.resources.feature_chats_chat_verified_by_contact_description
+import com.cbgm.securechat.resources.feature_chats_chat_verified_by_contact_keys_description
+import com.cbgm.securechat.resources.feature_chats_chat_verified_by_contact_title
+import com.cbgm.securechat.resources.feature_chats_chat_verified_by_me_description
+import com.cbgm.securechat.resources.feature_chats_chat_verified_by_me_keys_description
+import com.cbgm.securechat.resources.feature_chats_chat_verified_by_me_title
 import com.cbgm.securechat.resources.feature_chats_chat_verified_e2ee
 import com.cbgm.securechat.resources.feature_chats_chat_verified_keys_description
 import com.cbgm.securechat.resources.feature_chats_contact_invitation_finishing_description
@@ -594,6 +601,24 @@ private fun SecurityBanner(
                     contentColor = MaterialTheme.colorScheme.onErrorContainer
                 )
 
+            ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_ME ->
+                CombinedState(
+                    icon = Icons.Default.Schedule,
+                    title = stringResource(Res.string.feature_chats_chat_verified_by_me_title),
+                    description = stringResource(Res.string.feature_chats_chat_verified_by_me_description),
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+
+            ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_CONTACT ->
+                CombinedState(
+                    icon = Icons.Default.Security,
+                    title = stringResource(Res.string.feature_chats_chat_verified_by_contact_title),
+                    description = stringResource(Res.string.feature_chats_chat_verified_by_contact_description),
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+
             // MUTUAL_KEYS_VERIFIED is handled above and returns early — no branch
             // needed here, so the dead commented-out entry that used to live in
             // this `when` has been removed.
@@ -634,7 +659,10 @@ private fun SecurityBanner(
                 )
             }
 
-            if (securityState == ContactSecurityState.MUTUAL_KEYS_UNVERIFIED) {
+            if (
+                securityState == ContactSecurityState.MUTUAL_KEYS_UNVERIFIED ||
+                securityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_CONTACT
+            ) {
                 TextButton(onClick = onVerifyIdentity) {
                     Text(
                         text = stringResource(Res.string.base_verify),
@@ -1126,6 +1154,12 @@ private fun EmptyContent(
 
                         ContactSecurityState.MUTUAL_KEYS_UNVERIFIED ->
                             stringResource(Res.string.feature_chats_chat_unverified_keys_description)
+
+                        ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_ME ->
+                            stringResource(Res.string.feature_chats_chat_verified_by_me_keys_description)
+
+                        ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_CONTACT ->
+                            stringResource(Res.string.feature_chats_chat_verified_by_contact_keys_description)
 
                         ContactSecurityState.MUTUAL_KEYS_VERIFIED ->
                             stringResource(Res.string.feature_chats_chat_verified_keys_description)

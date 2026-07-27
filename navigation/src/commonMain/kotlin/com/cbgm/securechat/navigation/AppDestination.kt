@@ -45,6 +45,11 @@ sealed interface AppDestination {
     data object ScanIdentity : AppDestination
 
     @Serializable
+    data class VerifyContactQr(
+        val contactId: String
+    ) : AppDestination
+
+    @Serializable
     data object Startup : AppDestination
 
     @Serializable

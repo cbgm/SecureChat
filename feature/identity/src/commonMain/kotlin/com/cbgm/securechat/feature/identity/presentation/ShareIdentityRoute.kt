@@ -8,7 +8,7 @@ import com.cbgm.securechat.feature.identity.presentation.platform.rememberIdenti
 import com.cbgm.securechat.feature.identity.presentation.screen.ShareIdentityScreen
 import com.cbgm.securechat.feature.identity.presentation.screen.ShareIdentityViewModel
 import com.cbgm.securechat.resources.Res
-import com.cbgm.securechat.resources.feature_identity_share_identity
+import com.cbgm.securechat.resources.feature_identity_share_identity_text
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -24,7 +24,7 @@ fun ShareIdentityRoute(
     val shareIdentity =
         rememberIdentityShareLauncher(
             encodedIdentity = uiState.encodedIdentity.orEmpty(),
-            shareTitle = stringResource(Res.string.feature_identity_share_identity)
+            shareTitle = stringResource(Res.string.feature_identity_share_identity_text)
         )
 
     ShareIdentityScreen(

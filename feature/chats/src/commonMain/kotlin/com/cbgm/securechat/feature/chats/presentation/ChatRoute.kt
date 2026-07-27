@@ -23,6 +23,7 @@ fun ChatRoute(
     contactName: String,
     onBack: () -> Unit,
     onClickHeader: () -> Unit,
+    onScanIdentityQr: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ChatViewModel =
         koinViewModel {
@@ -63,7 +64,10 @@ fun ChatRoute(
     }
 
     LaunchedEffect(key1 = uiState.contactSecurityState) {
-        if (uiState.contactSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED) {
+        if (
+            uiState.contactSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_ME ||
+            uiState.contactSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED
+        ) {
             showVerificationDialog = false
         }
     }
@@ -91,6 +95,10 @@ fun ChatRoute(
             isLoadingSafetyNumber = uiState.isLoadingSafetyNumber,
             isVerifying = uiState.isVerifyingIdentity,
             onConfirm = viewModel::verifyIdentity,
+            onScanQrCode = {
+                showVerificationDialog = false
+                onScanIdentityQr()
+            },
             onDismiss = {
                 showVerificationDialog = false
             }

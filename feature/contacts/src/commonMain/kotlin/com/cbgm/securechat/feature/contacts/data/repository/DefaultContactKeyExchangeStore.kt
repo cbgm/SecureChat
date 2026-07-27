@@ -44,9 +44,10 @@ class DefaultContactKeyExchangeStore(
             val identityChanged = existing != null && !sameIdentity
 
             if (identityChanged) {
+                val pinnedIdentity = requireNotNull(existing)
                 val identityIsPinned =
-                    existing.keyExchangeStatus == KeyExchangeStatus.MUTUAL.name ||
-                        existing.verificationStatus == ContactVerificationStatus.VERIFIED.name
+                    pinnedIdentity.keyExchangeStatus == KeyExchangeStatus.MUTUAL.name ||
+                        pinnedIdentity.verificationStatus == ContactVerificationStatus.VERIFIED.name
 
                 check(!identityIsPinned) {
                     "Stored mutual or verified identity cannot be replaced without an explicit reset"
@@ -55,16 +56,15 @@ class DefaultContactKeyExchangeStore(
 
             val nextLocallyImported =
                 sameIdentity && existing?.locallyImported == true ||
-                    origin == RemoteIdentityOrigin.LOCAL_IMPORT
+                    origin == RemoteIdentityOrigin.LOCAL_IMPORT ||
+                    origin == RemoteIdentityOrigin.TRUSTED_QR_IMPORT
 
             val nextRemoteIdentityPacketReceived =
-                sameIdentity && existing?.remoteIdentityPacketReceived == true ||
-                    origin == RemoteIdentityOrigin.REMOTE_PACKET ||
-                    origin == RemoteIdentityOrigin.CONTACT_INVITATION
+                sameIdentity && existing.remoteIdentityPacketReceived || origin == RemoteIdentityOrigin.REMOTE_PACKET || origin == RemoteIdentityOrigin.CONTACT_INVITATION
 
             val nextKeyExchangeStatus =
                 when {
-                    sameIdentity && existing?.keyExchangeStatus == KeyExchangeStatus.MUTUAL.name -> {
+                    sameIdentity && existing.keyExchangeStatus == KeyExchangeStatus.MUTUAL.name -> {
                         KeyExchangeStatus.MUTUAL
                     }
 
@@ -82,13 +82,19 @@ class DefaultContactKeyExchangeStore(
                 }
 
             val nextVerificationStatus =
-                if (
+                when {
+                    origin == RemoteIdentityOrigin.TRUSTED_QR_IMPORT -> {
+                        ContactVerificationStatus.VERIFIED
+                    }
+
                     sameIdentity &&
-                    nextKeyExchangeStatus == KeyExchangeStatus.MUTUAL
-                ) {
-                    existing.verificationStatus.toVerificationStatus()
-                } else {
-                    ContactVerificationStatus.UNVERIFIED
+                        existing?.verificationStatus == ContactVerificationStatus.VERIFIED.name -> {
+                        ContactVerificationStatus.VERIFIED
+                    }
+
+                    else -> {
+                        ContactVerificationStatus.UNVERIFIED
+                    }
                 }
 
             contactDao.upsertPublicIdentity(
@@ -98,6 +104,7 @@ class DefaultContactKeyExchangeStore(
                         encryptionPublicKey = encryptionPublicKey.copyOf(),
                         signingPublicKey = signingPublicKey.copyOf(),
                         verificationStatus = nextVerificationStatus.name,
+                        verifiedByContact = sameIdentity && existing?.verifiedByContact == true,
                         keyExchangeStatus = nextKeyExchangeStatus.name,
                         locallyImported = nextLocallyImported,
                         remoteIdentityPacketReceived = nextRemoteIdentityPacketReceived,
@@ -214,7 +221,7 @@ class DefaultContactKeyExchangeStore(
 
     override suspend fun resetAllAfterLocalIdentityChange(): Result<Unit> =
         runCatching {
-            contactDao.replaceAllKeyExchangeStatuses(
+            contactDao.resetAfterLocalIdentityChange(
                 currentKeyExchangeStatus = KeyExchangeStatus.MUTUAL.name,
                 keyExchangeStatus = KeyExchangeStatus.ONE_WAY.name,
                 updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
@@ -225,9 +232,4 @@ class DefaultContactKeyExchangeStore(
         KeyExchangeStatus.entries.firstOrNull { status ->
             status.name == this
         } ?: KeyExchangeStatus.ONE_WAY
-
-    private fun String.toVerificationStatus(): ContactVerificationStatus =
-        ContactVerificationStatus.entries.firstOrNull { status ->
-            status.name == this
-        } ?: ContactVerificationStatus.UNVERIFIED
 }

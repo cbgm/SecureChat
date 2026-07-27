@@ -11,6 +11,7 @@ import com.cbgm.securechat.core.protocol.outbox.OutboxProcessor
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutboxItem
 import com.cbgm.securechat.core.protocol.packet.ContactReadyPacket
+import com.cbgm.securechat.core.protocol.packet.ContactVerificationReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
@@ -180,6 +181,20 @@ class DefaultOutboxProcessor(
             }
         }
 
+        val verificationReceipt = packet as? ContactVerificationReceiptPacket
+
+        if (verificationReceipt != null) {
+            check(identity != null) {
+                "Contact verification receipt requires a stored recipient identity"
+            }
+            check(identity.encryptionPublicKey.contentEquals(verificationReceipt.verifiedEncryptionPublicKey)) {
+                "Contact identity changed before the verification receipt was encrypted"
+            }
+            check(identity.signingPublicKey.contentEquals(verificationReceipt.verifiedSigningPublicKey)) {
+                "Contact signing identity changed before the verification receipt was encrypted"
+            }
+        }
+
         val canEncrypt =
             identity != null &&
                 identity.encryptionPublicKey.isNotEmpty() &&
@@ -196,6 +211,9 @@ class DefaultOutboxProcessor(
 
                     is ContactReadyPacket ->
                         "Contact ready packet requires an encrypted SecureChat transport"
+
+                    is ContactVerificationReceiptPacket ->
+                        "Contact verification receipt requires an encrypted SecureChat transport"
 
                     else ->
                         "This protocol packet requires an encrypted SecureChat transport"
@@ -227,6 +245,7 @@ class DefaultOutboxProcessor(
     private fun SecureChatPacket.requiresEncryption(): Boolean =
         when (this) {
             is ContactReadyPacket,
+            is ContactVerificationReceiptPacket,
             is GroupCreatedPacket -> true
 
             else -> false

@@ -141,6 +141,19 @@ interface ContactDao {
     @Query(
         """
         UPDATE contact_public_identities
+        SET verifiedByContact = 0,
+            updatedAtEpochMilliseconds = :updatedAt
+        WHERE contactId = :contactId
+        """
+    )
+    suspend fun clearVerifiedByContact(
+        contactId: String,
+        updatedAt: Long
+    )
+
+    @Query(
+        """
+        UPDATE contact_public_identities
         SET keyExchangeStatus = :status,
             updatedAtEpochMilliseconds = :updatedAt
         WHERE contactId = :contactId
@@ -268,13 +281,52 @@ interface ContactDao {
 
     @Query(
         """
-    UPDATE contact_public_identities
-    SET keyExchangeStatus = :keyExchangeStatus,
-        updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
-    WHERE keyExchangeStatus = :currentKeyExchangeStatus
-    """
+        UPDATE contact_public_identities
+        SET verificationStatus = :verificationStatus,
+            updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
+        WHERE contactId = :contactId
+          AND encryptionPublicKey = :expectedEncryptionPublicKey
+          AND signingPublicKey = :expectedSigningPublicKey
+        """
     )
-    suspend fun replaceAllKeyExchangeStatuses(
+    suspend fun updateVerificationStatusIfKeysMatch(
+        contactId: String,
+        expectedEncryptionPublicKey: ByteArray,
+        expectedSigningPublicKey: ByteArray,
+        verificationStatus: String,
+        updatedAtEpochMilliseconds: Long
+    ): Int
+
+    @Query(
+        """
+        UPDATE contact_public_identities
+        SET verifiedByContact = 1,
+            updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
+        WHERE contactId = :contactId
+          AND encryptionPublicKey = :expectedEncryptionPublicKey
+          AND signingPublicKey = :expectedSigningPublicKey
+          AND keyExchangeStatus = :mutualStatus
+        """
+    )
+    suspend fun markVerifiedByContactIfKeysMatch(
+        contactId: String,
+        expectedEncryptionPublicKey: ByteArray,
+        expectedSigningPublicKey: ByteArray,
+        mutualStatus: String,
+        updatedAtEpochMilliseconds: Long
+    ): Int
+
+    @Query(
+        """
+        UPDATE contact_public_identities
+        SET keyExchangeStatus = :keyExchangeStatus,
+            verifiedByContact = 0,
+            updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
+        WHERE keyExchangeStatus = :currentKeyExchangeStatus
+           OR verifiedByContact = 1
+        """
+    )
+    suspend fun resetAfterLocalIdentityChange(
         currentKeyExchangeStatus: String,
         keyExchangeStatus: String,
         updatedAtEpochMilliseconds: Long

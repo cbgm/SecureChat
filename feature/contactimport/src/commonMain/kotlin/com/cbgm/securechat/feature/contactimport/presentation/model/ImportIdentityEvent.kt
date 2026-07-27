@@ -1,9 +1,13 @@
 package com.cbgm.securechat.feature.contactimport.presentation.model
 
+import com.cbgm.securechat.feature.contacts.domain.model.IdentityImportTrust
+
 sealed interface ImportIdentityEvent {
     data class EncodedIdentityChanged(
         val value: String
     ) : ImportIdentityEvent
 
-    data object ImportClicked : ImportIdentityEvent
+    data class ImportClicked(
+        val identityImportTrust: IdentityImportTrust = IdentityImportTrust.UNVERIFIED
+    ) : ImportIdentityEvent
 }

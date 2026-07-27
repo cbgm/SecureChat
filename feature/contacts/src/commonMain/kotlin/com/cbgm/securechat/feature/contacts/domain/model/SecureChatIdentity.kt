@@ -11,6 +11,7 @@ data class SecureChatIdentity(
     val encryptionPublicKey: ByteArray,
     val signingPublicKey: ByteArray,
     val verificationStatus: ContactVerificationStatus,
+    val verifiedByContact: Boolean = false,
     val keyExchangeStatus: KeyExchangeStatus,
     val updatedAtEpochMilliseconds: Long
 ) {
@@ -31,6 +32,7 @@ data class SecureChatIdentity(
             ) &&
             verificationStatus ==
             other.verificationStatus &&
+            verifiedByContact == other.verifiedByContact &&
             keyExchangeStatus ==
             other.keyExchangeStatus &&
             updatedAtEpochMilliseconds ==
@@ -43,6 +45,8 @@ data class SecureChatIdentity(
         result = 31 * result + signingPublicKey.contentHashCode()
 
         result = 31 * result + verificationStatus.hashCode()
+
+        result = 31 * result + verifiedByContact.hashCode()
 
         result = 31 * result + keyExchangeStatus.hashCode()
 
