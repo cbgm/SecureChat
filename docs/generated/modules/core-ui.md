@@ -13,7 +13,7 @@ Generated automatically by `./gradlew architectureReport`.
 | Kotlin files | 22 |
 | Production Kotlin files | 22 |
 | Test Kotlin files | 0 |
-| Resource files | 16 |
+| Resource files | 18 |
 | Direct dependencies | 0 |
 | Direct dependents | 9 |
 
