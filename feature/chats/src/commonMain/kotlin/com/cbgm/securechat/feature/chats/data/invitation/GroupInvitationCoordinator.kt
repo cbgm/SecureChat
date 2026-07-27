@@ -119,6 +119,11 @@ class GroupInvitationCoordinator(
     ): Result<Unit> =
         runCatching {
             groupInvitationManager.verifyInvite(packet).getOrThrow()
+            val persistedAtEpochMilliseconds =
+                resolveIncomingInvitationUpdatedAt(
+                    createdAtEpochMilliseconds = packet.createdAtEpochMilliseconds,
+                    receivedAtEpochMilliseconds = receivedAtEpochMilliseconds
+                )
 
             val existingInvitation = groupInvitationDao.findByInvitationId(packet.invitationId)
             if (existingInvitation != null) {
@@ -144,7 +149,7 @@ class GroupInvitationCoordinator(
                     currentInvitationId = packet.invitationId,
                     awaitingAcceptanceStatus = GroupInvitationStatus.AWAITING_ACCEPTANCE.name,
                     failedStatus = GroupInvitationStatus.FAILED.name,
-                    updatedAt = receivedAtEpochMilliseconds
+                    updatedAt = persistedAtEpochMilliseconds
                 )
             }
             storeRemoteIdentity(
@@ -160,7 +165,7 @@ class GroupInvitationCoordinator(
                     type = GROUP_CONVERSATION_TYPE,
                     title = packet.title,
                     createdAtEpochMilliseconds = packet.createdAtEpochMilliseconds,
-                    updatedAtEpochMilliseconds = receivedAtEpochMilliseconds
+                    updatedAtEpochMilliseconds = persistedAtEpochMilliseconds
                 )
             )
             groupInvitationDao.upsert(
@@ -172,7 +177,7 @@ class GroupInvitationCoordinator(
                     challenge = packet.challenge.copyOf(),
                     createdAtEpochMilliseconds = packet.createdAtEpochMilliseconds,
                     expiresAtEpochMilliseconds = packet.expiresAtEpochMilliseconds,
-                    updatedAtEpochMilliseconds = receivedAtEpochMilliseconds
+                    updatedAtEpochMilliseconds = persistedAtEpochMilliseconds
                 )
             )
         }
@@ -197,12 +202,14 @@ class GroupInvitationCoordinator(
             val ownerIdentity =
                 loadContact(invitation.contactId).secureChatIdentity
                     ?: error("Group owner identity was not stored")
-            contactKeyExchangeStore
-                .acceptRemoteIdentity(
-                    contactId = invitation.contactId,
-                    expectedRemoteEncryptionPublicKey = ownerIdentity.encryptionPublicKey,
-                    expectedRemoteSigningPublicKey = ownerIdentity.signingPublicKey
-                ).getOrThrow()
+            if (ownerIdentity.keyExchangeStatus != KeyExchangeStatus.MUTUAL) {
+                contactKeyExchangeStore
+                    .acceptRemoteIdentityForHandshake(
+                        contactId = invitation.contactId,
+                        expectedRemoteEncryptionPublicKey = ownerIdentity.encryptionPublicKey,
+                        expectedRemoteSigningPublicKey = ownerIdentity.signingPublicKey
+                    ).getOrThrow()
+            }
             val memberIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
             val memberSigningKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
             val joinRequest =
@@ -215,7 +222,6 @@ class GroupInvitationCoordinator(
                         memberSigningKeyPair = memberSigningKeyPair
                     ).getOrThrow()
 
-            protocolOutbox.enqueue(invitation.contactId, joinRequest).getOrThrow()
             val updated =
                 groupInvitationDao.updateStatus(
                     invitationId = invitation.invitationId,
@@ -224,6 +230,16 @@ class GroupInvitationCoordinator(
                     updatedAt = now
                 )
             check(updated == 1) { "Group invitation changed while it was accepted" }
+
+            protocolOutbox.enqueue(invitation.contactId, joinRequest).getOrElse { error ->
+                groupInvitationDao.updateStatus(
+                    invitationId = invitation.invitationId,
+                    expectedStatus = GroupInvitationStatus.JOIN_SENT.name,
+                    newStatus = GroupInvitationStatus.FAILED.name,
+                    updatedAt = SystemClock.nowEpochMilliseconds()
+                )
+                throw error
+            }
         }
 
     suspend fun declineInvitation(groupId: String): Result<Unit> =
@@ -506,10 +522,21 @@ class GroupInvitationCoordinator(
                 contactId = contactId,
                 encryptionPublicKey = encryptionPublicKey,
                 signingPublicKey = signingPublicKey,
-                origin = RemoteIdentityOrigin.REMOTE_PACKET
+                origin = RemoteIdentityOrigin.CONTACT_INVITATION
             ).getOrThrow()
+        val storedIdentity =
+            loadContact(contactId).secureChatIdentity
+                ?: error("Contact identity was not stored")
+        if (storedIdentity.keyExchangeStatus != KeyExchangeStatus.MUTUAL) {
+            contactKeyExchangeStore
+                .acceptRemoteIdentityForHandshake(
+                    contactId = contactId,
+                    expectedRemoteEncryptionPublicKey = encryptionPublicKey,
+                    expectedRemoteSigningPublicKey = signingPublicKey
+                ).getOrThrow()
+        }
         contactKeyExchangeStore
-            .acceptRemoteIdentity(
+            .markMutual(
                 contactId = contactId,
                 expectedRemoteEncryptionPublicKey = encryptionPublicKey,
                 expectedRemoteSigningPublicKey = signingPublicKey
@@ -526,7 +553,7 @@ class GroupInvitationCoordinator(
                 contactId = contactId,
                 encryptionPublicKey = encryptionPublicKey,
                 signingPublicKey = signingPublicKey,
-                origin = RemoteIdentityOrigin.REMOTE_PACKET
+                origin = RemoteIdentityOrigin.CONTACT_INVITATION
             ).getOrThrow()
     }
 
@@ -630,3 +657,12 @@ class GroupInvitationCoordinator(
         const val INVITATION_VALIDITY_MILLISECONDS = 7L * 24L * 60L * 60L * 1_000L
     }
 }
+
+internal fun resolveIncomingInvitationUpdatedAt(
+    createdAtEpochMilliseconds: Long,
+    receivedAtEpochMilliseconds: Long
+): Long =
+    maxOf(
+        createdAtEpochMilliseconds,
+        receivedAtEpochMilliseconds
+    )
