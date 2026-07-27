@@ -63,6 +63,7 @@ class GroupCreatedPacketHandler(
                 groupSecurityManager
                     .openWelcome(
                         packet = groupPacket,
+                        expectedOwnerEncryptionPublicKey = ownerIdentity.encryptionPublicKey,
                         expectedOwnerSigningPublicKey = ownerIdentity.signingPublicKey,
                         localEncryptionKeyPair = localEncryptionKeyPair,
                         localSigningPublicKey = localIdentity.signingPublicKey
@@ -173,20 +174,6 @@ class GroupCreatedPacketHandler(
                 ?.let { updateContactPhoneNumber(senderContactId, it) }
 
             return senderContactId
-        }
-
-        val existingBySigningKey =
-            member.signingPublicKey
-                .takeIf { it.isNotEmpty() }
-                ?.let { signingPublicKey -> contactDao.findBySigningPublicKey(signingPublicKey) }
-
-        if (existingBySigningKey != null) {
-            member.phoneNumber
-                ?.trim()
-                ?.takeIf { it.isNotEmpty() }
-                ?.let { updateContactPhoneNumber(existingBySigningKey.contact.id, it) }
-
-            return existingBySigningKey.contact.id
         }
 
         val phoneNumber = member.requirePhoneNumber()

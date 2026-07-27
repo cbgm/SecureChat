@@ -43,19 +43,42 @@ class DefaultContactKeyExchangeStore(
 
             val identityChanged = existing != null && !sameIdentity
 
+            if (identityChanged) {
+                val identityIsPinned =
+                    existing.keyExchangeStatus == KeyExchangeStatus.MUTUAL.name ||
+                        existing.verificationStatus == ContactVerificationStatus.VERIFIED.name
+
+                check(!identityIsPinned) {
+                    "Stored mutual or verified identity cannot be replaced without an explicit reset"
+                }
+            }
+
             val nextLocallyImported =
                 sameIdentity && existing?.locallyImported == true ||
                     origin == RemoteIdentityOrigin.LOCAL_IMPORT
 
             val nextRemoteIdentityPacketReceived =
                 sameIdentity && existing?.remoteIdentityPacketReceived == true ||
-                    origin == RemoteIdentityOrigin.REMOTE_PACKET
+                    origin == RemoteIdentityOrigin.REMOTE_PACKET ||
+                    origin == RemoteIdentityOrigin.CONTACT_INVITATION
 
             val nextKeyExchangeStatus =
-                if (nextLocallyImported && nextRemoteIdentityPacketReceived) {
-                    KeyExchangeStatus.MUTUAL
-                } else {
-                    KeyExchangeStatus.ONE_WAY
+                when {
+                    sameIdentity && existing?.keyExchangeStatus == KeyExchangeStatus.MUTUAL.name -> {
+                        KeyExchangeStatus.MUTUAL
+                    }
+
+                    origin == RemoteIdentityOrigin.CONTACT_INVITATION -> {
+                        KeyExchangeStatus.ONE_WAY
+                    }
+
+                    nextLocallyImported && nextRemoteIdentityPacketReceived -> {
+                        KeyExchangeStatus.MUTUAL
+                    }
+
+                    else -> {
+                        KeyExchangeStatus.ONE_WAY
+                    }
                 }
 
             val nextVerificationStatus =
@@ -122,6 +145,38 @@ class DefaultContactKeyExchangeStore(
 
             check(updatedRows == 1) {
                 "Contact identity changed before invitation acceptance was applied"
+            }
+        }
+
+    override suspend fun acceptRemoteIdentityForHandshake(
+        contactId: String,
+        expectedRemoteEncryptionPublicKey: ByteArray,
+        expectedRemoteSigningPublicKey: ByteArray
+    ): Result<Unit> =
+        runCatching {
+            require(contactId.isNotBlank()) {
+                "Contact ID must not be blank"
+            }
+
+            require(expectedRemoteEncryptionPublicKey.isNotEmpty()) {
+                "Expected encryption key must not be empty"
+            }
+
+            require(expectedRemoteSigningPublicKey.isNotEmpty()) {
+                "Expected signing key must not be empty"
+            }
+
+            val updatedRows =
+                contactDao.markLocallyAcceptedForHandshakeIfKeysMatch(
+                    contactId = contactId,
+                    expectedEncryptionPublicKey = expectedRemoteEncryptionPublicKey,
+                    expectedSigningPublicKey = expectedRemoteSigningPublicKey,
+                    oneWayStatus = KeyExchangeStatus.ONE_WAY.name,
+                    updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+                )
+
+            check(updatedRows == 1) {
+                "Contact identity changed before invitation acceptance was recorded"
             }
         }
 

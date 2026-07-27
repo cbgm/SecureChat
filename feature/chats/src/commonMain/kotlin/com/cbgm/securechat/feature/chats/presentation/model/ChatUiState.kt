@@ -4,6 +4,7 @@ import com.cbgm.securechat.feature.chats.domain.model.ChatMessage
 import com.cbgm.securechat.feature.chats.domain.model.ContactSecurityState
 import com.cbgm.securechat.feature.chats.domain.model.GroupConversationState
 import com.cbgm.securechat.feature.chats.domain.model.GroupMemberInvitationStatus
+import com.cbgm.securechat.feature.contacts.domain.model.IdentityHandshakeState
 
 data class GroupMemberProgressUi(
     val displayName: String,
@@ -18,6 +19,7 @@ data class ChatUiState(
     val isContactTyping: Boolean = false,
     val typingDisplayName: String = "",
     val contactSecurityState: ContactSecurityState = ContactSecurityState.NO_REMOTE_PUBLIC_KEYS,
+    val identityHandshakeState: IdentityHandshakeState? = null,
     val safetyNumber: String = "",
     val isLoadingContact: Boolean = true,
     val isLoadingSafetyNumber: Boolean = false,

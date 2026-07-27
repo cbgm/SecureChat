@@ -72,6 +72,7 @@ import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.DeliveryLabel
+import com.cbgm.securechat.feature.contacts.domain.model.IdentityHandshakeState
 import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.base_verify
 import com.cbgm.securechat.resources.feature_chats_chat_key_exchange_incomplete_description
@@ -86,6 +87,12 @@ import com.cbgm.securechat.resources.feature_chats_chat_unverified_keys_descript
 import com.cbgm.securechat.resources.feature_chats_chat_unverified_title
 import com.cbgm.securechat.resources.feature_chats_chat_verified_e2ee
 import com.cbgm.securechat.resources.feature_chats_chat_verified_keys_description
+import com.cbgm.securechat.resources.feature_chats_contact_invitation_finishing_description
+import com.cbgm.securechat.resources.feature_chats_contact_invitation_finishing_title
+import com.cbgm.securechat.resources.feature_chats_contact_invitation_received_description
+import com.cbgm.securechat.resources.feature_chats_contact_invitation_received_title
+import com.cbgm.securechat.resources.feature_chats_contact_invitation_sent_description
+import com.cbgm.securechat.resources.feature_chats_contact_invitation_sent_title
 import com.cbgm.securechat.resources.feature_chats_decryption_failed
 import com.cbgm.securechat.resources.feature_chats_delivered
 import com.cbgm.securechat.resources.feature_chats_encrypted
@@ -265,6 +272,7 @@ private fun ChatTopBar(
         if (!uiState.isGroup) {
             SecurityBanner(
                 securityState = uiState.contactSecurityState,
+                identityHandshakeState = uiState.identityHandshakeState,
                 onVerifyIdentity = onVerifyIdentity
             )
         }
@@ -503,6 +511,7 @@ private fun GroupAvatar() {
 @Composable
 private fun SecurityBanner(
     securityState: ContactSecurityState,
+    identityHandshakeState: IdentityHandshakeState?,
     onVerifyIdentity: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -519,8 +528,45 @@ private fun SecurityBanner(
         val contentColor: Color
     )
 
+    val invitationState =
+        when (identityHandshakeState) {
+            IdentityHandshakeState.INVITE_SENT ->
+                CombinedState(
+                    icon = Icons.Default.Schedule,
+                    title = stringResource(Res.string.feature_chats_contact_invitation_sent_title),
+                    description = stringResource(Res.string.feature_chats_contact_invitation_sent_description),
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+
+            IdentityHandshakeState.AWAITING_ACCEPTANCE ->
+                CombinedState(
+                    icon = Icons.Default.Warning,
+                    title = stringResource(Res.string.feature_chats_contact_invitation_received_title),
+                    description = stringResource(Res.string.feature_chats_contact_invitation_received_description),
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+
+            IdentityHandshakeState.ACCEPTANCE_SENT,
+            IdentityHandshakeState.WAITING_FOR_READY ->
+                CombinedState(
+                    icon = Icons.Default.Schedule,
+                    title = stringResource(Res.string.feature_chats_contact_invitation_finishing_title),
+                    description = stringResource(Res.string.feature_chats_contact_invitation_finishing_description),
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+
+            IdentityHandshakeState.MUTUAL_UNVERIFIED,
+            IdentityHandshakeState.DECLINED,
+            IdentityHandshakeState.EXPIRED,
+            IdentityHandshakeState.FAILED,
+            null -> null
+        }
+
     val combinedState =
-        when (securityState) {
+        invitationState ?: when (securityState) {
             ContactSecurityState.NO_REMOTE_PUBLIC_KEYS ->
                 CombinedState(
                     icon = Icons.Default.LockOpen,

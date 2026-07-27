@@ -49,6 +49,12 @@
     <string name="base_work_mobile">Work mobile</string>
 
     <!-- Feature: chats -->
+    <string name="feature_chats_contact_invitation_finishing_description">The invitation was accepted. Waiting for the encrypted confirmation.</string>
+    <string name="feature_chats_contact_invitation_finishing_title">Finishing secure contact setup</string>
+    <string name="feature_chats_contact_invitation_received_description">Accept the invitation to exchange identities and enable end-to-end encryption.</string>
+    <string name="feature_chats_contact_invitation_received_title">Contact invitation received</string>
+    <string name="feature_chats_contact_invitation_sent_description">Waiting for the contact to accept and return their identity.</string>
+    <string name="feature_chats_contact_invitation_sent_title">Contact invitation sent</string>
     <string name="feature_chats_chat_key_exchange_incomplete_description">Both parties have not completed the identity exchange.</string>
     <string name="feature_chats_chat_key_exchange_incomplete_title">Key exchange is incomplete</string>
     <string name="feature_chats_chat_no_keys_description">This contact has no SecureChat public keys. Messages use plaintext transport.</string>

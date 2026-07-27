@@ -6,13 +6,18 @@ import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.feature.contacts.data.identity.ContactLocalIdentityChangeHandler
 import com.cbgm.securechat.feature.contacts.data.identity.DefaultIdentityExchangeStarter
+import com.cbgm.securechat.feature.contacts.data.identity.IdentityInvitationCoordinator
+import com.cbgm.securechat.feature.contacts.data.identity.IdentityInvitationPayloadEncoder
 import com.cbgm.securechat.feature.contacts.data.merge.ContactMergeService
 import com.cbgm.securechat.feature.contacts.data.merge.DefaultContactMergeService
-import com.cbgm.securechat.feature.contacts.data.protocol.IdentityAcknowledgementPacketHandler
-import com.cbgm.securechat.feature.contacts.data.protocol.IdentityPacketHandler
+import com.cbgm.securechat.feature.contacts.data.protocol.ContactInviteAcceptedPacketHandler
+import com.cbgm.securechat.feature.contacts.data.protocol.ContactInviteDeclinedPacketHandler
+import com.cbgm.securechat.feature.contacts.data.protocol.ContactInvitePacketHandler
+import com.cbgm.securechat.feature.contacts.data.protocol.ContactReadyPacketHandler
 import com.cbgm.securechat.feature.contacts.data.repository.DefaultContactKeyExchangeStore
 import com.cbgm.securechat.feature.contacts.data.repository.DefaultContactRepository
 import com.cbgm.securechat.feature.contacts.domain.identity.IdentityExchangeStarter
+import com.cbgm.securechat.feature.contacts.domain.identity.IdentityInvitationService
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactKeyExchangeStore
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
@@ -22,6 +27,7 @@ import com.cbgm.securechat.feature.contacts.domain.usecase.ImportDeviceContacts
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContact
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContacts
 import com.cbgm.securechat.feature.contacts.domain.usecase.VerifyContact
+import com.cbgm.securechat.feature.contacts.presentation.screen.ContactInvitationViewModel
 import com.cbgm.securechat.feature.contacts.presentation.screen.ContactsViewModel
 import com.cbgm.securechat.feature.contacts.presentation.screen.details.ContactDetailsViewModel
 import org.koin.core.module.dsl.bind
@@ -47,20 +53,46 @@ val contactsModule =
             ContactLocalIdentityChangeHandler(contactKeyExchangeStore = get())
         }
 
-        singleOf(::IdentityPacketHandler) {
-            bind<TypedProtocolPacketHandler>()
+        single {
+            IdentityInvitationPayloadEncoder()
         }
 
-        single<IdentityExchangeStarter> {
-            DefaultIdentityExchangeStarter(
+        single {
+            IdentityInvitationCoordinator(
+                invitationDao = get(),
                 contactDao = get(),
+                contactKeyExchangeStore = get(),
                 localPublicIdentityProvider = get(),
+                localSigningKeyPairProvider = get(),
+                detachedSignatureCrypto = get(),
+                secureRandomGenerator = get(),
+                payloadEncoder = get(),
                 protocolOutbox = get()
             )
         }
 
-        singleOf(::IdentityAcknowledgementPacketHandler) {
+        single<IdentityInvitationService> {
+            get<IdentityInvitationCoordinator>()
+        }
+
+        singleOf(::ContactInvitePacketHandler) {
             bind<TypedProtocolPacketHandler>()
+        }
+
+        singleOf(::ContactInviteAcceptedPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
+        singleOf(::ContactReadyPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
+        singleOf(::ContactInviteDeclinedPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
+        single<IdentityExchangeStarter> {
+            DefaultIdentityExchangeStarter(identityInvitationService = get())
         }
 
         single<ContactRepository> {
@@ -107,6 +139,10 @@ val contactsModule =
 
         factory {
             VerifyContact(repository = get())
+        }
+
+        viewModel {
+            ContactInvitationViewModel(identityInvitationService = get())
         }
 
         viewModel {

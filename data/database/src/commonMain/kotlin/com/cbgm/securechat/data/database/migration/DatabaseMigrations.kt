@@ -247,4 +247,41 @@ object DatabaseMigrations {
                 )
             }
         }
+    val Migration15To16 =
+        object : Migration(15, 16) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS identity_invitations (
+                        invitationId TEXT NOT NULL PRIMARY KEY,
+                        contactId TEXT NOT NULL,
+                        direction TEXT NOT NULL,
+                        state TEXT NOT NULL,
+                        remoteDisplayName TEXT,
+                        inviteChallenge BLOB NOT NULL,
+                        responseChallenge BLOB,
+                        remoteEncryptionPublicKey BLOB NOT NULL,
+                        remoteSigningPublicKey BLOB NOT NULL,
+                        createdAtEpochMilliseconds INTEGER NOT NULL,
+                        expiresAtEpochMilliseconds INTEGER NOT NULL,
+                        updatedAtEpochMilliseconds INTEGER NOT NULL,
+                        lastError TEXT,
+                        FOREIGN KEY(contactId) REFERENCES contacts(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_identity_invitations_contactId " +
+                        "ON identity_invitations(contactId)"
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_identity_invitations_direction " +
+                        "ON identity_invitations(direction)"
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_identity_invitations_state " +
+                        "ON identity_invitations(state)"
+                )
+            }
+        }
 }

@@ -227,6 +227,25 @@ interface ContactDao {
     @Query(
         """
         UPDATE contact_public_identities
+        SET locallyImported = 1,
+            keyExchangeStatus = :oneWayStatus,
+            updatedAtEpochMilliseconds = :updatedAtEpochMilliseconds
+        WHERE contactId = :contactId
+          AND encryptionPublicKey = :expectedEncryptionPublicKey
+          AND signingPublicKey = :expectedSigningPublicKey
+        """
+    )
+    suspend fun markLocallyAcceptedForHandshakeIfKeysMatch(
+        contactId: String,
+        expectedEncryptionPublicKey: ByteArray,
+        expectedSigningPublicKey: ByteArray,
+        oneWayStatus: String,
+        updatedAtEpochMilliseconds: Long
+    ): Int
+
+    @Query(
+        """
+        UPDATE contact_public_identities
         SET remoteIdentityPacketReceived = 1,
             keyExchangeStatus = CASE
                 WHEN locallyImported = 1 THEN :mutualStatus

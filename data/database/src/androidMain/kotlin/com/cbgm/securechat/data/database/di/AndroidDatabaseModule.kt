@@ -35,6 +35,10 @@ val androidDatabaseModule =
         }
 
         single {
+            get<SecureChatDatabase>().identityInvitationDao()
+        }
+
+        single {
             get<SecureChatDatabase>().contactRelayIdDao()
         }
 

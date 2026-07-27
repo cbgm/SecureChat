@@ -8,6 +8,7 @@ import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.data.database.dao.ContactRelayIdDao
 import com.cbgm.securechat.data.database.dao.GroupInvitationDao
 import com.cbgm.securechat.data.database.dao.GroupSecurityDao
+import com.cbgm.securechat.data.database.dao.IdentityInvitationDao
 import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
 import com.cbgm.securechat.data.database.dao.MessageRecipientStateDao
 import com.cbgm.securechat.data.database.dao.ProtocolOutboxDao
@@ -20,6 +21,7 @@ import com.cbgm.securechat.data.database.entity.ConversationParticipantEntity
 import com.cbgm.securechat.data.database.entity.GroupInvitationEntity
 import com.cbgm.securechat.data.database.entity.GroupMemberKeyEntity
 import com.cbgm.securechat.data.database.entity.GroupSecurityStateEntity
+import com.cbgm.securechat.data.database.entity.IdentityInvitationEntity
 import com.cbgm.securechat.data.database.entity.MessageEntity
 import com.cbgm.securechat.data.database.entity.MessageRecipientStateEntity
 import com.cbgm.securechat.data.database.entity.ProtocolOutboxEntity
@@ -35,11 +37,12 @@ import com.cbgm.securechat.data.database.entity.ProtocolOutboxEntity
         GroupSecurityStateEntity::class,
         GroupMemberKeyEntity::class,
         GroupInvitationEntity::class,
+        IdentityInvitationEntity::class,
         MessageEntity::class,
         MessageRecipientStateEntity::class,
         ProtocolOutboxEntity::class
     ],
-    version = 15,
+    version = 16,
     exportSchema = true
 )
 @ConstructedBy(SecureChatDatabaseConstructor::class)
@@ -51,6 +54,8 @@ abstract class SecureChatDatabase : RoomDatabase() {
     abstract fun groupSecurityDao(): GroupSecurityDao
 
     abstract fun groupInvitationDao(): GroupInvitationDao
+
+    abstract fun identityInvitationDao(): IdentityInvitationDao
 
     abstract fun contactRelayIdDao(): ContactRelayIdDao
 

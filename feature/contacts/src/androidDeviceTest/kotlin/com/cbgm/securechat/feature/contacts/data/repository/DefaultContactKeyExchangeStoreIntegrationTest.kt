@@ -68,6 +68,92 @@ class DefaultContactKeyExchangeStoreIntegrationTest {
         }
 
     @Test
+    fun directInvitationRemainsOneWayUntilReadyConfirmation() =
+        runBlocking {
+            createContact()
+            store
+                .storeRemoteIdentity(
+                    contactId = CONTACT_ID,
+                    encryptionPublicKey = ENCRYPTION_KEY,
+                    signingPublicKey = SIGNING_KEY,
+                    origin = RemoteIdentityOrigin.CONTACT_INVITATION
+                ).getOrThrow()
+
+            var identity =
+                requireNotNull(
+                    database.contactDao().findPublicIdentityByContactId(CONTACT_ID)
+                )
+            assertEquals(KeyExchangeStatus.ONE_WAY.name, identity.keyExchangeStatus)
+            assertFalse(identity.locallyImported)
+            assertTrue(identity.remoteIdentityPacketReceived)
+
+            store
+                .acceptRemoteIdentityForHandshake(
+                    contactId = CONTACT_ID,
+                    expectedRemoteEncryptionPublicKey = ENCRYPTION_KEY,
+                    expectedRemoteSigningPublicKey = SIGNING_KEY
+                ).getOrThrow()
+
+            identity =
+                requireNotNull(
+                    database.contactDao().findPublicIdentityByContactId(CONTACT_ID)
+                )
+            assertEquals(KeyExchangeStatus.ONE_WAY.name, identity.keyExchangeStatus)
+            assertTrue(identity.locallyImported)
+            assertTrue(identity.remoteIdentityPacketReceived)
+
+            store
+                .markMutual(
+                    contactId = CONTACT_ID,
+                    expectedRemoteEncryptionPublicKey = ENCRYPTION_KEY,
+                    expectedRemoteSigningPublicKey = SIGNING_KEY
+                ).getOrThrow()
+
+            identity =
+                requireNotNull(
+                    database.contactDao().findPublicIdentityByContactId(CONTACT_ID)
+                )
+            assertEquals(KeyExchangeStatus.MUTUAL.name, identity.keyExchangeStatus)
+        }
+
+    @Test
+    fun mutualIdentityCannotBeSilentlyReplacedByInvitation() =
+        runBlocking {
+            createContact()
+            store
+                .storeRemoteIdentity(
+                    contactId = CONTACT_ID,
+                    encryptionPublicKey = ENCRYPTION_KEY,
+                    signingPublicKey = SIGNING_KEY,
+                    origin = RemoteIdentityOrigin.LOCAL_IMPORT
+                ).getOrThrow()
+            store
+                .storeRemoteIdentity(
+                    contactId = CONTACT_ID,
+                    encryptionPublicKey = ENCRYPTION_KEY,
+                    signingPublicKey = SIGNING_KEY,
+                    origin = RemoteIdentityOrigin.REMOTE_PACKET
+                ).getOrThrow()
+
+            val result =
+                store.storeRemoteIdentity(
+                    contactId = CONTACT_ID,
+                    encryptionPublicKey = byteArrayOf(99),
+                    signingPublicKey = byteArrayOf(98),
+                    origin = RemoteIdentityOrigin.CONTACT_INVITATION
+                )
+
+            assertTrue(result.isFailure)
+            val identity =
+                requireNotNull(
+                    database.contactDao().findPublicIdentityByContactId(CONTACT_ID)
+                )
+            assertEquals(KeyExchangeStatus.MUTUAL.name, identity.keyExchangeStatus)
+            assertTrue(identity.encryptionPublicKey.contentEquals(ENCRYPTION_KEY))
+            assertTrue(identity.signingPublicKey.contentEquals(SIGNING_KEY))
+        }
+
+    @Test
     fun acceptingInvitationIdentityRejectsChangedKeys() =
         runBlocking {
             createContact()

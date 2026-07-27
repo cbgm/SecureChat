@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_contacts_contact_invitation_title">Contact invitation</string>
+    <string name="feature_contacts_contact_invitation_description">%1$s wants to exchange SecureChat identities.</string>
+    <string name="feature_contacts_invitation_unverified_warning">Accepting enables encrypted messages, but does not prove this identity belongs to the expected person. Compare the safety number separately.</string>
+    <string name="feature_contacts_accept_invitation">Accept</string>
+    <string name="feature_contacts_decline_invitation">Decline</string>
+</resources>

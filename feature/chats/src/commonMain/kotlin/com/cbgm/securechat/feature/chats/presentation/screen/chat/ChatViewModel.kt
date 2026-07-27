@@ -11,8 +11,11 @@ import com.cbgm.securechat.feature.chats.domain.usecase.RetryMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SendMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SetTypingIndicator
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
+import com.cbgm.securechat.feature.contacts.domain.identity.IdentityExchangeStarter
+import com.cbgm.securechat.feature.contacts.domain.identity.IdentityInvitationService
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
+import com.cbgm.securechat.feature.contacts.domain.model.IdentityHandshakeState
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContactSafetyNumber
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContact
@@ -39,6 +42,8 @@ class ChatViewModel(
     private val sendMessageUseCase: SendMessage,
     private val markConversationReadUseCase: MarkConversationRead,
     private val retryFailedMessage: RetryMessage,
+    private val identityExchangeStarter: IdentityExchangeStarter,
+    identityInvitationService: IdentityInvitationService,
     observeContact: ObserveContact,
     private val getContactSafetyNumber: GetContactSafetyNumber,
     private val verifyContact: VerifyContact,
@@ -69,14 +74,19 @@ class ChatViewModel(
     private val conversationFlow: Flow<Conversation?> =
         observeConversation(conversationId)
 
+    private val identityHandshakeStateFlow: Flow<IdentityHandshakeState?> =
+        identityInvitationService.observeState(contactId)
+
     private val chatContentFlow: Flow<ChatContentState> =
         combine(
             conversationFlow,
-            contactFlow
-        ) { conversation, contact ->
+            contactFlow,
+            identityHandshakeStateFlow
+        ) { conversation, contact, identityHandshakeState ->
             ChatContentState(
                 conversation = conversation,
-                contact = contact
+                contact = contact,
+                identityHandshakeState = identityHandshakeState
             )
         }
 
@@ -147,6 +157,7 @@ class ChatViewModel(
                 messageText = composer.messageText,
                 isContactTyping = composer.isContactTyping,
                 contactSecurityState = contact.toSecurityState(),
+                identityHandshakeState = screenContent.chatContent.identityHandshakeState,
                 safetyNumber = verification.safetyNumber,
                 isLoadingContact = contact == null,
                 isLoadingSafetyNumber = verification.isLoadingSafetyNumber,
@@ -164,8 +175,19 @@ class ChatViewModel(
         )
 
     init {
+        startIdentityExchange()
         observeContactSecurity()
         observeIncomingTypingEvents()
+    }
+
+    private fun startIdentityExchange() {
+        viewModelScope.launch {
+            identityExchangeStarter
+                .ensureStarted(contactId)
+                .onFailure { error ->
+                    errorMessage.value = error.message ?: "Contact invitation could not be started"
+                }
+        }
     }
 
     fun onMessageTextChanged(value: String) {
@@ -431,7 +453,8 @@ class ChatViewModel(
 
     private data class ChatContentState(
         val conversation: Conversation?,
-        val contact: Contact?
+        val contact: Contact?,
+        val identityHandshakeState: IdentityHandshakeState?
     )
 
     private data class ComposerState(

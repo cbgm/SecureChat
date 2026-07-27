@@ -49,6 +49,12 @@
     <string name="base_work_mobile">Geschäftlich mobil</string>
 
     <!-- Feature: chats -->
+    <string name="feature_chats_contact_invitation_finishing_description">Die Einladung wurde angenommen. Die verschlüsselte Bestätigung steht noch aus.</string>
+    <string name="feature_chats_contact_invitation_finishing_title">Sichere Kontakteinrichtung wird abgeschlossen</string>
+    <string name="feature_chats_contact_invitation_received_description">Nimm die Einladung an, um die Identitäten auszutauschen und Ende-zu-Ende-Verschlüsselung zu aktivieren.</string>
+    <string name="feature_chats_contact_invitation_received_title">Kontakteinladung erhalten</string>
+    <string name="feature_chats_contact_invitation_sent_description">Warte darauf, dass der Kontakt annimmt und seine Identität zurücksendet.</string>
+    <string name="feature_chats_contact_invitation_sent_title">Kontakteinladung gesendet</string>
     <string name="feature_chats_chat_key_exchange_incomplete_description">Beide Seiten haben den Identitätsaustausch noch nicht abgeschlossen.</string>
     <string name="feature_chats_chat_key_exchange_incomplete_title">Schlüsselaustausch unvollständig</string>
     <string name="feature_chats_chat_no_keys_description">Dieser Kontakt besitzt keine öffentlichen SecureChat-Schlüssel. Nachrichten werden unverschlüsselt übertragen.</string>

@@ -40,6 +40,8 @@ import com.cbgm.securechat.feature.chats.presentation.screen.ChatsViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.ChatViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.GroupConversationViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.create.CreateGroupViewModel
+import com.cbgm.securechat.feature.contacts.domain.identity.IdentityExchangeStarter
+import com.cbgm.securechat.feature.contacts.domain.identity.IdentityInvitationService
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContactSafetyNumber
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContact
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContacts
@@ -166,6 +168,8 @@ val chatsModule =
                 sendMessageUseCase = get(),
                 markConversationReadUseCase = get(),
                 retryFailedMessage = get(),
+                identityExchangeStarter = get<IdentityExchangeStarter>(),
+                identityInvitationService = get<IdentityInvitationService>(),
                 observeContact = get<ObserveContact>(),
                 getContactSafetyNumber = get<GetContactSafetyNumber>(),
                 verifyContact = get<VerifyContact>(),

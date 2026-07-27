@@ -2,13 +2,11 @@ package com.cbgm.securechat.feature.contacts.domain.identity
 
 interface IdentityExchangeStarter {
     /**
-     * Enqueues the local public identity for the contact when:
+     * Starts the explicit direct-contact invitation handshake when the contact
+     * is not already mutual and no unexpired invitation is active.
      *
-     * - key exchange is not already MUTUAL;
-     * - this app session has not already queued the exchange.
-     *
-     * A phone number is enough to address a contact through the relay.
-     * Remote public keys are learned from the returned IdentityPacket.
+     * A phone number is enough to route the signed invitation. Remote keys are
+     * accepted only through the challenge-bound invitation response.
      */
     suspend fun ensureStarted(contactId: String): Result<Unit>
 }

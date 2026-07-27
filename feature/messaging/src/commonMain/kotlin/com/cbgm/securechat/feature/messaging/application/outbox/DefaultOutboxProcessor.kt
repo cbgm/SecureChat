@@ -10,7 +10,9 @@ import com.cbgm.securechat.core.protocol.outbox.OutboxProcessingResult
 import com.cbgm.securechat.core.protocol.outbox.OutboxProcessor
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutboxItem
+import com.cbgm.securechat.core.protocol.packet.ContactReadyPacket
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
+import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
@@ -114,11 +116,12 @@ class DefaultOutboxProcessor(
             getContact(contactId = item.contactId).getOrThrow()
                 ?: error("Outbox contact was not found")
 
+        val packet = packetCodec.decode(item.encodedPacket).getOrThrow()
         val transportPayload =
             createTransportPayload(
                 encodedPacket = item.encodedPacket,
                 contact = contact,
-                requiresEncryption = item.encodedPacket.requiresEncryption()
+                packet = packet
             )
 
         val encodedTransportPayload = transportPayloadCodec.encode(payload = transportPayload)
@@ -147,22 +150,59 @@ class DefaultOutboxProcessor(
     private suspend fun createTransportPayload(
         encodedPacket: ByteArray,
         contact: Contact,
-        requiresEncryption: Boolean
+        packet: SecureChatPacket
     ): EncryptedTransportPayload {
         require(encodedPacket.isNotEmpty()) {
             "Encoded protocol packet must not be empty"
         }
 
         val identity = contact.secureChatIdentity
+        val contactReadyPacket = packet as? ContactReadyPacket
+        val isContactReady = contactReadyPacket != null
+
+        if (contactReadyPacket != null) {
+            check(identity != null) {
+                "Contact ready packet requires a stored recipient identity"
+            }
+            check(
+                identity.encryptionPublicKey.contentEquals(
+                    contactReadyPacket.acceptedResponderEncryptionPublicKey
+                )
+            ) {
+                "Contact identity changed before the ready packet was encrypted"
+            }
+            check(
+                identity.signingPublicKey.contentEquals(
+                    contactReadyPacket.acceptedResponderSigningPublicKey
+                )
+            ) {
+                "Contact signing identity changed before the ready packet was encrypted"
+            }
+        }
 
         val canEncrypt =
             identity != null &&
                 identity.encryptionPublicKey.isNotEmpty() &&
-                identity.keyExchangeStatus == KeyExchangeStatus.MUTUAL
+                (
+                    identity.keyExchangeStatus == KeyExchangeStatus.MUTUAL ||
+                        isContactReady
+                )
 
         if (!canEncrypt) {
-            check(!requiresEncryption) {
-                "Group packets require a mutual SecureChat key exchange"
+            val encryptionError =
+                when (packet) {
+                    is GroupCreatedPacket ->
+                        "Group packets require a mutual SecureChat key exchange"
+
+                    is ContactReadyPacket ->
+                        "Contact ready packet requires an encrypted SecureChat transport"
+
+                    else ->
+                        "This protocol packet requires an encrypted SecureChat transport"
+                }
+
+            check(!packet.requiresEncryption()) {
+                encryptionError
             }
 
             return EncryptedTransportPayload(
@@ -172,15 +212,21 @@ class DefaultOutboxProcessor(
             )
         }
 
+        val recipientIdentity =
+            checkNotNull(identity) {
+                "Encrypted transport requires a stored recipient identity"
+            }
+
         return transportMessageCipher
             .encryptForRecipient(
                 plaintext = encodedPacket,
-                recipientPublicKey = identity.encryptionPublicKey
+                recipientPublicKey = recipientIdentity.encryptionPublicKey
             ).getOrThrow()
     }
 
-    private fun ByteArray.requiresEncryption(): Boolean =
-        when (packetCodec.decode(this).getOrNull()) {
+    private fun SecureChatPacket.requiresEncryption(): Boolean =
+        when (this) {
+            is ContactReadyPacket,
             is GroupCreatedPacket -> true
 
             else -> false

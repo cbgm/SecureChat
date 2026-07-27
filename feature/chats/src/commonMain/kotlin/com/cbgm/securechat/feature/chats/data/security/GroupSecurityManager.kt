@@ -150,6 +150,7 @@ class GroupSecurityManager(
 
     suspend fun openWelcome(
         packet: GroupCreatedPacket,
+        expectedOwnerEncryptionPublicKey: ByteArray,
         expectedOwnerSigningPublicKey: ByteArray,
         localEncryptionKeyPair: LocalEncryptionKeyPair,
         localSigningPublicKey: ByteArray
@@ -168,8 +169,11 @@ class GroupSecurityManager(
             val owner =
                 packet.members.singleOrNull { member -> member.role == GROUP_OWNER_ROLE }
                     ?: error("Group welcome must contain exactly one owner")
+            check(owner.encryptionPublicKey.contentEquals(expectedOwnerEncryptionPublicKey)) {
+                "Group owner encryption key does not match the authenticated contact"
+            }
             check(owner.signingPublicKey.contentEquals(expectedOwnerSigningPublicKey)) {
-                "Group owner does not match the authenticated contact"
+                "Group owner signing key does not match the authenticated contact"
             }
 
             groupCrypto

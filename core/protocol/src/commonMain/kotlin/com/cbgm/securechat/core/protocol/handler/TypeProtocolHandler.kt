@@ -11,8 +11,8 @@ import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
  * -> ChatMessagePacketHandler
  *
  * feature:contacts
- * -> IdentityPacketHandler
- * -> IdentityAcknowledgementPacketHandler
+ * -> ContactInvitePacketHandler
+ * -> ContactReadyPacketHandler
  */
 interface TypedProtocolPacketHandler {
     fun canHandle(packet: SecureChatPacket): Boolean

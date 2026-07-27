@@ -4,7 +4,8 @@ import com.cbgm.securechat.feature.contacts.domain.model.RemoteIdentityUpdate
 
 enum class RemoteIdentityOrigin {
     LOCAL_IMPORT,
-    REMOTE_PACKET
+    REMOTE_PACKET,
+    CONTACT_INVITATION
 }
 
 interface ContactKeyExchangeStore {
@@ -16,6 +17,12 @@ interface ContactKeyExchangeStore {
     ): Result<RemoteIdentityUpdate>
 
     suspend fun acceptRemoteIdentity(
+        contactId: String,
+        expectedRemoteEncryptionPublicKey: ByteArray,
+        expectedRemoteSigningPublicKey: ByteArray
+    ): Result<Unit>
+
+    suspend fun acceptRemoteIdentityForHandshake(
         contactId: String,
         expectedRemoteEncryptionPublicKey: ByteArray,
         expectedRemoteSigningPublicKey: ByteArray
