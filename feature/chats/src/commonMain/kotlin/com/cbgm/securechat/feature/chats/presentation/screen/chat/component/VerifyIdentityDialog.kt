@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.ui.component.BlockScreenshotEffect
 import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.base_cancel
 import com.cbgm.securechat.resources.base_verify_contact
@@ -45,6 +46,10 @@ fun VerifyIdentityDialog(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    BlockScreenshotEffect(
+        enabled = true
+    )
+
     AlertDialog(
         modifier = modifier,
         onDismissRequest = {
