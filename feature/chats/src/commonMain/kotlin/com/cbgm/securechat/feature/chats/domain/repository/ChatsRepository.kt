@@ -18,6 +18,10 @@ interface ChatsRepository {
 
     fun observeGroupConversation(conversationId: String): Flow<GroupConversation?>
 
+    suspend fun acceptGroupInvitation(conversationId: String): Result<Unit>
+
+    suspend fun declineGroupInvitation(conversationId: String): Result<Unit>
+
     suspend fun sendGroupMessage(
         conversationId: String,
         text: String

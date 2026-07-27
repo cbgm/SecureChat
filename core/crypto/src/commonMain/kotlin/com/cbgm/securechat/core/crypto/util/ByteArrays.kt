@@ -33,6 +33,18 @@ object ByteArrays {
         )
     }
 
+    fun encodeLong(value: Long): ByteArray {
+        require(value >= 0L) {
+            "Encoded long must not be negative"
+        }
+
+        return ByteArray(Long.SIZE_BYTES) { index ->
+            (
+                value ushr ((Long.SIZE_BYTES - index - 1) * Byte.SIZE_BITS) and 0xFF
+            ).toByte()
+        }
+    }
+
     fun withLengthPrefix(value: ByteArray): ByteArray = concatenate(encodeInt(value.size), value)
 
     fun compareUnsigned(

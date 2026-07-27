@@ -10,6 +10,7 @@ import com.cbgm.securechat.core.protocol.outbox.OutboxStatus
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutboxItem
 import com.cbgm.securechat.core.protocol.packet.ChatMessagePacket
+import com.cbgm.securechat.core.protocol.packet.GroupChatMessagePacket
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
@@ -92,7 +93,7 @@ class DefaultOutboxProcessorTest {
         }
 
     @Test
-    fun groupCreationIsPlaintextEvenForMutualIdentity() =
+    fun groupCreationRequiresEncryptedTransport() =
         runTest {
             val outbox =
                 FakeProtocolOutbox(
@@ -116,9 +117,64 @@ class DefaultOutboxProcessorTest {
             val result = processor.processPending().getOrThrow()
 
             assertEquals(1, result.sentCount)
+            assertEquals(1, cipher.callCount)
+            assertEquals(TransportEncryptionMode.SEALED_BOX, payloadCodec.payloads.single().mode)
+            assertContentEquals(GROUP_PACKET_BYTES, cipher.plaintext)
+        }
+
+    @Test
+    fun groupCreationFailsInsteadOfFallingBackToPlaintext() =
+        runTest {
+            val outbox = FakeProtocolOutbox(listOf(createItem(encodedPacket = GROUP_PACKET_BYTES)))
+            val cipher = RecordingTransportMessageCipher()
+            val payloadCodec = RecordingTransportPayloadCodec()
+            val processor =
+                createProcessor(
+                    outbox = outbox,
+                    contact = createContact(keyExchangeStatus = KeyExchangeStatus.ONE_WAY),
+                    cipher = cipher,
+                    payloadCodec = payloadCodec,
+                    packetCodec = TestPacketCodec()
+                )
+
+            val result = processor.processPending().getOrThrow()
+
+            assertEquals(0, result.sentCount)
+            assertEquals(1, result.failedCount)
+            assertEquals(0, cipher.callCount)
+            assertTrue(payloadCodec.payloads.isEmpty())
+            assertTrue(
+                outbox.failedItems
+                    .single()
+                    .second
+                    .contains("mutual SecureChat key exchange")
+            )
+        }
+
+    @Test
+    fun sharedKeyGroupMessageCanUsePlainOuterTransportWithoutPairwiseIdentity() =
+        runTest {
+            val outbox =
+                FakeProtocolOutbox(
+                    listOf(createItem(encodedPacket = GROUP_MESSAGE_PACKET_BYTES))
+                )
+            val cipher = RecordingTransportMessageCipher()
+            val payloadCodec = RecordingTransportPayloadCodec()
+            val processor =
+                createProcessor(
+                    outbox = outbox,
+                    contact = createContact(keyExchangeStatus = KeyExchangeStatus.ONE_WAY),
+                    cipher = cipher,
+                    payloadCodec = payloadCodec,
+                    packetCodec = TestPacketCodec()
+                )
+
+            val result = processor.processPending().getOrThrow()
+
+            assertEquals(1, result.sentCount)
             assertEquals(0, cipher.callCount)
             assertEquals(TransportEncryptionMode.PLAINTEXT, payloadCodec.payloads.single().mode)
-            assertContentEquals(GROUP_PACKET_BYTES, payloadCodec.payloads.single().payload)
+            assertContentEquals(GROUP_MESSAGE_PACKET_BYTES, payloadCodec.payloads.single().payload)
         }
 
     @Test
@@ -317,6 +373,7 @@ class DefaultOutboxProcessorTest {
                         groupId = "group-1",
                         title = "Group",
                         createdAtEpochMilliseconds = 1L,
+                        epoch = 1,
                         members =
                             listOf(
                                 GroupMemberPayload(
@@ -333,7 +390,22 @@ class DefaultOutboxProcessorTest {
                                     role = "MEMBER",
                                     phoneNumber = "+491701234568"
                                 )
-                            )
+                            ),
+                        wrappedGroupKey = byteArrayOf(5),
+                        ownerSignature = byteArrayOf(6)
+                    )
+                )
+            } else if (encodedPacket.contentEquals(GROUP_MESSAGE_PACKET_BYTES)) {
+                Result.success(
+                    GroupChatMessagePacket(
+                        packetId = "group-message-packet",
+                        groupId = "group-1",
+                        epoch = 1,
+                        messageId = "group-message-1",
+                        sentAtEpochMilliseconds = 1L,
+                        nonce = byteArrayOf(1),
+                        ciphertext = byteArrayOf(2),
+                        senderSignature = byteArrayOf(3)
                     )
                 )
             } else {
@@ -432,6 +504,7 @@ class DefaultOutboxProcessorTest {
     private companion object {
         val ENCODED_PACKET = byteArrayOf(1, 2, 3)
         val GROUP_PACKET_BYTES = byteArrayOf(4, 5, 6)
+        val GROUP_MESSAGE_PACKET_BYTES = byteArrayOf(7, 8, 9)
         val REMOTE_ENCRYPTION_KEY = byteArrayOf(10, 11, 12)
     }
 }

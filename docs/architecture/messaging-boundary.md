@@ -12,8 +12,10 @@ The detailed runtime trace is in
 | Concern | Owner | Main classes |
 |---|---|---|
 | Conversation and message behavior | `:feature:chats` | `DefaultChatsRepository`, `DirectConversationStore` |
+| Group invitation consent and activation | `:feature:chats` | `GroupInvitationCoordinator`, `GroupInvitationManager`, `GroupInvitationDao`, `GroupMessageSender` |
+| Group epoch security | `:feature:chats` | `GroupSecurityManager`, `GroupProtocolPayloadEncoder`, `AndroidGroupKeyStorage` |
 | User-visible delivery state | `:feature:chats` | `MessageDeliveryStateMachine`, `MessageDeliveryStateCoordinator` |
-| Incoming packet behavior | Feature that understands the packet | `ChatMessagePacketHandler`, `GroupCreatedPacketHandler`, `IdentityPacketHandler` |
+| Incoming packet behavior | Feature that understands the packet | `ChatMessagePacketHandler`, group invite/join/decline/welcome/ready handlers, `IdentityPacketHandler` |
 | Packet model and dispatch contracts | `:core:protocol` | `SecureChatPacket`, `PacketCodec`, `ProtocolPacketHandler`, `TypedProtocolPacketHandler` |
 | Persistent outgoing queue contract | `:core:protocol` | `ProtocolOutbox`, `OutboxStateMachine` |
 | Persistent outgoing queue implementation | `:data:database` | `DefaultProtocolOutbox`, `ProtocolOutboxDao` |
@@ -120,6 +122,8 @@ ports. Data classes implement those ports using contacts, Room, or transport.
 Place new code according to the decision it makes:
 
 - If it decides what a chat action means, put it in `:feature:chats`.
+- If it manages group epochs, membership key snapshots, or group payload authentication, put it in
+  `:feature:chats/data/security`.
 - If it decides what a contact or identity exchange means, put it in `:feature:contacts`.
 - If it coordinates persisted packets, crypto, addressing, and the wire, put it in
   `:feature:messaging`.

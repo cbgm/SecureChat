@@ -46,7 +46,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -66,6 +65,8 @@ import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.chats.domain.model.ChatMessage
 import com.cbgm.securechat.feature.chats.domain.model.ContactSecurityState
+import com.cbgm.securechat.feature.chats.domain.model.GroupConversationState
+import com.cbgm.securechat.feature.chats.domain.model.GroupMemberInvitationStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
@@ -89,6 +90,26 @@ import com.cbgm.securechat.resources.feature_chats_decryption_failed
 import com.cbgm.securechat.resources.feature_chats_delivered
 import com.cbgm.securechat.resources.feature_chats_encrypted
 import com.cbgm.securechat.resources.feature_chats_failed
+import com.cbgm.securechat.resources.feature_chats_group_accept
+import com.cbgm.securechat.resources.feature_chats_group_decline
+import com.cbgm.securechat.resources.feature_chats_group_invitation_description
+import com.cbgm.securechat.resources.feature_chats_group_invitation_title
+import com.cbgm.securechat.resources.feature_chats_group_member_accepted
+import com.cbgm.securechat.resources.feature_chats_group_member_active
+import com.cbgm.securechat.resources.feature_chats_group_member_count
+import com.cbgm.securechat.resources.feature_chats_group_member_declined
+import com.cbgm.securechat.resources.feature_chats_group_member_expired
+import com.cbgm.securechat.resources.feature_chats_group_member_failed
+import com.cbgm.securechat.resources.feature_chats_group_member_invited
+import com.cbgm.securechat.resources.feature_chats_group_member_key_sent
+import com.cbgm.securechat.resources.feature_chats_group_message_queued
+import com.cbgm.securechat.resources.feature_chats_group_status_declined
+import com.cbgm.securechat.resources.feature_chats_group_status_distributing
+import com.cbgm.securechat.resources.feature_chats_group_status_expired
+import com.cbgm.securechat.resources.feature_chats_group_status_failed
+import com.cbgm.securechat.resources.feature_chats_group_status_invited
+import com.cbgm.securechat.resources.feature_chats_group_status_joining
+import com.cbgm.securechat.resources.feature_chats_group_status_waiting
 import com.cbgm.securechat.resources.feature_chats_invalid_message_packet
 import com.cbgm.securechat.resources.feature_chats_invalid_packet
 import com.cbgm.securechat.resources.feature_chats_invalid_plaintext
@@ -117,6 +138,8 @@ fun ChatScreen(
     onRetryMessage: (String) -> Unit,
     onVerifyIdentity: () -> Unit,
     onBack: () -> Unit,
+    onAcceptGroupInvitation: () -> Unit = {},
+    onDeclineGroupInvitation: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     SecureChatLazyScaffold(
@@ -135,6 +158,8 @@ fun ChatScreen(
                 containerColor = containerColor,
                 onClickHeader = onClickHeader,
                 onVerifyIdentity = onVerifyIdentity,
+                onAcceptGroupInvitation = onAcceptGroupInvitation,
+                onDeclineGroupInvitation = onDeclineGroupInvitation,
                 onBack = onBack
             )
         },
@@ -163,6 +188,8 @@ private fun ChatTopBar(
     containerColor: Color,
     onClickHeader: () -> Unit,
     onVerifyIdentity: () -> Unit,
+    onAcceptGroupInvitation: () -> Unit,
+    onDeclineGroupInvitation: () -> Unit,
     onBack: () -> Unit
 ) {
     Column(
@@ -206,9 +233,15 @@ private fun ChatTopBar(
                             overflow = TextOverflow.Ellipsis
                         )
 
-                        if (uiState.subtitle.isNotBlank()) {
+                        val subtitle =
+                            if (uiState.isGroup) {
+                                groupSubtitle(uiState)
+                            } else {
+                                uiState.subtitle
+                            }
+                        if (subtitle.isNotBlank()) {
                             Text(
-                                text = uiState.subtitle,
+                                text = subtitle,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                                 maxLines = 1,
@@ -239,8 +272,129 @@ private fun ChatTopBar(
         uiState.errorMessage?.let { message ->
             ErrorMessage(message = message)
         }
+
+        if (uiState.showGroupInvitationActions) {
+            GroupInvitationBanner(
+                onAccept = onAcceptGroupInvitation,
+                onDecline = onDeclineGroupInvitation
+            )
+        } else if (
+            uiState.isGroup &&
+            uiState.groupState != GroupConversationState.READY &&
+            uiState.isMessageInputEnabled
+        ) {
+            PendingGroupMessageHint(uiState)
+        }
     }
 }
+
+@Composable
+private fun groupSubtitle(uiState: ChatUiState): String =
+    when (uiState.groupState) {
+        GroupConversationState.READY ->
+            stringResource(Res.string.feature_chats_group_member_count, uiState.groupMemberCount)
+        GroupConversationState.INVITED ->
+            stringResource(Res.string.feature_chats_group_status_invited)
+        GroupConversationState.JOINING ->
+            stringResource(Res.string.feature_chats_group_status_joining)
+        GroupConversationState.WAITING_FOR_MEMBERS ->
+            stringResource(Res.string.feature_chats_group_status_waiting, uiState.groupPendingCount)
+        GroupConversationState.DISTRIBUTING_KEYS ->
+            stringResource(Res.string.feature_chats_group_status_distributing, uiState.groupPendingCount)
+        GroupConversationState.DECLINED ->
+            stringResource(Res.string.feature_chats_group_status_declined)
+        GroupConversationState.EXPIRED ->
+            stringResource(Res.string.feature_chats_group_status_expired)
+        GroupConversationState.FAILED ->
+            stringResource(Res.string.feature_chats_group_status_failed)
+    }
+
+@Composable
+private fun GroupInvitationBanner(
+    onAccept: () -> Unit,
+    onDecline: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(MaterialTheme.spacing.medium)
+        ) {
+            Text(
+                text = stringResource(Res.string.feature_chats_group_invitation_title),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = stringResource(Res.string.feature_chats_group_invitation_description),
+                style = MaterialTheme.typography.bodySmall
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onDecline) {
+                    Text(stringResource(Res.string.feature_chats_group_decline))
+                }
+                TextButton(onClick = onAccept) {
+                    Text(stringResource(Res.string.feature_chats_group_accept))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PendingGroupMessageHint(uiState: ChatUiState) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = MaterialTheme.spacing.medium,
+                        vertical = MaterialTheme.spacing.small
+                    )
+        ) {
+            Text(
+                text = stringResource(Res.string.feature_chats_group_message_queued),
+                style = MaterialTheme.typography.bodySmall
+            )
+            uiState.groupMemberProgress.forEach { member ->
+                Text(
+                    text = "${member.displayName} · ${groupMemberStatus(member.status)}",
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun groupMemberStatus(status: GroupMemberInvitationStatus): String =
+    when (status) {
+        GroupMemberInvitationStatus.INVITED ->
+            stringResource(Res.string.feature_chats_group_member_invited)
+        GroupMemberInvitationStatus.ACCEPTED ->
+            stringResource(Res.string.feature_chats_group_member_accepted)
+        GroupMemberInvitationStatus.KEY_SENT ->
+            stringResource(Res.string.feature_chats_group_member_key_sent)
+        GroupMemberInvitationStatus.ACTIVE ->
+            stringResource(Res.string.feature_chats_group_member_active)
+        GroupMemberInvitationStatus.DECLINED ->
+            stringResource(Res.string.feature_chats_group_member_declined)
+        GroupMemberInvitationStatus.EXPIRED ->
+            stringResource(Res.string.feature_chats_group_member_expired)
+        GroupMemberInvitationStatus.FAILED ->
+            stringResource(Res.string.feature_chats_group_member_failed)
+    }
 
 @Composable
 private fun ChatBottomBar(
@@ -282,7 +436,7 @@ private fun ChatBottomBar(
             value = uiState.messageText,
             onValueChange = onMessageTextChanged,
             onSendClick = onSendClick,
-            enabled = !uiState.isLoadingContact
+            enabled = !uiState.isLoadingContact && uiState.isMessageInputEnabled
         )
     }
 }
@@ -487,14 +641,6 @@ private fun MessageList(
     bottomPadding: Dp,
     modifier: Modifier = Modifier
 ) {
-    val newestMessage = messages.firstOrNull()
-
-    LaunchedEffect(newestMessage?.id) {
-        if (newestMessage?.isMine == true) {
-            listState.animateScrollToItem(index = 0)
-        }
-    }
-
     LazyColumn(
         modifier = modifier,
         state = listState,

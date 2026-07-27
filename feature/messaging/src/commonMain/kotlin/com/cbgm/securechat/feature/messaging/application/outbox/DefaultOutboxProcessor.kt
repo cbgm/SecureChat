@@ -118,7 +118,7 @@ class DefaultOutboxProcessor(
             createTransportPayload(
                 encodedPacket = item.encodedPacket,
                 contact = contact,
-                forcePlaintext = item.encodedPacket.isGroupCreatedPacket()
+                requiresEncryption = item.encodedPacket.requiresEncryption()
             )
 
         val encodedTransportPayload = transportPayloadCodec.encode(payload = transportPayload)
@@ -147,18 +147,10 @@ class DefaultOutboxProcessor(
     private suspend fun createTransportPayload(
         encodedPacket: ByteArray,
         contact: Contact,
-        forcePlaintext: Boolean
+        requiresEncryption: Boolean
     ): EncryptedTransportPayload {
         require(encodedPacket.isNotEmpty()) {
             "Encoded protocol packet must not be empty"
-        }
-
-        if (forcePlaintext) {
-            return EncryptedTransportPayload(
-                version = TRANSPORT_VERSION,
-                mode = TransportEncryptionMode.PLAINTEXT,
-                payload = encodedPacket
-            )
         }
 
         val identity = contact.secureChatIdentity
@@ -169,6 +161,10 @@ class DefaultOutboxProcessor(
                 identity.keyExchangeStatus == KeyExchangeStatus.MUTUAL
 
         if (!canEncrypt) {
+            check(!requiresEncryption) {
+                "Group packets require a mutual SecureChat key exchange"
+            }
+
             return EncryptedTransportPayload(
                 version = TRANSPORT_VERSION,
                 mode = TransportEncryptionMode.PLAINTEXT,
@@ -183,7 +179,12 @@ class DefaultOutboxProcessor(
             ).getOrThrow()
     }
 
-    private fun ByteArray.isGroupCreatedPacket(): Boolean = packetCodec.decode(this).getOrNull() is GroupCreatedPacket
+    private fun ByteArray.requiresEncryption(): Boolean =
+        when (packetCodec.decode(this).getOrNull()) {
+            is GroupCreatedPacket -> true
+
+            else -> false
+        }
 
     private companion object {
         const val TRANSPORT_VERSION = 1

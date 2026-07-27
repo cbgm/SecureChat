@@ -2,28 +2,30 @@ package com.cbgm.securechat.feature.chats.data.repository
 
 import com.cbgm.securechat.core.crypto.transport.TransportEncryptionMode
 import com.cbgm.securechat.core.id.IdGenerator
-import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentityProvider
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.packet.ChatMessagePacket
-import com.cbgm.securechat.core.protocol.packet.GroupChatMessagePacket
-import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
-import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
 import com.cbgm.securechat.core.protocol.packet.ReadReceiptPacket
 import com.cbgm.securechat.core.protocol.phone.LocalPhoneNumberProvider
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
+import com.cbgm.securechat.data.database.dao.GroupInvitationDao
 import com.cbgm.securechat.data.database.dao.MessageRecipientStateDao
-import com.cbgm.securechat.data.database.entity.ConversationEntity
-import com.cbgm.securechat.data.database.entity.ConversationParticipantEntity
 import com.cbgm.securechat.data.database.entity.MessageEntity
 import com.cbgm.securechat.data.database.entity.MessageRecipientStateEntity
 import com.cbgm.securechat.data.database.model.ConversationSummary
 import com.cbgm.securechat.data.database.model.ConversationWithMessages
 import com.cbgm.securechat.feature.chats.data.conversation.DirectConversationStore
 import com.cbgm.securechat.feature.chats.data.delivery.MessageDeliveryStateCoordinator
+import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationCoordinator
+import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationStateMapper
+import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationStatus
+import com.cbgm.securechat.feature.chats.data.message.GroupMessageSender
+import com.cbgm.securechat.feature.chats.data.security.GROUP_END_TO_END_ENCRYPTED_MODE
 import com.cbgm.securechat.feature.chats.domain.model.ChatMessage
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
 import com.cbgm.securechat.feature.chats.domain.model.GroupConversation
+import com.cbgm.securechat.feature.chats.domain.model.GroupConversationState
+import com.cbgm.securechat.feature.chats.domain.model.GroupMemberInvitationState
 import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryEvent
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryProgress
@@ -44,9 +46,11 @@ class DefaultChatsRepository(
     private val directConversationStore: DirectConversationStore,
     private val deliveryStateCoordinator: MessageDeliveryStateCoordinator,
     private val getContact: GetContact,
-    private val localPublicIdentityProvider: LocalPublicIdentityProvider,
     private val localPhoneNumberProvider: LocalPhoneNumberProvider,
-    private val protocolOutbox: ProtocolOutbox
+    private val protocolOutbox: ProtocolOutbox,
+    private val groupInvitationDao: GroupInvitationDao,
+    private val groupInvitationCoordinator: GroupInvitationCoordinator,
+    private val groupMessageSender: GroupMessageSender
 ) : ChatsRepository {
     override fun observeConversations(): Flow<List<Conversation>> =
         chatDao.observeConversationSummaries().map { summaries ->
@@ -59,11 +63,22 @@ class DefaultChatsRepository(
         combine(
             chatDao.observeConversationWithMessagesById(conversationId),
             chatDao.observeConversationParticipants(conversationId),
-            messageRecipientStateDao.observeByConversationId(conversationId)
-        ) { result, participants, recipientStates ->
+            messageRecipientStateDao.observeByConversationId(conversationId),
+            groupInvitationDao.observeByGroupId(conversationId)
+        ) { result, participants, recipientStates, invitations ->
+            val pendingParticipantCount =
+                invitations.count { invitation ->
+                    invitation.status != GroupInvitationStatus.ACTIVE.name
+                }
+            val groupState = GroupInvitationStateMapper.conversationState(invitations)
             result?.toDomain(
                 participantContactIds = participants.map { it.contactId },
-                recipientStates = recipientStates
+                recipientStates = recipientStates,
+                pendingParticipantCount = pendingParticipantCount,
+                isGroupReady = groupState == GroupConversationState.READY,
+                groupState = groupState,
+                isIncomingGroupInvitation = GroupInvitationStateMapper.isIncoming(invitations),
+                groupMemberInvitationStates = GroupInvitationStateMapper.memberStates(invitations)
             )
         }
 
@@ -72,182 +87,42 @@ class DefaultChatsRepository(
     override suspend fun createGroupConversation(
         title: String,
         contactIds: Set<String>
-    ): String {
-        val normalizedTitle = title.trim()
-        require(normalizedTitle.isNotEmpty()) { "Group title must not be blank" }
-        require(contactIds.size >= MIN_GROUP_PARTICIPANT_COUNT) { "A group requires at least one contact" }
-
-        val contacts =
-            contactIds.map { contactId ->
-                getContact(contactId).getOrThrow() ?: error("Contact was not found: $contactId")
-            }
-        val localIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
-        val localPhoneNumber = localPhoneNumberProvider.getLocalPhoneNumber().getOrThrow()
-        val now = SystemClock.nowEpochMilliseconds()
-        val conversationId = IdGenerator.generate(prefix = "group")
-        val conversation =
-            ConversationEntity(
-                id = conversationId,
-                contactId = null,
-                type = GROUP_CONVERSATION_TYPE,
-                title = normalizedTitle,
-                createdAtEpochMilliseconds = now,
-                updatedAtEpochMilliseconds = now
-            )
-        val participants =
-            contacts.map { contact ->
-                ConversationParticipantEntity(
-                    conversationId = conversationId,
-                    contactId = contact.id,
-                    role = GROUP_MEMBER_ROLE,
-                    joinedAtEpochMilliseconds = now
-                )
-            }
-        val memberPayloads =
-            buildList {
-                add(
-                    GroupMemberPayload(
-                        displayName = null,
-                        encryptionPublicKey = localIdentity.encryptionPublicKey,
-                        signingPublicKey = localIdentity.signingPublicKey,
-                        role = GROUP_OWNER_ROLE,
-                        phoneNumber = localPhoneNumber
-                    )
-                )
-                contacts.forEach { contact ->
-                    val phoneNumber =
-                        contact.preferredPhoneNumber?.value
-                            ?: contact.phoneNumbers.firstOrNull()?.value
-                            ?: error("Contact has no phone number: ${contact.id}")
-                    val identity = contact.secureChatIdentity
-
-                    add(
-                        GroupMemberPayload(
-                            displayName = null,
-                            encryptionPublicKey = identity?.encryptionPublicKey ?: byteArrayOf(),
-                            signingPublicKey = identity?.signingPublicKey ?: byteArrayOf(),
-                            role = GROUP_MEMBER_ROLE,
-                            phoneNumber = phoneNumber
-                        )
-                    )
-                }
-            }
-
-        chatDao.createGroupConversation(conversation, participants)
-
-        contacts.forEach { contact ->
-            protocolOutbox
-                .enqueue(
-                    contactId = contact.id,
-                    packet =
-                        GroupCreatedPacket(
-                            packetId = IdGenerator.generate(prefix = "group-created-packet"),
-                            groupId = conversationId,
-                            title = normalizedTitle,
-                            createdAtEpochMilliseconds = now,
-                            members = memberPayloads
-                        )
-                ).getOrThrow()
-        }
-
-        return conversationId
-    }
+    ): String = groupInvitationCoordinator.createGroup(title, contactIds).getOrThrow()
 
     override fun observeGroupConversation(conversationId: String): Flow<GroupConversation?> =
         combine(
             chatDao.observeConversationById(conversationId),
-            chatDao.observeConversationParticipants(conversationId)
-        ) { conversation, participants ->
+            chatDao.observeConversationParticipants(conversationId),
+            groupInvitationDao.observeByGroupId(conversationId)
+        ) { conversation, participants, invitations ->
             if (conversation == null || conversation.type != GROUP_CONVERSATION_TYPE) {
                 null
             } else {
                 GroupConversation(
                     id = conversation.id,
                     title = conversation.title.orEmpty(),
-                    participantContactIds = participants.map { it.contactId }
+                    participantContactIds = participants.map { it.contactId },
+                    pendingParticipantContactIds =
+                        invitations
+                            .filter { it.status != GroupInvitationStatus.ACTIVE.name }
+                            .map { it.contactId }
                 )
             }
         }
+
+    override suspend fun acceptGroupInvitation(conversationId: String): Result<Unit> = groupInvitationCoordinator.acceptInvitation(conversationId)
+
+    override suspend fun declineGroupInvitation(conversationId: String): Result<Unit> = groupInvitationCoordinator.declineInvitation(conversationId)
 
     override suspend fun sendGroupMessage(
         conversationId: String,
         text: String
     ): Result<Unit> =
-        runCatching {
-            val normalizedText = text.trim()
-            require(normalizedText.isNotEmpty()) { "Message text must not be blank" }
-
-            val conversation =
-                chatDao.findConversationById(conversationId)
-                    ?: error("Group conversation was not found")
-            check(conversation.type == GROUP_CONVERSATION_TYPE) { "Conversation is not a group" }
-
-            val participants = chatDao.findConversationParticipants(conversationId)
-            check(participants.isNotEmpty()) { "Group has no participants" }
-
-            val now = SystemClock.nowEpochMilliseconds()
-            val messageId = IdGenerator.generate(prefix = "group-message")
-            val localIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
-            val localPhoneNumber = localPhoneNumberProvider.getLocalPhoneNumber().getOrThrow()
-            val packets =
-                participants.associateWith { participant ->
-                    GroupChatMessagePacket(
-                        packetId = IdGenerator.generate(prefix = "group-message-packet"),
-                        groupId = conversationId,
-                        messageId = messageId,
-                        sentAtEpochMilliseconds = now,
-                        text = normalizedText,
-                        senderSigningPublicKey = localIdentity.signingPublicKey.copyOf(),
-                        senderPhoneNumber = localPhoneNumber
-                    )
-                }
-            val recipientStates =
-                packets.map { (participant, packet) ->
-                    MessageRecipientStateEntity(
-                        messageId = messageId,
-                        contactId = participant.contactId,
-                        packetId = packet.packetId,
-                        deliveryStatus = MessageDeliveryStatus.QUEUED.name,
-                        lastError = null,
-                        updatedAtEpochMilliseconds = now
-                    )
-                }
-
-            chatDao.upsertOutgoingGroupMessage(
-                message =
-                    MessageEntity(
-                        id = messageId,
-                        conversationId = conversationId,
-                        packetId = null,
-                        text = normalizedText,
-                        transportPayload = null,
-                        transportMode = TransportEncryptionMode.SEALED_BOX.name,
-                        contentStatus = MessageContentStatus.READABLE.name,
-                        deliveryStatus = MessageDeliveryStatus.QUEUED.name,
-                        senderContactId = null,
-                        isMine = true,
-                        createdAtEpochMilliseconds = now
-                    ),
-                recipientStates = recipientStates,
-                timestamp = now
-            )
-
-            packets.forEach { (participant, packet) ->
-                val enqueueResult = protocolOutbox.enqueue(participant.contactId, packet)
-
-                if (enqueueResult.isFailure) {
-                    val error = enqueueResult.exceptionOrNull()
-
-                    deliveryStateCoordinator.applyPacketEvent(
-                        packetId = packet.packetId,
-                        event = MessageDeliveryEvent.SEND_FAILED,
-                        errorMessage = error?.message
-                    )
-
-                    throw error ?: IllegalStateException("Group message could not be queued")
-                }
-            }
-        }
+        groupMessageSender.queueOrSend(
+            conversationId = conversationId,
+            text = text,
+            invitations = groupInvitationDao.findByGroupId(conversationId)
+        )
 
     override suspend fun sendMessage(
         conversationId: String,
@@ -426,7 +301,12 @@ class DefaultChatsRepository(
 
     private fun ConversationWithMessages.toDomain(
         participantContactIds: List<String> = emptyList(),
-        recipientStates: List<MessageRecipientStateEntity> = emptyList()
+        recipientStates: List<MessageRecipientStateEntity> = emptyList(),
+        pendingParticipantCount: Int = 0,
+        isGroupReady: Boolean = true,
+        groupState: GroupConversationState = GroupConversationState.READY,
+        isIncomingGroupInvitation: Boolean = false,
+        groupMemberInvitationStates: List<GroupMemberInvitationState> = emptyList()
     ): Conversation {
         val isGroup = conversation.type == GROUP_CONVERSATION_TYPE
         val contactId = conversation.contactId.orEmpty()
@@ -452,7 +332,12 @@ class DefaultChatsRepository(
                         message.contentStatus == MessageContentStatus.READABLE.name
                 },
             isGroup = isGroup,
-            participantContactIds = participantContactIds
+            participantContactIds = participantContactIds,
+            pendingParticipantCount = pendingParticipantCount,
+            isGroupReady = isGroupReady,
+            groupState = groupState,
+            isIncomingGroupInvitation = isIncomingGroupInvitation,
+            groupMemberInvitationStates = groupMemberInvitationStates
         )
     }
 
@@ -534,7 +419,10 @@ class DefaultChatsRepository(
     }
 
     private fun String.toMessageSecurity(): MessageSecurity =
-        if (this == TransportEncryptionMode.SEALED_BOX.name) {
+        if (
+            this == TransportEncryptionMode.SEALED_BOX.name ||
+            this == GROUP_END_TO_END_ENCRYPTED_MODE
+        ) {
             MessageSecurity.END_TO_END_ENCRYPTED
         } else {
             MessageSecurity.INSECURE
@@ -553,8 +441,5 @@ class DefaultChatsRepository(
     private companion object {
         const val DIRECT_CONVERSATION_TYPE = "DIRECT"
         const val GROUP_CONVERSATION_TYPE = "GROUP"
-        const val GROUP_OWNER_ROLE = "OWNER"
-        const val GROUP_MEMBER_ROLE = "MEMBER"
-        const val MIN_GROUP_PARTICIPANT_COUNT = 1
     }
 }

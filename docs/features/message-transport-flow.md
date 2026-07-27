@@ -109,24 +109,67 @@ The visible message is stored before the outbox row. If enqueue fails,
 
 ### Group creation
 
-`CreateGroupConversation` calls `DefaultChatsRepository.createGroupConversation()`. The repository
-creates the local group and participants, builds a `GroupCreatedPacket` containing
-`GroupMemberPayload` entries, and enqueues one packet per contact.
+`CreateGroupConversation` calls `DefaultChatsRepository.createGroupConversation()`, which delegates
+to `GroupInvitationCoordinator.createGroup()`. The coordinator creates a local pending group and a
+`GroupInvitationEntity` for every selected contact.
 
-`DefaultOutboxProcessor` deliberately forces `GroupCreatedPacket` to
-`TransportEncryptionMode.PLAINTEXT`, even if the recipient already has a mutual identity. This is
-the current implementation rule; changing it requires an explicit protocol compatibility decision.
+For every selected contact, the coordinator:
+
+1. creates a random invitation challenge with `GroupInvitationManager`;
+2. signs a `GroupInvitePacket` containing the owner's public identity but no group key;
+3. sends it to the contact's phone-derived relay ID;
+4. lets `GroupInvitePacketHandler` verify it and persist a recipient-side group in
+   `AWAITING_ACCEPTANCE`;
+5. waits until `AcceptGroupInvitation` explicitly creates the signed `GroupJoinRequestPacket`;
+6. verifies that join on the creator and stores the discovered identity as mutual but unverified;
+7. changes the creator-side row from `INVITE_SENT` to `IDENTITY_READY`.
+
+Known identities still receive an invitation because knowing a key is not consent to join a
+group. Only when every selected contact has accepted does `GroupInvitationCoordinator` call
+`GroupSecurityManager.createOwnedGroup()`.
+
+`GroupSecurityManager`:
+
+1. generates a random epoch-1 key through `GroupCrypto.generateGroupKey()`;
+2. saves it through `GroupKeyStorage`;
+3. snapshots remote member keys through `GroupSecurityDao`;
+4. wraps the same key separately for every recipient with `GroupCrypto.wrapGroupKey()`;
+5. signs each canonical welcome from `GroupProtocolPayloadEncoder.encodeWelcome()`;
+6. returns one deterministic `GroupCreatedPacket` per contact.
+
+Only `wrappedGroupKey` enters the persistent outbox. `DefaultOutboxProcessor` requires
+`SEALED_BOX` transport for `GroupCreatedPacket` and fails instead of falling back to plaintext.
+Invitation packets may use plaintext outer transport because their signatures protect integrity
+and they never contain a group key or message content.
+
+Receiving the welcome is not assumed to mean the member is ready. `GroupCreatedPacketHandler`
+verifies and persists the key first, then signs and queues `GroupReadyAcknowledgementPacket`. Its
+SHA-256 key-confirmation field is derived from the group ID, epoch, and recovered 256-bit key.
+`GroupReadyAcknowledgementPacketHandler` changes the creator-side member row from `WELCOME_SENT`
+to `ACTIVE` only after the creator recomputes the same confirmation. Only when every row is
+`ACTIVE` may queued group content fan out.
 
 ### Group message
 
-`SendGroupMessage` calls `DefaultChatsRepository.sendGroupMessage()`. The repository:
+`SendGroupMessage` calls `DefaultChatsRepository.sendGroupMessage()`, which delegates to
+`GroupMessageSender.queueOrSend()`.
+
+If the creator is still waiting for accepts or ready acknowledgements, `GroupMessageSender` stores
+only the visible `MessageEntity(QUEUED)`. The input remains disabled for an invitee until
+`GroupCreatedPacketHandler` has installed the welcome. When the group becomes fully active,
+`GroupMessageSender.flushQueued()` processes the creator's stored rows in creation order.
+
+For each active message, `GroupMessageSender`:
 
 1. validates that the conversation is a group;
 2. creates one shared `messageId`;
-3. creates a distinct `GroupChatMessagePacket.packetId` for every participant;
-4. stores one visible `MessageEntity`;
-5. stores one `MessageRecipientStateEntity` per participant;
-6. enqueues each packet for its participant.
+3. calls `GroupSecurityManager.encryptMessage()` once;
+4. binds version, group ID, epoch, message ID, and timestamp as AEAD associated data;
+5. encrypts with XChaCha20-Poly1305 and signs the header, nonce, and ciphertext with Ed25519;
+6. creates a distinct `GroupChatMessagePacket.packetId` for every participant while reusing the
+   authenticated ciphertext;
+7. stores one visible `MessageEntity` and one `MessageRecipientStateEntity` per participant;
+8. enqueues each packet for its participant.
 
 Per-recipient rows are the source of truth for group delivery. The visible message status is
 recomputed by `MessageDeliveryStateMachine.aggregate()`.
@@ -204,7 +247,7 @@ produce no chat-row transition.
 
 | Condition | Mode |
 |---|---|
-| Packet decodes as `GroupCreatedPacket` | `PLAINTEXT` |
+| Packet is `GroupCreatedPacket`, but identity is not mutual | Fail; never plaintext |
 | Contact has no `SecureChatIdentity` | `PLAINTEXT` |
 | Contact encryption key is empty | `PLAINTEXT` |
 | `KeyExchangeStatus` is not `MUTUAL` | `PLAINTEXT` |
@@ -215,6 +258,11 @@ For `SEALED_BOX`, the processor calls
 constructs `EncryptedTransportPayload` directly. Both modes are encoded by
 `TransportPayloadCodec`; therefore “plaintext” means the protocol bytes are not end-to-end
 encrypted, not that raw protocol JSON is placed directly in a WebSocket frame.
+
+`GroupChatMessagePacket` may also use plaintext outer transport because its content is already
+authenticated ciphertext under the shared group epoch key. Incoming and outgoing group messages
+are persisted with transport mode `GROUP_E2EE`, so the UI reports their actual content security
+instead of the optional outer wrapper.
 
 `DefaultChatsRepository.plannedTransportMode()` mirrors the same contact conditions so the UI can
 store the intended mode immediately. `DefaultOutboxProcessor` remains authoritative when the packet
@@ -329,8 +377,12 @@ handler failure is represented as an unreadable stored message instead.
 | `packetType` | Packet class | Handler | Effect |
 |---|---|---|---|
 | `chat_message` | `ChatMessagePacket` | `ChatMessagePacketHandler` | Upsert direct message; queue delivery receipt |
-| `group_created` | `GroupCreatedPacket` | `GroupCreatedPacketHandler` | Create/update group and resolve participants |
-| `group_chat_message` | `GroupChatMessagePacket` | `GroupChatMessagePacketHandler` | Upsert group message; queue delivery receipt |
+| `group_invite` | `GroupInvitePacket` | `GroupInvitePacketHandler` | Verify owner identity proof and persist an invitation awaiting user consent |
+| `group_join_request` | `GroupJoinRequestPacket` | `GroupJoinRequestPacketHandler` | Verify invited contact and challenge, store identity, continue activation |
+| `group_invite_declined` | `GroupInviteDeclinedPacket` | `GroupInviteDeclinedPacketHandler` | Verify the invited contact's signed decline |
+| `group_created` | `GroupCreatedPacket` | `GroupCreatedPacketHandler` | Verify owner, unwrap/persist key, create epoch snapshot, queue ready acknowledgement |
+| `group_ready_acknowledgement` | `GroupReadyAcknowledgementPacket` | `GroupReadyAcknowledgementPacketHandler` | Verify key installation and activate the creator-side member row |
+| `group_chat_message` | `GroupChatMessagePacket` | `GroupChatMessagePacketHandler` | Verify member/signature, decrypt, persist, queue receipt |
 | `delivery_receipt` | `DeliveryReceiptPacket` | `DeliveryReceiptPacketHandler` | Apply `DELIVERY_CONFIRMED` |
 | `read_receipt` | `ReadReceiptPacket` | `ReadReceiptPacketHandler` | Apply `READ_CONFIRMED` |
 | `identity` | `IdentityPacket` | `IdentityPacketHandler` | Store remote identity and queue signed acknowledgement |
@@ -445,8 +497,9 @@ Use this checklist:
    through `ProtocolOutbox`.
 8. Make persistence idempotent by a stable business identifier; do not rely only on relay
    deduplication.
-9. Decide whether the packet follows normal encryption selection. If it needs a special rule like
-   `GroupCreatedPacket`, make that rule explicit and test `DefaultOutboxProcessor`.
+9. Decide whether the packet follows normal encryption selection. If it must never use plaintext,
+   add it to the explicit requirement in `DefaultOutboxProcessor` and test both mutual and
+   non-mutual contacts.
 10. Document its delivery semantics here and in [Protocol](../api/protocol.md).
 
 Do not add a `when` branch to `DefaultProtocolPacketHandler`; registration is polymorphic through
@@ -499,11 +552,16 @@ code.
 
 The repository currently has focused tests for:
 
-- packet encoding in `KotlinxPacketCodecTest` and `GroupCreatedPacketCodecTest`;
+- packet encoding in `KotlinxPacketCodecTest`, `GroupInvitationPacketCodecTest`,
+  `GroupCreatedPacketCodecTest`, and `GroupChatMessagePacketCodecTest`;
 - outbox transitions in `OutboxStateMachineTest`;
 - visible delivery transitions and aggregation in `MessageDeliveryStateMachineTest`;
 - transport payload codec in `DefaultTransportPayloadCodecTest`;
-- device crypto in `SodiumTransportMessageCipherTest`.
+- device crypto in `SodiumTransportMessageCipherTest` and `SodiumGroupCryptoTest`;
+- canonical group authentication data in `GroupProtocolPayloadEncoderTest`;
+- invitation signing and verification in `GroupInvitationManagerTest`;
+- group security orchestration in `GroupSecurityManagerTest`;
+- protected epoch-key persistence in `AndroidGroupKeyStorageTest`.
 
 New orchestration behavior should add tests around `DefaultOutboxProcessor`,
 `DefaultOutboxRunner`, `DefaultIncomingRelayRunner`, typed handlers, and relay acknowledgement

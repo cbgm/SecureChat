@@ -10,9 +10,9 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `core` |
 | Directory | `core/crypto` |
 | Build file | `core/crypto/build.gradle.kts` |
-| Kotlin files | 28 |
-| Production Kotlin files | 24 |
-| Test Kotlin files | 4 |
+| Kotlin files | 32 |
+| Production Kotlin files | 27 |
+| Test Kotlin files | 5 |
 | Resource files | 1 |
 | Direct dependencies | 0 |
 | Direct dependents | 5 |

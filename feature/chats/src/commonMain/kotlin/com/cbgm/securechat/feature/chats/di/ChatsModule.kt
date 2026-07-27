@@ -6,15 +6,26 @@ import com.cbgm.securechat.core.protocol.outbox.OutboxDeliveryStateListener
 import com.cbgm.securechat.feature.chats.data.conversation.DirectConversationStore
 import com.cbgm.securechat.feature.chats.data.delivery.MessageDeliveryStateCoordinator
 import com.cbgm.securechat.feature.chats.data.incoming.IncomingMessageProcessor
+import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationCoordinator
+import com.cbgm.securechat.feature.chats.data.message.GroupMessageSender
 import com.cbgm.securechat.feature.chats.data.outbox.ChatOutboxDeliveryStateListener
 import com.cbgm.securechat.feature.chats.data.protocol.ChatMessagePacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.DeliveryReceiptPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupChatMessagePacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupCreatedPacketHandler
+import com.cbgm.securechat.feature.chats.data.protocol.GroupInviteDeclinedPacketHandler
+import com.cbgm.securechat.feature.chats.data.protocol.GroupInvitePacketHandler
+import com.cbgm.securechat.feature.chats.data.protocol.GroupJoinRequestPacketHandler
+import com.cbgm.securechat.feature.chats.data.protocol.GroupReadyAcknowledgementPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.ReadReceiptPacketHandler
 import com.cbgm.securechat.feature.chats.data.repository.DefaultChatsRepository
+import com.cbgm.securechat.feature.chats.data.security.GroupInvitationManager
+import com.cbgm.securechat.feature.chats.data.security.GroupProtocolPayloadEncoder
+import com.cbgm.securechat.feature.chats.data.security.GroupSecurityManager
 import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
+import com.cbgm.securechat.feature.chats.domain.usecase.AcceptGroupInvitation
 import com.cbgm.securechat.feature.chats.domain.usecase.CreateGroupConversation
+import com.cbgm.securechat.feature.chats.domain.usecase.DeclineGroupInvitation
 import com.cbgm.securechat.feature.chats.domain.usecase.GetOrCreateDirectConversation
 import com.cbgm.securechat.feature.chats.domain.usecase.MarkConversationRead
 import com.cbgm.securechat.feature.chats.domain.usecase.ObserveConversation
@@ -43,6 +54,11 @@ val chatsModule =
 
         singleOf(::MessageDeliveryStateCoordinator)
         singleOf(::DirectConversationStore)
+        singleOf(::GroupProtocolPayloadEncoder)
+        singleOf(::GroupInvitationManager)
+        singleOf(::GroupSecurityManager)
+        singleOf(::GroupMessageSender)
+        singleOf(::GroupInvitationCoordinator)
         singleOf(::IncomingMessageProcessor) {
             bind<IncomingMessageHandler>()
         }
@@ -63,6 +79,22 @@ val chatsModule =
             bind<TypedProtocolPacketHandler>()
         }
 
+        singleOf(::GroupInvitePacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
+        singleOf(::GroupJoinRequestPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
+        singleOf(::GroupInviteDeclinedPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
+        singleOf(::GroupReadyAcknowledgementPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
         singleOf(::GroupChatMessagePacketHandler) {
             bind<TypedProtocolPacketHandler>()
         }
@@ -73,7 +105,9 @@ val chatsModule =
             )
         }
 
+        single { AcceptGroupInvitation(repository = get()) }
         single { CreateGroupConversation(repository = get()) }
+        single { DeclineGroupInvitation(repository = get()) }
         single { GetOrCreateDirectConversation(repository = get()) }
         single { MarkConversationRead(repository = get()) }
         single { ObserveConversation(repository = get()) }
@@ -92,9 +126,11 @@ val chatsModule =
                 directConversationStore = get(),
                 deliveryStateCoordinator = get(),
                 getContact = get(),
-                localPublicIdentityProvider = get(),
                 localPhoneNumberProvider = get(),
-                protocolOutbox = get()
+                protocolOutbox = get(),
+                groupInvitationDao = get(),
+                groupInvitationCoordinator = get(),
+                groupMessageSender = get()
             )
         }
 
@@ -113,6 +149,8 @@ val chatsModule =
                 sendGroupMessage = get(),
                 markConversationReadUseCase = get(),
                 retryMessageUseCase = get(),
+                acceptGroupInvitation = get(),
+                declineGroupInvitation = get(),
                 observeContacts = get<ObserveContacts>(),
                 observeTypingIndicator = get(),
                 setTypingIndicator = get()

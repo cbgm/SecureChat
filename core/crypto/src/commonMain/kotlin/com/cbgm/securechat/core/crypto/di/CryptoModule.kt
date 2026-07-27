@@ -1,5 +1,7 @@
 package com.cbgm.securechat.core.crypto.di
 
+import com.cbgm.securechat.core.crypto.group.GroupCrypto
+import com.cbgm.securechat.core.crypto.group.SodiumGroupCrypto
 import com.cbgm.securechat.core.crypto.hash.CryptoHash
 import com.cbgm.securechat.core.crypto.hash.DefaultCryptoHash
 import com.cbgm.securechat.core.crypto.identity.IdentityAcknowledgementCrypto
@@ -41,6 +43,10 @@ val cryptoModule =
 
         single<IdentityKeyGenerator> {
             SodiumIdentityKeyGenerator()
+        }
+
+        single<GroupCrypto> {
+            SodiumGroupCrypto()
         }
 
         single<TransportMessageCipher> {

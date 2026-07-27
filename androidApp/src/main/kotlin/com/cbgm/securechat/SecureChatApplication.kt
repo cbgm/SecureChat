@@ -11,6 +11,7 @@ import com.cbgm.securechat.core.protocol.outbox.OutboxRunner
 import com.cbgm.securechat.data.database.di.androidDatabaseModule
 import com.cbgm.securechat.di.appModule
 import com.cbgm.securechat.di.sharedModule
+import com.cbgm.securechat.feature.chats.di.androidChatsModule
 import com.cbgm.securechat.feature.chats.di.chatsModule
 import com.cbgm.securechat.feature.contactimport.di.contactImportModule
 import com.cbgm.securechat.feature.contacts.di.contactsModule
@@ -62,6 +63,7 @@ class SecureChatApplication : Application() {
                     identityModule,
                     onboardingModule,
                     contactsModule,
+                    androidChatsModule,
                     chatsModule,
                     transportModule,
                     messagingModule,

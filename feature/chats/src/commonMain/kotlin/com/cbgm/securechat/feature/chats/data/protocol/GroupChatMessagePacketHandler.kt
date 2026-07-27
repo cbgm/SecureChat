@@ -6,19 +6,18 @@ import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.packet.DeliveryReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.GroupChatMessagePacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
-import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
-import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.data.database.entity.MessageEntity
+import com.cbgm.securechat.feature.chats.data.security.GROUP_END_TO_END_ENCRYPTED_MODE
+import com.cbgm.securechat.feature.chats.data.security.GroupSecurityManager
 import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 
 class GroupChatMessagePacketHandler(
     private val chatDao: ChatDao,
-    private val contactDao: ContactDao,
-    private val phoneNumberNormalizer: PhoneNumberNormalizer,
-    private val protocolOutbox: ProtocolOutbox
+    private val protocolOutbox: ProtocolOutbox,
+    private val groupSecurityManager: GroupSecurityManager
 ) : TypedProtocolPacketHandler {
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is GroupChatMessagePacket
 
@@ -34,59 +33,62 @@ class GroupChatMessagePacketHandler(
                 chatDao.findConversationById(groupPacket.groupId)
                     ?: error("Group conversation was not found")
             check(conversation.type == GROUP_CONVERSATION_TYPE) { "Conversation is not a group" }
+            val existingMessage = chatDao.findMessageById(groupPacket.messageId)
 
-            val senderContactId = resolveSenderContactId(groupPacket, context.contactId)
+            if (existingMessage != null) {
+                check(
+                    existingMessage.conversationId == groupPacket.groupId &&
+                        existingMessage.packetId == groupPacket.packetId &&
+                        existingMessage.senderContactId == context.contactId
+                ) {
+                    "Group message ID conflicts with an existing message"
+                }
+
+                queueDeliveryReceipt(groupPacket, context.contactId)
+                return@runCatching
+            }
+
+            val plaintext =
+                groupSecurityManager
+                    .decryptMessage(
+                        packet = groupPacket,
+                        senderContactId = context.contactId
+                    ).getOrThrow()
 
             chatDao.upsertMessage(
                 MessageEntity(
                     id = groupPacket.messageId,
                     conversationId = groupPacket.groupId,
                     packetId = groupPacket.packetId,
-                    text = groupPacket.text,
+                    text = plaintext,
                     transportPayload = context.encodedTransportPayload,
-                    transportMode = context.transportMode,
+                    transportMode = GROUP_END_TO_END_ENCRYPTED_MODE,
                     contentStatus = MessageContentStatus.READABLE.name,
                     deliveryStatus = MessageDeliveryStatus.NOT_APPLICABLE.name,
-                    senderContactId = senderContactId,
+                    senderContactId = context.contactId,
                     isMine = false,
                     createdAtEpochMilliseconds = groupPacket.sentAtEpochMilliseconds
                 )
             )
             chatDao.updateConversationTimestamp(groupPacket.groupId, context.receivedAtEpochMilliseconds)
 
-            protocolOutbox
-                .enqueue(
-                    contactId = context.contactId,
-                    packet =
-                        DeliveryReceiptPacket(
-                            packetId = "delivery-receipt-${groupPacket.messageId}-${context.contactId}",
-                            messageId = groupPacket.messageId,
-                            deliveredAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
-                        )
-                ).getOrThrow()
+            queueDeliveryReceipt(groupPacket, context.contactId)
         }
 
-    private suspend fun resolveSenderContactId(
+    private suspend fun queueDeliveryReceipt(
         packet: GroupChatMessagePacket,
-        fallbackContactId: String
-    ): String {
-        if (packet.senderSigningPublicKey.isNotEmpty()) {
-            contactDao.findBySigningPublicKey(packet.senderSigningPublicKey)?.let { contact ->
-                return contact.contact.id
-            }
-        }
-
-        val normalizedPhoneNumber =
-            packet.senderPhoneNumber
-                ?.let { phoneNumber -> phoneNumberNormalizer.normalize(phoneNumber).getOrNull() }
-
-        if (normalizedPhoneNumber != null) {
-            contactDao.findByNormalizedPhoneNumber(normalizedPhoneNumber)?.let { contact ->
-                return contact.contact.id
-            }
-        }
-
-        return fallbackContactId
+        contactId: String
+    ) {
+        protocolOutbox
+            .enqueue(
+                contactId = contactId,
+                packet =
+                    DeliveryReceiptPacket(
+                        packetId = "delivery-receipt-${packet.messageId}-$contactId",
+                        messageId = packet.messageId,
+                        deliveredAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+                    )
+            ).getOrThrow()
     }
 
     private companion object {

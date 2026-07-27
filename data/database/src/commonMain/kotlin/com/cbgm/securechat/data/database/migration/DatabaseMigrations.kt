@@ -170,4 +170,81 @@ object DatabaseMigrations {
                 )
             }
         }
+
+    val Migration13To14 =
+        object : Migration(13, 14) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS group_security_states (
+                        groupId TEXT NOT NULL PRIMARY KEY,
+                        currentEpoch INTEGER NOT NULL,
+                        welcomePacketId TEXT,
+                        ownerContactId TEXT,
+                        ownerSigningPublicKey BLOB NOT NULL,
+                        localSigningPublicKey BLOB NOT NULL,
+                        updatedAtEpochMilliseconds INTEGER NOT NULL,
+                        FOREIGN KEY(groupId) REFERENCES conversations(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS group_member_keys (
+                        groupId TEXT NOT NULL,
+                        epoch INTEGER NOT NULL,
+                        contactId TEXT NOT NULL,
+                        encryptionPublicKey BLOB NOT NULL,
+                        signingPublicKey BLOB NOT NULL,
+                        role TEXT NOT NULL,
+                        PRIMARY KEY(groupId, epoch, contactId),
+                        FOREIGN KEY(groupId) REFERENCES conversations(id) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(contactId) REFERENCES contacts(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_group_member_keys_groupId " +
+                        "ON group_member_keys(groupId)"
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_group_member_keys_contactId " +
+                        "ON group_member_keys(contactId)"
+                )
+            }
+        }
+
+    val Migration14To15 =
+        object : Migration(14, 15) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS group_invitations (
+                        invitationId TEXT NOT NULL PRIMARY KEY,
+                        groupId TEXT NOT NULL,
+                        contactId TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        challenge BLOB NOT NULL,
+                        createdAtEpochMilliseconds INTEGER NOT NULL,
+                        expiresAtEpochMilliseconds INTEGER NOT NULL,
+                        updatedAtEpochMilliseconds INTEGER NOT NULL,
+                        FOREIGN KEY(groupId) REFERENCES conversations(id) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(contactId) REFERENCES contacts(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_group_invitations_groupId " +
+                        "ON group_invitations(groupId)"
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_group_invitations_contactId " +
+                        "ON group_invitations(contactId)"
+                )
+                connection.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_group_invitations_groupId_contactId " +
+                        "ON group_invitations(groupId, contactId)"
+                )
+            }
+        }
 }

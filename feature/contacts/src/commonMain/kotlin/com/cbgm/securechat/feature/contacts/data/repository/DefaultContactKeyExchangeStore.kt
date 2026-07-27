@@ -92,6 +92,39 @@ class DefaultContactKeyExchangeStore(
             )
         }
 
+    override suspend fun acceptRemoteIdentity(
+        contactId: String,
+        expectedRemoteEncryptionPublicKey: ByteArray,
+        expectedRemoteSigningPublicKey: ByteArray
+    ): Result<Unit> =
+        runCatching {
+            require(contactId.isNotBlank()) {
+                "Contact ID must not be blank"
+            }
+
+            require(expectedRemoteEncryptionPublicKey.isNotEmpty()) {
+                "Expected encryption key must not be empty"
+            }
+
+            require(expectedRemoteSigningPublicKey.isNotEmpty()) {
+                "Expected signing key must not be empty"
+            }
+
+            val updatedRows =
+                contactDao.markLocallyImportedIfKeysMatch(
+                    contactId = contactId,
+                    expectedEncryptionPublicKey = expectedRemoteEncryptionPublicKey,
+                    expectedSigningPublicKey = expectedRemoteSigningPublicKey,
+                    oneWayStatus = KeyExchangeStatus.ONE_WAY.name,
+                    mutualStatus = KeyExchangeStatus.MUTUAL.name,
+                    updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+                )
+
+            check(updatedRows == 1) {
+                "Contact identity changed before invitation acceptance was applied"
+            }
+        }
+
     override suspend fun markMutual(
         contactId: String,
         expectedRemoteEncryptionPublicKey: ByteArray,

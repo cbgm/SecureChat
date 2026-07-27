@@ -3,7 +3,10 @@ package com.cbgm.securechat.feature.chats.data.protocol
 import com.cbgm.securechat.core.id.IdGenerator
 import com.cbgm.securechat.core.protocol.handler.IncomingPacketContext
 import com.cbgm.securechat.core.protocol.handler.TypedProtocolPacketHandler
+import com.cbgm.securechat.core.protocol.identity.LocalEncryptionKeyPairProvider
 import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentityProvider
+import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPairProvider
+import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
@@ -12,10 +15,15 @@ import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
 import com.cbgm.securechat.data.database.dao.ContactDao
+import com.cbgm.securechat.data.database.dao.GroupInvitationDao
 import com.cbgm.securechat.data.database.entity.ContactEntity
 import com.cbgm.securechat.data.database.entity.ContactPhoneNumberEntity
 import com.cbgm.securechat.data.database.entity.ConversationEntity
 import com.cbgm.securechat.data.database.entity.ConversationParticipantEntity
+import com.cbgm.securechat.data.database.entity.GroupMemberKeyEntity
+import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationStatus
+import com.cbgm.securechat.feature.chats.data.security.GroupInvitationManager
+import com.cbgm.securechat.feature.chats.data.security.GroupSecurityManager
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
 
@@ -23,8 +31,14 @@ class GroupCreatedPacketHandler(
     private val chatDao: ChatDao,
     private val contactDao: ContactDao,
     private val localPublicIdentityProvider: LocalPublicIdentityProvider,
+    private val localEncryptionKeyPairProvider: LocalEncryptionKeyPairProvider,
+    private val localSigningKeyPairProvider: LocalSigningKeyPairProvider,
     private val localPhoneNumberProvider: LocalPhoneNumberProvider,
-    private val phoneNumberNormalizer: PhoneNumberNormalizer
+    private val phoneNumberNormalizer: PhoneNumberNormalizer,
+    private val groupSecurityManager: GroupSecurityManager,
+    private val groupInvitationDao: GroupInvitationDao,
+    private val groupInvitationManager: GroupInvitationManager,
+    private val protocolOutbox: ProtocolOutbox
 ) : TypedProtocolPacketHandler {
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is GroupCreatedPacket
 
@@ -36,6 +50,23 @@ class GroupCreatedPacketHandler(
             val groupPacket =
                 packet as? GroupCreatedPacket
                     ?: error("GroupCreatedPacketHandler received an incompatible packet")
+            val ownerIdentity =
+                contactDao.findPublicIdentityByContactId(context.contactId)
+                    ?: error("Group owner has no SecureChat identity")
+            check(ownerIdentity.keyExchangeStatus == MUTUAL_KEY_EXCHANGE_STATUS) {
+                "Group owner key exchange is not mutual"
+            }
+            val localIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
+            val localEncryptionKeyPair =
+                localEncryptionKeyPairProvider.getEncryptionKeyPair().getOrThrow()
+            val openedWelcome =
+                groupSecurityManager
+                    .openWelcome(
+                        packet = groupPacket,
+                        expectedOwnerSigningPublicKey = ownerIdentity.signingPublicKey,
+                        localEncryptionKeyPair = localEncryptionKeyPair,
+                        localSigningPublicKey = localIdentity.signingPublicKey
+                    ).getOrThrow()
 
             chatDao.upsertConversation(
                 ConversationEntity(
@@ -48,62 +79,87 @@ class GroupCreatedPacketHandler(
                 )
             )
 
-            val localSigningPublicKey =
-                localPublicIdentityProvider
-                    .getLocalPublicIdentity()
-                    .getOrNull()
-                    ?.signingPublicKey
             val normalizedLocalPhoneNumber =
                 localPhoneNumberProvider
                     .getLocalPhoneNumber()
                     .getOrNull()
                     ?.let { phoneNumber -> phoneNumberNormalizer.normalize(phoneNumber).getOrNull() }
 
+            val memberKeys = mutableListOf<GroupMemberKeyEntity>()
+
             groupPacket.members.forEach { member ->
-                if (member.isLocalMember(localSigningPublicKey, normalizedLocalPhoneNumber)) {
+                if (member.isLocalMember(localIdentity.signingPublicKey, normalizedLocalPhoneNumber)) {
                     return@forEach
                 }
 
-                runCatching {
-                    val contactId = resolveMemberContact(member, context.contactId)
+                val contactId = resolveMemberContact(member, context.contactId)
 
-                    chatDao.upsertConversationParticipant(
-                        ConversationParticipantEntity(
-                            conversationId = groupPacket.groupId,
-                            contactId = contactId,
-                            role = member.role,
-                            joinedAtEpochMilliseconds = groupPacket.createdAtEpochMilliseconds
-                        )
-                    )
-                }.onFailure { error ->
-                    println(
-                        "Group member could not be resolved: " +
-                            "groupId=${groupPacket.groupId}, " +
-                            "phoneNumber=${member.phoneNumber}, " +
-                            "error=${error.message}"
-                    )
-                }
-            }
-
-            val participants = chatDao.findConversationParticipants(groupPacket.groupId)
-
-            if (participants.isEmpty()) {
                 chatDao.upsertConversationParticipant(
                     ConversationParticipantEntity(
                         conversationId = groupPacket.groupId,
-                        contactId = context.contactId,
-                        role = GROUP_OWNER_ROLE,
+                        contactId = contactId,
+                        role = member.role,
                         joinedAtEpochMilliseconds = groupPacket.createdAtEpochMilliseconds
                     )
                 )
+                memberKeys +=
+                    GroupMemberKeyEntity(
+                        groupId = groupPacket.groupId,
+                        epoch = groupPacket.epoch,
+                        contactId = contactId,
+                        encryptionPublicKey = member.encryptionPublicKey.copyOf(),
+                        signingPublicKey = member.signingPublicKey.copyOf(),
+                        role = member.role
+                    )
             }
 
-            println(
-                "Group created from packet: " +
-                    "groupId=${groupPacket.groupId}, " +
-                    "title=${groupPacket.title}, " +
-                    "participants=${chatDao.findConversationParticipants(groupPacket.groupId).size}"
-            )
+            check(memberKeys.any { member -> member.contactId == context.contactId }) {
+                "Authenticated sender is not the group owner"
+            }
+
+            groupSecurityManager
+                .persistJoinedGroup(
+                    openedWelcome = openedWelcome,
+                    ownerContactId = context.contactId,
+                    localSigningPublicKey = localIdentity.signingPublicKey,
+                    memberKeys = memberKeys,
+                    receivedAtEpochMilliseconds = context.receivedAtEpochMilliseconds
+                ).getOrThrow()
+
+            val invitation =
+                groupInvitationDao.findByGroupAndContact(groupPacket.groupId, context.contactId)
+            if (invitation != null) {
+                val readyAcknowledgement =
+                    groupInvitationManager
+                        .createReadyAcknowledgement(
+                            groupId = groupPacket.groupId,
+                            epoch = groupPacket.epoch,
+                            welcomePacketId = groupPacket.packetId,
+                            keyConfirmation =
+                                groupSecurityManager.createKeyConfirmation(
+                                    groupId = groupPacket.groupId,
+                                    epoch = groupPacket.epoch,
+                                    groupKey = openedWelcome.groupKey
+                                ),
+                            memberSigningKeyPair =
+                                localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
+                        ).getOrThrow()
+                protocolOutbox.enqueue(context.contactId, readyAcknowledgement).getOrThrow()
+
+                if (invitation.status != GroupInvitationStatus.ACTIVE.name) {
+                    check(invitation.status == GroupInvitationStatus.JOIN_SENT.name) {
+                        "Group welcome arrived before the invitation was accepted"
+                    }
+                    val updated =
+                        groupInvitationDao.updateStatus(
+                            invitationId = invitation.invitationId,
+                            expectedStatus = GroupInvitationStatus.JOIN_SENT.name,
+                            newStatus = GroupInvitationStatus.ACTIVE.name,
+                            updatedAt = context.receivedAtEpochMilliseconds
+                        )
+                    check(updated == 1) { "Group invitation changed while the welcome was applied" }
+                }
+            }
         }
 
     private suspend fun resolveMemberContact(
@@ -248,5 +304,6 @@ class GroupCreatedPacketHandler(
     private companion object {
         const val GROUP_CONVERSATION_TYPE = "GROUP"
         const val GROUP_OWNER_ROLE = "OWNER"
+        const val MUTUAL_KEY_EXCHANGE_STATUS = "MUTUAL"
     }
 }

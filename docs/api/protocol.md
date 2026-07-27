@@ -43,8 +43,12 @@ The actual property set depends on the packet class.
 | Discriminator | Class | Important fields | Handled by |
 |---|---|---|---|
 | `chat_message` | `ChatMessagePacket` | `messageId`, timestamp, text, optional sender phone | `ChatMessagePacketHandler` |
-| `group_created` | `GroupCreatedPacket` | `groupId`, title, timestamp, `GroupMemberPayload` list | `GroupCreatedPacketHandler` |
-| `group_chat_message` | `GroupChatMessagePacket` | group/message IDs, text, sender signing key and phone | `GroupChatMessagePacketHandler` |
+| `group_invite` | `GroupInvitePacket` | invitation/group metadata, challenge, owner public identity, owner signature | `GroupInvitePacketHandler` |
+| `group_join_request` | `GroupJoinRequestPacket` | invitation/group IDs, challenge, member public identity, member signature | `GroupJoinRequestPacketHandler` |
+| `group_invite_declined` | `GroupInviteDeclinedPacket` | invitation/group IDs, challenge, member signing key/signature | `GroupInviteDeclinedPacketHandler` |
+| `group_created` | `GroupCreatedPacket` | group metadata, epoch, members, recipient-wrapped key, owner signature | `GroupCreatedPacketHandler` |
+| `group_ready_acknowledgement` | `GroupReadyAcknowledgementPacket` | group ID, epoch, welcome packet ID, key confirmation, member signature | `GroupReadyAcknowledgementPacketHandler` |
+| `group_chat_message` | `GroupChatMessagePacket` | group/message IDs, epoch, nonce, ciphertext, sender signature | `GroupChatMessagePacketHandler` |
 | `delivery_receipt` | `DeliveryReceiptPacket` | `messageId`, delivery timestamp | `DeliveryReceiptPacketHandler` |
 | `read_receipt` | `ReadReceiptPacket` | `messageId`, read timestamp | `ReadReceiptPacketHandler` |
 | `identity` | `IdentityPacket` | display name and public encryption/signing keys | `IdentityPacketHandler` |
@@ -75,6 +79,45 @@ Decoding:
 
 Packet bytes are not a relay frame. The outgoing messaging pipeline next wraps them in
 `EncryptedTransportPayload` and encodes that value with `TransportPayloadCodec`.
+
+## Secure group packet rules
+
+`GroupInvitePacket` bootstraps an identity when the group owner only knows a normal contact and its
+phone-derived relay address. `GroupProtocolPayloadEncoder.encodeInvite()` binds the invitation ID,
+group metadata, expiry, random challenge, and owner's encryption and signing public keys to the
+owner signature. It contains no group key.
+
+`GroupJoinRequestPacket` returns the same invitation ID, group ID, and challenge together with the
+invitee's public identity. `GroupProtocolPayloadEncoder.encodeJoinRequest()` binds those fields to
+the invitee signature. `GroupInvitationCoordinator` accepts it only for the exact persisted
+invitation and contact, before expiry, and rejects conflicts with a previously stored identity.
+
+`GroupInviteDeclinedPacket` binds the same invitation, group, challenge, and invitee signing key.
+The creator accepts it only from the contact stored on that invitation.
+
+`GroupCreatedPacket` is a signed group welcome. Every recipient gets a different packet because
+`wrappedGroupKey` is created for that recipient's X25519 encryption public key. The signed payload
+binds `packetId`, protocol version, group ID/title/timestamp, epoch, the complete ordered
+`GroupMemberPayload` list, and `wrappedGroupKey`.
+
+`GroupReadyAcknowledgementPacket` is created only after `GroupCreatedPacketHandler` has unwrapped
+and persisted the epoch key. Its signature binds the group, epoch, deterministic welcome packet ID,
+and SHA-256 key-confirmation value. The creator verifies both the signature and the confirmation
+against its copy of the epoch key before changing that member to `ACTIVE`.
+
+`GroupChatMessagePacket` never carries message plaintext. `GroupProtocolPayloadEncoder` defines:
+
+- AEAD associated data: protocol version, group ID, epoch, message ID, and timestamp;
+- sender-signature data: the associated data plus nonce and ciphertext.
+
+The packet intentionally has no trusted sender phone number or sender public key. The receiver
+uses `IncomingPacketContext.contactId` and `GroupMemberKeyEntity` to select the expected Ed25519
+key. A packet from a non-member, a stale/future epoch, or a reused `messageId` is rejected.
+
+`GroupCreatedPacket` requires encrypted outer transport in `DefaultOutboxProcessor`.
+`GroupChatMessagePacket` does not depend on the outer transport for confidentiality because the
+inner content is already authenticated group ciphertext. Invitation packets may also use plaintext
+outer transport because signatures protect them and neither carries secret material.
 
 ## Incoming dispatch
 

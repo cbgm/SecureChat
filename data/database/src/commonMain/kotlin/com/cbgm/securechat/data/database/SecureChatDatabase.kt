@@ -6,6 +6,8 @@ import androidx.room.RoomDatabase
 import com.cbgm.securechat.data.database.dao.ChatDao
 import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.data.database.dao.ContactRelayIdDao
+import com.cbgm.securechat.data.database.dao.GroupInvitationDao
+import com.cbgm.securechat.data.database.dao.GroupSecurityDao
 import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
 import com.cbgm.securechat.data.database.dao.MessageRecipientStateDao
 import com.cbgm.securechat.data.database.dao.ProtocolOutboxDao
@@ -15,6 +17,9 @@ import com.cbgm.securechat.data.database.entity.ContactPublicIdentityEntity
 import com.cbgm.securechat.data.database.entity.ContactRelayIdEntity
 import com.cbgm.securechat.data.database.entity.ConversationEntity
 import com.cbgm.securechat.data.database.entity.ConversationParticipantEntity
+import com.cbgm.securechat.data.database.entity.GroupInvitationEntity
+import com.cbgm.securechat.data.database.entity.GroupMemberKeyEntity
+import com.cbgm.securechat.data.database.entity.GroupSecurityStateEntity
 import com.cbgm.securechat.data.database.entity.MessageEntity
 import com.cbgm.securechat.data.database.entity.MessageRecipientStateEntity
 import com.cbgm.securechat.data.database.entity.ProtocolOutboxEntity
@@ -27,11 +32,14 @@ import com.cbgm.securechat.data.database.entity.ProtocolOutboxEntity
         ContactRelayIdEntity::class,
         ConversationEntity::class,
         ConversationParticipantEntity::class,
+        GroupSecurityStateEntity::class,
+        GroupMemberKeyEntity::class,
+        GroupInvitationEntity::class,
         MessageEntity::class,
         MessageRecipientStateEntity::class,
         ProtocolOutboxEntity::class
     ],
-    version = 13,
+    version = 15,
     exportSchema = true
 )
 @ConstructedBy(SecureChatDatabaseConstructor::class)
@@ -39,6 +47,10 @@ abstract class SecureChatDatabase : RoomDatabase() {
     abstract fun contactDao(): ContactDao
 
     abstract fun chatDao(): ChatDao
+
+    abstract fun groupSecurityDao(): GroupSecurityDao
+
+    abstract fun groupInvitationDao(): GroupInvitationDao
 
     abstract fun contactRelayIdDao(): ContactRelayIdDao
 

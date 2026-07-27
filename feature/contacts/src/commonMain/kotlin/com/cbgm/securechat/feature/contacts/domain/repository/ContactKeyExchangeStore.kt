@@ -15,6 +15,12 @@ interface ContactKeyExchangeStore {
         origin: RemoteIdentityOrigin
     ): Result<RemoteIdentityUpdate>
 
+    suspend fun acceptRemoteIdentity(
+        contactId: String,
+        expectedRemoteEncryptionPublicKey: ByteArray,
+        expectedRemoteSigningPublicKey: ByteArray
+    ): Result<Unit>
+
     suspend fun markMutual(
         contactId: String,
         expectedRemoteEncryptionPublicKey: ByteArray,

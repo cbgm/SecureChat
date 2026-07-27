@@ -33,6 +33,8 @@ fun GroupConversationRoute(
         onSendClick = viewModel::sendMessage,
         onClickHeader = onOpenDetails,
         onRetryMessage = viewModel::retryMessage,
+        onAcceptGroupInvitation = viewModel::acceptInvitation,
+        onDeclineGroupInvitation = viewModel::declineInvitation,
         onVerifyIdentity = {},
         onBack = onBack,
         modifier = modifier

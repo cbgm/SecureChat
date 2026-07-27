@@ -196,6 +196,27 @@ interface ChatDao {
 
     @Query(
         """
+        SELECT messages.*
+        FROM messages
+        INNER JOIN conversations
+            ON conversations.id = messages.conversationId
+        WHERE messages.conversationId = :conversationId
+          AND conversations.type = 'GROUP'
+          AND messages.isMine = 1
+          AND messages.packetId IS NULL
+          AND messages.deliveryStatus = 'QUEUED'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM message_recipient_states
+              WHERE message_recipient_states.messageId = messages.id
+          )
+        ORDER BY messages.createdAtEpochMilliseconds, messages.id
+        """
+    )
+    suspend fun findQueuedGroupMessages(conversationId: String): List<MessageEntity>
+
+    @Query(
+        """
     SELECT
         messages.id AS messageId,
         messages.conversationId AS conversationId,

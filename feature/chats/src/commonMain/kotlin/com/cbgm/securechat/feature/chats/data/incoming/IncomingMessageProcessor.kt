@@ -11,6 +11,10 @@ import com.cbgm.securechat.core.protocol.handler.ProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.packet.ChatMessagePacket
 import com.cbgm.securechat.core.protocol.packet.GroupChatMessagePacket
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupInviteDeclinedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupInvitePacket
+import com.cbgm.securechat.core.protocol.packet.GroupJoinRequestPacket
+import com.cbgm.securechat.core.protocol.packet.GroupReadyAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
@@ -138,6 +142,10 @@ class IncomingMessageProcessor(
             is ChatMessagePacket -> directConversationStore.getOrCreate(contactId).id
             is GroupCreatedPacket -> packet.groupId
             is GroupChatMessagePacket -> packet.groupId
+            is GroupInvitePacket -> packet.groupId
+            is GroupJoinRequestPacket -> packet.groupId
+            is GroupInviteDeclinedPacket -> packet.groupId
+            is GroupReadyAcknowledgementPacket -> packet.groupId
             else -> chatDao.findConversationByContactId(contactId)?.id ?: "control-${packet.packetId}"
         }
 

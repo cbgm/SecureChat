@@ -3,6 +3,9 @@ package com.cbgm.securechat.feature.chats.presentation.screen.chat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
+import com.cbgm.securechat.feature.chats.domain.model.GroupConversationState
+import com.cbgm.securechat.feature.chats.domain.usecase.AcceptGroupInvitation
+import com.cbgm.securechat.feature.chats.domain.usecase.DeclineGroupInvitation
 import com.cbgm.securechat.feature.chats.domain.usecase.MarkConversationRead
 import com.cbgm.securechat.feature.chats.domain.usecase.ObserveConversation
 import com.cbgm.securechat.feature.chats.domain.usecase.ObserveTypingIndicator
@@ -10,6 +13,7 @@ import com.cbgm.securechat.feature.chats.domain.usecase.RetryMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SendGroupMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SetTypingIndicator
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
+import com.cbgm.securechat.feature.chats.presentation.model.GroupMemberProgressUi
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContacts
@@ -33,6 +37,8 @@ class GroupConversationViewModel(
     private val sendGroupMessage: SendGroupMessage,
     private val markConversationReadUseCase: MarkConversationRead,
     private val retryMessageUseCase: RetryMessage,
+    private val acceptGroupInvitation: AcceptGroupInvitation,
+    private val declineGroupInvitation: DeclineGroupInvitation,
     observeContacts: ObserveContacts,
     private val observeTypingIndicator: ObserveTypingIndicator,
     private val setTypingIndicator: SetTypingIndicator
@@ -80,7 +86,26 @@ class GroupConversationViewModel(
                         contact.displayNameForChat(isInContacts)
                     }.filter(String::isNotBlank)
                     .joinToString(", ")
-            val memberCount = conversation?.participantContactIds?.let { it.size + 1 } ?: 0
+            val memberCount =
+                conversation?.let {
+                    (
+                        it.participantContactIds +
+                            it.groupMemberInvitationStates.map { member -> member.contactId }
+                    ).distinct().size + 1
+                } ?: 0
+            val groupState = conversation?.groupState ?: GroupConversationState.READY
+            val messageInputEnabled =
+                conversation != null &&
+                    (
+                        conversation.isGroupReady ||
+                            (
+                                !conversation.isIncomingGroupInvitation &&
+                                    (
+                                        groupState == GroupConversationState.WAITING_FOR_MEMBERS ||
+                                            groupState == GroupConversationState.DISTRIBUTING_KEYS
+                                    )
+                            )
+                    )
 
             ChatUiState(
                 contactName = conversation?.contactName.orEmpty(),
@@ -91,7 +116,26 @@ class GroupConversationViewModel(
                 errorMessage = currentError,
                 isLoadingContact = conversation == null,
                 isGroup = true,
-                subtitle = "$memberCount members"
+                isMessageInputEnabled = messageInputEnabled,
+                groupState = groupState,
+                groupMemberCount = memberCount,
+                groupPendingCount = conversation?.pendingParticipantCount ?: 0,
+                showGroupInvitationActions = groupState == GroupConversationState.INVITED,
+                groupMemberProgress =
+                    conversation
+                        ?.groupMemberInvitationStates
+                        .orEmpty()
+                        .takeIf { conversation?.isIncomingGroupInvitation == false }
+                        .orEmpty()
+                        .map { member ->
+                            val contact = contactsById[member.contactId]
+                            val isInContacts =
+                                contact?.deviceContactLinkStatus == DeviceContactLinkStatus.LINKED
+                            GroupMemberProgressUi(
+                                displayName = contact.displayNameForChat(isInContacts),
+                                status = member.status
+                            )
+                        }
             )
         }.stateIn(
             scope = viewModelScope,
@@ -138,6 +182,8 @@ class GroupConversationViewModel(
     }
 
     fun sendMessage() {
+        if (!uiState.value.isMessageInputEnabled) return
+
         val text = messageText.value.trim()
         if (text.isEmpty()) return
 
@@ -156,6 +202,22 @@ class GroupConversationViewModel(
         viewModelScope.launch {
             retryMessageUseCase(messageId).onFailure { error ->
                 errorMessage.value = error.message ?: "Message could not be queued again"
+            }
+        }
+    }
+
+    fun acceptInvitation() {
+        viewModelScope.launch {
+            acceptGroupInvitation(conversationId).onFailure { error ->
+                errorMessage.value = error.message ?: "Group invitation could not be accepted"
+            }
+        }
+    }
+
+    fun declineInvitation() {
+        viewModelScope.launch {
+            declineGroupInvitation(conversationId).onFailure { error ->
+                errorMessage.value = error.message ?: "Group invitation could not be declined"
             }
         }
     }
