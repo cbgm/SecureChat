@@ -187,6 +187,276 @@ The generated architecture documentation is considered the source of truth for t
 
 ---
 
+# SecureChat Roadmap
+
+This roadmap tracks the planned features, technical improvements, and infrastructure work for SecureChat.
+
+## Phase 1 – Security and Stability
+
+### Group Identity Verification
+
+* [ ] Add identity verification support for group conversations.
+* [ ] Track the verification state of every group member.
+* [ ] Display a verification counter in the group conversation header.
+
+  * Example: `3 of 5 members verified`
+* [ ] Distinguish between:
+
+  * No members verified
+  * Partially verified
+  * All members verified
+* [ ] Allow opening a member list with the verification state of every member.
+* [ ] Allow verifying individual members directly from the member list.
+* [ ] Never mark the complete group as verified until every current member has been verified.
+* [ ] Reset or downgrade the group verification state when:
+
+  * A new member joins
+  * A member changes their identity keys
+  * The group membership changes
+* [ ] Continue allowing encrypted communication with members who have already completed the key exchange.
+
+### GitHub Test Workflow
+
+* [ ] Create a complete GitHub Actions test workflow.
+* [ ] Run the workflow for every pull request.
+* [ ] Run the workflow for pushes to the main development branches.
+* [ ] Add Gradle build verification.
+* [ ] Add unit tests.
+* [ ] Add architecture verification.
+* [ ] Add Detekt checks.
+* [ ] Add KtLint checks.
+* [ ] Add Android lint checks.
+* [ ] Add Compose and common-module tests.
+* [ ] Add relay server tests.
+* [ ] Upload test reports when a workflow fails.
+* [ ] Cache Gradle dependencies and the Gradle build cache.
+* [ ] Add a workflow status badge to the project README.
+
+### Replace Print Statements with Logging
+
+* [ ] Remove all `print`, `println`, and `System.out` calls.
+* [ ] Introduce a shared multiplatform logger abstraction.
+* [ ] Support the following log levels:
+
+  * Debug
+  * Info
+  * Warning
+  * Error
+* [ ] Add Android Logcat integration.
+* [ ] Add JVM logging for the relay server.
+* [ ] Prevent sensitive information from being logged.
+* [ ] Never log:
+
+  * Private keys
+  * Shared secrets
+  * Complete safety numbers
+  * Decrypted message contents
+  * Authentication tokens
+* [ ] Disable or reduce debug logging in release builds.
+
+---
+
+## Phase 2 – Reliable Message Delivery
+
+### Background Message Service
+
+* [ ] Receive messages while the application is in the background.
+* [ ] Receive messages when the application process has been closed, where supported by the platform.
+* [ ] Reconnect the transport automatically when required.
+* [ ] Deliver queued messages after reconnecting.
+* [ ] Prevent duplicate message processing.
+* [ ] Persist incoming packets before processing them.
+* [ ] Show a notification for new messages.
+* [ ] Do not show a notification for the currently opened conversation.
+* [ ] Group multiple notifications by conversation.
+* [ ] Open the correct conversation when a notification is selected.
+* [ ] Add notification permission handling.
+* [ ] Add notification privacy settings:
+
+  * Show sender and message preview
+  * Show sender only
+  * Show a generic new-message notification
+* [ ] Add platform-specific implementations:
+
+  * Android background and push-message handling
+  * iOS remote notification handling
+* [ ] Evaluate push notifications as a wake-up signal without exposing message contents to the push provider.
+
+---
+
+## Phase 3 – Identity Sharing
+
+### NFC Identity Sharing
+
+* [ ] Add NFC-based identity sharing.
+* [ ] Allow two devices to exchange public identity information by touching them together.
+* [ ] Validate all received NFC payloads.
+* [ ] Prevent unsupported or malformed payloads from being imported.
+* [ ] Display the identity owner before saving the identity.
+* [ ] Require explicit confirmation before adding a new contact.
+
+### NFC Identity Verification
+
+* [ ] Add NFC-based verification for existing contacts.
+* [ ] Compare the locally stored identity with the identity received through NFC.
+* [ ] Mark the contact as verified only when both identities match.
+* [ ] Show a clear warning when the identities do not match.
+* [ ] Support group-member verification through NFC.
+* [ ] Update the group verification counter after successful verification.
+* [ ] Keep QR and manual safety-number verification available as fallback methods.
+
+---
+
+## Phase 4 – Profiles and Group Customization
+
+### Contact Avatar Images
+
+* [ ] Allow users to select a personal profile image.
+* [ ] Allow locally assigned contact images.
+* [ ] Resize and compress images before storage or transfer.
+* [ ] Remove sensitive image metadata where appropriate.
+* [ ] Display avatars in:
+
+  * Contact lists
+  * Conversation lists
+  * Conversation headers
+  * Notifications
+  * Group member lists
+* [ ] Provide generated initials when no image is available.
+* [ ] Decide whether profile images are:
+
+  * Local only
+  * Shared with contacts
+  * Shared only after approval
+
+### Group Images
+
+* [ ] Allow group administrators to select a group image.
+* [ ] Resize and compress the group image.
+* [ ] Synchronize group-image changes with all members.
+* [ ] Add a system message when the group image changes.
+* [ ] Display the group image in:
+
+  * Conversation lists
+  * Group conversation headers
+  * Group details
+  * Notifications
+* [ ] Provide a generated placeholder when no group image is configured.
+
+---
+
+## Phase 5 – Attachments and Media
+
+### Attachment Support
+
+* [ ] Add encrypted attachment messages.
+* [ ] Support:
+
+  * Photos
+  * Videos
+  * Documents
+  * Audio files
+  * Other files
+* [ ] Show an attachment picker.
+* [ ] Show upload and download progress.
+* [ ] Allow cancelling active transfers.
+* [ ] Add retry support for failed transfers.
+* [ ] Generate image and video previews.
+* [ ] Display file name, type, and size before sending.
+* [ ] Add attachment size limits.
+* [ ] Validate file types and file contents.
+* [ ] Encrypt every attachment before uploading or relaying it.
+* [ ] Use a unique encryption key and nonce for every attachment.
+* [ ] Store attachment keys only inside the encrypted message payload.
+* [ ] Prevent the relay from accessing unencrypted attachments.
+* [ ] Clean up incomplete and expired attachment transfers.
+* [ ] Add configurable attachment retention.
+
+### Automatic Photo and Video Saving
+
+* [ ] Add an option to save received photos automatically.
+* [ ] Add an option to save received videos automatically.
+* [ ] Save media to the system photo library or gallery.
+* [ ] Request the required platform permissions.
+* [ ] Provide separate settings for:
+
+  * Photos
+  * Videos
+  * Mobile data
+  * Wi-Fi
+  * Individual conversations
+* [ ] Prevent duplicate media files.
+* [ ] Keep automatic saving disabled by default.
+* [ ] Allow manually saving individual media files.
+* [ ] Clearly separate encrypted application storage from exported gallery files.
+* [ ] Warn users that exported media is no longer protected by SecureChat storage encryption.
+
+---
+
+## Phase 6 – Payments
+
+### Pay Your Bill
+
+* [ ] Add a billing section to the application.
+* [ ] Display:
+
+  * Outstanding amount
+  * Payment status
+  * Due date
+  * Previous payments
+  * Downloadable receipts
+* [ ] Add payment support through:
+
+  * PayPal
+  * Google Pay
+  * Apple Pay
+* [ ] Use a payment provider backend instead of processing payment credentials directly in the application.
+* [ ] Never store card or payment credentials in SecureChat.
+* [ ] Verify payment results on the backend.
+* [ ] Prevent duplicate payments.
+* [ ] Handle cancelled, pending, failed, and completed payments.
+* [ ] Generate a payment confirmation.
+* [ ] Update the bill only after backend confirmation.
+* [ ] Add payment reminders.
+* [ ] Add refund and payment-dispute handling.
+* [ ] Review legal, tax, privacy, and payment-provider requirements before release.
+
+---
+
+## Cross-Feature Requirements
+
+Every new feature should include:
+
+* [ ] Domain models and use cases
+* [ ] Repository abstractions
+* [ ] Platform-specific implementations where required
+* [ ] Database migrations
+* [ ] Error handling
+* [ ] Loading and empty states
+* [ ] Localized strings
+* [ ] Accessibility support
+* [ ] Unit tests
+* [ ] Integration tests
+* [ ] Architecture verification
+* [ ] Documentation
+* [ ] Privacy and security review
+
+---
+
+## Recommended Implementation Order
+
+1. Group identity verification and verification counter
+2. Complete GitHub Actions test workflow
+3. Replace print statements with structured logging
+4. Background message delivery and notifications
+5. Avatar and group images
+6. Encrypted photo, video, and file attachments
+7. Manual and automatic media saving
+8. NFC identity sharing and verification
+9. Billing and payment-provider integration
+
+
+
 # License
 
 Licensed under the Apache 2.0 License.
