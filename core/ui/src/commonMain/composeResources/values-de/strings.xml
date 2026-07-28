@@ -118,6 +118,30 @@
     <string name="feature_chats_unable_decrypt_secure_message">Sichere Nachricht konnte nicht entschlüsselt werden</string>
     <string name="feature_chats_unable_read_plaintext">Klartextnachricht konnte nicht gelesen werden</string>
 
+
+    <string name="feature_chats_create_group">Gruppe erstellen</string>
+    <string name="feature_chats_group_name">Gruppenname</string>
+    <string name="feature_chats_group_members">Mitglieder</string>
+    <string name="feature_chats_group_member_count">%1$d Mitglieder</string>
+    <string name="feature_chats_group_verification_title">Gruppenverifizierung</string>
+    <string name="feature_chats_group_admin_verification_title">Gruppenmitglieder</string>
+    <string name="feature_chats_group_admin_verification_description">Wähle einen angenommenen Teilnehmer aus, um die Sicherheitsnummer zu vergleichen. Jeder Teilnehmer verifiziert ausschließlich den Gruppenadmin.</string>
+    <string name="feature_chats_group_member_verification_title">Gruppenmitglieder</string>
+    <string name="feature_chats_group_member_verification_description">Verifiziere nach Annahme der Einladung den Gruppenadmin. Die übrigen Einträge zeigen allen denselben gruppenweiten Verifizierungsstand.</string>
+    <string name="feature_chats_group_admin">Gruppenadmin</string>
+    <string name="feature_chats_group_verification_overview">%1$d verifiziert · %2$d aktive Teilnehmer · %3$d Mitglieder</string>
+    <string name="feature_chats_group_verification_pending_note">Ausstehende Einladungen zählen als Mitglieder, können aber erst nach der Annahme verifiziert werden.</string>
+    <string name="feature_chats_group_verification_counter">%1$d von %2$d verifiziert</string>
+    <string name="feature_chats_group_verification_complete">Alle %1$d aktiven Teilnehmer verifiziert</string>
+    <string name="feature_chats_group_verification_no_active">Kein aktiver Teilnehmer zum Verifizieren</string>
+    <string name="feature_chats_group_member_mutually_verified">Mit dem Gruppenadmin gegenseitig verifiziert</string>
+    <string name="feature_chats_group_member_admin_verified_participant">Admin hat den Teilnehmer verifiziert · wartet auf den Teilnehmer</string>
+    <string name="feature_chats_group_member_participant_verified_admin">Teilnehmer hat den Admin verifiziert · wartet auf den Admin</string>
+    <string name="feature_chats_group_member_unverified">Nicht mit dem Gruppenadmin verifiziert</string>
+    <string name="feature_chats_group_member_invitation_pending">Einladung ausstehend</string>
+    <string name="feature_chats_group_tap_to_verify">Antippen, um die Sicherheitsnummer zu vergleichen</string>
+    <string name="feature_chats_group_status_partial">%1$d bereit · %2$d ausstehend</string>
+
     <!-- Feature: contactimport -->
     <string name="feature_contactimport_camera_permission_required">Für das Scannen eines QR-Codes wird die Kameraberechtigung benötigt.</string>
     <string name="feature_contactimport_encryption_key">Verschlüsselungsschlüssel</string>
@@ -195,6 +219,12 @@
     <string name="feature_contacts_verified_securechat_contact">Gegenseitig verifizierter SecureChat-Kontakt</string>
     <string name="feature_contacts_verify_safety_number">Sicherheitsnummer verifizieren</string>
 
+    <string name="feature_contacts_contact_invitation_title">Kontaktanfrage</string>
+    <string name="feature_contacts_contact_invitation_description">%1$s möchte SecureChat-Identitäten austauschen.</string>
+    <string name="feature_contacts_invitation_unverified_warning">Das Annehmen aktiviert verschlüsselte Nachrichten, beweist aber nicht, dass diese Identität zur erwarteten Person gehört. Vergleiche die Sicherheitsnummer separat.</string>
+    <string name="feature_contacts_accept_invitation">Annehmen</string>
+    <string name="feature_contacts_decline_invitation">Ablehnen</string>
+
     <!-- Feature: identity -->
     <string name="feature_identity_approve_number_create_identity">Nummer bestätigen und Identität erstellen</string>
     <string name="feature_identity_check_again">Erneut prüfen</string>
@@ -261,10 +291,6 @@
     <string name="feature_onboarding_welcome_to_securechat">Willkommen bei SecureChat</string>
     <string name="feature_onboarding_your_name">Dein Name</string>
 
-    <string name="feature_chats_create_group">Gruppe erstellen</string>
-    <string name="feature_chats_group_name">Gruppenname</string>
-    <string name="feature_chats_group_members">Mitglieder</string>
-    <string name="feature_chats_group_member_count">%1$d Mitglieder</string>
 
     <!-- Feature: settings -->
     <string name="feature_settings_about">Über</string>

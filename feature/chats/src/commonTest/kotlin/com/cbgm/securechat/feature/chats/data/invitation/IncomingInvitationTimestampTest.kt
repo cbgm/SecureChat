@@ -9,21 +9,36 @@ class IncomingInvitationTimestampTest {
         assertEquals(
             expected = 1_000L,
             actual =
-                resolveIncomingInvitationUpdatedAt(
+                resolveInvitationUpdatedAt(
                     createdAtEpochMilliseconds = 1_000L,
-                    receivedAtEpochMilliseconds = 967L
+                    candidateAtEpochMilliseconds = 967L
                 )
         )
     }
 
     @Test
-    fun receiverClockAheadUsesLocalReceiveTimestamp() {
+    fun receiverClockAheadUsesLocalTimestamp() {
         assertEquals(
             expected = 1_050L,
             actual =
-                resolveIncomingInvitationUpdatedAt(
+                resolveInvitationUpdatedAt(
                     createdAtEpochMilliseconds = 1_000L,
-                    receivedAtEpochMilliseconds = 1_050L
+                    candidateAtEpochMilliseconds = 1_050L
+                )
+        )
+    }
+
+    @Test
+    fun acceptedInvitationNeverMovesUpdateTimestampBeforeCreation() {
+        val invitationCreatedAt = 1_000L
+        val receiverNow = 967L
+
+        assertEquals(
+            expected = invitationCreatedAt,
+            actual =
+                resolveInvitationUpdatedAt(
+                    createdAtEpochMilliseconds = invitationCreatedAt,
+                    candidateAtEpochMilliseconds = receiverNow
                 )
         )
     }

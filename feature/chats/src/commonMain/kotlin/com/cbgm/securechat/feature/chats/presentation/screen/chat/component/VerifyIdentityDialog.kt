@@ -42,7 +42,7 @@ fun VerifyIdentityDialog(
     isLoadingSafetyNumber: Boolean,
     isVerifying: Boolean,
     onConfirm: () -> Unit,
-    onScanQrCode: () -> Unit,
+    onScanQrCode: (() -> Unit)?,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -62,31 +62,33 @@ fun VerifyIdentityDialog(
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(
-                    text = stringResource(Res.string.feature_chats_scan_identity_qr_description)
-                )
-
-                OutlinedButton(
-                    onClick = onScanQrCode,
-                    enabled = !isVerifying,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.QrCodeScanner,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                if (onScanQrCode != null) {
+                    Text(
+                        text = stringResource(Res.string.feature_chats_scan_identity_qr_description)
                     )
 
-                    Spacer(modifier = Modifier.size(8.dp))
+                    OutlinedButton(
+                        onClick = onScanQrCode,
+                        enabled = !isVerifying,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.QrCodeScanner,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
 
-                    Text(text = stringResource(Res.string.feature_chats_scan_identity_qr))
+                        Spacer(modifier = Modifier.size(8.dp))
+
+                        Text(text = stringResource(Res.string.feature_chats_scan_identity_qr))
+                    }
+
+                    Text(
+                        text = stringResource(Res.string.feature_chats_or_compare_safety_number),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-
-                Text(
-                    text = stringResource(Res.string.feature_chats_or_compare_safety_number),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
 
                 Text(
                     text = stringResource(Res.string.feature_chats_compare_safety_number_contact, contactName)

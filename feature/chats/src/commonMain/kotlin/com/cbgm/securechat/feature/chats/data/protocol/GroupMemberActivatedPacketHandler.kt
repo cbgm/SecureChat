@@ -21,6 +21,7 @@ import com.cbgm.securechat.data.database.entity.ConversationParticipantEntity
 import com.cbgm.securechat.data.database.entity.GroupMemberKeyEntity
 import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationStatus
 import com.cbgm.securechat.feature.chats.data.security.GroupInvitationManager
+import com.cbgm.securechat.feature.chats.data.verification.GroupVerificationCoordinator
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
 
@@ -33,7 +34,8 @@ class GroupMemberActivatedPacketHandler(
     private val localSigningKeyPairProvider: LocalSigningKeyPairProvider,
     private val protocolOutbox: ProtocolOutbox,
     private val phoneNumberNormalizer: PhoneNumberNormalizer,
-    private val groupInvitationManager: GroupInvitationManager
+    private val groupInvitationManager: GroupInvitationManager,
+    private val groupVerificationCoordinator: GroupVerificationCoordinator
 ) : TypedProtocolPacketHandler {
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is GroupMemberActivatedPacket
 
@@ -92,6 +94,9 @@ class GroupMemberActivatedPacketHandler(
                             context.receivedAtEpochMilliseconds
                         )
                 )
+                groupVerificationCoordinator
+                    .synchronize(activationPacket.groupId)
+                    .getOrThrow()
                 return@runCatching
             }
 
@@ -112,7 +117,9 @@ class GroupMemberActivatedPacketHandler(
                     contactId = memberContactId
                 )
             if (existingMemberKey != null) {
-                check(existingMemberKey.encryptionPublicKey.contentEquals(activationPacket.member.encryptionPublicKey)) {
+                check(
+                    existingMemberKey.encryptionPublicKey.contentEquals(activationPacket.member.encryptionPublicKey)
+                ) {
                     "Activated group member encryption key changed"
                 }
                 check(existingMemberKey.signingPublicKey.contentEquals(activationPacket.member.signingPublicKey)) {

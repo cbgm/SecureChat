@@ -47,7 +47,10 @@ object DatabaseMigrations {
 
                 connection.execSQL("DROP TABLE conversations")
                 connection.execSQL("ALTER TABLE conversations_new RENAME TO conversations")
-                connection.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_conversations_contactId ON conversations(contactId)")
+                connection.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_conversations_contactId " +
+                        "ON conversations(contactId)"
+                )
                 connection.execSQL("CREATE INDEX IF NOT EXISTS index_conversations_type ON conversations(type)")
                 connection.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_conversations_updatedAtEpochMilliseconds " +
@@ -291,6 +294,58 @@ object DatabaseMigrations {
                 connection.execSQL(
                     "ALTER TABLE contact_public_identities " +
                         "ADD COLUMN verifiedByContact INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
+
+    val Migration17To18 =
+        object : Migration(17, 18) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS group_verification_pairs (
+                        groupId TEXT NOT NULL,
+                        invitationId TEXT NOT NULL,
+                        contactId TEXT,
+                        displayName TEXT NOT NULL,
+                        membershipStatus TEXT NOT NULL,
+                        participantEncryptionPublicKey BLOB,
+                        participantSigningPublicKey BLOB,
+                        adminVerifiedParticipant INTEGER NOT NULL,
+                        participantVerifiedAdmin INTEGER NOT NULL,
+                        updatedAtEpochMilliseconds INTEGER NOT NULL,
+                        PRIMARY KEY(groupId, invitationId),
+                        FOREIGN KEY(groupId) REFERENCES conversations(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_group_verification_pairs_groupId " +
+                        "ON group_verification_pairs(groupId)"
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_group_verification_pairs_contactId " +
+                        "ON group_verification_pairs(contactId)"
+                )
+            }
+        }
+
+    val Migration18To19 =
+        object : Migration(18, 19) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    """
+                    UPDATE group_invitations
+                    SET updatedAtEpochMilliseconds = createdAtEpochMilliseconds
+                    WHERE updatedAtEpochMilliseconds < createdAtEpochMilliseconds
+                    """.trimIndent()
+                )
+                connection.execSQL(
+                    """
+                    UPDATE conversations
+                    SET updatedAtEpochMilliseconds = createdAtEpochMilliseconds
+                    WHERE updatedAtEpochMilliseconds < createdAtEpochMilliseconds
+                    """.trimIndent()
                 )
             }
         }

@@ -23,6 +23,10 @@ val androidDatabaseModule =
         }
 
         single {
+            get<SecureChatDatabase>().groupVerificationDao()
+        }
+
+        single {
             get<SecureChatDatabase>().chatDao()
         }
 

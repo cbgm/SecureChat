@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
 import com.cbgm.securechat.feature.chats.domain.model.GroupConversationState
+import com.cbgm.securechat.feature.chats.domain.model.GroupMemberInvitationStatus
 import com.cbgm.securechat.feature.chats.domain.usecase.AcceptGroupInvitation
 import com.cbgm.securechat.feature.chats.domain.usecase.DeclineGroupInvitation
 import com.cbgm.securechat.feature.chats.domain.usecase.MarkConversationRead
@@ -23,9 +24,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -53,8 +57,22 @@ class GroupConversationViewModel(
     private val typingObserverJobs = mutableMapOf<String, Job>()
     private val remoteTypingTimeoutJobs = mutableMapOf<String, Job>()
 
-    private val conversationFlow: Flow<Conversation?> = observeConversation(conversationId)
-    private val contactsFlow: Flow<List<Contact>> = observeContacts()
+    private val conversationFlow: Flow<ConversationObservation> =
+        observeConversation(conversationId)
+            .map<Conversation?, ConversationObservation> { conversation ->
+                ConversationObservation.Loaded(conversation)
+            }.onStart { emit(ConversationObservation.Loading) }
+            .catch { error ->
+                emit(
+                    ConversationObservation.Failed(
+                        errorMessage = error.message ?: "Group conversation could not be loaded"
+                    )
+                )
+            }
+    private val contactsFlow: Flow<List<Contact>> =
+        observeContacts()
+            .onStart { emit(emptyList()) }
+            .catch { emit(emptyList()) }
 
     val uiState: StateFlow<ChatUiState> =
         combine(
@@ -63,7 +81,8 @@ class GroupConversationViewModel(
             messageText,
             errorMessage,
             typingContactIds
-        ) { conversation, contacts, currentMessageText, currentError, currentTypingContactIds ->
+        ) { observation, contacts, currentMessageText, currentError, currentTypingContactIds ->
+            val conversation = observation.conversation
             val contactsById = contacts.associateBy { it.id }
             val messages =
                 conversation?.messages.orEmpty().map { message ->
@@ -113,12 +132,17 @@ class GroupConversationViewModel(
                 messageText = currentMessageText,
                 isContactTyping = currentTypingContactIds.isNotEmpty(),
                 typingDisplayName = typingDisplayName,
-                errorMessage = currentError,
-                isLoadingContact = conversation == null,
+                errorMessage = currentError ?: observation.errorMessage,
+                isLoadingContact = observation is ConversationObservation.Loading,
                 isGroup = true,
                 isMessageInputEnabled = messageInputEnabled,
                 groupState = groupState,
                 groupMemberCount = memberCount,
+                groupReadyMemberCount =
+                    conversation
+                        ?.groupMemberInvitationStates
+                        .orEmpty()
+                        .count { member -> member.status == GroupMemberInvitationStatus.ACTIVE },
                 groupPendingCount = conversation?.pendingParticipantCount ?: 0,
                 showGroupInvitationActions = groupState == GroupConversationState.INVITED,
                 groupMemberProgress =
@@ -229,8 +253,12 @@ class GroupConversationViewModel(
     private fun observeParticipants() {
         viewModelScope.launch {
             conversationFlow
-                .map { conversation -> conversation?.participantContactIds.orEmpty().toSet() }
-                .distinctUntilChanged()
+                .map { observation ->
+                    observation.conversation
+                        ?.participantContactIds
+                        .orEmpty()
+                        .toSet()
+                }.distinctUntilChanged()
                 .collect { contactIds ->
                     participantContactIds.value = contactIds
                     updateTypingObservers(contactIds)
@@ -298,6 +326,33 @@ class GroupConversationViewModel(
             preferredPhoneNumber?.value
                 ?: displayName?.takeIf(String::isNotBlank)
                 ?: "Unknown contact"
+        }
+    }
+
+    private sealed interface ConversationObservation {
+        val conversation: Conversation?
+        val errorMessage: String?
+
+        data object Loading : ConversationObservation {
+            override val conversation: Conversation? = null
+            override val errorMessage: String? = null
+        }
+
+        data class Loaded(
+            override val conversation: Conversation?
+        ) : ConversationObservation {
+            override val errorMessage: String? =
+                if (conversation == null) {
+                    "Group conversation was not found"
+                } else {
+                    null
+                }
+        }
+
+        data class Failed(
+            override val errorMessage: String
+        ) : ConversationObservation {
+            override val conversation: Conversation? = null
         }
     }
 

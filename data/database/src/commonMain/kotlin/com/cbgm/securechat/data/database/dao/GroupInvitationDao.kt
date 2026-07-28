@@ -55,7 +55,7 @@ interface GroupInvitationDao {
         """
         UPDATE group_invitations
         SET status = :newStatus,
-            updatedAtEpochMilliseconds = :updatedAt
+            updatedAtEpochMilliseconds = MAX(createdAtEpochMilliseconds, :updatedAt)
         WHERE invitationId = :invitationId
           AND status = :expectedStatus
         """
@@ -71,7 +71,7 @@ interface GroupInvitationDao {
         """
         UPDATE group_invitations
         SET status = :failedStatus,
-            updatedAtEpochMilliseconds = :updatedAt
+            updatedAtEpochMilliseconds = MAX(createdAtEpochMilliseconds, :updatedAt)
         WHERE contactId = :contactId
           AND invitationId != :currentInvitationId
           AND status = :awaitingAcceptanceStatus
@@ -89,7 +89,7 @@ interface GroupInvitationDao {
         """
         UPDATE group_invitations
         SET status = :activeStatus,
-            updatedAtEpochMilliseconds = :updatedAt
+            updatedAtEpochMilliseconds = MAX(createdAtEpochMilliseconds, :updatedAt)
         WHERE groupId = :groupId
           AND status = :readyStatus
         """

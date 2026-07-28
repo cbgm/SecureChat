@@ -32,6 +32,9 @@ data class ChatUiState(
     val isMessageInputEnabled: Boolean = true,
     val groupState: GroupConversationState = GroupConversationState.READY,
     val groupMemberCount: Int = 0,
+    val groupReadyMemberCount: Int = 0,
+    val groupMutuallyVerifiedCount: Int = 0,
+    val groupVerifiableMemberCount: Int = 0,
     val groupPendingCount: Int = 0,
     val showGroupInvitationActions: Boolean = false,
     val groupMemberProgress: List<GroupMemberProgressUi> = emptyList()

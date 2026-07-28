@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Lock
@@ -124,7 +125,11 @@ import com.cbgm.securechat.resources.feature_chats_group_status_expired
 import com.cbgm.securechat.resources.feature_chats_group_status_failed
 import com.cbgm.securechat.resources.feature_chats_group_status_invited
 import com.cbgm.securechat.resources.feature_chats_group_status_joining
+import com.cbgm.securechat.resources.feature_chats_group_status_partial
 import com.cbgm.securechat.resources.feature_chats_group_status_waiting
+import com.cbgm.securechat.resources.feature_chats_group_verification_counter
+import com.cbgm.securechat.resources.feature_chats_group_verification_overview
+import com.cbgm.securechat.resources.feature_chats_group_verification_title
 import com.cbgm.securechat.resources.feature_chats_invalid_message_packet
 import com.cbgm.securechat.resources.feature_chats_invalid_packet
 import com.cbgm.securechat.resources.feature_chats_invalid_plaintext
@@ -161,6 +166,7 @@ fun ChatScreen(
     onBack: () -> Unit,
     onAcceptGroupInvitation: () -> Unit = {},
     onDeclineGroupInvitation: () -> Unit = {},
+    onGroupVerificationClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     SecureChatLazyScaffold(
@@ -178,6 +184,7 @@ fun ChatScreen(
                 uiState = uiState,
                 containerColor = containerColor,
                 onClickHeader = onClickHeader,
+                onGroupVerificationClick = onGroupVerificationClick,
                 onVerifyIdentity = onVerifyIdentity,
                 onManualIdentitySetup = onManualIdentitySetup,
                 onAcceptGroupInvitation = onAcceptGroupInvitation,
@@ -209,6 +216,7 @@ private fun ChatTopBar(
     uiState: ChatUiState,
     containerColor: Color,
     onClickHeader: () -> Unit,
+    onGroupVerificationClick: () -> Unit,
     onVerifyIdentity: () -> Unit,
     onManualIdentitySetup: () -> Unit,
     onAcceptGroupInvitation: () -> Unit,
@@ -285,7 +293,16 @@ private fun ChatTopBar(
             }
         )
 
-        if (!uiState.isGroup) {
+        if (
+            uiState.isGroup &&
+            !uiState.showGroupInvitationActions &&
+            uiState.groupMemberCount > 1
+        ) {
+            GroupVerificationBanner(
+                uiState = uiState,
+                onClick = onGroupVerificationClick
+            )
+        } else if (!uiState.isGroup) {
             SecurityBanner(
                 securityState = uiState.contactSecurityState,
                 identityHandshakeState = uiState.identityHandshakeState,
@@ -315,7 +332,107 @@ private fun ChatTopBar(
 }
 
 @Composable
-private fun groupSubtitle(uiState: ChatUiState): String =
+private fun GroupVerificationBanner(
+    uiState: ChatUiState,
+    onClick: () -> Unit
+) {
+    val isFullyVerified =
+        uiState.groupVerifiableMemberCount > 0 &&
+            uiState.groupMutuallyVerifiedCount == uiState.groupVerifiableMemberCount
+    val summary =
+        stringResource(
+            Res.string.feature_chats_group_verification_overview,
+            uiState.groupMutuallyVerifiedCount,
+            uiState.groupVerifiableMemberCount,
+            uiState.groupMemberCount
+        )
+
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
+        color =
+            if (isFullyVerified) {
+                MaterialTheme.colorScheme.secondaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            },
+        contentColor =
+            if (isFullyVerified) {
+                MaterialTheme.colorScheme.onSecondaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = MaterialTheme.spacing.medium,
+                        vertical = MaterialTheme.spacing.small
+                    ),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector =
+                    if (isFullyVerified) {
+                        Icons.Default.Lock
+                    } else {
+                        Icons.Default.Security
+                    },
+                contentDescription = null,
+                modifier = Modifier.size(22.dp)
+            )
+
+            Spacer(modifier = Modifier.width(MaterialTheme.spacing.small))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text =
+                        stringResource(
+                            Res.string.feature_chats_group_verification_title
+                        ),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null
+            )
+        }
+    }
+}
+
+@Composable
+private fun groupSubtitle(uiState: ChatUiState): String {
+    val stateSubtitle = groupStateSubtitle(uiState)
+    if (uiState.groupMemberCount <= 1) {
+        return stateSubtitle
+    }
+
+    val verificationSubtitle =
+        stringResource(
+            Res.string.feature_chats_group_verification_counter,
+            uiState.groupMutuallyVerifiedCount,
+            uiState.groupVerifiableMemberCount
+        )
+
+    return "$stateSubtitle · $verificationSubtitle"
+}
+
+@Composable
+private fun groupStateSubtitle(uiState: ChatUiState): String =
     when (uiState.groupState) {
         GroupConversationState.READY ->
             stringResource(Res.string.feature_chats_group_member_count, uiState.groupMemberCount)
@@ -324,9 +441,31 @@ private fun groupSubtitle(uiState: ChatUiState): String =
         GroupConversationState.JOINING ->
             stringResource(Res.string.feature_chats_group_status_joining)
         GroupConversationState.WAITING_FOR_MEMBERS ->
-            stringResource(Res.string.feature_chats_group_status_waiting, uiState.groupPendingCount)
+            if (uiState.groupReadyMemberCount > 0) {
+                stringResource(
+                    Res.string.feature_chats_group_status_partial,
+                    uiState.groupReadyMemberCount,
+                    uiState.groupPendingCount
+                )
+            } else {
+                stringResource(
+                    Res.string.feature_chats_group_status_waiting,
+                    uiState.groupPendingCount
+                )
+            }
         GroupConversationState.DISTRIBUTING_KEYS ->
-            stringResource(Res.string.feature_chats_group_status_distributing, uiState.groupPendingCount)
+            if (uiState.groupReadyMemberCount > 0) {
+                stringResource(
+                    Res.string.feature_chats_group_status_partial,
+                    uiState.groupReadyMemberCount,
+                    uiState.groupPendingCount
+                )
+            } else {
+                stringResource(
+                    Res.string.feature_chats_group_status_distributing,
+                    uiState.groupPendingCount
+                )
+            }
         GroupConversationState.DECLINED ->
             stringResource(Res.string.feature_chats_group_status_declined)
         GroupConversationState.EXPIRED ->
@@ -956,7 +1095,8 @@ private fun MessageSecurityIndicator(message: ChatMessage) {
         when (message.contentStatus) {
             MessageContentStatus.INVALID_PACKET -> stringResource(Res.string.feature_chats_invalid_packet)
             MessageContentStatus.INVALID_PLAINTEXT_PACKET -> stringResource(Res.string.feature_chats_invalid_plaintext)
-            MessageContentStatus.TRANSPORT_DECRYPTION_FAILED -> stringResource(Res.string.feature_chats_decryption_failed)
+            MessageContentStatus.TRANSPORT_DECRYPTION_FAILED ->
+                stringResource(Res.string.feature_chats_decryption_failed)
             MessageContentStatus.READABLE ->
                 when (message.security) {
                     MessageSecurity.INSECURE -> stringResource(Res.string.feature_chats_not_encrypted)

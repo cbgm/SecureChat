@@ -6,6 +6,7 @@ import androidx.room.Transaction
 import androidx.room.Upsert
 import com.cbgm.securechat.data.database.entity.GroupMemberKeyEntity
 import com.cbgm.securechat.data.database.entity.GroupSecurityStateEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface GroupSecurityDao {
@@ -30,6 +31,9 @@ interface GroupSecurityDao {
 
     @Query("SELECT * FROM group_security_states WHERE groupId = :groupId LIMIT 1")
     suspend fun findState(groupId: String): GroupSecurityStateEntity?
+
+    @Query("SELECT * FROM group_security_states WHERE groupId = :groupId LIMIT 1")
+    fun observeState(groupId: String): Flow<GroupSecurityStateEntity?>
 
     @Query(
         """

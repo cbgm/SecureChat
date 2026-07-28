@@ -25,6 +25,7 @@ import com.cbgm.securechat.feature.chats.data.message.GroupMessageSender
 import com.cbgm.securechat.feature.chats.data.security.GroupInvitationManager
 import com.cbgm.securechat.feature.chats.data.security.GroupSecurityManager
 import com.cbgm.securechat.feature.chats.data.security.GroupWelcomeRecipient
+import com.cbgm.securechat.feature.chats.data.verification.GroupVerificationCoordinator
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactKeyExchangeStore
@@ -44,7 +45,8 @@ class GroupInvitationCoordinator(
     private val protocolOutbox: ProtocolOutbox,
     private val groupInvitationManager: GroupInvitationManager,
     private val groupSecurityManager: GroupSecurityManager,
-    private val groupMessageSender: GroupMessageSender
+    private val groupMessageSender: GroupMessageSender,
+    private val groupVerificationCoordinator: GroupVerificationCoordinator
 ) {
     private val activationMutex = Mutex()
 
@@ -108,6 +110,9 @@ class GroupInvitationCoordinator(
                 }
 
             groupInvitationDao.upsertAll(invitationsAndPackets.map { (entity, _) -> entity })
+            groupVerificationCoordinator
+                .initializeOwnedGroup(groupId)
+                .getOrThrow()
 
             invitationsAndPackets.forEach { (entity, packet) ->
                 protocolOutbox.enqueue(entity.contactId, packet).getOrThrow()
@@ -123,9 +128,9 @@ class GroupInvitationCoordinator(
         runCatching {
             groupInvitationManager.verifyInvite(packet).getOrThrow()
             val persistedAtEpochMilliseconds =
-                resolveIncomingInvitationUpdatedAt(
+                resolveInvitationUpdatedAt(
                     createdAtEpochMilliseconds = packet.createdAtEpochMilliseconds,
-                    receivedAtEpochMilliseconds = receivedAtEpochMilliseconds
+                    candidateAtEpochMilliseconds = receivedAtEpochMilliseconds
                 )
 
             val existingInvitation = groupInvitationDao.findByInvitationId(packet.invitationId)
@@ -197,7 +202,11 @@ class GroupInvitationCoordinator(
                     invitationId = invitation.invitationId,
                     expectedStatus = invitation.status,
                     newStatus = GroupInvitationStatus.EXPIRED.name,
-                    updatedAt = now
+                    updatedAt =
+                        resolveInvitationUpdatedAt(
+                            createdAtEpochMilliseconds = invitation.createdAtEpochMilliseconds,
+                            candidateAtEpochMilliseconds = now
+                        )
                 )
                 error("Group invitation has expired")
             }
@@ -230,7 +239,11 @@ class GroupInvitationCoordinator(
                     invitationId = invitation.invitationId,
                     expectedStatus = GroupInvitationStatus.AWAITING_ACCEPTANCE.name,
                     newStatus = GroupInvitationStatus.JOIN_SENT.name,
-                    updatedAt = now
+                    updatedAt =
+                        resolveInvitationUpdatedAt(
+                            createdAtEpochMilliseconds = invitation.createdAtEpochMilliseconds,
+                            candidateAtEpochMilliseconds = now
+                        )
                 )
             check(updated == 1) { "Group invitation changed while it was accepted" }
 
@@ -239,7 +252,11 @@ class GroupInvitationCoordinator(
                     invitationId = invitation.invitationId,
                     expectedStatus = GroupInvitationStatus.JOIN_SENT.name,
                     newStatus = GroupInvitationStatus.FAILED.name,
-                    updatedAt = SystemClock.nowEpochMilliseconds()
+                    updatedAt =
+                        resolveInvitationUpdatedAt(
+                            createdAtEpochMilliseconds = invitation.createdAtEpochMilliseconds,
+                            candidateAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+                        )
                 )
                 throw error
             }
@@ -311,7 +328,11 @@ class GroupInvitationCoordinator(
                         invitationId = invitation.invitationId,
                         expectedStatus = invitation.status,
                         newStatus = GroupInvitationStatus.IDENTITY_READY.name,
-                        updatedAt = receivedAtEpochMilliseconds
+                        updatedAt =
+                            resolveInvitationUpdatedAt(
+                                createdAtEpochMilliseconds = invitation.createdAtEpochMilliseconds,
+                                candidateAtEpochMilliseconds = receivedAtEpochMilliseconds
+                            )
                     )
                 check(updated == 1) { "Group invitation changed while the join request was applied" }
             } else {
@@ -352,9 +373,16 @@ class GroupInvitationCoordinator(
                     invitationId = invitation.invitationId,
                     expectedStatus = invitation.status,
                     newStatus = GroupInvitationStatus.DECLINED.name,
-                    updatedAt = receivedAtEpochMilliseconds
+                    updatedAt =
+                        resolveInvitationUpdatedAt(
+                            createdAtEpochMilliseconds = invitation.createdAtEpochMilliseconds,
+                            candidateAtEpochMilliseconds = receivedAtEpochMilliseconds
+                        )
                 )
             check(updated == 1) { "Group invitation changed while the decline was applied" }
+            groupVerificationCoordinator
+                .onOwnedMembershipChanged(packet.groupId)
+                .getOrThrow()
         }
 
     suspend fun receiveReadyAcknowledgement(
@@ -450,6 +478,9 @@ class GroupInvitationCoordinator(
                     )
                 )
 
+                groupVerificationCoordinator
+                    .onOwnedMembershipChanged(packet.groupId)
+                    .getOrThrow()
                 flushQueuedIfGroupHasActiveMembers(packet.groupId)
             }
         }
@@ -776,12 +807,3 @@ class GroupInvitationCoordinator(
         const val INVITATION_VALIDITY_MILLISECONDS = 7L * 24L * 60L * 60L * 1_000L
     }
 }
-
-internal fun resolveIncomingInvitationUpdatedAt(
-    createdAtEpochMilliseconds: Long,
-    receivedAtEpochMilliseconds: Long
-): Long =
-    maxOf(
-        createdAtEpochMilliseconds,
-        receivedAtEpochMilliseconds
-    )

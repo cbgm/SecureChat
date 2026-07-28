@@ -17,6 +17,9 @@ import com.cbgm.securechat.core.protocol.packet.GroupJoinRequestPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberActivatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberActivationAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.GroupReadyAcknowledgementPacket
+import com.cbgm.securechat.core.protocol.packet.GroupVerificationReceiptPacket
+import com.cbgm.securechat.core.protocol.packet.GroupVerificationSnapshotPacket
+import com.cbgm.securechat.core.protocol.packet.GroupVerificationSnapshotRequestPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
@@ -150,6 +153,9 @@ class IncomingMessageProcessor(
             is GroupJoinRequestPacket -> packet.groupId
             is GroupInviteDeclinedPacket -> packet.groupId
             is GroupReadyAcknowledgementPacket -> packet.groupId
+            is GroupVerificationReceiptPacket -> packet.groupId
+            is GroupVerificationSnapshotRequestPacket -> packet.groupId
+            is GroupVerificationSnapshotPacket -> packet.groupId
             else -> chatDao.findConversationByContactId(contactId)?.id ?: "control-${packet.packetId}"
         }
 

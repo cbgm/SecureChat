@@ -15,6 +15,9 @@ import com.cbgm.securechat.core.protocol.packet.ContactVerificationReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberActivatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberActivationAcknowledgementPacket
+import com.cbgm.securechat.core.protocol.packet.GroupVerificationReceiptPacket
+import com.cbgm.securechat.core.protocol.packet.GroupVerificationSnapshotPacket
+import com.cbgm.securechat.core.protocol.packet.GroupVerificationSnapshotRequestPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
@@ -210,7 +213,10 @@ class DefaultOutboxProcessor(
                 when (packet) {
                     is GroupCreatedPacket,
                     is GroupMemberActivatedPacket,
-                    is GroupMemberActivationAcknowledgementPacket ->
+                    is GroupMemberActivationAcknowledgementPacket,
+                    is GroupVerificationReceiptPacket,
+                    is GroupVerificationSnapshotRequestPacket,
+                    is GroupVerificationSnapshotPacket ->
                         "Group packets require a mutual SecureChat key exchange"
 
                     is ContactReadyPacket ->
@@ -252,7 +258,10 @@ class DefaultOutboxProcessor(
             is ContactVerificationReceiptPacket,
             is GroupCreatedPacket,
             is GroupMemberActivatedPacket,
-            is GroupMemberActivationAcknowledgementPacket -> true
+            is GroupMemberActivationAcknowledgementPacket,
+            is GroupVerificationReceiptPacket,
+            is GroupVerificationSnapshotRequestPacket,
+            is GroupVerificationSnapshotPacket -> true
 
             else -> false
         }
