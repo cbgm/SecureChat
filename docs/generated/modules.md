@@ -9,12 +9,12 @@ Select a module to open its generated detail page with source sets, file counts,
 | [`:androidApp`](modules/androidApp.md) | `androidApp` | 4 | 0 | 21 | 14 | 0 |
 | [`:core`](modules/core.md) | `core` | 8 | 0 | 1 | 0 | 11 |
 | [`:core:crypto`](modules/core-crypto.md) | `core` | 36 | 5 | 1 | 0 | 5 |
-| [`:core:protocol`](modules/core-protocol.md) | `core` | 52 | 7 | 1 | 0 | 7 |
-| [`:core:ui`](modules/core-ui.md) | `core` | 25 | 0 | 18 | 0 | 9 |
+| [`:core:protocol`](modules/core-protocol.md) | `core` | 56 | 8 | 1 | 0 | 7 |
+| [`:core:ui`](modules/core-ui.md) | `core` | 25 | 0 | 16 | 0 | 9 |
 | [`:data`](modules/data.md) | `data` | 0 | 0 | 0 | 0 | 0 |
-| [`:data:database`](modules/data-database.md) | `data` | 36 | 0 | 1 | 2 | 4 |
+| [`:data:database`](modules/data-database.md) | `data` | 38 | 0 | 1 | 2 | 4 |
 | [`:feature`](modules/feature.md) | `feature` | 0 | 0 | 0 | 0 | 0 |
-| [`:feature:chats`](modules/feature-chats.md) | `feature` | 85 | 8 | 1 | 6 | 3 |
+| [`:feature:chats`](modules/feature-chats.md) | `feature` | 104 | 10 | 1 | 6 | 3 |
 | [`:feature:contactimport`](modules/feature-contactimport.md) | `feature` | 20 | 1 | 1 | 4 | 2 |
 | [`:feature:contacts`](modules/feature-contacts.md) | `feature` | 79 | 3 | 1 | 5 | 5 |
 | [`:feature:identity`](modules/feature-identity.md) | `feature` | 48 | 4 | 1 | 4 | 5 |
