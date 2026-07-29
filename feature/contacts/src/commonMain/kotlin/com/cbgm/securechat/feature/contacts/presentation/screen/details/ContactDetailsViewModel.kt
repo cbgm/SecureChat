@@ -78,43 +78,6 @@ class ContactDetailsViewModel(
         }
     }
 
-    fun showVerificationDialog() {
-        updateContent { current ->
-            if (!current.canVerify) {
-                current
-            } else {
-                current.copy(
-                    isVerificationDialogVisible = true,
-                    hasConfirmedComparison = false,
-                    verificationError = null
-                )
-            }
-        }
-    }
-
-    fun dismissVerificationDialog() {
-        updateContent { current ->
-            if (current.isSavingVerification) {
-                current
-            } else {
-                current.copy(
-                    isVerificationDialogVisible = false,
-                    hasConfirmedComparison = false,
-                    verificationError = null
-                )
-            }
-        }
-    }
-
-    fun onComparisonConfirmedChanged(confirmed: Boolean) {
-        updateContent { current ->
-            current.copy(
-                hasConfirmedComparison = confirmed,
-                verificationError = null
-            )
-        }
-    }
-
     fun confirmVerification() {
         val current = _uiState.value as? ContactDetailsUiState.Content ?: return
 
@@ -122,7 +85,7 @@ class ContactDetailsViewModel(
             return
         }
 
-        if (!current.canVerify || !current.hasConfirmedComparison || current.isSavingVerification) {
+        if (!current.canVerify || current.isSavingVerification) {
             return
         }
 
@@ -137,8 +100,6 @@ class ContactDetailsViewModel(
                         _uiState.value =
                             latest.copy(
                                 contact = verifiedContact,
-                                isVerificationDialogVisible = false,
-                                hasConfirmedComparison = false,
                                 isSavingVerification = false,
                                 verificationError = null
                             )
@@ -155,11 +116,5 @@ class ContactDetailsViewModel(
                     }
                 }
         }
-    }
-
-    private fun updateContent(transform: (ContactDetailsUiState.Content) -> ContactDetailsUiState.Content) {
-        val current = _uiState.value as? ContactDetailsUiState.Content ?: return
-
-        _uiState.value = transform(current)
     }
 }

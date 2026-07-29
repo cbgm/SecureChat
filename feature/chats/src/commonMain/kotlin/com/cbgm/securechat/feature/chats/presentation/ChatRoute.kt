@@ -9,8 +9,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.cbgm.securechat.feature.chats.domain.model.ContactSecurityState
-import com.cbgm.securechat.feature.chats.presentation.component.chat.VerifyIdentityDialog
 import com.cbgm.securechat.feature.chats.presentation.screen.ChatScreen
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.ChatViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.ManualIdentitySetupDialog
@@ -24,7 +22,7 @@ fun ChatRoute(
     contactName: String,
     onBack: () -> Unit,
     onClickHeader: () -> Unit,
-    onScanIdentityQr: () -> Unit,
+    onVerifyIdentity: () -> Unit,
     onShareIdentity: () -> Unit,
     onImportIdentity: () -> Unit,
     modifier: Modifier = Modifier,
@@ -39,7 +37,6 @@ fun ChatRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var showVerificationDialog by remember(contactId) { mutableStateOf(false) }
     var showManualIdentitySetupDialog by remember(contactId) { mutableStateOf(false) }
 
     LaunchedEffect(key1 = contactId) {
@@ -67,24 +64,12 @@ fun ChatRoute(
         }
     }
 
-    LaunchedEffect(key1 = uiState.contactSecurityState) {
-        if (
-            uiState.contactSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_ME ||
-            uiState.contactSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED
-        ) {
-            showVerificationDialog = false
-        }
-    }
-
     ChatScreen(
         uiState = uiState,
         onMessageTextChanged = viewModel::onMessageTextChanged,
         onSendClick = viewModel::sendMessage,
         onRetryMessage = viewModel::retryMessage,
-        onVerifyIdentity = {
-            viewModel.refreshSafetyNumber()
-            showVerificationDialog = true
-        },
+        onVerifyIdentity = onVerifyIdentity,
         onManualIdentitySetup = {
             showManualIdentitySetupDialog = true
         },
@@ -92,25 +77,6 @@ fun ChatRoute(
         onBack = onBack,
         modifier = modifier
     )
-
-    if (
-        showVerificationDialog
-    ) {
-        VerifyIdentityDialog(
-            contactName = uiState.contactName,
-            safetyNumber = uiState.safetyNumber,
-            isLoadingSafetyNumber = uiState.isLoadingSafetyNumber,
-            isVerifying = uiState.isVerifyingIdentity,
-            onConfirm = viewModel::verifyIdentity,
-            onScanQrCode = {
-                showVerificationDialog = false
-                onScanIdentityQr()
-            },
-            onDismiss = {
-                showVerificationDialog = false
-            }
-        )
-    }
 
     if (showManualIdentitySetupDialog) {
         ManualIdentitySetupDialog(

@@ -9,8 +9,6 @@ sealed interface ContactDetailsUiState {
     data class Content(
         val contact: Contact,
         val safetyNumber: SafetyNumber?,
-        val isVerificationDialogVisible: Boolean = false,
-        val hasConfirmedComparison: Boolean = false,
         val isSavingVerification: Boolean = false,
         val verificationError: String? = null
     ) : ContactDetailsUiState {

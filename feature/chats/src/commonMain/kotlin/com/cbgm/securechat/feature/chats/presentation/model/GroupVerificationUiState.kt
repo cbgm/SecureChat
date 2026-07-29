@@ -12,7 +12,7 @@ enum class GroupMemberVerificationState {
     INVITATION_PENDING
 }
 
-data class GroupMemberVerificationUi(
+data class GroupMemberVerificationUiState(
     val invitationId: String?,
     val contactId: String?,
     val displayName: String,
@@ -32,13 +32,13 @@ data class GroupMemberVerificationUi(
             }
 }
 
-data class GroupVerificationSummaryUi(
+data class GroupVerificationSummaryUiState(
     val hasAuthoritativeState: Boolean = false,
     val isLocalAdmin: Boolean = false,
     val mutuallyVerifiedParticipantCount: Int = 0,
     val activeParticipantCount: Int = 0,
     val totalMemberCount: Int = 0,
-    val members: List<GroupMemberVerificationUi> = emptyList()
+    val members: List<GroupMemberVerificationUiState> = emptyList()
 ) {
     val isFullyVerified: Boolean
         get() =
@@ -53,7 +53,7 @@ internal fun buildGroupVerificationSummary(
     ownerDisplayName: String,
     ownInvitationId: String?,
     rows: List<GroupVerificationPair>
-): GroupVerificationSummaryUi {
+): GroupVerificationSummaryUiState {
     val participantRows =
         rows
             .distinctBy(GroupVerificationPair::invitationId)
@@ -64,7 +64,7 @@ internal fun buildGroupVerificationSummary(
             val isActive =
                 row.membershipStatus == GroupVerificationMembershipStatus.ACTIVE
 
-            GroupMemberVerificationUi(
+            GroupMemberVerificationUiState(
                 invitationId = row.invitationId,
                 contactId = if (isLocalAdmin) row.contactId else null,
                 displayName = row.displayName,
@@ -84,7 +84,7 @@ internal fun buildGroupVerificationSummary(
             row.invitationId == ownInvitationId
         }
     val adminMember =
-        GroupMemberVerificationUi(
+        GroupMemberVerificationUiState(
             invitationId = ownInvitationId,
             contactId = ownerContactId,
             displayName = ownerDisplayName,
@@ -107,7 +107,7 @@ internal fun buildGroupVerificationSummary(
 
     val activeRows = participantRows.filter { row -> row.isActive() }
 
-    return GroupVerificationSummaryUi(
+    return GroupVerificationSummaryUiState(
         hasAuthoritativeState = participantRows.isNotEmpty(),
         isLocalAdmin = isLocalAdmin,
         mutuallyVerifiedParticipantCount =

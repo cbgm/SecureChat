@@ -3,7 +3,6 @@ package com.cbgm.securechat.feature.chats.di
 import com.cbgm.securechat.core.protocol.handler.IncomingMessageHandler
 import com.cbgm.securechat.core.protocol.handler.TypedProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.outbox.OutboxDeliveryStateListener
-import com.cbgm.securechat.data.database.SecureChatDatabase
 import com.cbgm.securechat.feature.chats.data.conversation.DirectConversationStore
 import com.cbgm.securechat.feature.chats.data.delivery.MessageDeliveryStateCoordinator
 import com.cbgm.securechat.feature.chats.data.incoming.IncomingMessageProcessor
@@ -52,15 +51,14 @@ import com.cbgm.securechat.feature.chats.domain.usecase.SynchronizeGroupVerifica
 import com.cbgm.securechat.feature.chats.domain.usecase.VerifyGroupMember
 import com.cbgm.securechat.feature.chats.presentation.screen.ChatsViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.ChatViewModel
-import com.cbgm.securechat.feature.chats.presentation.screen.chat.GroupConversationViewModel
-import com.cbgm.securechat.feature.chats.presentation.screen.chat.GroupVerificationViewModel
+import com.cbgm.securechat.feature.chats.presentation.screen.chat.GroupChatVerificationViewModel
+import com.cbgm.securechat.feature.chats.presentation.screen.chat.GroupChatViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.create.CreateGroupViewModel
 import com.cbgm.securechat.feature.contacts.domain.identity.IdentityExchangeStarter
 import com.cbgm.securechat.feature.contacts.domain.identity.IdentityInvitationService
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContactSafetyNumber
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContact
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContacts
-import com.cbgm.securechat.feature.contacts.domain.usecase.VerifyContact
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModel
@@ -200,7 +198,7 @@ val chatsModule =
         }
 
         viewModel { parameters ->
-            GroupConversationViewModel(
+            GroupChatViewModel(
                 conversationId = parameters.get(),
                 observeConversation = get(),
                 sendGroupMessage = get(),
@@ -215,7 +213,7 @@ val chatsModule =
         }
 
         viewModel { parameters ->
-            GroupVerificationViewModel(
+            GroupChatVerificationViewModel(
                 conversationId = parameters.get(),
                 observeGroupVerification = get(),
                 synchronizeGroupVerification = get(),
@@ -237,8 +235,6 @@ val chatsModule =
                 identityExchangeStarter = get<IdentityExchangeStarter>(),
                 identityInvitationService = get<IdentityInvitationService>(),
                 observeContact = get<ObserveContact>(),
-                getContactSafetyNumber = get<GetContactSafetyNumber>(),
-                verifyContact = get<VerifyContact>(),
                 observeTypingIndicator = get(),
                 setTypingIndicator = get()
             )

@@ -14,10 +14,10 @@ Generated automatically by `./gradlew architectureReport`.
 | Maximum direct dependencies | 14 |
 | Maximum direct dependents | 11 |
 | Distinct source sets | 9 |
-| Kotlin files | 560 |
-| Production Kotlin files | 519 |
-| Test Kotlin files | 41 |
-| Resource files | 54 |
+| Kotlin files | 535 |
+| Production Kotlin files | 497 |
+| Test Kotlin files | 38 |
+| Resource files | 56 |
 
 ## Modules by group
 

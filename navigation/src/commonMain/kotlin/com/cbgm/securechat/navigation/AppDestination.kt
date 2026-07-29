@@ -5,11 +5,11 @@ import kotlinx.serialization.Serializable
 
 sealed interface AppDestination {
     @Serializable
-    data object Contacts : AppDestination
-
-    @Serializable
-    data class ContactDetails(
-        val contactId: String
+    data class Details(
+        val child: DetailsChild,
+        val conversationId: String,
+        val contactId: String? = null,
+        val openVerification: Boolean = false
     ) : AppDestination
 
     @Serializable
@@ -45,8 +45,9 @@ sealed interface AppDestination {
     data object ScanIdentity : AppDestination
 
     @Serializable
-    data class VerifyContactQr(
-        val contactId: String
+    data class VerifyIdentityQr(
+        val contactId: String,
+        val groupId: String? = null
     ) : AppDestination
 
     @Serializable
@@ -57,4 +58,10 @@ sealed interface AppDestination {
         val scannedIdentity: String? = null,
         val contactId: String? = null
     ) : AppDestination
+}
+
+@Serializable
+enum class DetailsChild {
+    CONTACT,
+    GROUP
 }

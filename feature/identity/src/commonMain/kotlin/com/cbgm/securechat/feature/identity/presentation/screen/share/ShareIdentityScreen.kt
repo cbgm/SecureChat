@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.ui.component.BlockScreenshotEffect
 import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
 import com.cbgm.securechat.core.ui.component.SecureChatCard
 import com.cbgm.securechat.core.ui.component.SecureChatCardNoAnimation
@@ -81,6 +82,8 @@ fun ShareIdentityScreen(
     modifier: Modifier = Modifier,
     showBackButton: Boolean = true
 ) {
+    BlockScreenshotEffect(enabled = true)
+
     var showOverflowMenu by remember {
         mutableStateOf(false)
     }

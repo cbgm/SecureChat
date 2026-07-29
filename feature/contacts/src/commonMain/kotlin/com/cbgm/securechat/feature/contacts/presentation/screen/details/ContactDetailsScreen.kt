@@ -67,7 +67,6 @@ import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStat
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.model.SecureChatIdentity
-import com.cbgm.securechat.feature.contacts.presentation.component.contactdetails.SafetyNumberVerificationDialog
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactDetailsUiState
 import com.cbgm.securechat.feature.contacts.presentation.screen.details.component.SectionTitle
 import com.cbgm.securechat.resources.Res
@@ -126,9 +125,6 @@ fun ContactDetailsScreen(
     onRetry: () -> Unit,
     onShareContact: () -> Unit,
     onVerifyIdentity: () -> Unit,
-    onDismissVerification: () -> Unit,
-    onComparisonConfirmedChanged: (Boolean) -> Unit,
-    onConfirmVerification: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val title =
@@ -165,23 +161,6 @@ fun ContactDetailsScreen(
             onRetry = onRetry,
             onShareContact = onShareContact,
             onVerifyIdentity = onVerifyIdentity
-        )
-    }
-
-    if (
-        uiState is ContactDetailsUiState.Content &&
-        uiState.isVerificationDialogVisible &&
-        uiState.safetyNumber != null
-    ) {
-        SafetyNumberVerificationDialog(
-            contactName = uiState.contact.displayName ?: stringResource(Res.string.base_contact),
-            safetyNumber = uiState.safetyNumber,
-            hasConfirmedComparison = uiState.hasConfirmedComparison,
-            isSaving = uiState.isSavingVerification,
-            errorMessage = uiState.verificationError,
-            onConfirmedChanged = onComparisonConfirmedChanged,
-            onConfirm = onConfirmVerification,
-            onDismiss = onDismissVerification
         )
     }
 }
@@ -979,17 +958,13 @@ private fun PreviewContactDetailsScreen() {
                                     "11111"
                                 )
                         ),
-                    hasConfirmedComparison = false,
                     isSavingVerification = false,
                     verificationError = null
                 ),
             onBack = {},
             onRetry = {},
             onShareContact = {},
-            onVerifyIdentity = {},
-            onDismissVerification = {},
-            onComparisonConfirmedChanged = {},
-            onConfirmVerification = {}
+            onVerifyIdentity = {}
         )
     }
 }

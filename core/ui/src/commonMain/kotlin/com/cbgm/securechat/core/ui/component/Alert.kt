@@ -1,10 +1,16 @@
 package com.cbgm.securechat.core.ui.component
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import com.cbgm.securechat.core.ui.theme.spacing
 
 @Composable
 fun SecureChatAlertDialog(
@@ -19,12 +25,16 @@ fun SecureChatAlertDialog(
         containerColor = MaterialTheme.colorScheme.primaryContainer,
         shape = MaterialTheme.shapes.small,
         title = {
-            Text(
-                text = title,
-                color = MaterialTheme.colorScheme.onBackground,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
-            )
+            Column {
+                Text(
+                    text = title,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(MaterialTheme.spacing.small))
+                HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = .05f))
+            }
         },
         text = text,
         confirmButton = confirmButton,

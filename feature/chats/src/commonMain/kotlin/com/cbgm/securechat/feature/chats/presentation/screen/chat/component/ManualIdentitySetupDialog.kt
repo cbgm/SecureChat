@@ -1,12 +1,17 @@
 package com.cbgm.securechat.feature.chats.presentation.screen.chat.component
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.cbgm.securechat.core.ui.component.SecureChatAlertDialog
+import com.cbgm.securechat.core.ui.component.SecureChatOutlinedButton
+import com.cbgm.securechat.core.ui.component.SecureChatSecondaryButton
+import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.base_cancel
 import com.cbgm.securechat.resources.feature_chats_import_contact_identity
@@ -21,35 +26,35 @@ fun ManualIdentitySetupDialog(
     onImportIdentity: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(text = stringResource(Res.string.feature_chats_manual_identity_setup_title))
-        },
+    SecureChatAlertDialog(
+        onDismissRequest = {},
+        title = stringResource(Res.string.feature_chats_manual_identity_setup_title),
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(text = stringResource(Res.string.feature_chats_manual_identity_setup_description))
 
-                TextButton(
-                    onClick = onShareIdentity,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(text = stringResource(Res.string.feature_identity_share_my_identity))
-                }
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
-                TextButton(
+                SecureChatOutlinedButton(
+                    onClick = onShareIdentity,
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(Res.string.feature_identity_share_my_identity)
+                )
+
+                SecureChatOutlinedButton(
                     onClick = onImportIdentity,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(text = stringResource(Res.string.feature_chats_import_contact_identity))
-                }
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(Res.string.feature_chats_import_contact_identity)
+                )
             }
         },
-        confirmButton = { },
+        confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(Res.string.base_cancel))
-            }
+            SecureChatSecondaryButton(
+                onClick = onDismiss,
+                text = stringResource(Res.string.base_cancel),
+                fillMaxWidth = false
+            )
         }
     )
 }

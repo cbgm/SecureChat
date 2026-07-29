@@ -7,11 +7,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -19,32 +17,22 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.cbgm.securechat.feature.chats.domain.usecase.GetOrCreateDirectConversation
 import com.cbgm.securechat.feature.chats.presentation.ChatRoute
-import com.cbgm.securechat.feature.chats.presentation.GroupConversationRoute
+import com.cbgm.securechat.feature.chats.presentation.GroupChatRoute
+import com.cbgm.securechat.feature.chats.presentation.VerifyIdentityQrRoute
+import com.cbgm.securechat.feature.chats.presentation.details.DetailsRoute
+import com.cbgm.securechat.feature.chats.presentation.details.DetailsTarget
 import com.cbgm.securechat.feature.contactimport.presentation.ImportIdentityRoute
 import com.cbgm.securechat.feature.contactimport.presentation.ScanIdentityRoute
-import com.cbgm.securechat.feature.contactimport.presentation.VerifyContactQrRoute
-import com.cbgm.securechat.feature.contacts.presentation.ContactDetailsRoute
 import com.cbgm.securechat.feature.contacts.presentation.ContactInvitationRoute
-import com.cbgm.securechat.feature.identity.domain.model.SharedContactDetails
-import com.cbgm.securechat.feature.identity.domain.model.SharedIdentityPayload
-import com.cbgm.securechat.feature.identity.domain.service.IdentityShareCodec
 import com.cbgm.securechat.feature.identity.presentation.ShareIdentityRoute
-import com.cbgm.securechat.feature.identity.presentation.platform.rememberIdentityShareLauncher
 import com.cbgm.securechat.feature.settings.presentation.DeveloperMenuRoute
 import com.cbgm.securechat.feature.settings.presentation.DisclaimerRoute
 import com.cbgm.securechat.feature.settings.presentation.LicensesRoute
 import com.cbgm.securechat.feature.settings.presentation.model.DisclaimerType
 import com.cbgm.securechat.presentation.MainRoute
-import com.cbgm.securechat.presentation.screen.ContactsFlow
-import com.cbgm.securechat.resources.Res
-import com.cbgm.securechat.resources.base_share_contact
 import com.cbgm.securechat.startup.presentation.StartupRoute
 import com.cbgm.securechat.startup.presentation.screen.component.SecureChatAppBackground
-import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 
 @Composable
 fun AppNavigation() {
@@ -138,8 +126,16 @@ fun AppNavigation() {
 
             composable<AppDestination.GroupConversation> { backStackEntry ->
                 val destination = backStackEntry.toRoute<AppDestination.GroupConversation>()
-                GroupConversationRoute(
+                GroupChatRoute(
                     conversationId = destination.conversationId,
+                    onClickHeader = {
+                        navController.navigate(
+                            AppDestination.Details(
+                                child = DetailsChild.GROUP,
+                                conversationId = destination.conversationId
+                            )
+                        )
+                    },
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -159,10 +155,9 @@ fun AppNavigation() {
                         .getStateFlow<String?>("scannedIdentity", null)
                         .collectAsStateWithLifecycle()
 
-                var destinationScannedIdentity by
-                    remember(destination.scannedIdentity) {
-                        mutableStateOf(destination.scannedIdentity)
-                    }
+                var destinationScannedIdentity by remember(destination.scannedIdentity) {
+                    mutableStateOf(destination.scannedIdentity)
+                }
 
                 ImportIdentityRoute(
                     contactId = destination.contactId,
@@ -176,54 +171,6 @@ fun AppNavigation() {
                     },
                     onBack = {
                         navController.popBackStack()
-                    }
-                )
-            }
-
-            composable<AppDestination.Contacts>(
-                enterTransition = {
-                    slideIntoContainer(
-                        towards = AnimatedContentTransitionScope.SlideDirection.Up,
-                        animationSpec =
-                            spring(
-                                stiffness = Spring.StiffnessMediumLow
-                            )
-                    )
-                },
-                exitTransition = {
-                    slideOutOfContainer(
-                        towards = AnimatedContentTransitionScope.SlideDirection.Down,
-                        animationSpec =
-                            spring(
-                                stiffness = Spring.StiffnessMediumLow
-                            )
-                    )
-                }
-            ) {
-                val coroutineScope = rememberCoroutineScope()
-                val getOrCreateDirectConversation = koinInject<GetOrCreateDirectConversation>()
-
-                ContactsFlow(
-                    onBack = {
-                        navController.popBackStack()
-                    },
-                    onImportContact = {
-                        navController.navigate(AppDestination.ImportContact())
-                    },
-                    onContactClick = { contactId, contactName ->
-                        coroutineScope.launch {
-                            val conversationId = getOrCreateDirectConversation(contactId)
-                            navController.navigate(
-                                AppDestination.Chat(
-                                    conversationId = conversationId,
-                                    contactId = contactId,
-                                    contactName = contactName
-                                )
-                            )
-                        }
-                    },
-                    onGroupCreated = { conversationId ->
-                        navController.navigate(AppDestination.GroupConversation(conversationId))
                     }
                 )
             }
@@ -302,10 +249,23 @@ fun AppNavigation() {
                         navController.popBackStack(AppDestination.Main, false)
                     },
                     onClickHeader = {
-                        navController.navigate(AppDestination.ContactDetails(destination.contactId))
+                        navController.navigate(
+                            AppDestination.Details(
+                                child = DetailsChild.CONTACT,
+                                conversationId = destination.conversationId,
+                                contactId = destination.contactId
+                            )
+                        )
                     },
-                    onScanIdentityQr = {
-                        navController.navigate(AppDestination.VerifyContactQr(destination.contactId))
+                    onVerifyIdentity = {
+                        navController.navigate(
+                            AppDestination.Details(
+                                child = DetailsChild.CONTACT,
+                                conversationId = destination.conversationId,
+                                contactId = destination.contactId,
+                                openVerification = true
+                            )
+                        )
                     },
                     onShareIdentity = {
                         navController.navigate(AppDestination.ShareIdentity)
@@ -318,76 +278,105 @@ fun AppNavigation() {
                 )
             }
 
-            composable<AppDestination.ContactDetails> { backStackEntry ->
-                val destination = backStackEntry.toRoute<AppDestination.ContactDetails>()
-
-                val identityShareCodec = koinInject<IdentityShareCodec>()
-
-                var encodedContactToShare by remember { mutableStateOf("") }
-
-                val shareContact =
-                    rememberIdentityShareLauncher(
-                        encodedIdentity = encodedContactToShare,
-                        shareTitle = stringResource(Res.string.base_share_contact)
+            composable<AppDestination.Details>(
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
-
-                var shouldLaunchShare by remember { mutableStateOf(false) }
-
-                LaunchedEffect(encodedContactToShare, shouldLaunchShare) {
-                    if (
-                        shouldLaunchShare &&
-                        encodedContactToShare.isNotBlank()
-                    ) {
-                        shareContact()
-                        shouldLaunchShare = false
-                    }
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                    )
+                },
+                popEnterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                    )
+                },
+                popExitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                    )
                 }
+            ) { backStackEntry ->
+                val destination = backStackEntry.toRoute<AppDestination.Details>()
+                val verificationRevision by
+                    backStackEntry.savedStateHandle
+                        .getStateFlow("verificationRevision", 0)
+                        .collectAsStateWithLifecycle()
+                val detailsTarget =
+                    when (destination.child) {
+                        DetailsChild.CONTACT ->
+                            DetailsTarget.Contact(
+                                contactId = requireNotNull(destination.contactId)
+                            )
 
-                ContactDetailsRoute(
-                    contactId = destination.contactId,
+                        DetailsChild.GROUP ->
+                            DetailsTarget.Group(
+                                conversationId = destination.conversationId
+                            )
+                    }
+
+                DetailsRoute(
+                    target = detailsTarget,
+                    openVerification = destination.openVerification,
+                    verificationRevision = verificationRevision,
                     onBack = {
                         navController.popBackStack()
                     },
-                    onShareContact = { contact ->
-                        val identity = contact.secureChatIdentity
-
-                        val phoneNumber =
-                            contact
-                                .preferredPhoneNumber
-                                ?.value
-                                ?.takeIf { value ->
-                                    value.isNotBlank()
-                                }
-
-                        if (identity != null && phoneNumber != null) {
-                            identityShareCodec
-                                .encode(
-                                    payload =
-                                        SharedIdentityPayload(
-                                            version = 1,
-                                            encryptionPublicKey = identity.encryptionPublicKey,
-                                            signingPublicKey = identity.signingPublicKey,
-                                            contactDetails =
-                                                SharedContactDetails(
-                                                    displayName = contact.displayName,
-                                                    phoneNumber = phoneNumber
-                                                )
-                                        )
-                                ).onSuccess { encodedIdentity ->
-                                    encodedContactToShare = encodedIdentity
-                                    shouldLaunchShare = true
-                                }
-                        }
+                    onScanContactQr = { contactId ->
+                        navController.navigate(
+                            AppDestination.VerifyIdentityQr(contactId = contactId)
+                        )
+                    },
+                    onScanGroupMemberQr = { groupId, contactId ->
+                        navController.navigate(
+                            AppDestination.VerifyIdentityQr(
+                                contactId = contactId,
+                                groupId = groupId
+                            )
+                        )
                     }
                 )
             }
 
-            composable<AppDestination.VerifyContactQr> { backStackEntry ->
-                val destination = backStackEntry.toRoute<AppDestination.VerifyContactQr>()
+            composable<AppDestination.VerifyIdentityQr> { backStackEntry ->
+                val destination = backStackEntry.toRoute<AppDestination.VerifyIdentityQr>()
 
-                VerifyContactQrRoute(
+                VerifyIdentityQrRoute(
                     contactId = destination.contactId,
+                    groupId = destination.groupId,
                     onVerified = {
+                        if (destination.groupId == null) {
+                            val previousEntry = navController.previousBackStackEntry
+                            val previousRevision =
+                                previousEntry
+                                    ?.savedStateHandle
+                                    ?.get<Int>("verificationRevision")
+                                    ?: 0
+
+                            previousEntry
+                                ?.savedStateHandle
+                                ?.set("verificationRevision", previousRevision + 1)
+                        }
+
                         navController.popBackStack()
                     },
                     onBack = {

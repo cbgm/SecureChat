@@ -28,7 +28,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Lock
@@ -127,9 +126,6 @@ import com.cbgm.securechat.resources.feature_chats_group_status_invited
 import com.cbgm.securechat.resources.feature_chats_group_status_joining
 import com.cbgm.securechat.resources.feature_chats_group_status_partial
 import com.cbgm.securechat.resources.feature_chats_group_status_waiting
-import com.cbgm.securechat.resources.feature_chats_group_verification_counter
-import com.cbgm.securechat.resources.feature_chats_group_verification_overview
-import com.cbgm.securechat.resources.feature_chats_group_verification_title
 import com.cbgm.securechat.resources.feature_chats_invalid_message_packet
 import com.cbgm.securechat.resources.feature_chats_invalid_packet
 import com.cbgm.securechat.resources.feature_chats_invalid_plaintext
@@ -164,10 +160,9 @@ fun ChatScreen(
     onVerifyIdentity: () -> Unit,
     onManualIdentitySetup: () -> Unit,
     onBack: () -> Unit,
+    modifier: Modifier = Modifier,
     onAcceptGroupInvitation: () -> Unit = {},
-    onDeclineGroupInvitation: () -> Unit = {},
-    onGroupVerificationClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onDeclineGroupInvitation: () -> Unit = {}
 ) {
     SecureChatLazyScaffold(
         modifier = modifier,
@@ -184,7 +179,6 @@ fun ChatScreen(
                 uiState = uiState,
                 containerColor = containerColor,
                 onClickHeader = onClickHeader,
-                onGroupVerificationClick = onGroupVerificationClick,
                 onVerifyIdentity = onVerifyIdentity,
                 onManualIdentitySetup = onManualIdentitySetup,
                 onAcceptGroupInvitation = onAcceptGroupInvitation,
@@ -216,7 +210,6 @@ private fun ChatTopBar(
     uiState: ChatUiState,
     containerColor: Color,
     onClickHeader: () -> Unit,
-    onGroupVerificationClick: () -> Unit,
     onVerifyIdentity: () -> Unit,
     onManualIdentitySetup: () -> Unit,
     onAcceptGroupInvitation: () -> Unit,
@@ -293,16 +286,7 @@ private fun ChatTopBar(
             }
         )
 
-        if (
-            uiState.isGroup &&
-            !uiState.showGroupInvitationActions &&
-            uiState.groupMemberCount > 1
-        ) {
-            GroupVerificationBanner(
-                uiState = uiState,
-                onClick = onGroupVerificationClick
-            )
-        } else if (!uiState.isGroup) {
+        if (!uiState.isGroup) {
             SecurityBanner(
                 securityState = uiState.contactSecurityState,
                 identityHandshakeState = uiState.identityHandshakeState,
@@ -332,104 +316,7 @@ private fun ChatTopBar(
 }
 
 @Composable
-private fun GroupVerificationBanner(
-    uiState: ChatUiState,
-    onClick: () -> Unit
-) {
-    val isFullyVerified =
-        uiState.groupVerifiableMemberCount > 0 &&
-            uiState.groupMutuallyVerifiedCount == uiState.groupVerifiableMemberCount
-    val summary =
-        stringResource(
-            Res.string.feature_chats_group_verification_overview,
-            uiState.groupMutuallyVerifiedCount,
-            uiState.groupVerifiableMemberCount,
-            uiState.groupMemberCount
-        )
-
-    Surface(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick),
-        color =
-            if (isFullyVerified) {
-                MaterialTheme.colorScheme.secondaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            },
-        contentColor =
-            if (isFullyVerified) {
-                MaterialTheme.colorScheme.onSecondaryContainer
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
-    ) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = MaterialTheme.spacing.medium,
-                        vertical = MaterialTheme.spacing.small
-                    ),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector =
-                    if (isFullyVerified) {
-                        Icons.Default.Lock
-                    } else {
-                        Icons.Default.Security
-                    },
-                contentDescription = null,
-                modifier = Modifier.size(22.dp)
-            )
-
-            Spacer(modifier = Modifier.width(MaterialTheme.spacing.small))
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text =
-                        stringResource(
-                            Res.string.feature_chats_group_verification_title
-                        ),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Text(
-                    text = summary,
-                    style = MaterialTheme.typography.labelSmall
-                )
-            }
-
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null
-            )
-        }
-    }
-}
-
-@Composable
-private fun groupSubtitle(uiState: ChatUiState): String {
-    val stateSubtitle = groupStateSubtitle(uiState)
-    if (uiState.groupMemberCount <= 1) {
-        return stateSubtitle
-    }
-
-    val verificationSubtitle =
-        stringResource(
-            Res.string.feature_chats_group_verification_counter,
-            uiState.groupMutuallyVerifiedCount,
-            uiState.groupVerifiableMemberCount
-        )
-
-    return "$stateSubtitle · $verificationSubtitle"
-}
+private fun groupSubtitle(uiState: ChatUiState): String = groupStateSubtitle(uiState)
 
 @Composable
 private fun groupStateSubtitle(uiState: ChatUiState): String =

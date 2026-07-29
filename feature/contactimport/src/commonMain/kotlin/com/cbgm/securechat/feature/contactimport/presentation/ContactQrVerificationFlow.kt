@@ -36,7 +36,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 @Composable
-fun VerifyContactQrRoute(
+fun ContactQrVerificationFlow(
     contactId: String,
     onVerified: () -> Unit,
     onBack: () -> Unit,

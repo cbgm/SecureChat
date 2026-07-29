@@ -119,7 +119,7 @@ class GroupVerificationSummaryTest {
             expected = summary.members.size,
             actual =
                 summary.members
-                    .map(GroupMemberVerificationUi::stableKey)
+                    .map(GroupMemberVerificationUiState::stableKey)
                     .distinct()
                     .size
         )

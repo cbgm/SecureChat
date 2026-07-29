@@ -19,9 +19,7 @@ import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
 import com.cbgm.securechat.feature.contacts.domain.model.IdentityHandshakeState
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
-import com.cbgm.securechat.feature.contacts.domain.usecase.GetContactSafetyNumber
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContact
-import com.cbgm.securechat.feature.contacts.domain.usecase.VerifyContact
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -29,7 +27,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -48,20 +45,12 @@ class ChatViewModel(
     private val identityExchangeStarter: IdentityExchangeStarter,
     identityInvitationService: IdentityInvitationService,
     observeContact: ObserveContact,
-    private val getContactSafetyNumber: GetContactSafetyNumber,
-    private val verifyContact: VerifyContact,
     private val observeTypingIndicator: ObserveTypingIndicator,
     private val setTypingIndicator: SetTypingIndicator
 ) : ViewModel() {
     private val messageText = MutableStateFlow("")
 
     private val errorMessage = MutableStateFlow<String?>(null)
-
-    private val safetyNumber = MutableStateFlow("")
-
-    private val isLoadingSafetyNumber = MutableStateFlow(false)
-
-    private val isVerifyingIdentity = MutableStateFlow(false)
 
     private val isContactTyping = MutableStateFlow(false)
 
@@ -118,24 +107,6 @@ class ChatViewModel(
             )
         }
 
-    private val verificationFlow: Flow<VerificationState> =
-        combine(
-            safetyNumber,
-            isLoadingSafetyNumber,
-            isVerifyingIdentity
-        ) {
-            currentSafetyNumber,
-            loadingSafetyNumber,
-            verifyingIdentity
-            ->
-
-            VerificationState(
-                safetyNumber = currentSafetyNumber,
-                isLoadingSafetyNumber = loadingSafetyNumber,
-                isVerifyingIdentity = verifyingIdentity
-            )
-        }
-
     private val screenContentFlow: Flow<ScreenContentState> =
         combine(
             chatContentFlow,
@@ -149,49 +120,42 @@ class ChatViewModel(
         }
 
     val uiState: StateFlow<ChatUiState> =
-        combine(
-            screenContentFlow,
-            verificationFlow
-        ) { screenContent, verification ->
+        screenContentFlow
+            .map { screenContent ->
+                val conversation = screenContent.chatContent.conversation
 
-            val conversation = screenContent.chatContent.conversation
+                val contact = screenContent.chatContent.contact
 
-            val contact = screenContent.chatContent.contact
+                val composer = screenContent.composer
 
-            val composer = screenContent.composer
-
-            ChatUiState(
-                contactId = contactId,
-                contactName =
-                    resolveContactName(
-                        contact = contact,
-                        conversation = conversation
-                    ),
-                messages = conversation?.messages?.reversed().orEmpty(),
-                messageText = composer.messageText,
-                isContactTyping = composer.isContactTyping,
-                contactSecurityState = contact.toSecurityState(),
-                identityHandshakeState = screenContent.chatContent.identityHandshakeState,
-                directIdentitySetupMode = screenContent.chatContent.directIdentitySetupMode,
-                safetyNumber = verification.safetyNumber,
-                isLoadingContact = contact == null,
-                isLoadingSafetyNumber = verification.isLoadingSafetyNumber,
-                isVerifyingIdentity = verification.isVerifyingIdentity,
-                errorMessage = composer.errorMessage
-            )
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000L),
-            initialValue =
                 ChatUiState(
                     contactId = contactId,
-                    contactName = fallbackContactName
+                    contactName =
+                        resolveContactName(
+                            contact = contact,
+                            conversation = conversation
+                        ),
+                    messages = conversation?.messages?.reversed().orEmpty(),
+                    messageText = composer.messageText,
+                    isContactTyping = composer.isContactTyping,
+                    contactSecurityState = contact.toSecurityState(),
+                    identityHandshakeState = screenContent.chatContent.identityHandshakeState,
+                    directIdentitySetupMode = screenContent.chatContent.directIdentitySetupMode,
+                    isLoadingContact = contact == null,
+                    errorMessage = composer.errorMessage
                 )
-        )
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000L),
+                initialValue =
+                    ChatUiState(
+                        contactId = contactId,
+                        contactName = fallbackContactName
+                    )
+            )
 
     init {
         observeIdentitySetupMode()
-        observeContactSecurity()
         observeIncomingTypingEvents()
     }
 
@@ -296,84 +260,6 @@ class ChatViewModel(
         }
     }
 
-    fun verifyIdentity() {
-        val currentSecurityState = uiState.value.contactSecurityState
-
-        val canVerify =
-            currentSecurityState == ContactSecurityState.MUTUAL_KEYS_UNVERIFIED ||
-                currentSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_CONTACT
-
-        if (!canVerify) {
-            return
-        }
-
-        if (safetyNumber.value.isBlank()) {
-            errorMessage.value = "Safety number is unavailable"
-            return
-        }
-
-        if (isVerifyingIdentity.value) {
-            return
-        }
-
-        isVerifyingIdentity.value = true
-
-        errorMessage.value = null
-
-        viewModelScope.launch {
-            try {
-                verifyContact(contactId = contactId).getOrThrow()
-            } catch (
-                error: Throwable
-            ) {
-                errorMessage.value = error.message ?: "Identity could not be verified"
-            } finally {
-                isVerifyingIdentity.value = false
-            }
-        }
-    }
-
-    fun refreshSafetyNumber() {
-        val currentSecurityState =
-            uiState.value.contactSecurityState
-
-        val supportsSafetyNumber =
-            currentSecurityState == ContactSecurityState.MUTUAL_KEYS_UNVERIFIED ||
-                currentSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_ME ||
-                currentSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_CONTACT ||
-                currentSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED
-
-        if (!supportsSafetyNumber) {
-            safetyNumber.value = ""
-            return
-        }
-
-        if (isLoadingSafetyNumber.value) {
-            return
-        }
-
-        isLoadingSafetyNumber.value = true
-
-        viewModelScope.launch {
-            try {
-                safetyNumber.value =
-                    getContactSafetyNumber
-                        .invoke(contactId = contactId)
-                        .getOrThrow()
-                        .singleLine
-            } catch (
-                error: Throwable
-            ) {
-                safetyNumber.value = ""
-
-                println("Safety number generation failed: " + error.message)
-            } finally {
-                isLoadingSafetyNumber.value =
-                    false
-            }
-        }
-    }
-
     private fun observeIncomingTypingEvents() {
         viewModelScope.launch {
             observeTypingIndicator(contactId = contactId)
@@ -416,33 +302,6 @@ class ChatViewModel(
 
         isLocalTyping = false
         sendTypingStateNow(isTyping = false)
-    }
-
-    private fun observeContactSecurity() {
-        viewModelScope.launch {
-            contactFlow
-                .map { contact ->
-                    contact.toSecurityState()
-                }.distinctUntilChanged()
-                .collect { securityState ->
-
-                    when (securityState) {
-                        ContactSecurityState.MUTUAL_KEYS_UNVERIFIED,
-                        ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_ME,
-                        ContactSecurityState.MUTUAL_KEYS_VERIFIED_BY_CONTACT,
-                        ContactSecurityState.MUTUAL_KEYS_VERIFIED
-                        -> {
-                            refreshSafetyNumber()
-                        }
-
-                        ContactSecurityState.NO_REMOTE_PUBLIC_KEYS,
-                        ContactSecurityState.ONE_WAY_KEYS
-                        -> {
-                            safetyNumber.value = ""
-                        }
-                    }
-                }
-        }
     }
 
     private fun resolveContactName(
@@ -494,12 +353,6 @@ class ChatViewModel(
         val messageText: String,
         val errorMessage: String?,
         val isContactTyping: Boolean
-    )
-
-    private data class VerificationState(
-        val safetyNumber: String,
-        val isLoadingSafetyNumber: Boolean,
-        val isVerifyingIdentity: Boolean
     )
 
     private data class ScreenContentState(
