@@ -74,7 +74,10 @@ fun GroupSelectionContactsTopBar(
                             disabledContainerColor = Color.Transparent,
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent
+                            disabledIndicatorColor = Color.Transparent,
+                            cursorColor = MaterialTheme.colorScheme.onPrimary,
+                            focusedTextColor = MaterialTheme.colorScheme.onPrimary,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onPrimary
                         )
                 )
             },

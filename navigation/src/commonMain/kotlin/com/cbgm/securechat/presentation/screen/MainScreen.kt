@@ -123,9 +123,9 @@ fun MainScreen(
                 showContactsOverlay = false
             },
             horizontalPadding = 0.dp,
-            topPadding = 48.dp,
-            tonalElevation = 8.dp,
-            shadowElevation = 12.dp
+            topPadding = 48.dp
+            // tonalElevation = 8.dp,
+            // shadowElevation = 12.dp
         ) { dismissOverlay ->
             ContactsFlow(
                 modifier = Modifier.fillMaxSize(),

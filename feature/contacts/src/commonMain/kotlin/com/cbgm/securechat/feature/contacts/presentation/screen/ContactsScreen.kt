@@ -14,7 +14,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import com.cbgm.securechat.core.ui.component.SecureChatLazyScaffold
+import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.contacts.presentation.component.contactlist.ContactSelectionCircle
 import com.cbgm.securechat.feature.contacts.presentation.component.contactlist.ContactStatus
@@ -232,6 +234,29 @@ private fun ContactsList(
                     }
                 }
             }
+        )
+    }
+}
+
+@Preview
+@Composable
+fun ContactsScreenPreview() {
+    SecureChatTheme {
+        ContactsScreen(
+            uiState =
+                ContactsUiState.Content(
+                    groups = listOf()
+                ),
+            mode =
+                ContactsScreenMode.Overview(
+                    onCreateGroup = {},
+                    onContactClick = { _, _ -> },
+                    onImportContact = {},
+                    onImportDeviceContacts = {}
+                ),
+            searchQuery = "",
+            onSearchQueryChanged = {},
+            onBack = {}
         )
     }
 }

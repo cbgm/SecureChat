@@ -30,7 +30,10 @@ fun CreateGroupRoute(
 
     CreateGroupScreen(
         uiState = uiState,
-        onBack = onBack,
+        onBack = {
+            viewModel.onEvent(CreateGroupEvent.Clear)
+            onBack()
+        },
         onTitleChanged = { viewModel.onEvent(CreateGroupEvent.TitleChanged(it)) },
         onSearchQueryChanged = { viewModel.onEvent(CreateGroupEvent.SearchQueryChanged(it)) },
         onContactSelected = { viewModel.onEvent(CreateGroupEvent.ContactSelectionToggled(it)) },

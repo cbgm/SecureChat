@@ -41,7 +41,12 @@ class CreateGroupViewModel(
             is CreateGroupEvent.SearchQueryChanged -> updateSearchQuery(event.query)
             is CreateGroupEvent.ContactSelectionToggled -> toggleContactSelection(event.contactId)
             CreateGroupEvent.CreateClicked -> createGroup()
+            CreateGroupEvent.Clear -> clearData()
         }
+    }
+
+    private fun clearData() {
+        _uiState.update { CreateGroupUiState() }
     }
 
     private fun updateTitle(title: String) {

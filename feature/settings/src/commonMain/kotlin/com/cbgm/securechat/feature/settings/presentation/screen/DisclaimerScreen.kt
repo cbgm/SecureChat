@@ -65,22 +65,22 @@ fun MarkdownDisclaimerScreen(
             typography =
                 markdownTypography(
                     h1 =
-                        MaterialTheme.typography.titleSmall.copy(
-                            color = MaterialTheme.colorScheme.onBackground,
-                            fontWeight = FontWeight.Bold
-                        ),
-                    h2 =
                         MaterialTheme.typography.bodyLarge.copy(
                             color = MaterialTheme.colorScheme.onBackground,
                             fontWeight = FontWeight.Bold
                         ),
-                    h3 =
+                    h2 =
                         MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.Bold
+                        ),
+                    h3 =
+                        MaterialTheme.typography.bodySmall.copy(
                             color = MaterialTheme.colorScheme.onBackground,
                             fontWeight = FontWeight.SemiBold
                         ),
                     text =
-                        MaterialTheme.typography.bodySmall.copy(
+                        MaterialTheme.typography.labelMedium.copy(
                             color =
                                 MaterialTheme.colorScheme.onBackground.copy(
                                     alpha = 0.85f

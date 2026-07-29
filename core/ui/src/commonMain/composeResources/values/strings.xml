@@ -117,6 +117,7 @@
     <string name="feature_chats_start_conversation_with">Start a conversation with %1$s</string>
     <string name="feature_chats_unable_decrypt_secure_message">Unable to decrypt secure message</string>
     <string name="feature_chats_unable_read_plaintext">Unable to read plaintext message</string>
+    <string name="feature_chats_no_messages_yet">No messages yet</string>">
 
     <!-- Feature: contactimport -->
     <string name="feature_contactimport_camera_permission_required">Camera permission is required to scan a QR code.</string>
@@ -194,6 +195,7 @@
     <string name="feature_contacts_verification_confirmation">We compared the entire safety number through a trusted channel, and it matched.</string>
     <string name="feature_contacts_verified_securechat_contact">Mutually verified SecureChat contact</string>
     <string name="feature_contacts_verify_safety_number">Verify safety number</string>
+    <string name="feature_contacts_search_placholder">name, phone</string>
 
     <string name="feature_contacts_contact_invitation_title">Contact invitation</string>
     <string name="feature_contacts_contact_invitation_description">%1$s wants to exchange SecureChat identities.</string>

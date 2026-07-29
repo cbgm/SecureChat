@@ -1,7 +1,12 @@
 package com.cbgm.securechat.feature.contacts.presentation.screen.overview.component
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -9,69 +14,107 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
+import com.cbgm.securechat.resources.Res
+import com.cbgm.securechat.resources.feature_contacts_search_placholder
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SearchField(
     searchQuery: String,
     onSearchQueryChanged: (String) -> Unit
 ) {
-    TextField(
+    val interactionSource = remember { MutableInteractionSource() }
+
+    BasicTextField(
         value = searchQuery,
         onValueChange = onSearchQueryChanged,
-        textStyle = MaterialTheme.typography.bodySmall,
         modifier =
             Modifier
                 .fillMaxWidth()
                 .padding(
                     bottom = MaterialTheme.spacing.small,
-                    start = MaterialTheme.spacing.small,
-                    end = MaterialTheme.spacing.small
-                ),
-        colors =
-            TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                disabledContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                cursorColor = MaterialTheme.colorScheme.onPrimary
+                    start = MaterialTheme.spacing.medium,
+                    end = MaterialTheme.spacing.medium
+                ).height(44.dp),
+        textStyle =
+            MaterialTheme.typography.bodySmall.copy(
+                color = MaterialTheme.colorScheme.onPrimary
             ),
         singleLine = true,
-        leadingIcon = {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = null
-            )
-        },
-        trailingIcon = {
-            if (searchQuery.isNotEmpty()) {
-                IconButton(
-                    onClick = {
-                        onSearchQueryChanged("")
-                    }
-                ) {
+        cursorBrush = SolidColor(MaterialTheme.colorScheme.onPrimary),
+        interactionSource = interactionSource,
+        decorationBox = { innerTextField ->
+            TextFieldDefaults.DecorationBox(
+                value = searchQuery,
+                innerTextField = innerTextField,
+                enabled = true,
+                singleLine = true,
+                visualTransformation = VisualTransformation.None,
+                interactionSource = interactionSource,
+                contentPadding =
+                    PaddingValues(
+                        horizontal = 12.dp,
+                        vertical = 6.dp
+                    ),
+                leadingIcon = {
                     Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = null
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
                     )
-                }
-            }
-        },
-        placeholder = {
-            Text(
-                text = "Name, Phone"
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(
+                            onClick = {
+                                onSearchQueryChanged("")
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                },
+                placeholder = {
+                    Text(
+                        text =
+                            stringResource(
+                                Res.string.feature_contacts_search_placholder
+                            ),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                },
+                shape = MaterialTheme.shapes.extraSmall,
+                colors =
+                    TextFieldDefaults.colors(
+                        focusedContainerColor =
+                            MaterialTheme.colorScheme.primaryContainer,
+                        unfocusedContainerColor =
+                            MaterialTheme.colorScheme.primaryContainer,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        cursorColor = MaterialTheme.colorScheme.onPrimary,
+                        focusedTextColor = MaterialTheme.colorScheme.onPrimary,
+                        unfocusedTextColor =
+                            MaterialTheme.colorScheme.onPrimary.copy(alpha = .73f)
+                    )
             )
-        },
-        shape = MaterialTheme.shapes.extraSmall
+        }
     )
 }
 

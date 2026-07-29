@@ -41,6 +41,7 @@ import com.cbgm.securechat.feature.chats.presentation.model.ChatsUiState
 import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.feature_chats_no_conversations_hint
 import com.cbgm.securechat.resources.feature_chats_no_conversations_yet
+import com.cbgm.securechat.resources.feature_chats_no_messages_yet
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -128,7 +129,9 @@ private fun ChatItem(
             },
             supportingContent = {
                 Text(
-                    text = chat.lastMessage,
+                    text =
+                        chat.lastMessage.takeIf { it.isNotBlank() }
+                            ?: stringResource(Res.string.feature_chats_no_messages_yet),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall,

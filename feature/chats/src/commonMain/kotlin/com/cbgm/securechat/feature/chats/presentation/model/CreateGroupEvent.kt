@@ -14,4 +14,6 @@ sealed interface CreateGroupEvent {
     ) : CreateGroupEvent
 
     data object CreateClicked : CreateGroupEvent
+
+    data object Clear : CreateGroupEvent
 }

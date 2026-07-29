@@ -14,8 +14,68 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+
+private data class ShadowLayer(
+    val outline: Outline,
+    val spread: Float,
+    val alpha: Float
+)
+
+private fun Modifier.bottomFadingShadow(
+    shape: Shape,
+    size: Dp = 14.dp,
+    color: Color = Color.Black,
+    maxAlpha: Float = 0.30f,
+    layerCount: Int = 32
+): Modifier =
+    drawWithCache {
+        val maximumSpread = size.toPx()
+
+        val layers =
+            (layerCount downTo 1).map { index ->
+                val fraction = index.toFloat() / layerCount
+                val spread = maximumSpread * fraction
+
+                ShadowLayer(
+                    outline =
+                        shape.createOutline(
+                            size =
+                                Size(
+                                    width = this.size.width + spread * 2f,
+                                    height = this.size.height + spread * 2f
+                                ),
+                            layoutDirection = layoutDirection,
+                            density = this
+                        ),
+                    spread = spread,
+                    alpha = maxAlpha * 2f * (1f - fraction) / layerCount
+                )
+            }
+
+        onDrawBehind {
+            layers.forEach { layer ->
+                translate(
+                    left = -layer.spread,
+                    top = 0f
+                ) {
+                    drawOutline(
+                        outline = layer.outline,
+                        color = color.copy(alpha = color.alpha * layer.alpha)
+                    )
+                }
+            }
+        }
+    }
 
 @Composable
 fun SecureChatCard(
@@ -56,6 +116,8 @@ fun SecureChatCard(
         label = "startupCardTranslation"
     )
 
+    val shape = MaterialTheme.shapes.small
+
     Surface(
         modifier =
             modifier
@@ -66,11 +128,15 @@ fun SecureChatCard(
                         alpha = cardAlpha
                         translationY = cardTranslation
                     }
-                },
+                }.bottomFadingShadow(
+                    shape = shape,
+                    size = 14.dp,
+                    maxAlpha = 0.30f
+                ),
         color = MaterialTheme.colorScheme.primaryContainer,
-        shape = MaterialTheme.shapes.small,
-        tonalElevation = 8.dp,
-        shadowElevation = 12.dp,
+        shape = shape,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
         content = content
     )
 }

@@ -1,5 +1,6 @@
 package com.cbgm.securechat.feature.settings.presentation.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -22,7 +23,9 @@ import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.feature_settings_open_source_licenses
 import com.mikepenz.aboutlibraries.ui.compose.DefaultChipColors
 import com.mikepenz.aboutlibraries.ui.compose.DefaultLibraryColors
+import com.mikepenz.aboutlibraries.ui.compose.LibraryDefaults
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
+import com.mikepenz.aboutlibraries.ui.compose.m3.style.m3VariantColors
 import com.mikepenz.aboutlibraries.ui.compose.produceLibraries
 import org.jetbrains.compose.resources.stringResource
 
@@ -50,7 +53,18 @@ fun LicensesScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-            colors = licensesColors()
+            colors = licensesColors(),
+            variantColors =
+                LibraryDefaults.m3VariantColors(
+                    headerBackground = MaterialTheme.colorScheme.background,
+                    headerOnBackground = MaterialTheme.colorScheme.onBackground,
+                    rowBackground = MaterialTheme.colorScheme.background,
+                    rowExpandedBackground = CardColor,
+                    rowOnBackground = MaterialTheme.colorScheme.onBackground,
+                    rowSubtleContent = MaterialTheme.colorScheme.onBackground,
+                    rowDivider = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.74f),
+                    actionLinkColor = MaterialTheme.colorScheme.onBackground
+                )
         )
     }
 }
@@ -86,22 +100,20 @@ private fun LicensesTopBar(onBack: () -> Unit) {
 
 @Composable
 private fun licensesColors(): DefaultLibraryColors {
-    val accentColor = MaterialTheme.colorScheme.secondary
-
     val chipColors =
         DefaultChipColors(
-            containerColor = accentColor.copy(alpha = 0.15f),
-            contentColor = accentColor
+            containerColor = MaterialTheme.colorScheme.secondary,
+            contentColor = MaterialTheme.colorScheme.onBackground
         )
 
     return DefaultLibraryColors(
-        libraryBackgroundColor = CardColor,
+        libraryBackgroundColor = MaterialTheme.colorScheme.background,
         libraryContentColor = MaterialTheme.colorScheme.onBackground,
         versionChipColors = chipColors,
         licenseChipColors = chipColors,
         fundingChipColors = chipColors,
-        dialogBackgroundColor = CardColor,
+        dialogBackgroundColor = MaterialTheme.colorScheme.background,
         dialogContentColor = MaterialTheme.colorScheme.onBackground,
-        dialogConfirmButtonColor = accentColor
+        dialogConfirmButtonColor = MaterialTheme.colorScheme.secondary
     )
 }

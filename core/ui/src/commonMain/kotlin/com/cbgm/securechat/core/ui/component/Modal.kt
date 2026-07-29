@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -21,9 +22,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.cbgm.securechat.core.ui.theme.Alpha
+import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
@@ -36,11 +39,17 @@ fun SecureChatOverlayHost(
     modifier: Modifier = Modifier,
     horizontalPadding: Dp = MaterialTheme.spacing.small,
     topPadding: Dp = MaterialTheme.spacing.times(6),
-    shape: Shape = MaterialTheme.shapes.small,
-    containerColor: Color = MaterialTheme.colorScheme.background,
+    shape: Shape =
+        RoundedCornerShape(
+            topStart = 24.dp,
+            topEnd = 24.dp,
+            bottomStart = 0.dp,
+            bottomEnd = 0.dp
+        ),
+    // containerColor: Color = MaterialTheme.colorScheme.background,
     scrimColor: Color = Color.Black.copy(alpha = Alpha.Disabled),
-    tonalElevation: Dp = 8.dp,
-    shadowElevation: Dp = 12.dp,
+    // tonalElevation: Dp = 8.dp,
+    // shadowElevation: Dp = 12.dp,
     content: @Composable (
         dismissOverlay: () -> Unit
     ) -> Unit
@@ -151,13 +160,31 @@ fun SecureChatOverlayHost(
         ) {
             Surface(
                 modifier = Modifier.fillMaxSize(),
-                shape = shape,
-                color = containerColor,
-                tonalElevation = tonalElevation,
-                shadowElevation = shadowElevation
+                shape = shape
+                // color = containerColor,
+                // tonalElevation = tonalElevation,
+                // shadowElevation = shadowElevation
             ) {
                 content(::dismissOverlay)
             }
         }
+    }
+}
+
+@Preview
+@Composable
+fun OverlayHostPreview() {
+    SecureChatTheme {
+        SecureChatOverlayHost(
+            visible = true,
+            onDismissRequest = {},
+            modifier = Modifier.fillMaxSize(),
+            horizontalPadding = 0.dp,
+            topPadding = 48.dp,
+            // tonalElevation = 8.dp,
+            // shadowElevation = 12.dp,
+            content = {
+            }
+        )
     }
 }
