@@ -12,7 +12,7 @@ A check mark means the row module directly depends on the column module.
 | `:data` |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | `:data:database` |  | ✓ |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | `:feature` |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| `:feature:chats` |  | ✓ | ✓ | ✓ | ✓ |  | ✓ |  |  |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |
+| `:feature:chats` |  | ✓ | ✓ | ✓ | ✓ |  | ✓ |  |  | ✓ | ✓ | ✓ |  |  |  |  |  |  |  |  |  |  |
 | `:feature:contactimport` |  | ✓ |  |  | ✓ |  |  |  |  |  | ✓ | ✓ |  |  |  |  |  |  |  |  |  |  |
 | `:feature:contacts` |  | ✓ | ✓ | ✓ | ✓ |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | `:feature:identity` |  | ✓ | ✓ | ✓ | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |

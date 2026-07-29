@@ -10,8 +10,8 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `feature` |
 | Directory | `feature/contacts` |
 | Build file | `feature/contacts/build.gradle.kts` |
-| Kotlin files | 79 |
-| Production Kotlin files | 76 |
+| Kotlin files | 78 |
+| Production Kotlin files | 75 |
 | Test Kotlin files | 3 |
 | Resource files | 1 |
 | Direct dependencies | 5 |

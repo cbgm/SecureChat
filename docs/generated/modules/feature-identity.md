@@ -15,7 +15,7 @@ Generated automatically by `./gradlew architectureReport`.
 | Test Kotlin files | 4 |
 | Resource files | 1 |
 | Direct dependencies | 4 |
-| Direct dependents | 5 |
+| Direct dependents | 6 |
 
 ## Source sets
 
@@ -35,6 +35,7 @@ Generated automatically by `./gradlew architectureReport`.
 ## Dependents
 
 - [`:androidApp`](../modules/androidApp.md)
+- [`:feature:chats`](../modules/feature-chats.md)
 - [`:feature:contactimport`](../modules/feature-contactimport.md)
 - [`:feature:onboarding`](../modules/feature-onboarding.md)
 - [`:navigation`](../modules/navigation.md)

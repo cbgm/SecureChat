@@ -8,10 +8,10 @@ Generated automatically by `./gradlew architectureReport`.
 |---|---:|
 | Modules | 22 |
 | Module groups | 9 |
-| Project dependencies | 64 |
-| Kotlin files | 535 |
-| Test Kotlin files | 38 |
-| Resource files | 56 |
+| Project dependencies | 66 |
+| Kotlin files | 567 |
+| Test Kotlin files | 41 |
+| Resource files | 54 |
 
 ## Module groups
 
@@ -139,7 +139,9 @@ graph TD
     module_feature_chats --> module_core_protocol
     module_feature_chats --> module_core_ui
     module_feature_chats --> module_data_database
+    module_feature_chats --> module_feature_contactimport
     module_feature_chats --> module_feature_contacts
+    module_feature_chats --> module_feature_identity
     module_feature_contactimport --> module_core
     module_feature_contactimport --> module_core_ui
     module_feature_contactimport --> module_feature_contacts
