@@ -37,39 +37,6 @@ fun DetailsRoute(
     onScanContactQr: (String) -> Unit,
     onScanGroupMemberQr: (String, String) -> Unit
 ) {
-    when (target) {
-        is DetailsTarget.Contact -> {
-            ContactDetailsFlowWithSharing(
-                contactId = target.contactId,
-                openVerification = openVerification,
-                verificationRevision = verificationRevision,
-                onScanQrCode = {
-                    onScanContactQr(target.contactId)
-                },
-                onClose = onBack
-            )
-        }
-
-        is DetailsTarget.Group -> {
-            GroupDetailsFlow(
-                conversationId = target.conversationId,
-                onScanMemberQr = { memberContactId ->
-                    onScanGroupMemberQr(target.conversationId, memberContactId)
-                },
-                onClose = onBack
-            )
-        }
-    }
-}
-
-@Composable
-private fun ContactDetailsFlowWithSharing(
-    contactId: String,
-    openVerification: Boolean,
-    verificationRevision: Int,
-    onScanQrCode: () -> Unit,
-    onClose: () -> Unit
-) {
     val identityShareCodec = koinInject<IdentityShareCodec>()
     var encodedContactToShare by remember { mutableStateOf("") }
     val launchContactShare =
@@ -86,23 +53,39 @@ private fun ContactDetailsFlowWithSharing(
         }
     }
 
-    ContactDetailsFlow(
-        contactId = contactId,
-        openVerification = openVerification,
-        verificationRevision = verificationRevision,
-        onScanQrCode = onScanQrCode,
-        onClose = onClose,
-        onShareContact = { contact ->
-            encodeContactForSharing(
-                contact = contact,
-                identityShareCodec = identityShareCodec,
-                onEncoded = { encodedIdentity ->
-                    encodedContactToShare = encodedIdentity
-                    shouldLaunchShare = true
+    when (target) {
+        is DetailsTarget.Contact -> {
+            ContactDetailsFlow(
+                contactId = target.contactId,
+                openVerification = openVerification,
+                verificationRevision = verificationRevision,
+                onScanQrCode = {
+                    onScanContactQr(target.contactId)
+                },
+                onClose = onBack,
+                onShareContact = { contact ->
+                    encodeContactForSharing(
+                        contact = contact,
+                        identityShareCodec = identityShareCodec,
+                        onEncoded = { encodedIdentity ->
+                            encodedContactToShare = encodedIdentity
+                            shouldLaunchShare = true
+                        }
+                    )
                 }
             )
         }
-    )
+
+        is DetailsTarget.Group -> {
+            GroupDetailsFlow(
+                conversationId = target.conversationId,
+                onScanMemberQr = { memberContactId ->
+                    onScanGroupMemberQr(target.conversationId, memberContactId)
+                },
+                onClose = onBack
+            )
+        }
+    }
 }
 
 private fun encodeContactForSharing(

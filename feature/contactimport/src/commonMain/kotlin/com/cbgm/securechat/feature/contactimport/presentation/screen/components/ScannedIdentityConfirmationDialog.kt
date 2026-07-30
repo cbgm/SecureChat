@@ -5,14 +5,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.cbgm.securechat.core.ui.component.SecureChatAlertDialog
+import com.cbgm.securechat.core.ui.component.SecureChatApprovalButton
+import com.cbgm.securechat.core.ui.component.SecureChatSecondaryButton
+import com.cbgm.securechat.core.ui.theme.SecureChatTheme
+import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.contactimport.presentation.model.ScannedIdentityPreview
 import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.base_cancel
@@ -31,34 +34,31 @@ fun ScannedIdentityConfirmationDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(text = stringResource(Res.string.feature_contactimport_in_person_qr_title))
-        },
+    SecureChatAlertDialog(
+        onDismissRequest = {},
+        title = stringResource(Res.string.feature_contactimport_in_person_qr_title),
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
             ) {
                 Text(
                     text = preview.displayName ?: stringResource(Res.string.feature_contactimport_unnamed_securechat_contact),
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.bodyLarge
                 )
 
                 preview.phoneNumber?.let { phoneNumber ->
                     Text(
                         text = phoneNumber,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
 
                 Text(
                     text = stringResource(Res.string.feature_contactimport_securechat_identity_found),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary
+                    style = MaterialTheme.typography.bodyMedium
                 )
 
                 Text(
@@ -67,7 +67,7 @@ fun ScannedIdentityConfirmationDialog(
                     color = MaterialTheme.colorScheme.error
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
 
                 FingerprintSection(
                     title = stringResource(Res.string.feature_contactimport_signing_key),
@@ -81,18 +81,18 @@ fun ScannedIdentityConfirmationDialog(
             }
         },
         confirmButton = {
-            TextButton(
-                onClick = onConfirm
-            ) {
-                Text(text = confirmButtonText)
-            }
+            SecureChatApprovalButton(
+                fillMaxWidth = false,
+                onClick = onConfirm,
+                text = confirmButtonText
+            )
         },
         dismissButton = {
-            TextButton(
-                onClick = onDismiss
-            ) {
-                Text(stringResource(Res.string.base_cancel))
-            }
+            SecureChatSecondaryButton(
+                fillMaxWidth = false,
+                onClick = onDismiss,
+                text = stringResource(Res.string.base_cancel)
+            )
         }
     )
 }
@@ -113,6 +113,26 @@ private fun FingerprintSection(
             text = fingerprint,
             style = MaterialTheme.typography.bodySmall,
             fontFamily = FontFamily.Monospace
+        )
+    }
+}
+
+@Preview
+@Composable
+fun ScannedIdentityDialogPreview() {
+    SecureChatTheme {
+        ScannedIdentityConfirmationDialog(
+            preview =
+                ScannedIdentityPreview(
+                    displayName = "John Doe",
+                    phoneNumber = "1234567890",
+                    signingKeyFingerprint = "12:34:5",
+                    encryptionKeyFingerprint = "12:34:5",
+                    encodedIdentity = "6465sd4f5s4f6sf4s"
+                ),
+            confirmButtonText = "Confirm",
+            onConfirm = {},
+            onDismiss = {}
         )
     }
 }
