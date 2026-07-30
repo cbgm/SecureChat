@@ -7,27 +7,13 @@ echo "Running SecureChat quality checks before push..."
 echo ""
 
 if [ -f "./gradlew" ]; then
-    GRADLE="./gradlew"
+    ./gradlew qualityCheck --console=plain
 elif [ -f "./gradlew.bat" ]; then
-    GRADLE="./gradlew.bat"
+    ./gradlew.bat qualityCheck --console=plain
 else
     echo "Gradle Wrapper was not found."
     exit 1
 fi
-
-echo "Verifying generated architecture documentation..."
-
-"$GRADLE" verifyArchitectureReport \
-    --console=plain \
-    --no-configuration-cache
-
-echo ""
-echo "Running remaining quality checks..."
-
-"$GRADLE" qualityCheck \
-    -x verifyArchitectureReport \
-    --console=plain \
-    --no-configuration-cache
 
 echo ""
 echo "SecureChat quality checks passed."

@@ -9,7 +9,7 @@ interface PendingEnvelopeStore {
 
     suspend fun remove(
         recipientId: String,
-        envelopeId: String
+        envelopeId: String,
     )
 
     suspend fun contains(envelopeId: String): Boolean

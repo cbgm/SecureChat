@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class DeveloperMenuViewModel(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DeveloperMenuUiState(buildInfo = settingsRepository.getBuildInfo()))
     val uiState: StateFlow<DeveloperMenuUiState> = _uiState.asStateFlow()

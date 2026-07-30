@@ -166,13 +166,7 @@ Protection
 - Safety Numbers
 - Identity Verification
 
-Group invitation bootstrap proves that the same endpoint controls the private keys corresponding
-to the public identity in `GroupInvitePacket` or `GroupJoinRequestPacket`. It does not prove the
-real-world identity of a first-time contact when the relay address itself is the only trusted
-addressing information.
-
-Users should verify important contacts before trusting them. Automatically discovered group
-identities are stored as mutual but unverified until safety numbers are compared.
+Users should verify important contacts before trusting them.
 
 ---
 
@@ -184,27 +178,6 @@ Protection
 
 - Message identifiers
 - Duplicate detection
-- Persisted invitation IDs and challenges
-- Invitation expiry checked by the group owner
-
----
-
-## Premature Group-Key Distribution
-
-An attacker or incomplete invitation flow attempts to make a group usable before all intended
-members have authenticated keys.
-
-Protection
-
-- `GroupInvitationEntity` persists readiness for each selected contact
-- the invitee must explicitly accept before sending `GroupJoinRequestPacket`
-- `GroupInvitationCoordinator` distributes a key only to contacts that explicitly accepted
-- the creator treats a member as active only after a signed `GroupReadyAcknowledgementPacket`
-- epoch 1 is not generated before activation
-- creator messages remain local queued rows until at least one member confirms key installation
-- adding or removing an active member rotates to a fresh epoch and complete member-key snapshot
-- removed members receive no wrapped next-epoch key
-- `GroupMemberRemovedPacket` is owner-signed and bound to the original invitation challenge
 
 Previously processed messages should not be accepted again.
 
@@ -215,17 +188,6 @@ Previously processed messages should not be accepted again.
 An attacker obtains encrypted packets.
 
 Without the appropriate private keys the attacker cannot recover plaintext.
-
----
-
-## Group Packet Forgery
-
-Every current member knows the shared group epoch key, so group AEAD by itself cannot attribute a
-message to one member. SecureChat additionally requires an Ed25519 signature and verifies it
-against the sender's `GroupMemberKeyEntity` for the exact epoch.
-
-A network attacker, relay, removed non-member, or different contact therefore cannot forge a
-current member's group message without that member's signing private key.
 
 ---
 
@@ -244,23 +206,6 @@ If malware gains full control of a user's device
 - screenshots may be captured
 
 Application-level encryption cannot defend against a fully compromised endpoint.
-
-For a group, compromise of any current member exposes that epoch's shared key and therefore the
-content encrypted under that key. It does not provide the other members' Ed25519 private keys, so
-the attacker still cannot impersonate a different member without also compromising that key.
-
----
-
-## Shared-Key Limits
-
-The current group design does not provide Signal-style pairwise or sender-key ratcheting, automatic
-post-compromise security, or cryptographic deniability. Epoch rotation infrastructure exists, but
-membership-change/rekey protocol support is the next required feature. Until that is implemented,
-groups are static after creation.
-
-When rekey support is added, removal prevents a removed member from reading new epochs only after
-the new key has been distributed and activated. No protocol can make a member forget plaintext or
-keys it already received.
 
 ---
 

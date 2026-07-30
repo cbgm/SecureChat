@@ -1,13 +1,13 @@
 package com.cbgm.securechat.feature.identity.data.storage
 
 import android.content.SharedPreferences
-import com.cbgm.securechat.feature.identity.domain.repository.storage.LocalPhoneNameStorage
+import com.cbgm.securechat.feature.identity.core.LocalPhoneNameStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
 class AndroidLocalPhoneNameStorage(
-    private val preferences: SharedPreferences
+    private val preferences: SharedPreferences,
 ) : LocalPhoneNameStorage {
     override fun observePhoneNumber(): Flow<String?> =
         callbackFlow {
@@ -47,7 +47,7 @@ class AndroidLocalPhoneNameStorage(
 
     override suspend fun savePhoneName(
         phoneNumber: String,
-        name: String
+        name: String,
     ): Result<Unit> =
         runCatching {
             require(phoneNumber.isNotBlank()) {

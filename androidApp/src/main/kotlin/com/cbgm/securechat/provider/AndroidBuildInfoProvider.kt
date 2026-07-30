@@ -12,7 +12,7 @@ class AndroidBuildInfoProvider : BuildInfoProvider {
                 versionName = BuildConfig.VERSION_NAME,
                 versionCode = BuildConfig.VERSION_CODE,
                 buildType = BuildConfig.BUILD_TYPE,
-                gitSha = ""
+                gitSha = "",
             )
         }
 }

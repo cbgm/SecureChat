@@ -15,7 +15,7 @@ package com.cbgm.securechat.core.protocol.transport
  */
 interface OutgoingWireSender {
     suspend fun send(
-        recipientAddress: String,
-        encodedTransportPayload: String
+        contactId: String,
+        encodedTransportPayload: String,
     ): Result<Unit>
 }

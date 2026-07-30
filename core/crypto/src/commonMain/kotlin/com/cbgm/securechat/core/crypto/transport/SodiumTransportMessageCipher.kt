@@ -12,7 +12,7 @@ class SodiumTransportMessageCipher : TransportMessageCipher {
     @OptIn(ExperimentalUnsignedTypes::class)
     override suspend fun encryptForRecipient(
         plaintext: ByteArray,
-        recipientPublicKey: ByteArray
+        recipientPublicKey: ByteArray,
     ): Result<EncryptedTransportPayload> =
         runCatching {
             require(plaintext.isNotEmpty()) {
@@ -26,13 +26,13 @@ class SodiumTransportMessageCipher : TransportMessageCipher {
             val ciphertext: UByteArray =
                 Box.seal(
                     message = plaintext.toUByteArray(),
-                    recipientsPublicKey = recipientPublicKey.toUByteArray()
+                    recipientsPublicKey = recipientPublicKey.toUByteArray(),
                 )
 
             EncryptedTransportPayload(
                 version = CURRENT_VERSION,
                 mode = TransportEncryptionMode.SEALED_BOX,
-                payload = ciphertext.toByteArray()
+                payload = ciphertext.toByteArray(),
             )
         }.recoverCatching { error ->
             when (error) {
@@ -42,7 +42,7 @@ class SodiumTransportMessageCipher : TransportMessageCipher {
 
                 else -> {
                     throw MessageEncryptionException(
-                        cause = error
+                        cause = error,
                     )
                 }
             }
@@ -52,13 +52,13 @@ class SodiumTransportMessageCipher : TransportMessageCipher {
     override suspend fun decryptFromSender(
         encryptedPayload: EncryptedTransportPayload,
         localPublicKey: ByteArray,
-        localPrivateKey: ByteArray
+        localPrivateKey: ByteArray,
     ): Result<ByteArray> =
         runCatching {
             if (encryptedPayload.version != CURRENT_VERSION) {
                 throw UnsupportedCryptoVersionException(
                     version =
-                        encryptedPayload.version
+                        encryptedPayload.version,
                 )
             }
 
@@ -76,7 +76,7 @@ class SodiumTransportMessageCipher : TransportMessageCipher {
                 Box.sealOpen(
                     ciphertext = encryptedPayload.payload.toUByteArray(),
                     recipientsPublicKey = localPublicKey.toUByteArray(),
-                    recipientsSecretKey = localPrivateKey.toUByteArray()
+                    recipientsSecretKey = localPrivateKey.toUByteArray(),
                 )
 
             plaintext.toByteArray()
@@ -84,14 +84,14 @@ class SodiumTransportMessageCipher : TransportMessageCipher {
             when (error) {
                 is InvalidPublicKeyException,
                 is InvalidPrivateKeyException,
-                is UnsupportedCryptoVersionException
+                is UnsupportedCryptoVersionException,
                 -> {
                     throw error
                 }
 
                 else -> {
                     throw MessageDecryptionException(
-                        cause = error
+                        cause = error,
                     )
                 }
             }
@@ -100,7 +100,7 @@ class SodiumTransportMessageCipher : TransportMessageCipher {
     private fun validatePublicKey(publicKey: ByteArray) {
         if (publicKey.size != BOX_PUBLIC_KEY_SIZE) {
             throw InvalidPublicKeyException(
-                message = "Expected a $BOX_PUBLIC_KEY_SIZE-byte public key, but received ${publicKey.size}"
+                message = "Expected a $BOX_PUBLIC_KEY_SIZE-byte public key, but received ${publicKey.size}",
             )
         }
     }
@@ -108,7 +108,7 @@ class SodiumTransportMessageCipher : TransportMessageCipher {
     private fun validatePrivateKey(privateKey: ByteArray) {
         if (privateKey.size != BOX_PRIVATE_KEY_SIZE) {
             throw InvalidPrivateKeyException(
-                message = "Expected a $BOX_PRIVATE_KEY_SIZE-byte private key, but received ${privateKey.size}"
+                message = "Expected a $BOX_PRIVATE_KEY_SIZE-byte private key, but received ${privateKey.size}",
             )
         }
     }

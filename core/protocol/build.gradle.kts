@@ -10,7 +10,6 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(projects.core)
             implementation(libs.bundles.coroutines)
             implementation(libs.bundles.koin.core)
             implementation(libs.bundles.serialization)

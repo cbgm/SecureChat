@@ -6,5 +6,5 @@ import com.cbgm.securechat.feature.contacts.domain.model.Contact
 @Immutable
 data class ContactGroupEntity(
     val title: String,
-    val contacts: List<Contact>
+    val contacts: List<Contact>,
 )

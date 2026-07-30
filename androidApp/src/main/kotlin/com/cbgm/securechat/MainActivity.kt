@@ -10,7 +10,7 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
 
         super.onCreate(
-            savedInstanceState
+            savedInstanceState,
         )
 
         setContent {

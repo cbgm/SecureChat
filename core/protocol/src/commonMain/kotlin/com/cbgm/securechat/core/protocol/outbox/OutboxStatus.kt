@@ -4,5 +4,5 @@ enum class OutboxStatus {
     PENDING,
     PROCESSING,
     SENT,
-    FAILED
+    FAILED,
 }

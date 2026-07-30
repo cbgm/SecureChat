@@ -29,7 +29,7 @@ import org.jetbrains.compose.resources.stringResource
 fun LanguagePickerDialog(
     currentLanguage: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     SecureChatAlertDialog(
         title = stringResource(Res.string.base_language),
@@ -44,21 +44,21 @@ fun LanguagePickerDialog(
                                 .fillMaxWidth()
                                 .clickable { onLanguageSelected(language) }
                                 .padding(vertical = MaterialTheme.spacing.base),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = language.nativeName,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onBackground
+                                color = if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onBackground,
                             )
 
                             if (language.nativeName != language.displayName) {
                                 Text(
                                     text = language.displayName,
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.73f)
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.73f),
                                 )
                             }
                         }
@@ -68,7 +68,7 @@ fun LanguagePickerDialog(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.secondary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(20.dp),
                             )
                         }
                     }
@@ -80,10 +80,10 @@ fun LanguagePickerDialog(
             TextButton(onClick = onDismiss) {
                 Text(
                     text = stringResource(Res.string.base_cancel),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                 )
             }
         },
-        onDismissRequest = onDismiss
+        onDismissRequest = onDismiss,
     )
 }

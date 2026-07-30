@@ -9,67 +9,53 @@ import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.packet.IdentityAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.IdentityPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
-import com.cbgm.securechat.feature.contacts.domain.identity.ContactVerificationService
-import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactKeyExchangeStore
-import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
-import com.cbgm.securechat.feature.contacts.domain.repository.RemoteIdentityOrigin
 
 class IdentityPacketHandler(
-    private val contactRepository: ContactRepository,
     private val contactKeyExchangeStore: ContactKeyExchangeStore,
     private val localSigningKeyPairProvider: LocalSigningKeyPairProvider,
     private val identityAcknowledgementCrypto: IdentityAcknowledgementCrypto,
     private val protocolOutbox: ProtocolOutbox,
-    private val contactVerificationService: ContactVerificationService
 ) : TypedProtocolPacketHandler {
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is IdentityPacket
 
     override suspend fun handle(
         context: IncomingPacketContext,
-        packet: SecureChatPacket
+        packet: SecureChatPacket,
     ): Result<Unit> =
         runCatching {
             val identityPacket =
                 packet as? IdentityPacket
                     ?: error("IdentityPacketHandler received an incompatible packet")
 
-            val pinnedIdentity =
-                contactRepository
-                    .getContact(context.contactId)
-                    .getOrThrow()
-                    ?.secureChatIdentity
-                    ?: return@runCatching
-
-            if (!pinnedIdentity.locallyImported) {
-                return@runCatching
-            }
-
-            check(pinnedIdentity.encryptionPublicKey.contentEquals(identityPacket.encryptionPublicKey)) {
-                "Manual identity packet does not match the imported encryption key"
-            }
-            check(pinnedIdentity.signingPublicKey.contentEquals(identityPacket.signingPublicKey)) {
-                "Manual identity packet does not match the imported signing key"
-            }
-
-            val update =
-                contactKeyExchangeStore
-                    .storeRemoteIdentity(
-                        contactId = context.contactId,
-                        encryptionPublicKey = identityPacket.encryptionPublicKey,
-                        signingPublicKey = identityPacket.signingPublicKey,
-                        origin = RemoteIdentityOrigin.REMOTE_PACKET
-                    ).getOrThrow()
+            /*
+             * Same keys preserve MUTUAL and verification.
+             *
+             * Changed keys reset the contact to:
+             * ONE_WAY + UNVERIFIED.
+             */
+            contactKeyExchangeStore
+                .storeRemoteIdentity(
+                    contactId = context.contactId,
+                    encryptionPublicKey = identityPacket.encryptionPublicKey,
+                    signingPublicKey = identityPacket.signingPublicKey,
+                ).getOrThrow()
 
             val localSigningKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
 
+            /*
+             * We sign the exact remote identity we received.
+             *
+             * This proves to the remote party that we possess and
+             * acknowledge its current encryption and signing keys.
+             */
             val signature =
                 identityAcknowledgementCrypto
                     .sign(
                         acknowledgedEncryptionPublicKey = identityPacket.encryptionPublicKey,
                         acknowledgedSigningPublicKey = identityPacket.signingPublicKey,
                         senderSigningPublicKey = localSigningKeyPair.publicKey,
-                        senderSigningPrivateKey = localSigningKeyPair.privateKey
+                        senderSigningPrivateKey = localSigningKeyPair.privateKey,
                     ).getOrThrow()
 
             val acknowledgement =
@@ -78,19 +64,19 @@ class IdentityPacketHandler(
                     senderSigningPublicKey = localSigningKeyPair.publicKey.copyOf(),
                     acknowledgedEncryptionPublicKey = identityPacket.encryptionPublicKey.copyOf(),
                     acknowledgedSigningPublicKey = identityPacket.signingPublicKey.copyOf(),
-                    signature = signature.copyOf()
+                    signature = signature.copyOf(),
                 )
 
+            /*
+             * Do not send directly from the handler.
+             *
+             * The outbox applies the current encryption policy and
+             * delivers the acknowledgement through the relay.
+             */
             protocolOutbox
                 .enqueue(
                     contactId = context.contactId,
-                    packet = acknowledgement
+                    packet = acknowledgement,
                 ).getOrThrow()
-
-            if (update.keyExchangeStatus == KeyExchangeStatus.MUTUAL) {
-                contactVerificationService
-                    .sendReceiptIfLocallyVerified(context.contactId)
-                    .getOrThrow()
-            }
         }
 }

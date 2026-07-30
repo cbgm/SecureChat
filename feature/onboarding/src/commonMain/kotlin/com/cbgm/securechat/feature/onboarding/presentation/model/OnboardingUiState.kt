@@ -8,5 +8,5 @@ data class OnboardingUiState(
     val automaticPhoneRequestId: Int = 0,
     val permissionsRequested: Boolean = false,
     val phonePermissionGranted: Boolean = false,
-    val isCreatingIdentity: Boolean = false
+    val isCreatingIdentity: Boolean = false,
 )

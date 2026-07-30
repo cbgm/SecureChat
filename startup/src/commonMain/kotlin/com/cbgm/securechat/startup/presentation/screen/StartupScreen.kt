@@ -70,14 +70,14 @@ fun StartupScreen(
     onPhoneNumberChanged: (String) -> Unit,
     onCreateIdentity: () -> Unit,
     onRetry: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier =
             modifier
                 .fillMaxSize()
                 .background(color = MaterialTheme.colorScheme.primary)
-                .padding(horizontal = MaterialTheme.spacing.screenPadding)
+                .padding(horizontal = MaterialTheme.spacing.screenPadding),
     ) {
         Column(
             modifier =
@@ -85,7 +85,7 @@ fun StartupScreen(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             PulsingLogo(modifier = Modifier.size(200.dp))
 
@@ -95,7 +95,7 @@ fun StartupScreen(
                 text = stringResource(Res.string.base_app_name),
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onPrimary,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
@@ -103,11 +103,11 @@ fun StartupScreen(
             Text(
                 text = stringResource(Res.string.base_tagline),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.72f)
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.72f),
             )
 
             Spacer(
-                modifier = Modifier.height(MaterialTheme.spacing.medium)
+                modifier = Modifier.height(MaterialTheme.spacing.medium),
             )
 
             SecureChatCard(modifier = Modifier.widthIn(max = 520.dp)) {
@@ -115,13 +115,13 @@ fun StartupScreen(
                     targetState = uiState,
                     transitionSpec = {
                         fadeIn(
-                            animationSpec = tween(300)
+                            animationSpec = tween(300),
                         ) togetherWith
                             fadeOut(
-                                animationSpec = tween(180)
+                                animationSpec = tween(180),
                             )
                     },
-                    label = "startupState"
+                    label = "startupState",
                 ) { state ->
                     Box(modifier = Modifier.padding(MaterialTheme.spacing.medium)) {
                         StartupStateContent(
@@ -130,7 +130,7 @@ fun StartupScreen(
                             onRequestPhoneNumberHint = onRequestPhoneNumberHint,
                             onPhoneNumberChanged = onPhoneNumberChanged,
                             onCreateIdentity = onCreateIdentity,
-                            onRetry = onRetry
+                            onRetry = onRetry,
                         )
                     }
                 }
@@ -148,7 +148,7 @@ private fun StartupStateContent(
     onRequestPhoneNumberHint: () -> Unit,
     onPhoneNumberChanged: (String) -> Unit,
     onCreateIdentity: () -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
 ) {
     when (uiState) {
         StartupUiState.Loading -> {
@@ -165,14 +165,14 @@ private fun StartupStateContent(
                 onRequestPhoneNumberHint = onRequestPhoneNumberHint,
                 onPhoneNumberChanged = onPhoneNumberChanged,
                 onCreateIdentity = onCreateIdentity,
-                onRetry = onRetry
+                onRetry = onRetry,
             )
         }
 
         is StartupUiState.Error -> {
             StartupErrorContent(
                 message = uiState.message,
-                onRetry = onRetry
+                onRetry = onRetry,
             )
         }
     }
@@ -184,7 +184,7 @@ private fun StartupIdentityContent(
     onRequestPhoneNumberHint: () -> Unit,
     onPhoneNumberChanged: (String) -> Unit,
     onCreateIdentity: () -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
 ) {
     when (identityUiState) {
         IdentityUiState.Loading -> {
@@ -194,29 +194,29 @@ private fun StartupIdentityContent(
         is IdentityUiState.NoIdentity -> {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = stringResource(Res.string.feature_startup_verify_phone_number),
                     style = MaterialTheme.typography.titleSmall,
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
 
                 Spacer(
-                    modifier = Modifier.height(MaterialTheme.spacing.base)
+                    modifier = Modifier.height(MaterialTheme.spacing.base),
                 )
 
                 Text(
                     text = stringResource(Res.string.feature_startup_contacts_find_by_phone),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
 
                 Spacer(
-                    modifier = Modifier.height(MaterialTheme.spacing.medium)
+                    modifier = Modifier.height(MaterialTheme.spacing.medium),
                 )
 
                 OutlinedTextField(
@@ -237,7 +237,7 @@ private fun StartupIdentityContent(
                                         stringResource(Res.string.feature_startup_choose_number_or_enter)
                                     } else {
                                         stringResource(Res.string.feature_startup_detected_edit_or_choose)
-                                    }
+                                    },
                         )
                     },
                     isError = identityUiState.phoneNumberError != null,
@@ -245,7 +245,7 @@ private fun StartupIdentityContent(
                     textStyle =
                         MaterialTheme.typography.bodyMedium.copy(
                             color = Color.White,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
                         ),
                     colors =
                         OutlinedTextFieldDefaults.colors(
@@ -266,20 +266,20 @@ private fun StartupIdentityContent(
                             focusedSupportingTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.66f),
                             unfocusedSupportingTextColor =
                                 MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                    alpha = 0.66f
+                                    alpha = 0.66f,
                                 ),
                             errorSupportingTextColor = MaterialTheme.colorScheme.error,
                             cursorColor = MaterialTheme.colorScheme.secondary,
-                            errorCursorColor = MaterialTheme.colorScheme.error
+                            errorCursorColor = MaterialTheme.colorScheme.error,
                         ),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 )
 
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
                 OutlinedButton(
                     onClick = onRequestPhoneNumberHint,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
                         text =
@@ -287,7 +287,7 @@ private fun StartupIdentityContent(
                                 stringResource(Res.string.base_choose_phone_number)
                             } else {
                                 stringResource(Res.string.base_choose_another_number)
-                            }
+                            },
                     )
                 }
 
@@ -296,7 +296,7 @@ private fun StartupIdentityContent(
                 SecureChatApprovalButton(
                     onClick = onCreateIdentity,
                     enabled = identityUiState.phoneNumber.isNotBlank(),
-                    text = stringResource(Res.string.base_continue_action)
+                    text = stringResource(Res.string.base_continue_action),
                 )
 
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
@@ -305,7 +305,7 @@ private fun StartupIdentityContent(
                     text = stringResource(Res.string.feature_startup_keys_generated_after_approval),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
             }
         }
@@ -317,14 +317,14 @@ private fun StartupIdentityContent(
         IdentityUiState.IncompleteIdentity -> {
             StartupErrorContent(
                 message = stringResource(Res.string.feature_startup_partial_identity_no_replacement),
-                onRetry = onRetry
+                onRetry = onRetry,
             )
         }
 
         is IdentityUiState.Error -> {
             StartupErrorContent(
                 message = identityUiState.message,
-                onRetry = onRetry
+                onRetry = onRetry,
             )
         }
     }
@@ -333,36 +333,36 @@ private fun StartupIdentityContent(
 @Composable
 private fun StartupErrorContent(
     message: String,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = stringResource(Res.string.feature_startup_setup_failed),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.SemiBold,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Spacer(
-            modifier = Modifier.height(MaterialTheme.spacing.base)
+            modifier = Modifier.height(MaterialTheme.spacing.base),
         )
 
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
         SecureChatApprovalButton(
             onClick = onRetry,
-            text = stringResource(Res.string.base_retry)
+            text = stringResource(Res.string.base_retry),
         )
     }
 }
@@ -371,11 +371,11 @@ private fun StartupErrorContent(
 private fun StartupProgress(message: String) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         CircularProgressIndicator(
             color = MaterialTheme.colorScheme.secondary,
-            trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f)
+            trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f),
         )
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
@@ -384,7 +384,7 @@ private fun StartupProgress(message: String) {
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -399,7 +399,7 @@ private fun StartupScreenPreview() {
             onRequestPhoneNumberHint = {},
             onPhoneNumberChanged = {},
             onCreateIdentity = {},
-            onRetry = {}
+            onRetry = {},
         )
     }
 }

@@ -12,8 +12,8 @@ import androidx.room.PrimaryKey
             entity = ConversationEntity::class,
             parentColumns = ["id"],
             childColumns = ["conversationId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["conversationId"]),
@@ -21,15 +21,15 @@ import androidx.room.PrimaryKey
         Index(
             value = [
                 "conversationId",
-                "createdAtEpochMilliseconds"
-            ]
+                "createdAtEpochMilliseconds",
+            ],
         ),
 
         Index(
             value = ["packetId"],
-            unique = true
-        )
-    ]
+            unique = true,
+        ),
+    ],
 )
 data class MessageEntity(
     @PrimaryKey
@@ -41,8 +41,6 @@ data class MessageEntity(
     val transportMode: String,
     val contentStatus: String,
     val deliveryStatus: String,
-    /** Contact that authored an incoming group/direct message. Null for local messages. */
-    val senderContactId: String?,
     /**
      * True after this device has queued a ReadReceiptPacket for this
      * incoming message.
@@ -51,5 +49,5 @@ data class MessageEntity(
      */
     val readReceiptSent: Boolean = false,
     val isMine: Boolean,
-    val createdAtEpochMilliseconds: Long
+    val createdAtEpochMilliseconds: Long,
 )

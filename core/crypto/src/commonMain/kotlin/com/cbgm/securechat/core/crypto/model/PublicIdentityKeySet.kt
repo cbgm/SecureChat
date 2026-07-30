@@ -2,7 +2,7 @@ package com.cbgm.securechat.core.crypto.model
 
 data class PublicIdentityKeySet(
     val signingPublicKey: ByteArray,
-    val encryptionPublicKey: ByteArray
+    val encryptionPublicKey: ByteArray,
 ) {
     init {
         require(signingPublicKey.isNotEmpty()) {

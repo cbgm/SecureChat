@@ -23,27 +23,7 @@ val androidDatabaseModule =
         }
 
         single {
-            get<SecureChatDatabase>().groupVerificationDao()
-        }
-
-        single {
             get<SecureChatDatabase>().chatDao()
-        }
-
-        single {
-            get<SecureChatDatabase>().groupSecurityDao()
-        }
-
-        single {
-            get<SecureChatDatabase>().groupInvitationDao()
-        }
-
-        single {
-            get<SecureChatDatabase>().identityInvitationDao()
-        }
-
-        single {
-            get<SecureChatDatabase>().contactRelayIdDao()
         }
 
         single {
@@ -54,14 +34,10 @@ val androidDatabaseModule =
             get<SecureChatDatabase>().messageDeliveryStatusDao()
         }
 
-        single {
-            get<SecureChatDatabase>().messageRecipientStateDao()
-        }
-
         single<ProtocolOutbox> {
             DefaultProtocolOutbox(
                 outboxDao = get(),
-                packetCodec = get()
+                packetCodec = get(),
             )
         }
     }

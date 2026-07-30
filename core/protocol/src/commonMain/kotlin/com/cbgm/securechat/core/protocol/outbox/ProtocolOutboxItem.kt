@@ -9,7 +9,7 @@ data class ProtocolOutboxItem(
     val attemptCount: Int,
     val lastError: String?,
     val createdAtEpochMilliseconds: Long,
-    val updatedAtEpochMilliseconds: Long
+    val updatedAtEpochMilliseconds: Long,
 ) {
     init {
         require(id.isNotBlank()) {
@@ -44,7 +44,7 @@ data class ProtocolOutboxItem(
             contactId == other.contactId &&
             packetId == other.packetId &&
             encodedPacket.contentEquals(
-                other.encodedPacket
+                other.encodedPacket,
             ) &&
             status == other.status &&
             attemptCount == other.attemptCount &&

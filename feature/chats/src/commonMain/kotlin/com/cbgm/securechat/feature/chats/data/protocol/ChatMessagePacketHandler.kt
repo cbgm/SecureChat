@@ -1,6 +1,5 @@
 package com.cbgm.securechat.feature.chats.data.protocol
 
-import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.core.protocol.handler.IncomingPacketContext
 import com.cbgm.securechat.core.protocol.handler.TypedProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
@@ -9,27 +8,20 @@ import com.cbgm.securechat.core.protocol.packet.DeliveryReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
-import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.data.database.entity.ConversationEntity
-import com.cbgm.securechat.data.database.entity.ConversationType
 import com.cbgm.securechat.data.database.entity.MessageEntity
 import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
-import com.cbgm.securechat.feature.contacts.domain.identity.IdentityInvitationService
 
 class ChatMessagePacketHandler(
     private val chatDao: ChatDao,
-    private val contactDao: ContactDao,
     private val protocolOutbox: ProtocolOutbox,
-    private val identityInvitationService: IdentityInvitationService
 ) : TypedProtocolPacketHandler {
-    private val logger = SecureChatLog.withTag("ChatMessagePacketHandler")
-
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is ChatMessagePacket
 
     override suspend fun handle(
         context: IncomingPacketContext,
-        packet: SecureChatPacket
+        packet: SecureChatPacket,
     ): Result<Unit> =
         runCatching {
             val chatPacket =
@@ -39,20 +31,6 @@ class ChatMessagePacketHandler(
             require(chatPacket.text.isNotBlank()) {
                 "Incoming chat message must not be blank"
             }
-            identityInvitationService
-                .requireDirectChatAuthorization(context.contactId)
-                .getOrThrow()
-
-            chatPacket.senderPhoneNumber
-                ?.trim()
-                ?.takeIf(String::isNotBlank)
-                ?.let { senderPhoneNumber ->
-                    contactDao.usePhoneNumberAsDisplayNameWhenMissing(
-                        contactId = context.contactId,
-                        phoneNumber = senderPhoneNumber,
-                        updatedAtEpochMilliseconds = context.receivedAtEpochMilliseconds
-                    )
-                }
 
             /*
              * messageId is the Room primary key.
@@ -65,10 +43,8 @@ class ChatMessagePacketHandler(
                     ?: ConversationEntity(
                         id = context.conversationId,
                         contactId = context.contactId,
-                        type = ConversationType.DIRECT.name,
-                        title = null,
                         createdAtEpochMilliseconds = context.receivedAtEpochMilliseconds,
-                        updatedAtEpochMilliseconds = context.receivedAtEpochMilliseconds
+                        updatedAtEpochMilliseconds = context.receivedAtEpochMilliseconds,
                     )
 
             val incomingMessage =
@@ -82,14 +58,13 @@ class ChatMessagePacketHandler(
                     contentStatus = MessageContentStatus.READABLE.name,
                     deliveryStatus = MessageDeliveryStatus.NOT_APPLICABLE.name,
                     isMine = false,
-                    senderContactId = context.contactId,
-                    createdAtEpochMilliseconds = chatPacket.sentAtEpochMilliseconds
+                    createdAtEpochMilliseconds = chatPacket.sentAtEpochMilliseconds,
                 )
 
             chatDao.upsertIncomingChatMessage(
                 conversation = conversation,
                 message = incomingMessage,
-                timestamp = context.receivedAtEpochMilliseconds
+                timestamp = context.receivedAtEpochMilliseconds,
             )
 
             /*
@@ -105,23 +80,23 @@ class ChatMessagePacketHandler(
                     packetId =
                         createDeliveryReceiptPacketId(
                             messageId =
-                                chatPacket.messageId
+                                chatPacket.messageId,
                         ),
                     messageId = chatPacket.messageId,
-                    deliveredAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+                    deliveredAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
                 )
 
             protocolOutbox
                 .enqueue(
                     contactId = context.contactId,
-                    packet = receipt
+                    packet = receipt,
                 ).getOrThrow()
 
-            logger.debug {
+            println(
                 "Delivery receipt queued: " +
                     "messageId=${chatPacket.messageId}, " +
-                    "contactId=${context.contactId}"
-            }
+                    "contactId=${context.contactId}",
+            )
         }
 
     private fun createDeliveryReceiptPacketId(messageId: String): String = "delivery-receipt-$messageId"

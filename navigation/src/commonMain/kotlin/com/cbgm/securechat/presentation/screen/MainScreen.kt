@@ -19,7 +19,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -27,20 +26,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.ui.component.SecureChatMainScrollStates
+import com.cbgm.securechat.core.ui.component.SecureChatMainScrollTarget
 import com.cbgm.securechat.core.ui.component.SecureChatOverlayHost
 import com.cbgm.securechat.core.ui.component.SecureChatScrollStateType
 import com.cbgm.securechat.core.ui.component.SecureChatTabbedScaffold
 import com.cbgm.securechat.core.ui.component.SecureChatTabbedScrollStates
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
-import com.cbgm.securechat.feature.chats.domain.usecase.GetOrCreateDirectConversation
 import com.cbgm.securechat.feature.chats.presentation.ChatsRoute
+import com.cbgm.securechat.feature.chats.presentation.screen.component.PatternBackground
+import com.cbgm.securechat.feature.contacts.presentation.ContactsRoute
 import com.cbgm.securechat.feature.identity.presentation.IdentityRoute
 import com.cbgm.securechat.feature.settings.presentation.SettingsRoute
 import com.cbgm.securechat.presentation.model.MainTab
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 
 @Suppress("UnusedContentLambdaTargetStateParameter")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,46 +52,41 @@ fun MainScreen(
     onNavigateToLicenses: () -> Unit,
     onNavigateToDeveloperMenu: () -> Unit,
     onOpenChat: (
-        conversationId: String,
         contactId: String,
         contactName: String,
-        isGroup: Boolean
     ) -> Unit,
     onShareIdentity: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val coroutineScope = rememberCoroutineScope()
-    val getOrCreateDirectConversation = koinInject<GetOrCreateDirectConversation>()
-
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.Chats) }
     var showContactsOverlay by rememberSaveable {
         mutableStateOf(false)
     }
 
-    val mainScrollTargets =
+    val MainScrollTargets =
         mapOf(
             MainTab.Chats to
                 SecureChatScrollStateType.LazyList,
             MainTab.Me to
                 SecureChatScrollStateType.Scroll,
             MainTab.Settings to
-                SecureChatScrollStateType.Scroll
+                SecureChatScrollStateType.Scroll,
         )
 
     Box(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
     ) {
         SecureChatTabbedScaffold(
             modifier = Modifier.fillMaxSize(),
             selectedScrollTarget = selectedTab,
-            scrollTargets = mainScrollTargets,
+            scrollTargets = MainScrollTargets,
             topBar = { containerColor ->
                 MainTopBar(
                     selectedTab = selectedTab,
                     containerColor = containerColor,
                     onAddChat = {
                         showContactsOverlay = true
-                    }
+                    },
                 )
             },
             bottomBar = { containerColor ->
@@ -100,9 +95,9 @@ fun MainScreen(
                     containerColor = containerColor,
                     onTabSelected = { tab ->
                         selectedTab = tab
-                    }
+                    },
                 )
-            }
+            },
         ) { innerPadding, scrollStates ->
             MainContent(
                 selectedTab = selectedTab,
@@ -110,10 +105,14 @@ fun MainScreen(
                 scrollStates = scrollStates,
                 onOpenChat = onOpenChat,
                 onShareIdentity = onShareIdentity,
-                onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
-                onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,
-                onNavigateToLicenses = onNavigateToLicenses,
-                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu
+                onNavigateToPrivacyPolicy =
+                onNavigateToPrivacyPolicy,
+                onNavigateToDataDisclaimer =
+                onNavigateToDataDisclaimer,
+                onNavigateToLicenses =
+                onNavigateToLicenses,
+                onNavigateToDeveloperMenu =
+                onNavigateToDeveloperMenu,
             )
         }
 
@@ -123,46 +122,56 @@ fun MainScreen(
                 showContactsOverlay = false
             },
             horizontalPadding = 0.dp,
-            topPadding = 48.dp
-            // tonalElevation = 8.dp,
-            // shadowElevation = 12.dp
+            topPadding = 48.dp,
+            tonalElevation = 8.dp,
+            shadowElevation = 12.dp,
         ) { dismissOverlay ->
-            ContactsFlow(
+            ContactsRoute(
                 modifier = Modifier.fillMaxSize(),
                 onBack = dismissOverlay,
                 onImportContact = {
                     dismissOverlay()
                     onImportContact()
                 },
-                onContactClick = { contactId, contactName ->
-                    coroutineScope.launch {
-                        val conversationId = getOrCreateDirectConversation(contactId)
-                        dismissOverlay()
-                        onOpenChat(conversationId, contactId, contactName, false)
-                    }
-                },
-                onGroupCreated = { conversationId ->
+                onContactClick = {
+                    contactId,
+                    contactName,
+                    ->
+
                     dismissOverlay()
-                    onOpenChat(conversationId, "", "", true)
-                }
+
+                    onOpenChat(
+                        contactId,
+                        contactName,
+                    )
+                },
             )
         }
     }
 }
+
+private fun MainTab.toScrollTarget(): SecureChatMainScrollTarget =
+    when (this) {
+        MainTab.Chats -> SecureChatMainScrollTarget.Chats
+
+        MainTab.Me -> SecureChatMainScrollTarget.Identity
+
+        MainTab.Settings -> SecureChatMainScrollTarget.Settings
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainTopBar(
     selectedTab: MainTab,
     containerColor: Color,
-    onAddChat: () -> Unit
+    onAddChat: () -> Unit,
 ) {
     TopAppBar(
         title = {
             Text(
                 text = stringResource(selectedTab.label),
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         },
         actions = {
@@ -170,7 +179,7 @@ private fun MainTopBar(
                 IconButton(onClick = onAddChat) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = ""
+                        contentDescription = "",
                     )
                 }
             }
@@ -180,8 +189,8 @@ private fun MainTopBar(
                 containerColor = containerColor,
                 scrolledContainerColor = containerColor,
                 titleContentColor = MaterialTheme.colorScheme.onBackground,
-                actionIconContentColor = MaterialTheme.colorScheme.onBackground
-            )
+                actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+            ),
     )
 }
 
@@ -189,11 +198,11 @@ private fun MainTopBar(
 private fun MainBottomBar(
     selectedTab: MainTab,
     containerColor: Color,
-    onTabSelected: (MainTab) -> Unit
+    onTabSelected: (MainTab) -> Unit,
 ) {
     NavigationBar(
         containerColor = containerColor,
-        contentColor = MaterialTheme.colorScheme.onPrimary
+        contentColor = MaterialTheme.colorScheme.onPrimary,
     ) {
         MainTab.entries.forEach { tab ->
             val isSelected = selectedTab == tab
@@ -211,16 +220,16 @@ private fun MainBottomBar(
                                     tab.res
                                 } else {
                                     tab.resOutlined
-                                }
+                                },
                             ),
                         contentDescription = null,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(28.dp),
                     )
                 },
                 label = {
                     Text(
                         text = stringResource(tab.label),
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                 },
                 colors =
@@ -231,8 +240,8 @@ private fun MainBottomBar(
                         unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         disabledIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                        disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
             )
         }
     }
@@ -243,12 +252,12 @@ private fun MainContent(
     selectedTab: MainTab,
     innerPadding: PaddingValues,
     scrollStates: SecureChatTabbedScrollStates<MainTab>,
-    onOpenChat: (String, String, String, Boolean) -> Unit,
+    onOpenChat: (String, String) -> Unit,
     onShareIdentity: () -> Unit,
     onNavigateToPrivacyPolicy: () -> Unit,
     onNavigateToDataDisclaimer: () -> Unit,
     onNavigateToLicenses: () -> Unit,
-    onNavigateToDeveloperMenu: () -> Unit
+    onNavigateToDeveloperMenu: () -> Unit,
 ) {
     when (selectedTab) {
         MainTab.Chats -> {
@@ -256,10 +265,10 @@ private fun MainContent(
                 onChatClick = onOpenChat,
                 listState =
                     scrollStates.lazyListState(
-                        MainTab.Chats
+                        MainTab.Chats,
                     ),
                 innerPadding = innerPadding,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
         }
 
@@ -268,10 +277,10 @@ private fun MainContent(
                 onShareIdentity = onShareIdentity,
                 scrollState =
                     scrollStates.scrollState(
-                        MainTab.Me
+                        MainTab.Me,
                     ),
                 innerPadding = innerPadding,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
         }
 
@@ -279,13 +288,13 @@ private fun MainContent(
             SettingsRoute(
                 scrollState =
                     scrollStates.scrollState(
-                        MainTab.Settings
+                        MainTab.Settings,
                     ),
                 innerPadding = innerPadding,
                 onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
                 onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,
                 onNavigateToLicenses = onNavigateToLicenses,
-                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu
+                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu,
             )
         }
     }
@@ -297,13 +306,13 @@ private fun MainScreenPreview() {
     SecureChatTheme {
         MainScreen(
             onImportContact = {},
-            onOpenChat = { _, _, _, _ -> },
+            onOpenChat = { _, _ -> },
             onShareIdentity = {},
             onNavigateToPrivacyPolicy = {},
             onNavigateToDataDisclaimer = {},
             onNavigateToLicenses = {},
             onNavigateToDeveloperMenu = {},
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         )
     }
 }

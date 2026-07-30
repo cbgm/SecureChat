@@ -11,12 +11,12 @@ data class ContactWithPublicIdentity(
     val contact: ContactEntity,
     @Relation(
         parentColumn = "id",
-        entityColumn = "contactId"
+        entityColumn = "contactId",
     )
     val publicIdentity: ContactPublicIdentityEntity?,
     @Relation(
         parentColumn = "id",
-        entityColumn = "contactId"
+        entityColumn = "contactId",
     )
-    val phoneNumbers: List<ContactPhoneNumberEntity>
+    val phoneNumbers: List<ContactPhoneNumberEntity>,
 )

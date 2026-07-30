@@ -5,7 +5,7 @@ import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentityProvider
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
 
 class IdentityLocalPublicIdentityProvider(
-    private val identityRepository: IdentityRepository
+    private val identityRepository: IdentityRepository,
 ) : LocalPublicIdentityProvider {
     override suspend fun getLocalPublicIdentity(): Result<LocalPublicIdentity> =
         runCatching {
@@ -14,12 +14,12 @@ class IdentityLocalPublicIdentityProvider(
                     .getIdentity()
                     .getOrThrow()
                     ?: error(
-                        "Local SecureChat identity does not exist"
+                        "Local SecureChat identity does not exist",
                     )
 
             LocalPublicIdentity(
                 encryptionPublicKey = identity.encryptionPublicKey.copyOf(),
-                signingPublicKey = identity.signingPublicKey.copyOf()
+                signingPublicKey = identity.signingPublicKey.copyOf(),
             )
         }
 }

@@ -10,12 +10,12 @@ import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
  */
 class UnavailableOutgoingWireSender : OutgoingWireSender {
     override suspend fun send(
-        recipientAddress: String,
-        encodedTransportPayload: String
+        contactId: String,
+        encodedTransportPayload: String,
     ): Result<Unit> =
         Result.failure(
             IllegalStateException(
-                "No outgoing SecureChat transport is configured"
-            )
+                "No outgoing SecureChat transport is configured",
+            ),
         )
 }

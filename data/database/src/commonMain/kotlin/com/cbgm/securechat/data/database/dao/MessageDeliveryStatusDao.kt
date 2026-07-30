@@ -7,67 +7,30 @@ import androidx.room.Query
 interface MessageDeliveryStatusDao {
     @Query(
         """
-        SELECT deliveryStatus
-        FROM messages
-        WHERE packetId = :packetId
-          AND isMine = 1
-        LIMIT 1
-        """
-    )
-    suspend fun findOutgoingDeliveryStatusByPacketId(packetId: String): String?
-
-    @Query(
-        """
-        SELECT messages.deliveryStatus
-        FROM messages
-        INNER JOIN conversations
-            ON conversations.id = messages.conversationId
-        WHERE messages.id = :messageId
-          AND messages.isMine = 1
-          AND conversations.contactId = :contactId
-        LIMIT 1
-        """
-    )
-    suspend fun findOutgoingDeliveryStatus(
-        messageId: String,
-        contactId: String
-    ): String?
-
-    @Query(
-        """
-        SELECT deliveryStatus
-        FROM messages
-        WHERE id = :messageId
-          AND isMine = 1
-        LIMIT 1
-        """
-    )
-    suspend fun findOutgoingDeliveryStatusByMessageId(messageId: String): String?
-
-    @Query(
-        """
         UPDATE messages
         SET deliveryStatus = :deliveryStatus
         WHERE packetId = :packetId
-        """
+        """,
     )
     suspend fun updateDeliveryStatus(
         packetId: String,
-        deliveryStatus: String
+        deliveryStatus: String,
     ): Int
 
     @Query(
         """
         UPDATE messages
-        SET transportPayload = :transportPayload,
+        SET deliveryStatus = :deliveryStatus,
+            transportPayload = :transportPayload,
             transportMode = :transportMode
         WHERE packetId = :packetId
-        """
+        """,
     )
     suspend fun updatePreparedTransport(
         packetId: String,
+        deliveryStatus: String,
         transportPayload: String,
-        transportMode: String
+        transportMode: String,
     ): Int
 
     @Query(
@@ -75,10 +38,56 @@ interface MessageDeliveryStatusDao {
     UPDATE messages
     SET deliveryStatus = :deliveryStatus
     WHERE id = :messageId
-    """
+    """,
     )
     suspend fun updateDeliveryStatusByMessageId(
         messageId: String,
-        deliveryStatus: String
+        deliveryStatus: String,
+    ): Int
+
+    @Query(
+        """
+    UPDATE messages
+    SET deliveryStatus = 'DELIVERED'
+    WHERE id = :messageId
+      AND isMine = 1
+      AND conversationId IN (
+          SELECT id
+          FROM conversations
+          WHERE contactId = :contactId
+      )
+      AND deliveryStatus IN (
+          'QUEUED',
+          'SENDING',
+          'SENT'
+      )
+    """,
+    )
+    suspend fun markOutgoingMessageDelivered(
+        messageId: String,
+        contactId: String,
+    ): Int
+
+    @Query(
+        """
+    UPDATE messages
+    SET deliveryStatus = 'READ'
+    WHERE id = :messageId
+      AND isMine = 1
+      AND conversationId IN (
+          SELECT id
+          FROM conversations
+          WHERE contactId = :contactId
+      )
+      AND deliveryStatus IN (
+          'SENDING',
+          'SENT',
+          'DELIVERED'
+      )
+    """,
+    )
+    suspend fun markOutgoingMessageRead(
+        messageId: String,
+        contactId: String,
     ): Int
 }

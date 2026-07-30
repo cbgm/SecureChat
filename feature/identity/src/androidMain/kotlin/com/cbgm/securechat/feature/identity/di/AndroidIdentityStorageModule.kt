@@ -2,8 +2,8 @@ package com.cbgm.securechat.feature.identity.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.cbgm.securechat.feature.identity.core.LocalPhoneNameStorage
 import com.cbgm.securechat.feature.identity.data.storage.AndroidLocalPhoneNameStorage
-import com.cbgm.securechat.feature.identity.domain.repository.storage.LocalPhoneNameStorage
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -13,13 +13,13 @@ val androidIdentityStorageModule =
         single<SharedPreferences> {
             androidContext().getSharedPreferences(
                 IDENTITY_PREFERENCES_NAME,
-                Context.MODE_PRIVATE
+                Context.MODE_PRIVATE,
             )
         }
 
         single<LocalPhoneNameStorage> {
             AndroidLocalPhoneNameStorage(
-                preferences = get<SharedPreferences>()
+                preferences = get<SharedPreferences>(),
             )
         }
     }

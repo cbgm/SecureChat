@@ -7,16 +7,14 @@ import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStat
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.model.RemoteIdentityUpdate
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactKeyExchangeStore
-import com.cbgm.securechat.feature.contacts.domain.repository.RemoteIdentityOrigin
 
 class DefaultContactKeyExchangeStore(
-    private val contactDao: ContactDao
+    private val contactDao: ContactDao,
 ) : ContactKeyExchangeStore {
     override suspend fun storeRemoteIdentity(
         contactId: String,
         encryptionPublicKey: ByteArray,
         signingPublicKey: ByteArray,
-        origin: RemoteIdentityOrigin
     ): Result<RemoteIdentityUpdate> =
         runCatching {
             require(contactId.isNotBlank()) {
@@ -43,58 +41,18 @@ class DefaultContactKeyExchangeStore(
 
             val identityChanged = existing != null && !sameIdentity
 
-            if (identityChanged) {
-                val pinnedIdentity = requireNotNull(existing)
-                val identityIsPinned =
-                    pinnedIdentity.keyExchangeStatus == KeyExchangeStatus.MUTUAL.name ||
-                        pinnedIdentity.verificationStatus == ContactVerificationStatus.VERIFIED.name
-
-                check(!identityIsPinned) {
-                    "Stored mutual or verified identity cannot be replaced without an explicit reset"
-                }
-            }
-
-            val nextLocallyImported =
-                sameIdentity && existing?.locallyImported == true ||
-                    origin == RemoteIdentityOrigin.LOCAL_IMPORT ||
-                    origin == RemoteIdentityOrigin.TRUSTED_QR_IMPORT
-
-            val nextRemoteIdentityPacketReceived =
-                sameIdentity && existing.remoteIdentityPacketReceived || origin == RemoteIdentityOrigin.REMOTE_PACKET || origin == RemoteIdentityOrigin.CONTACT_INVITATION
-
             val nextKeyExchangeStatus =
-                when {
-                    sameIdentity && existing.keyExchangeStatus == KeyExchangeStatus.MUTUAL.name -> {
-                        KeyExchangeStatus.MUTUAL
-                    }
-
-                    origin == RemoteIdentityOrigin.CONTACT_INVITATION -> {
-                        KeyExchangeStatus.ONE_WAY
-                    }
-
-                    nextLocallyImported && nextRemoteIdentityPacketReceived -> {
-                        KeyExchangeStatus.MUTUAL
-                    }
-
-                    else -> {
-                        KeyExchangeStatus.ONE_WAY
-                    }
+                if (sameIdentity) {
+                    existing.keyExchangeStatus.toKeyExchangeStatus()
+                } else {
+                    KeyExchangeStatus.ONE_WAY
                 }
 
             val nextVerificationStatus =
-                when {
-                    origin == RemoteIdentityOrigin.TRUSTED_QR_IMPORT -> {
-                        ContactVerificationStatus.VERIFIED
-                    }
-
-                    sameIdentity &&
-                        existing?.verificationStatus == ContactVerificationStatus.VERIFIED.name -> {
-                        ContactVerificationStatus.VERIFIED
-                    }
-
-                    else -> {
-                        ContactVerificationStatus.UNVERIFIED
-                    }
+                if (sameIdentity) {
+                    existing.verificationStatus.toVerificationStatus()
+                } else {
+                    ContactVerificationStatus.UNVERIFIED
                 }
 
             contactDao.upsertPublicIdentity(
@@ -104,12 +62,9 @@ class DefaultContactKeyExchangeStore(
                         encryptionPublicKey = encryptionPublicKey.copyOf(),
                         signingPublicKey = signingPublicKey.copyOf(),
                         verificationStatus = nextVerificationStatus.name,
-                        verifiedByContact = sameIdentity && existing?.verifiedByContact == true,
                         keyExchangeStatus = nextKeyExchangeStatus.name,
-                        locallyImported = nextLocallyImported,
-                        remoteIdentityPacketReceived = nextRemoteIdentityPacketReceived,
-                        updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
-                    )
+                        updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
+                    ),
             )
 
             RemoteIdentityUpdate(
@@ -118,79 +73,14 @@ class DefaultContactKeyExchangeStore(
                 signingPublicKey = signingPublicKey.copyOf(),
                 keyExchangeStatus = nextKeyExchangeStatus,
                 verificationStatus = nextVerificationStatus,
-                identityChanged = identityChanged
+                identityChanged = identityChanged,
             )
-        }
-
-    override suspend fun acceptRemoteIdentity(
-        contactId: String,
-        expectedRemoteEncryptionPublicKey: ByteArray,
-        expectedRemoteSigningPublicKey: ByteArray
-    ): Result<Unit> =
-        runCatching {
-            require(contactId.isNotBlank()) {
-                "Contact ID must not be blank"
-            }
-
-            require(expectedRemoteEncryptionPublicKey.isNotEmpty()) {
-                "Expected encryption key must not be empty"
-            }
-
-            require(expectedRemoteSigningPublicKey.isNotEmpty()) {
-                "Expected signing key must not be empty"
-            }
-
-            val updatedRows =
-                contactDao.markLocallyImportedIfKeysMatch(
-                    contactId = contactId,
-                    expectedEncryptionPublicKey = expectedRemoteEncryptionPublicKey,
-                    expectedSigningPublicKey = expectedRemoteSigningPublicKey,
-                    oneWayStatus = KeyExchangeStatus.ONE_WAY.name,
-                    mutualStatus = KeyExchangeStatus.MUTUAL.name,
-                    updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
-                )
-
-            check(updatedRows == 1) {
-                "Contact identity changed before invitation acceptance was applied"
-            }
-        }
-
-    override suspend fun acceptRemoteIdentityForHandshake(
-        contactId: String,
-        expectedRemoteEncryptionPublicKey: ByteArray,
-        expectedRemoteSigningPublicKey: ByteArray
-    ): Result<Unit> =
-        runCatching {
-            require(contactId.isNotBlank()) {
-                "Contact ID must not be blank"
-            }
-
-            require(expectedRemoteEncryptionPublicKey.isNotEmpty()) {
-                "Expected encryption key must not be empty"
-            }
-
-            require(expectedRemoteSigningPublicKey.isNotEmpty()) {
-                "Expected signing key must not be empty"
-            }
-
-            val updatedRows =
-                contactDao.markLocallyAcceptedForHandshakeIfKeysMatch(
-                    contactId = contactId,
-                    expectedEncryptionPublicKey = expectedRemoteEncryptionPublicKey,
-                    expectedSigningPublicKey = expectedRemoteSigningPublicKey,
-                    oneWayStatus = KeyExchangeStatus.ONE_WAY.name,
-                    updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
-                )
-
-            check(updatedRows == 1) {
-                "Contact identity changed before invitation acceptance was recorded"
-            }
         }
 
     override suspend fun markMutual(
         contactId: String,
         expectedRemoteEncryptionPublicKey: ByteArray,
-        expectedRemoteSigningPublicKey: ByteArray
+        expectedRemoteSigningPublicKey: ByteArray,
     ): Result<Unit> =
         runCatching {
             require(contactId.isNotBlank()) {
@@ -211,7 +101,7 @@ class DefaultContactKeyExchangeStore(
                     expectedEncryptionPublicKey = expectedRemoteEncryptionPublicKey,
                     expectedSigningPublicKey = expectedRemoteSigningPublicKey,
                     keyExchangeStatus = KeyExchangeStatus.MUTUAL.name,
-                    updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+                    updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
                 )
 
             check(updatedRows == 1) {
@@ -221,10 +111,10 @@ class DefaultContactKeyExchangeStore(
 
     override suspend fun resetAllAfterLocalIdentityChange(): Result<Unit> =
         runCatching {
-            contactDao.resetAfterLocalIdentityChange(
+            contactDao.replaceAllKeyExchangeStatuses(
                 currentKeyExchangeStatus = KeyExchangeStatus.MUTUAL.name,
                 keyExchangeStatus = KeyExchangeStatus.ONE_WAY.name,
-                updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+                updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
             )
         }
 
@@ -232,4 +122,9 @@ class DefaultContactKeyExchangeStore(
         KeyExchangeStatus.entries.firstOrNull { status ->
             status.name == this
         } ?: KeyExchangeStatus.ONE_WAY
+
+    private fun String.toVerificationStatus(): ContactVerificationStatus =
+        ContactVerificationStatus.entries.firstOrNull { status ->
+            status.name == this
+        } ?: ContactVerificationStatus.UNVERIFIED
 }

@@ -2,18 +2,14 @@ package com.cbgm.securechat.feature.contacts.domain.identity
 
 interface IdentityExchangeStarter {
     /**
-     * Starts the configured direct-contact setup when the contact is not already mutual.
+     * Enqueues the local public identity for the contact when:
      *
-     * Automatic mode uses the signed invitation handshake. Manual mode sends the local
-     * identity only after the remote identity was explicitly imported or scanned.
+     * - the contact has a remote SecureChat identity;
+     * - key exchange is not already MUTUAL;
+     * - this app session has not already queued the exchange.
+     *
+     * Contacts without public keys are ignored because there is no
+     * SecureChat relay address available for them yet.
      */
     suspend fun ensureStarted(contactId: String): Result<Unit>
-
-    /**
-     * Starts only the explicit manual identity exchange.
-     *
-     * This is used after a QR or identity-text import and must never create an automatic
-     * contact invitation or an invitation-acceptance dialog.
-     */
-    suspend fun startManualExchange(contactId: String): Result<Unit>
 }

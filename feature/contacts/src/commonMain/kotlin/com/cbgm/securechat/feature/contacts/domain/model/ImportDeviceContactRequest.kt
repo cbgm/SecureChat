@@ -16,5 +16,5 @@ data class ImportDeviceContactRequest(
     /**
      * Every usable phone number exposed by the device contact.
      */
-    val phoneNumbers: List<ImportDevicePhoneNumber>
+    val phoneNumbers: List<ImportDevicePhoneNumber>,
 )

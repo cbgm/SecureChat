@@ -9,22 +9,22 @@ import com.cbgm.securechat.feature.contacts.domain.model.ImportDevicePhoneNumber
 interface ContactMergeService {
     suspend fun findOrCreateForSecureChatIdentity(
         signingPublicKey: ByteArray,
-        phoneNumber: String?
+        phoneNumber: String?,
     ): ContactMergeResult
 
     suspend fun findOrCreateForDeviceContact(
         deviceContactId: String,
-        phoneNumbers: List<ImportDevicePhoneNumber>
+        phoneNumbers: List<ImportDevicePhoneNumber>,
     ): ContactMergeResult
 }
 
 class DefaultContactMergeService(
     private val contactDao: ContactDao,
-    private val phoneNumberNormalizer: PhoneNumberNormalizer
+    private val phoneNumberNormalizer: PhoneNumberNormalizer,
 ) : ContactMergeService {
     override suspend fun findOrCreateForSecureChatIdentity(
         signingPublicKey: ByteArray,
-        phoneNumber: String?
+        phoneNumber: String?,
     ): ContactMergeResult {
         require(signingPublicKey.isNotEmpty()) {
             "Signing public key must not be empty"
@@ -43,7 +43,7 @@ class DefaultContactMergeService(
             if (byPhoneNumber != null) {
                 return ContactMergeResult(
                     contactId = byPhoneNumber.contact.id,
-                    isNewContact = false
+                    isNewContact = false,
                 )
             }
         }
@@ -60,7 +60,7 @@ class DefaultContactMergeService(
 
     override suspend fun findOrCreateForDeviceContact(
         deviceContactId: String,
-        phoneNumbers: List<ImportDevicePhoneNumber>
+        phoneNumbers: List<ImportDevicePhoneNumber>,
     ): ContactMergeResult {
         require(deviceContactId.isNotBlank()) {
             "Device contact ID must not be blank"

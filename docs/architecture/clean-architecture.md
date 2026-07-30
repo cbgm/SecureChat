@@ -6,21 +6,25 @@ SecureChat follows the principles of Clean Architecture.
 
 The objective is to separate business rules from implementation details so that the application remains maintainable, testable and platform independent as it grows.
 
-Feature modules use presentation, domain, data and DI packages. Background features may also have an application package for orchestration that has no UI. Application-wide messaging orchestration lives in `:feature:messaging`, while `:feature:transport` contains transport mechanics only.
+Every feature follows the same architectural structure.
 
 ---
 
 # Layer Overview
 
-```mermaid
-flowchart TD
-    Presentation --> Domain
-    Data --> Domain
-    Composition["DI / application composition"] --> Presentation
-    Composition --> Data
+```
+Presentation
+      │
+      ▼
+Domain
+      │
+      ▼
+Data
 ```
 
-Domain is the center. Presentation and Data both depend on Domain abstractions; Domain never depends on either outer layer.
+Dependencies always point downward.
+
+Lower layers never depend on higher layers.
 
 ---
 
@@ -80,45 +84,21 @@ Business decisions should never originate from the data layer.
 
 ---
 
-# Application Layer
-
-The optional application layer coordinates domain ports for background workflows that do not belong to a screen.
-
-In `:feature:messaging`, it owns the incoming-relay and outbox runners. It may depend on domain abstractions, but transport and persistence implementations remain in data or infrastructure modules.
-
----
-
-# Presentation Package Structure
-
-Presentation code follows one predictable layout:
-
-```text
-presentation/
-├── component/   reusable and screen-specific Compose rendering
-├── mapper/      domain-to-UI mapping
-├── model/       UI state, events, effects and display models
-├── platform/    presentation-only platform adapters
-├── screen/      small public screen contracts and ViewModels
-└── *Route.kt    state collection and navigation wiring
-```
-
-Large `*Screen.kt` files must stay focused on their public contract. Detailed rendering belongs under `presentation/component/<screen-name>`.
-
-Each feature-owned UI component lives in its own Kotlin file and has a colocated `@Preview`.
-Routes and state-collecting flows are orchestration boundaries and do not require previews.
-Core UI is maintained independently and is not governed by the feature-preview rule.
-
----
-
 # Dependency Rule
 
-Source dependencies point inward:
+The dependency rule is simple.
 
-- Presentation may depend on Domain.
-- Data may depend on Domain.
-- Domain may not depend on Presentation or Data.
-- ViewModels invoke use cases instead of repositories or gateways directly.
-- DI modules are composition roots and may connect implementations to domain ports.
+```
+Presentation
+
+↓
+
+Domain
+
+↓
+
+Data
+```
 
 Allowed
 

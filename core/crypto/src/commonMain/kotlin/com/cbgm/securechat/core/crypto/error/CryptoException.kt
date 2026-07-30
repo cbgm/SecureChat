@@ -2,45 +2,45 @@ package com.cbgm.securechat.core.crypto.error
 
 sealed class CryptoException(
     message: String,
-    cause: Throwable? = null
+    cause: Throwable? = null,
 ) : Exception(
         message,
-        cause
+        cause,
     )
 
 class CryptoNotInitializedException :
     CryptoException(
-        message = "Cryptographic runtime is not initialized"
+        message = "Cryptographic runtime is not initialized",
     )
 
 class InvalidPublicKeyException(
-    message: String = "Public key is invalid"
+    message: String = "Public key is invalid",
 ) : CryptoException(
-        message = message
+        message = message,
     )
 
 class InvalidPrivateKeyException(
-    message: String = "Private key is invalid"
+    message: String = "Private key is invalid",
 ) : CryptoException(
-        message = message
+        message = message,
     )
 
 class MessageEncryptionException(
-    cause: Throwable? = null
+    cause: Throwable? = null,
 ) : CryptoException(
         message = "Message encryption failed",
-        cause = cause
+        cause = cause,
     )
 
 class MessageDecryptionException(
-    cause: Throwable? = null
+    cause: Throwable? = null,
 ) : CryptoException(
         message = "Message decryption failed",
-        cause = cause
+        cause = cause,
     )
 
 class UnsupportedCryptoVersionException(
-    version: Int
+    version: Int,
 ) : CryptoException(
-        message = "Unsupported crypto payload version: $version"
+        message = "Unsupported crypto payload version: $version",
     )

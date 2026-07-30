@@ -4,6 +4,6 @@ interface IncomingTransportMessageDecoder {
     suspend fun decode(
         encodedPayload: String,
         localPublicKey: ByteArray,
-        localPrivateKey: ByteArray
+        localPrivateKey: ByteArray,
     ): DecodedTransportMessage
 }

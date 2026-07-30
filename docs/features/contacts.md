@@ -1,165 +1,277 @@
 # Contacts
 
-`:feature:contacts` owns the contact domain, contact persistence adapters, remote identity exchange,
-verification, and reusable contacts presentation. Platform address-book access is supplied by
-`:feature:contactimport`.
+## Overview
 
-## Package structure
+The Contacts feature manages the user's SecureChat contacts.
 
-```text
-feature/contacts/.../feature/contacts/
-├── domain/
-│   ├── device/       # platform contact ports and models
-│   ├── identity/     # IdentityExchangeStarter
-│   ├── model/        # Contact, phone numbers, identity and trust state
-│   ├── repository/   # ContactRepository, ContactKeyExchangeStore
-│   └── usecase/      # observe, import, get, verify, safety number
-├── data/
-│   ├── identity/     # exchange starter and local identity-change adapter
-│   ├── mapper/       # database/import mapping
-│   ├── merge/        # contact merge behavior
-│   ├── protocol/     # identity packet handlers
-│   └── repository/   # repository and key-exchange implementations
-├── presentation/
-│   ├── component/
-│   │   ├── contactdetails/ # one previewable contact-detail component per file
-│   │   └── contactlist/    # reusable contact-list components
-│   ├── mapper/
-│   ├── model/        # UI state, events, effects, screen mode
-│   ├── platform/     # permission abstraction
-│   └── screen/       # shared screen and details screen
-└── di/ContactsModule.kt
+A contact represents a real person known to the application and provides the information required to establish secure communication.
+
+Contacts are independent from conversations.
+
+A contact may exist without any messages, and a conversation may be created only after messages are exchanged.
+
+---
+
+# Responsibilities
+
+The Contacts feature is responsible for
+
+- storing contacts
+- importing contacts
+- updating contact information
+- linking device contacts
+- managing public identities
+- determining contact security state
+
+The feature is **not** responsible for
+
+- message transport
+- message encryption
+- conversation rendering
+
+---
+
+# Module
+
+```
+feature:contacts
 ```
 
-There is no `startup` package in this feature. Application startup behavior belongs to the
-`:startup` module or `SecureChatApplication`.
+---
 
-## Domain
+# Contact Lifecycle
 
-`Contact` contains display information, phone numbers, device-contact linkage, and an optional
-`SecureChatIdentity`. `SecureChatIdentity` includes encryption/signing public keys,
-`KeyExchangeStatus`, and verification state.
+```
+Create
 
-Main contracts:
+↓
 
-| Contract | Responsibility |
-|---|---|
-| `ContactRepository` | Observe, load, import, merge, and verify contacts |
-| `ContactKeyExchangeStore` | Persist remote identity and exchange state |
-| `IdentityExchangeStarter` | Ensure an identity packet is queued |
-| `DeviceContactsDataSource` | Read platform contacts |
-| `DeviceContactWriter` | Write or link platform contacts |
+Import
 
-Use cases keep presentation independent of implementations: `ObserveContacts`, `ObserveContact`,
-`GetContact`, `ImportContact`, `ImportDeviceContacts`, `VerifyContact`, and
-`GetContactSafetyNumber`.
+↓
 
-## One contacts screen, two modes
+Identity Linked
 
-`ContactsScreen` is the reusable visual screen. Its variable behavior is represented by the sealed
-`ContactsScreenMode`:
+↓
 
-| Mode | Used for | Variable components |
-|---|---|---|
-| `ContactsScreenMode.Overview` | Normal contacts overview | `OverviewContactsTopBar`, create-group row, contact status, import FAB and sheet |
-| `ContactsScreenMode.GroupSelection` | Selecting contacts for a group | `GroupSelectionContactsTopBar`, title/confirm controls, selection circles |
-| `ContactsScreenMode.MemberSelection` | Adding contacts to an existing group | `MemberSelectionContactsTopBar`, confirm control, selection circles |
+Verified
 
-The shared screen always owns:
+↓
 
-- `SecureChatLazyScaffold`;
-- loading, empty, error, and content rendering;
-- the grouped `LazyColumn`;
-- contact-row rendering and search input plumbing.
-
-`ContactsRoute` supplies `Overview` callbacks and obtains state from `ContactsViewModel`.
-`CreateGroupScreen` in `:feature:chats` supplies `GroupSelection` and owns the group-specific
-`CreateGroupViewModel`. This reuses contacts presentation without moving group creation into the
-contacts domain.
-
-`AddGroupMembersScreen` supplies `MemberSelection` from inside `GroupDetailsFlow`. It reuses the
-contact list without introducing an application navigation destination or moving membership
-behavior out of `:feature:chats`.
-
-## Import and merge
-
-`DefaultContactRepository` delegates merge decisions to `ContactMergeService`. Phone numbers are
-normalized through `PhoneNumberNormalizer`, so importing a device contact can update an existing
-SecureChat contact instead of intentionally creating another record.
-
-`ContactsViewModel` combines `ObserveContacts` with `searchQuery`, then uses
-`filterContacts()` and `groupContactsByInitial()` to produce `ContactsUiState`.
-
-Platform permissions stay in presentation/platform adapters. `ContactsRoute` requests permission
-through `rememberDeviceContactsPermissionRequest()` and sends results back as `ContactsEvent`.
-
-## Remote identity exchange
-
-`DefaultIdentityExchangeStarter` creates an `IdentityPacket` from `LocalPublicIdentityProvider` and
-enqueues it through `ProtocolOutbox`.
-
-`IdentityPacketHandler`:
-
-1. stores the received keys through `ContactKeyExchangeStore`;
-2. gets the local signing key pair;
-3. signs the exact received encryption and signing keys;
-4. enqueues `IdentityAcknowledgementPacket`.
-
-`IdentityAcknowledgementPacketHandler` checks that:
-
-- the sender key matches the contact identity already stored locally;
-- acknowledged keys match the current local identity;
-- the signature verifies against the stored remote signing key.
-
-The acknowledgement proves receipt of the identity. It does not itself change trust state.
-
-## Verification
-
-`GetContactSafetyNumber` combines local and remote identity material through the safety-number
-generator. `VerifyContact` persists the user's explicit verification decision. Replacing remote
-keys must not silently retain verification; that rule belongs in `DefaultContactKeyExchangeStore`.
-
-The manual path is:
-
-```text
-DetailsRoute
-  -> ContactDetailsFlow
-  -> ContactDetailsViewModel.confirmVerification()
-  -> VerifyContact.invoke()
+Active
 ```
 
-The QR path is:
+A contact may enter the system through multiple paths.
 
-```text
-AppDestination.VerifyIdentityQr(groupId = null)
-  -> VerifyIdentityQrRoute
-  -> ContactQrVerificationFlow
-  -> VerifyContactQrViewModel.onQrCodeScanned()
-  -> VerifyContactByQr.invoke()
+---
+
+# Contact Sources
+
+SecureChat currently supports
+
+- manually imported SecureChat identities
+- imported device contacts
+
+Future versions may introduce additional import mechanisms.
+
+---
+
+# Device Contacts
+
+Device contacts can be imported into SecureChat.
+
+The import process
+
+1. reads contacts from the device
+2. normalizes phone numbers
+3. searches for existing contacts
+4. merges duplicates
+5. creates new contacts where required
+
+The original device contact remains the source of truth for contact information.
+
+---
+
+# Contact Merging
+
+Duplicate contacts should be avoided.
+
+Matching may occur using
+
+- device contact identifier
+- normalized phone number
+- public identity
+
+The merge process updates an existing contact whenever possible instead of creating duplicates.
+
+---
+
+# Contact Information
+
+A contact may contain
+
+- display name
+- phone numbers
+- preferred phone number
+- public identity
+- verification state
+
+Additional metadata may be added in future versions.
+
+---
+
+# Public Identity
+
+A contact becomes capable of secure communication after a public SecureChat identity has been associated with it.
+
+The public identity includes
+
+- signing public key
+- encryption public key
+
+Private keys are never stored inside contacts.
+
+---
+
+# Security States
+
+Every contact has a security state.
+
+Typical states include
+
+```
+No Secure Identity
+
+↓
+
+One-Way Keys
+
+↓
+
+Encrypted (Unverified)
+
+↓
+
+Encrypted (Verified)
 ```
 
-`ContactDetailsScreen` renders state only. Its detailed renderers live in
-`presentation/component/contactdetails`, one component and its preview per file.
+The state determines how conversations should be presented.
 
-## Messaging integration
+---
 
-Contacts do not use WebSockets directly.
+# Verification
 
-- `DefaultOutboxProcessor` loads contacts through `GetContact` to select encryption.
-- `DefaultContactRelayIdResolver` and `DefaultContactByRelayIdResolver` live in
-  `:feature:messaging`.
-- Identity packet handlers use `ProtocolOutbox`.
-- `ChatMessagePacketHandler` may use
-  `ContactDao.usePhoneNumberAsDisplayNameWhenMissing()` for placeholder senders.
+Verification is performed through Safety Numbers.
 
-See [Conversation, Messaging, and Delivery Flow](message-transport-flow.md).
+Once verified
 
-## Extension rules
+- the contact is marked as trusted
+- unexpected identity changes become detectable
 
-- Add contact business operations as domain use cases.
-- Keep Room entities and DAOs out of presentation and domain models.
-- Put feature visuals under `presentation/component/<screen-name>`, one component and preview per file.
-- Add behavior differences through `ContactsScreenMode` when the visual list remains the same.
-- Keep group creation state in `:feature:chats`; contacts only supplies reusable selection UI.
-- Keep platform address-book APIs behind device-contact ports.
-- Send identity packets through `ProtocolOutbox`, never directly through transport.
+Verification status is stored locally.
+
+---
+
+# Phone Numbers
+
+Phone numbers are used for
+
+- contact matching
+- import
+- discovery (where supported)
+
+They are **not** security identifiers.
+
+Changing a phone number does not change the cryptographic identity.
+
+---
+
+# Display Name
+
+The display name is a convenience attribute.
+
+It improves usability but should never be considered proof of identity.
+
+The cryptographic identity remains authoritative.
+
+---
+
+# Preferred Phone Number
+
+When multiple phone numbers exist, one may be selected as the preferred number.
+
+This improves interoperability with device contacts while preserving all imported numbers.
+
+---
+
+# Contact Details
+
+Updating contact details should preserve
+
+- identity information
+- verification state
+- conversations
+
+Changing user-visible information must not invalidate cryptographic trust.
+
+---
+
+# Conversation Creation
+
+A contact does not automatically create a conversation.
+
+A conversation should appear only after at least one message exists.
+
+This keeps the conversation list focused on active communication.
+
+---
+
+# Contact Deletion
+
+Deleting a contact should remove
+
+- local contact information
+- linked identities (where appropriate)
+
+Application behaviour regarding existing conversations depends on project policy.
+
+Conversations may remain even after a contact has been removed.
+
+---
+
+# Import Permissions
+
+Importing device contacts requires the appropriate operating-system permissions.
+
+Permission requests should occur only when necessary and should clearly explain why access is required.
+
+---
+
+# Offline Behaviour
+
+The Contacts feature operates entirely offline.
+
+All contact information required for encrypted communication is stored locally.
+
+Synchronization with the relay is not required for normal contact management.
+
+---
+
+# Testing
+
+Typical tests include
+
+- contact import
+- duplicate detection
+- merge behaviour
+- phone-number normalization
+- identity linking
+- verification state changes
+
+---
+
+# Summary
+
+The Contacts feature manages the people known to SecureChat.
+
+It separates contact management from conversations and messaging while providing the identity information required for secure end-to-end encrypted communication.

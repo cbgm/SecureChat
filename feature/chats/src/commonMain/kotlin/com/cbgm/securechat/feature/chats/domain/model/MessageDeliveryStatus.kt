@@ -36,5 +36,5 @@ enum class MessageDeliveryStatus {
     /**
      * The latest outgoing transport attempt failed.
      */
-    FAILED
+    FAILED,
 }

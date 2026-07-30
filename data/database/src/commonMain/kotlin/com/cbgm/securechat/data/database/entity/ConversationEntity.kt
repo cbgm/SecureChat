@@ -12,28 +12,21 @@ import androidx.room.PrimaryKey
             entity = ContactEntity::class,
             parentColumns = ["id"],
             childColumns = ["contactId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(
             value = ["contactId"],
-            unique = true
+            unique = true,
         ),
-        Index(value = ["type"]),
-        Index(value = ["updatedAtEpochMilliseconds"])
-    ]
+        Index(value = ["updatedAtEpochMilliseconds"]),
+    ],
 )
 data class ConversationEntity(
     @PrimaryKey
     val id: String,
-    /**
-     * Kept for direct-conversation lookup and migration compatibility.
-     * Group conversations leave this null and use conversation_participants.
-     */
-    val contactId: String?,
-    val type: String,
-    val title: String?,
+    val contactId: String,
     val createdAtEpochMilliseconds: Long,
-    val updatedAtEpochMilliseconds: Long
+    val updatedAtEpochMilliseconds: Long,
 )

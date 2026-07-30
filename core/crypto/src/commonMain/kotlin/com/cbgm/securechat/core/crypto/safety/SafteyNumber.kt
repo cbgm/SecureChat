@@ -1,7 +1,7 @@
 package com.cbgm.securechat.core.crypto.safety
 
 data class SafetyNumber(
-    val groups: List<String>
+    val groups: List<String>,
 ) {
     init {
         require(groups.size == EXPECTED_GROUP_COUNT) {
@@ -14,7 +14,7 @@ data class SafetyNumber(
                     group.all { character ->
                         character.isDigit()
                     }
-            }
+            },
         ) {
             "Every safety-number group must contain exactly five digits"
         }

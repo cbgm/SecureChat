@@ -17,20 +17,20 @@ import androidx.room.PrimaryKey
             entity = ContactEntity::class,
             parentColumns = ["id"],
             childColumns = ["contactId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(
             value = ["contactId"],
-            unique = true
+            unique = true,
         ),
 
         Index(
             value = ["signingPublicKey"],
-            unique = true
-        )
-    ]
+            unique = true,
+        ),
+    ],
 )
 data class ContactPublicIdentityEntity(
     @PrimaryKey
@@ -41,8 +41,6 @@ data class ContactPublicIdentityEntity(
      * ContactVerificationStatus enum name.
      */
     val verificationStatus: String,
-    /** True when the contact verified this device's current identity keys. */
-    val verifiedByContact: Boolean = false,
     /**
      * KeyExchangeStatus enum name:
      *
@@ -50,11 +48,7 @@ data class ContactPublicIdentityEntity(
      * MUTUAL
      */
     val keyExchangeStatus: String,
-    /** True only when this device explicitly imported the remote identity. */
-    val locallyImported: Boolean,
-    /** True only when an IdentityPacket was received from the remote device. */
-    val remoteIdentityPacketReceived: Boolean,
-    val updatedAtEpochMilliseconds: Long
+    val updatedAtEpochMilliseconds: Long,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -65,10 +59,7 @@ data class ContactPublicIdentityEntity(
             encryptionPublicKey.contentEquals(other.encryptionPublicKey) &&
             signingPublicKey.contentEquals(other.signingPublicKey) &&
             verificationStatus == other.verificationStatus &&
-            verifiedByContact == other.verifiedByContact &&
             keyExchangeStatus == other.keyExchangeStatus &&
-            locallyImported == other.locallyImported &&
-            remoteIdentityPacketReceived == other.remoteIdentityPacketReceived &&
             updatedAtEpochMilliseconds == other.updatedAtEpochMilliseconds
     }
 
@@ -80,8 +71,6 @@ data class ContactPublicIdentityEntity(
         result = 31 * result + signingPublicKey.contentHashCode()
 
         result = 31 * result + verificationStatus.hashCode()
-
-        result = 31 * result + verifiedByContact.hashCode()
 
         result = 31 * result + keyExchangeStatus.hashCode()
 
