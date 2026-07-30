@@ -104,4 +104,4 @@ must also define how one instance reaches a socket owned by another.
 
 - [WebSocket API](websocket.md)
 - [SecureChat Protocol](protocol.md)
-- [Messaging and Delivery Flow](../features/message-transport-flow.md)
+- [Conversation, Messaging, and Delivery Flow](../features/message-transport-flow.md)

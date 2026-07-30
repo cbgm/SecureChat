@@ -4,16 +4,11 @@ import com.cbgm.securechat.core.protocol.handler.IncomingMessageHandler
 import com.cbgm.securechat.core.protocol.identity.LocalEncryptionKeyPair
 import com.cbgm.securechat.core.protocol.identity.LocalEncryptionKeyPairProvider
 import com.cbgm.securechat.feature.messaging.domain.relay.ContactByRelayIdResolver
-import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
-import com.cbgm.securechat.feature.transport.relay.model.RelayEnvelope
-import com.cbgm.securechat.feature.transport.relay.model.RelayTypingEvent
-import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
+import com.cbgm.securechat.feature.messaging.domain.relay.IncomingRelayEnvelope
+import com.cbgm.securechat.feature.messaging.domain.relay.IncomingRelayGateway
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeoutOrNull
@@ -27,22 +22,22 @@ class DefaultIncomingRelayRunnerTest {
     fun successfulHandlingAcknowledgesEnvelopeAfterHandlerReturns() =
         runTest {
             val events = mutableListOf<String>()
-            val webSocketClient = FakeWebSocketTransportClient(events)
+            val relayGateway = FakeIncomingRelayGateway(events)
             val incomingHandler =
                 RecordingIncomingMessageHandler(
                     events = events
                 )
             val runner =
                 createRunner(
-                    webSocketClient = webSocketClient,
+                    relayGateway = relayGateway,
                     incomingHandler = incomingHandler
                 )
 
             try {
                 runner.start()
-                webSocketClient.emitEnvelope(createEnvelope())
+                relayGateway.emitEnvelope(createEnvelope())
 
-                val acknowledgedEnvelopeId = webSocketClient.acknowledgedEnvelopeIds.receive()
+                val acknowledgedEnvelopeId = relayGateway.acknowledgedEnvelopeIds.receive()
 
                 assertEquals("envelope-1", acknowledgedEnvelopeId)
                 assertEquals(listOf("handle", "acknowledge"), events)
@@ -58,7 +53,7 @@ class DefaultIncomingRelayRunnerTest {
     @Test
     fun failedHandlingDoesNotAcknowledgeEnvelope() =
         runTest {
-            val webSocketClient = FakeWebSocketTransportClient()
+            val relayGateway = FakeIncomingRelayGateway()
             val handlerCalled = CompletableDeferred<Unit>()
             val incomingHandler =
                 RecordingIncomingMessageHandler(
@@ -69,18 +64,18 @@ class DefaultIncomingRelayRunnerTest {
                 )
             val runner =
                 createRunner(
-                    webSocketClient = webSocketClient,
+                    relayGateway = relayGateway,
                     incomingHandler = incomingHandler
                 )
 
             try {
                 runner.start()
-                webSocketClient.emitEnvelope(createEnvelope())
+                relayGateway.emitEnvelope(createEnvelope())
                 handlerCalled.await()
 
                 val acknowledgement =
                     withTimeoutOrNull(SHORT_TIMEOUT_MILLISECONDS) {
-                        webSocketClient.acknowledgedEnvelopeIds.receive()
+                        relayGateway.acknowledgedEnvelopeIds.receive()
                     }
 
                 assertNull(acknowledgement)
@@ -93,13 +88,13 @@ class DefaultIncomingRelayRunnerTest {
     @Test
     fun unknownSenderIsIgnoredWithoutLoadingKeysOrAcknowledging() =
         runTest {
-            val webSocketClient = FakeWebSocketTransportClient()
+            val relayGateway = FakeIncomingRelayGateway()
             val resolverCalled = CompletableDeferred<Unit>()
             val keyPairProvider = RecordingKeyPairProvider()
             val incomingHandler = RecordingIncomingMessageHandler()
             val runner =
                 createRunner(
-                    webSocketClient = webSocketClient,
+                    relayGateway = relayGateway,
                     contactResolver =
                         object : ContactByRelayIdResolver {
                             override suspend fun resolveContactId(relayId: String): Result<String?> {
@@ -113,12 +108,12 @@ class DefaultIncomingRelayRunnerTest {
 
             try {
                 runner.start()
-                webSocketClient.emitEnvelope(createEnvelope())
+                relayGateway.emitEnvelope(createEnvelope())
                 resolverCalled.await()
 
                 val acknowledgement =
                     withTimeoutOrNull(SHORT_TIMEOUT_MILLISECONDS) {
-                        webSocketClient.acknowledgedEnvelopeIds.receive()
+                        relayGateway.acknowledgedEnvelopeIds.receive()
                     }
 
                 assertNull(acknowledgement)
@@ -130,7 +125,7 @@ class DefaultIncomingRelayRunnerTest {
         }
 
     private fun createRunner(
-        webSocketClient: FakeWebSocketTransportClient,
+        relayGateway: FakeIncomingRelayGateway,
         contactResolver: ContactByRelayIdResolver =
             object : ContactByRelayIdResolver {
                 override suspend fun resolveContactId(relayId: String): Result<String?> = Result.success("contact-1")
@@ -140,19 +135,17 @@ class DefaultIncomingRelayRunnerTest {
         incomingHandler: IncomingMessageHandler
     ): DefaultIncomingRelayRunner =
         DefaultIncomingRelayRunner(
-            webSocketTransportClient = webSocketClient,
+            incomingRelayGateway = relayGateway,
             contactByRelayIdResolver = contactResolver,
             localEncryptionKeyPairProvider = keyPairProvider,
             incomingMessageHandler = incomingHandler
         )
 
-    private fun createEnvelope(): RelayEnvelope =
-        RelayEnvelope(
+    private fun createEnvelope(): IncomingRelayEnvelope =
+        IncomingRelayEnvelope(
             envelopeId = "envelope-1",
-            senderId = "sender-relay-id",
-            recipientId = "recipient-relay-id",
-            payload = "encoded-payload",
-            createdAtEpochMilliseconds = 1L
+            senderRelayId = "sender-relay-id",
+            encodedTransportPayload = "encoded-payload"
         )
 
     private class RecordingIncomingMessageHandler(
@@ -196,48 +189,27 @@ class DefaultIncomingRelayRunnerTest {
         }
     }
 
-    private class FakeWebSocketTransportClient(
+    private class FakeIncomingRelayGateway(
         private val events: MutableList<String> = mutableListOf()
-    ) : WebSocketTransportClient {
-        private val mutableIncomingEnvelopes = MutableSharedFlow<RelayEnvelope>()
-
-        override val connectionState: StateFlow<TransportConnectionState> =
-            MutableStateFlow(TransportConnectionState.Disconnected)
-        override val incomingEnvelopes: Flow<RelayEnvelope> = mutableIncomingEnvelopes
-        override val incomingTypingEvents: Flow<RelayTypingEvent> = MutableSharedFlow()
+    ) : IncomingRelayGateway {
+        private val mutableIncomingEnvelopes = MutableSharedFlow<IncomingRelayEnvelope>()
+        override val incomingEnvelopes = mutableIncomingEnvelopes
 
         val acknowledgedEnvelopeIds = Channel<String>(capacity = Channel.UNLIMITED)
 
-        suspend fun emitEnvelope(envelope: RelayEnvelope) {
+        suspend fun emitEnvelope(envelope: IncomingRelayEnvelope) {
             mutableIncomingEnvelopes.subscriptionCount.first { subscriberCount ->
                 subscriberCount > 0
             }
             mutableIncomingEnvelopes.emit(envelope)
         }
 
-        override fun connect(
-            serverUrl: String,
-            localRelayId: String
-        ) = Unit
-
-        override suspend fun sendEnvelopeAndAwaitAcceptance(
-            envelope: RelayEnvelope,
-            timeoutMilliseconds: Long
-        ): Result<Unit> = Result.success(Unit)
-
-        override suspend fun acknowledgeIncomingEnvelope(envelopeId: String): Result<Unit> {
+        override suspend fun acknowledge(envelopeId: String): Result<Unit> {
             events += "acknowledge"
             acknowledgedEnvelopeIds.send(envelopeId)
 
             return Result.success(Unit)
         }
-
-        override suspend fun sendTypingState(
-            recipientId: String,
-            isTyping: Boolean
-        ): Result<Unit> = Result.success(Unit)
-
-        override suspend fun disconnect() = Unit
     }
 
     private companion object {

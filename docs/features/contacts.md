@@ -147,7 +147,7 @@ Contacts do not use WebSockets directly.
 - `ChatMessagePacketHandler` may use
   `ContactDao.usePhoneNumberAsDisplayNameWhenMissing()` for placeholder senders.
 
-See [Messaging and Delivery Flow](message-transport-flow.md).
+See [Conversation, Messaging, and Delivery Flow](message-transport-flow.md).
 
 ## Extension rules
 

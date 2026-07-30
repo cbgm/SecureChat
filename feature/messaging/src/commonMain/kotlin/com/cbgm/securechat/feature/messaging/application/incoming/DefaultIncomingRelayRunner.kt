@@ -3,7 +3,7 @@ package com.cbgm.securechat.feature.messaging.application.incoming
 import com.cbgm.securechat.core.protocol.handler.IncomingMessageHandler
 import com.cbgm.securechat.core.protocol.identity.LocalEncryptionKeyPairProvider
 import com.cbgm.securechat.feature.messaging.domain.relay.ContactByRelayIdResolver
-import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
+import com.cbgm.securechat.feature.messaging.domain.relay.IncomingRelayGateway
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +12,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 class DefaultIncomingRelayRunner(
-    private val webSocketTransportClient: WebSocketTransportClient,
+    private val incomingRelayGateway: IncomingRelayGateway,
     private val contactByRelayIdResolver: ContactByRelayIdResolver,
     private val localEncryptionKeyPairProvider: LocalEncryptionKeyPairProvider,
     private val incomingMessageHandler: IncomingMessageHandler
@@ -28,13 +28,13 @@ class DefaultIncomingRelayRunner(
 
         collectionJob =
             scope.launch {
-                webSocketTransportClient
+                incomingRelayGateway
                     .incomingEnvelopes
                     .collect { envelope ->
                         processEnvelope(
                             envelopeId = envelope.envelopeId,
-                            senderRelayId = envelope.senderId,
-                            encodedTransportPayload = envelope.payload
+                            senderRelayId = envelope.senderRelayId,
+                            encodedTransportPayload = envelope.encodedTransportPayload
                         )
                     }
             }
@@ -71,8 +71,8 @@ class DefaultIncomingRelayRunner(
                 localEncryptionPrivateKey = keyPair.privateKey
             )
 
-            webSocketTransportClient
-                .acknowledgeIncomingEnvelope(
+            incomingRelayGateway
+                .acknowledge(
                     envelopeId = envelopeId
                 ).getOrThrow()
 

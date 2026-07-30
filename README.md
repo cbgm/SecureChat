@@ -57,7 +57,7 @@ docs/                MkDocs engineering handbook
 - 📘 [Documentation Index](docs/index.md)
 - 🧭 [Architecture Overview](docs/architecture/overview.md)
 - 🧩 [Messaging Boundary](docs/architecture/messaging-boundary.md)
-- ✉️ [Messaging and Delivery Flow](docs/features/message-transport-flow.md)
+- ✉️ [Conversation, Messaging, and Delivery Flow](docs/features/message-transport-flow.md)
 
 ## Generated Documentation
 

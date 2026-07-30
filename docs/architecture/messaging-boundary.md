@@ -4,8 +4,8 @@ Messaging spans several modules, but each concern has one owner. The most import
 
 > `:feature:messaging` coordinates a message operation; `:feature:transport` moves opaque data.
 
-The detailed runtime trace is in
-[Messaging and Delivery Flow](../features/message-transport-flow.md).
+The detailed direct and group runtime trace is in
+[Conversation, Messaging, and Delivery Flow](../features/message-transport-flow.md).
 
 ## Ownership map
 
@@ -60,6 +60,7 @@ point, the messaging runtime owns the attempt:
 flowchart TD
     Feature["Feature repository or handler"] --> Outbox["ProtocolOutbox"]
     Outbox --> Processor["DefaultOutboxProcessor"]
+    Processor --> Policy["OutgoingPacketTransportPolicy"]
     Processor --> Wire["OutgoingWireSender"]
     Wire --> WebSocket["WebSocketTransportClient"]
 ```
@@ -74,7 +75,8 @@ the local decryption keys, then crosses the protocol boundary:
 
 ```mermaid
 flowchart TD
-    WebSocket["WebSocketTransportClient.incomingEnvelopes"] --> Runner["DefaultIncomingRelayRunner"]
+    WebSocket["WebSocketTransportClient.incomingEnvelopes"] --> Gateway["IncomingRelayGateway"]
+    Gateway --> Runner["DefaultIncomingRelayRunner"]
     Runner --> Incoming["IncomingMessageHandler"]
     Incoming --> Dispatch["ProtocolPacketHandler"]
     Dispatch --> Typed["TypedProtocolPacketHandler"]
@@ -99,23 +101,28 @@ feature/messaging/.../feature/messaging/
 │   │   └── DefaultIncomingRelayRunner.kt
 │   └── outbox/
 │       ├── DefaultOutboxProcessor.kt
-│       └── DefaultOutboxRunner.kt
+│       ├── DefaultOutboxRunner.kt
+│       ├── OutgoingPacketTransportPolicy.kt
+│       └── OutgoingTransportPayloadFactory.kt
 ├── domain/
 │   └── relay/
 │       ├── ContactRelayIdResolver.kt
-│       └── ContactByRelayIdResolver.kt
+│       ├── ContactByRelayIdResolver.kt
+│       └── IncomingRelayGateway.kt
 ├── data/
 │   ├── relay/
 │   │   ├── DefaultContactRelayIdResolver.kt
-│   │   └── DefaultContactByRelayIdResolver.kt
+│   │   ├── DefaultContactByRelayIdResolver.kt
+│   │   └── WebSocketIncomingRelayGateway.kt
 │   └── typing/
 │       └── RelayTypingIndicatorGateway.kt
 └── di/
     └── MessagingModule.kt
 ```
 
-Application classes own long-running workflows. Domain interfaces describe address-resolution
-ports. Data classes implement those ports using contacts, Room, or transport.
+Application classes own long-running workflows and packet transport policy. Domain interfaces
+describe address-resolution and incoming-wire ports. Data classes implement those ports using
+contacts, Room, or transport.
 
 ## Rules for future code
 
@@ -127,6 +134,8 @@ Place new code according to the decision it makes:
 - If it decides what a contact or identity exchange means, put it in `:feature:contacts`.
 - If it coordinates persisted packets, crypto, addressing, and the wire, put it in
   `:feature:messaging`.
+- If a packet needs special outer encryption or recipient-key validation, extend
+  `OutgoingPacketTransportPolicy`; keep that branching out of `DefaultOutboxProcessor`.
 - If it only opens connections, serializes relay frames, or sends opaque payloads, put it in
   `:feature:transport`.
 - If it defines a transport-independent packet or port, put it in `:core:protocol`.

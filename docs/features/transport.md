@@ -3,8 +3,8 @@
 `:feature:transport` owns relay and WebSocket mechanics. It does not own conversations, contacts,
 message delivery rules, crypto policy, or persistent outbox orchestration.
 
-For the complete application flow, see
-[Messaging and Delivery Flow](message-transport-flow.md).
+For the complete direct and group application flow, see
+[Conversation, Messaging, and Delivery Flow](message-transport-flow.md).
 
 ## Boundary
 
@@ -112,12 +112,12 @@ Success means relay acceptance, not recipient delivery.
 WebSocketTransportClient.incomingEnvelopes: Flow<RelayEnvelope>
 ```
 
-Transport does not decode `RelayEnvelope.payload`. `DefaultIncomingRelayRunner` in
-`:feature:messaging` consumes it.
+Transport does not decode `RelayEnvelope.payload`. `WebSocketIncomingRelayGateway` maps it to the
+transport-neutral `IncomingRelayEnvelope`, which `DefaultIncomingRelayRunner` consumes.
 
-After application handling succeeds, messaging calls
-`WebSocketTransportClient.acknowledgeIncomingEnvelope(envelopeId)`, which sends
-`RelayClientMessage.AcknowledgeEnvelope`.
+After application handling succeeds, messaging calls `IncomingRelayGateway.acknowledge()`. The
+WebSocket adapter delegates to `WebSocketTransportClient.acknowledgeIncomingEnvelope()`, which
+sends `RelayClientMessage.AcknowledgeEnvelope`.
 
 ## Typing state
 
@@ -161,6 +161,8 @@ outbox, and incoming handlers.
   server models, and define compatibility behavior.
 - Replace the WebSocket wire by implementing `OutgoingWireSender`; do not modify chat repositories
   to know the new transport.
+- Supply an `IncomingRelayGateway` adapter for another incoming wire; do not modify
+  `DefaultIncomingRelayRunner`.
 - Replace relay ID derivation behind `RelayIdGenerator` and migrate persisted mappings.
 - Keep payload inspection out of this module. If transport needs to branch on packet meaning, that
   decision belongs in `:feature:messaging` or the packet-owning feature.

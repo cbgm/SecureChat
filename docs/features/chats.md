@@ -29,6 +29,7 @@ feature/chats/.../feature/chats/
 │   │   └── groupdetails/ # one previewable component per file
 │   ├── mapper/
 │   ├── model/
+│   ├── ContactsFlow.kt    # contacts-to-create-group feature flow
 │   ├── screen/
 │       ├── overview/
 │       ├── chat/
@@ -123,8 +124,8 @@ the failure.
 | `FAILED` | Current local attempt failed |
 | `NOT_APPLICABLE` | Incoming message |
 
-Read [Messaging and Delivery Flow](message-transport-flow.md) for state machines, retry, relay ACKs,
-encryption selection, and class-by-class flow.
+Read [Conversation, Messaging, and Delivery Flow](message-transport-flow.md) for state machines,
+retry, relay ACKs, encryption selection, and class-by-class direct and group flow.
 
 ## Secure group architecture
 

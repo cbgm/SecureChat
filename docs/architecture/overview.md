@@ -8,6 +8,10 @@ This page explains the intended responsibilities. The generated
 [module architecture](../generated/architecture.md) is the source of truth for actual Gradle
 dependencies.
 
+For the production call chain from conversation UI through protocol, persistent outbox, transport,
+receipts, and group activation, read
+[Conversation, Messaging, and Delivery Flow](../features/message-transport-flow.md).
+
 ## Architectural shape
 
 ```mermaid
@@ -30,7 +34,7 @@ features.
 |---|---|
 | `:androidApp` | Android entry point, Koin assembly, and process-lifetime runtime startup |
 | `:shared` | Shared Compose application shell |
-| `:navigation` | Routes and cross-feature navigation graph |
+| `:navigation` | App destinations, navigation graph, app shell, and `MainRoute` |
 | `:startup` | Startup initialization result and startup UI |
 | `:core` | Small cross-cutting utilities such as IDs and time |
 | `:core:crypto` | Transport encryption, decryption, key operations, and payload codec |

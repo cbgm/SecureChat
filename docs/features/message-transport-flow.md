@@ -120,7 +120,9 @@ processPending(limit)
   -> prepareAndSend(item)
       -> GetContact(item.contactId)
       -> PacketCodec.decode(item.encodedPacket)
-      -> createTransportPayload(...)
+      -> DefaultOutgoingTransportPayloadFactory.create(...)
+          -> DefaultOutgoingPacketTransportPolicy.resolve(packet, contact)
+          -> TransportMessageCipher.encryptForRecipient(...) when encryption is available
       -> TransportPayloadCodec.encode(...)
       -> OutboxDeliveryStateListener.onPrepared(...)
       -> ContactRelayIdResolver.resolve(item.contactId)
@@ -139,6 +141,7 @@ the recipient stored the message.
 
 ```text
 DefaultWebSocketTransportClient.incomingEnvelopes
+  -> WebSocketIncomingRelayGateway.incomingEnvelopes
   -> DefaultIncomingRelayRunner.processEnvelope()
   -> ContactByRelayIdResolver.resolveContactId()
   -> IncomingMessageHandler.handle()
@@ -364,7 +367,9 @@ and XChaCha20-Poly1305 authentication before plaintext reaches Room.
 
 ## Transport encryption policy
 
-`DefaultOutboxProcessor.createTransportPayload()` selects the outer transport:
+`DefaultOutgoingPacketTransportPolicy.resolve()` owns packet-specific outer-transport requirements
+and identity-snapshot validation. `DefaultOutgoingTransportPayloadFactory.create()` applies that
+decision and creates the encrypted or plaintext transport payload:
 
 | Condition | Outer mode |
 |---|---|
@@ -377,6 +382,9 @@ and XChaCha20-Poly1305 authentication before plaintext reaches Room.
 
 `GroupChatMessagePacket` may use plaintext outer transport because its message content is already
 authenticated group ciphertext. Its stored message mode remains `GROUP_E2EE`.
+
+Keeping this policy outside `DefaultOutboxProcessor` means adding a protected packet does not
+change outbox state transitions, relay addressing, or wire sending.
 
 ## Direct identity verification
 
@@ -466,6 +474,32 @@ Incoming typing comes through `WebSocketTransportClient.incomingTypingEvents` an
 - retries only failed `MessageRecipientStateEntity` rows for a group message;
 - applies `MessageDeliveryEvent.RETRY_REQUESTED` through
   `MessageDeliveryStateCoordinator`.
+
+## How to add a protocol packet
+
+Use this checklist when extending the wire protocol:
+
+1. Add the `SecureChatPacket` implementation and a unique `@SerialName`.
+2. Add codec round-trip and invalid-input tests.
+3. Implement `TypedProtocolPacketHandler` in the feature that owns the packet's meaning.
+4. Register the handler in that feature's Koin module.
+5. Create and persist the feature state before calling `ProtocolOutbox.enqueue()`.
+6. If the packet requires encrypted outer transport or binds a recipient identity snapshot, add
+   that rule to `DefaultOutgoingPacketTransportPolicy` and test it. Do not add the rule to
+   `DefaultOutboxProcessor`.
+7. Make the incoming handler idempotent because relay delivery may repeat.
+8. Update the packet catalog in [Protocol](../api/protocol.md) and the relevant flow on this page.
+
+## How to add another wire transport
+
+The application workflow is transport-neutral at its extension points:
+
+1. Implement `OutgoingWireSender` for outgoing opaque payloads.
+2. Implement `IncomingRelayGateway` for incoming opaque envelopes and acknowledgements.
+3. Bind both implementations in DI.
+4. Supply a `TypingIndicatorGateway` implementation if the transport supports transient typing.
+
+`DefaultOutboxProcessor` and `DefaultIncomingRelayRunner` do not need to change.
 
 ## Invariants
 

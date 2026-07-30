@@ -353,7 +353,11 @@ class DefaultOutboxProcessorTest {
         DefaultOutboxProcessor(
             protocolOutbox = outbox,
             getContact = GetContact(FakeContactRepository(contact)),
-            transportMessageCipher = cipher,
+            transportPayloadFactory =
+                DefaultOutgoingTransportPayloadFactory(
+                    transportMessageCipher = cipher,
+                    packetTransportPolicy = DefaultOutgoingPacketTransportPolicy()
+                ),
             transportPayloadCodec = payloadCodec,
             packetCodec = packetCodec,
             contactRelayIdResolver =
@@ -453,7 +457,12 @@ class DefaultOutboxProcessorTest {
 
         override suspend fun retryFailed(): Result<Unit> = Result.success(Unit)
 
-        override suspend fun findByPacketId(packetId: String): Result<ProtocolOutboxItem?> = Result.success(pendingItems.firstOrNull { item -> item.packetId == packetId })
+        override suspend fun findByPacketId(packetId: String): Result<ProtocolOutboxItem?> =
+            Result.success(
+                pendingItems.firstOrNull { item ->
+                    item.packetId == packetId
+                }
+            )
     }
 
     private class RecordingTransportMessageCipher : TransportMessageCipher {

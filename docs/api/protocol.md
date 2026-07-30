@@ -3,8 +3,8 @@
 `:core:protocol` defines transport-independent messages and ports. It contains no Ktor, Room,
 Compose, contact repository, or platform crypto implementation.
 
-For the full runtime path, see
-[Messaging and Delivery Flow](../features/message-transport-flow.md).
+For the full direct and group runtime path, see
+[Conversation, Messaging, and Delivery Flow](../features/message-transport-flow.md).
 
 ## Packet envelope
 
@@ -43,16 +43,26 @@ The actual property set depends on the packet class.
 | Discriminator | Class | Important fields | Handled by |
 |---|---|---|---|
 | `chat_message` | `ChatMessagePacket` | `messageId`, timestamp, text, optional sender phone | `ChatMessagePacketHandler` |
+| `delivery_receipt` | `DeliveryReceiptPacket` | `messageId`, delivery timestamp | `DeliveryReceiptPacketHandler` |
+| `read_receipt` | `ReadReceiptPacket` | `messageId`, read timestamp | `ReadReceiptPacketHandler` |
+| `contact_invite` | `ContactInvitePacket` | invitation ID, expiry, challenge, inviter keys and signature | `ContactInvitePacketHandler` |
+| `contact_invite_accepted` | `ContactInviteAcceptedPacket` | both challenges, both public identities, responder signature | `ContactInviteAcceptedPacketHandler` |
+| `contact_ready` | `ContactReadyPacket` | response challenge, accepted responder keys, inviter signature | `ContactReadyPacketHandler` |
+| `contact_verification_receipt` | `ContactVerificationReceiptPacket` | receipt ID, both identity snapshots, signature | `ContactVerificationReceiptPacketHandler` |
+| `contact_invite_declined` | `ContactInviteDeclinedPacket` | invitation ID, challenge, decliner key and signature | `ContactInviteDeclinedPacketHandler` |
+| `identity` | `IdentityPacket` | display name and public encryption/signing keys | `IdentityPacketHandler` |
+| `identity_acknowledgement` | `IdentityAcknowledgementPacket` | sender key, acknowledged keys, signature | `IdentityAcknowledgementPacketHandler` |
 | `group_invite` | `GroupInvitePacket` | invitation/group metadata, challenge, owner public identity, owner signature | `GroupInvitePacketHandler` |
 | `group_join_request` | `GroupJoinRequestPacket` | invitation/group IDs, challenge, member public identity, member signature | `GroupJoinRequestPacketHandler` |
 | `group_invite_declined` | `GroupInviteDeclinedPacket` | invitation/group IDs, challenge, member signing key/signature | `GroupInviteDeclinedPacketHandler` |
 | `group_created` | `GroupCreatedPacket` | group metadata, epoch, members, recipient-wrapped key, owner signature | `GroupCreatedPacketHandler` |
 | `group_ready_acknowledgement` | `GroupReadyAcknowledgementPacket` | group ID, epoch, welcome packet ID, key confirmation, member signature | `GroupReadyAcknowledgementPacketHandler` |
+| `group_member_activated` | `GroupMemberActivatedPacket` | group/epoch, activation round, member snapshot, sender signature | `GroupMemberActivatedPacketHandler` |
+| `group_member_activation_acknowledgement` | `GroupMemberActivationAcknowledgementPacket` | group/epoch, activation packet ID and acknowledger signature | `GroupMemberActivationAcknowledgementPacketHandler` |
+| `group_verification_receipt` | `GroupVerificationReceiptPacket` | group/invitation IDs, owner and participant identity snapshots, signature | `GroupVerificationReceiptPacketHandler` |
+| `group_verification_snapshot_request` | `GroupVerificationSnapshotRequestPacket` | group/invitation/request IDs and requester signature | `GroupVerificationSnapshotRequestPacketHandler` |
+| `group_verification_snapshot` | `GroupVerificationSnapshotPacket` | group ID, member verification rows, owner identity and signature | `GroupVerificationSnapshotPacketHandler` |
 | `group_chat_message` | `GroupChatMessagePacket` | group/message IDs, epoch, nonce, ciphertext, sender signature | `GroupChatMessagePacketHandler` |
-| `delivery_receipt` | `DeliveryReceiptPacket` | `messageId`, delivery timestamp | `DeliveryReceiptPacketHandler` |
-| `read_receipt` | `ReadReceiptPacket` | `messageId`, read timestamp | `ReadReceiptPacketHandler` |
-| `identity` | `IdentityPacket` | display name and public encryption/signing keys | `IdentityPacketHandler` |
-| `identity_acknowledgement` | `IdentityAcknowledgementPacket` | sender key, acknowledged keys, signature | `IdentityAcknowledgementPacketHandler` |
 
 Packet definitions live under:
 
@@ -114,7 +124,8 @@ The packet intentionally has no trusted sender phone number or sender public key
 uses `IncomingPacketContext.contactId` and `GroupMemberKeyEntity` to select the expected Ed25519
 key. A packet from a non-member, a stale/future epoch, or a reused `messageId` is rejected.
 
-`GroupCreatedPacket` requires encrypted outer transport in `DefaultOutboxProcessor`.
+`GroupCreatedPacket` requires encrypted outer transport through
+`DefaultOutgoingPacketTransportPolicy`.
 `GroupChatMessagePacket` does not depend on the outer transport for confidentiality because the
 inner content is already authenticated group ciphertext. Invitation packets may also use plaintext
 outer transport because signatures protect them and neither carries secret material.

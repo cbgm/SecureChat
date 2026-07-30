@@ -14,11 +14,17 @@ import com.cbgm.securechat.feature.messaging.application.incoming.DefaultIncomin
 import com.cbgm.securechat.feature.messaging.application.incoming.IncomingRelayRunner
 import com.cbgm.securechat.feature.messaging.application.outbox.DefaultOutboxProcessor
 import com.cbgm.securechat.feature.messaging.application.outbox.DefaultOutboxRunner
+import com.cbgm.securechat.feature.messaging.application.outbox.DefaultOutgoingPacketTransportPolicy
+import com.cbgm.securechat.feature.messaging.application.outbox.DefaultOutgoingTransportPayloadFactory
+import com.cbgm.securechat.feature.messaging.application.outbox.OutgoingPacketTransportPolicy
+import com.cbgm.securechat.feature.messaging.application.outbox.OutgoingTransportPayloadFactory
 import com.cbgm.securechat.feature.messaging.data.relay.DefaultContactByRelayIdResolver
 import com.cbgm.securechat.feature.messaging.data.relay.DefaultContactRelayIdResolver
+import com.cbgm.securechat.feature.messaging.data.relay.WebSocketIncomingRelayGateway
 import com.cbgm.securechat.feature.messaging.data.typing.RelayTypingIndicatorGateway
 import com.cbgm.securechat.feature.messaging.domain.relay.ContactByRelayIdResolver
 import com.cbgm.securechat.feature.messaging.domain.relay.ContactRelayIdResolver
+import com.cbgm.securechat.feature.messaging.domain.relay.IncomingRelayGateway
 import com.cbgm.securechat.feature.transport.relay.identity.RelayIdGenerator
 import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
 import org.koin.dsl.module
@@ -49,11 +55,28 @@ val messagingModule =
             )
         }
 
+        single<IncomingRelayGateway> {
+            WebSocketIncomingRelayGateway(
+                webSocketTransportClient = get<WebSocketTransportClient>()
+            )
+        }
+
+        single<OutgoingPacketTransportPolicy> {
+            DefaultOutgoingPacketTransportPolicy()
+        }
+
+        single<OutgoingTransportPayloadFactory> {
+            DefaultOutgoingTransportPayloadFactory(
+                transportMessageCipher = get(),
+                packetTransportPolicy = get<OutgoingPacketTransportPolicy>()
+            )
+        }
+
         single<OutboxProcessor> {
             DefaultOutboxProcessor(
                 protocolOutbox = get<ProtocolOutbox>(),
                 getContact = get<GetContact>(),
-                transportMessageCipher = get(),
+                transportPayloadFactory = get<OutgoingTransportPayloadFactory>(),
                 transportPayloadCodec = get(),
                 packetCodec = get(),
                 contactRelayIdResolver = get<ContactRelayIdResolver>(),
@@ -71,7 +94,7 @@ val messagingModule =
 
         single<IncomingRelayRunner> {
             DefaultIncomingRelayRunner(
-                webSocketTransportClient = get<WebSocketTransportClient>(),
+                incomingRelayGateway = get<IncomingRelayGateway>(),
                 contactByRelayIdResolver = get<ContactByRelayIdResolver>(),
                 localEncryptionKeyPairProvider = get<LocalEncryptionKeyPairProvider>(),
                 incomingMessageHandler = get<IncomingMessageHandler>()

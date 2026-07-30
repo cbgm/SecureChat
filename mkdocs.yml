@@ -62,7 +62,7 @@ nav:
       - Contacts: features/contacts.md
       - Identity: features/identity.md
       - Onboarding: features/onboarding.md
-      - Messaging and Delivery Flow: features/message-transport-flow.md
+      - Conversation, Messaging, and Delivery Flow: features/message-transport-flow.md
       - Transport: features/transport.md
   - Development:
       - Local Development and Manual Testing: development/local-development.md
