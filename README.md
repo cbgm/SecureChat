@@ -195,25 +195,25 @@ This roadmap tracks the planned features, technical improvements, and infrastruc
 
 ### Group Identity Verification
 
-* [ ] Add identity verification support for group conversations.
-* [ ] Track the verification state of every group member.
-* [ ] Display a verification counter in the group conversation header.
+* [x] Add identity verification support for group conversations.
+* [x] Track the verification state of every group member.
+* [x] Display a verification counter in the group conversation header.
 
   * Example: `3 of 5 members verified`
-* [ ] Distinguish between:
+* [x] Distinguish between:
 
   * No members verified
   * Partially verified
   * All members verified
-* [ ] Allow opening a member list with the verification state of every member.
-* [ ] Allow verifying individual members directly from the member list.
-* [ ] Never mark the complete group as verified until every current member has been verified.
-* [ ] Reset or downgrade the group verification state when:
+* [x] Allow opening a member list with the verification state of every member.
+* [x] Allow verifying individual members directly from the member list.
+* [x] Never mark the complete group as verified until every current member has been verified.
+* [x] Reset or downgrade the group verification state when:
 
   * A new member joins
   * A member changes their identity keys
   * The group membership changes
-* [ ] Continue allowing encrypted communication with members who have already completed the key exchange.
+* [x] Continue allowing encrypted communication with members who have already completed the key exchange.
 
 ### GitHub Test Workflow
 
@@ -234,25 +234,25 @@ This roadmap tracks the planned features, technical improvements, and infrastruc
 
 ### Replace Print Statements with Logging
 
-* [ ] Remove all `print`, `println`, and `System.out` calls.
-* [ ] Introduce a shared multiplatform logger abstraction.
-* [ ] Support the following log levels:
+* [x] Remove all `print`, `println`, and `System.out` calls.
+* [x] Introduce a shared multiplatform logger abstraction.
+* [x] Support the following log levels:
 
   * Debug
   * Info
   * Warning
   * Error
-* [ ] Add Android Logcat integration.
-* [ ] Add JVM logging for the relay server.
-* [ ] Prevent sensitive information from being logged.
-* [ ] Never log:
+* [x] Add Android Logcat integration.
+* [x] Add JVM logging for the relay server.
+* [x] Prevent sensitive information from being logged.
+* [x] Never log:
 
   * Private keys
   * Shared secrets
   * Complete safety numbers
   * Decrypted message contents
   * Authentication tokens
-* [ ] Disable or reduce debug logging in release builds.
+* [] Disable or reduce debug logging in release builds.
 
 ---
 
