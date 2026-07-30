@@ -5,6 +5,7 @@ import com.cbgm.securechat.core.protocol.packet.ContactInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.ContactInvitePacket
 import com.cbgm.securechat.core.protocol.packet.ContactReadyPacket
 import com.cbgm.securechat.core.protocol.packet.ContactVerificationReceiptPacket
+import com.cbgm.securechat.core.protocol.packet.DirectChatAuthorizationRevokedPacket
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -97,6 +98,21 @@ class ContactInvitationPacketCodecTest {
             )
 
         assertEquals(original, roundTrip<ContactInviteDeclinedPacket>(original))
+    }
+
+    @Test
+    fun directChatAuthorizationRevokedRoundTrip() {
+        val original =
+            DirectChatAuthorizationRevokedPacket(
+                packetId = "direct-chat-authorization-revoked-invitation-1",
+                invitationId = "invitation-1",
+                revokedAtEpochMilliseconds = 160L,
+                inviteChallenge = challenge(1),
+                revokerSigningPublicKey = key(2),
+                signature = signature(3)
+            )
+
+        assertEquals(original, roundTrip<DirectChatAuthorizationRevokedPacket>(original))
     }
 
     private inline fun <reified T : Any> roundTrip(packet: com.cbgm.securechat.core.protocol.packet.SecureChatPacket): T =

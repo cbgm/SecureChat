@@ -582,9 +582,13 @@ class GroupVerificationCoordinator(
                         participantSigningPublicKey =
                             identity?.signingPublicKey?.copyOf(),
                         adminVerifiedParticipant =
-                            isActive && sameIdentity && previous.adminVerifiedParticipant,
+                            isActive &&
+                                sameIdentity &&
+                                previous?.adminVerifiedParticipant == true,
                         participantVerifiedAdmin =
-                            isActive && sameIdentity && previous.participantVerifiedAdmin,
+                            isActive &&
+                                sameIdentity &&
+                                previous?.participantVerifiedAdmin == true,
                         updatedAtEpochMilliseconds =
                             maxOf(
                                 invitation.updatedAtEpochMilliseconds,
@@ -699,7 +703,8 @@ class GroupVerificationCoordinator(
         this == GroupInvitationStatus.DECLINED.name ||
             this == GroupInvitationStatus.EXPIRED.name ||
             this == GroupInvitationStatus.FAILED.name ||
-            this == GroupInvitationStatus.REMOVED.name
+            this == GroupInvitationStatus.REMOVED.name ||
+            this == GroupInvitationStatus.GROUP_DELETED.name
 
     private companion object {
         val EMPTY_SIGNATURE = ByteArray(64)

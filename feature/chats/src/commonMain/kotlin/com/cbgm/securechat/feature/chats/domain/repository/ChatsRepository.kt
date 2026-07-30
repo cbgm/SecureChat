@@ -28,6 +28,8 @@ interface ChatsRepository {
 
     suspend fun leaveGroup(conversationId: String): Result<Unit>
 
+    suspend fun deleteConversation(conversationId: String): Result<Unit>
+
     fun observeGroupConversation(conversationId: String): Flow<GroupConversation?>
 
     suspend fun acceptGroupInvitation(conversationId: String): Result<Unit>

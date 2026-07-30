@@ -294,6 +294,52 @@ data class ContactInviteDeclinedPacket(
     }
 }
 
+@Serializable
+@SerialName("direct_chat_authorization_revoked")
+data class DirectChatAuthorizationRevokedPacket(
+    override val packetId: String,
+    override val version: Int = ProtocolVersion.CURRENT,
+    val invitationId: String,
+    val revokedAtEpochMilliseconds: Long,
+    @Serializable(with = ByteArrayAsBase64Serializer::class)
+    val inviteChallenge: ByteArray,
+    @Serializable(with = ByteArrayAsBase64Serializer::class)
+    val revokerSigningPublicKey: ByteArray,
+    @Serializable(with = ByteArrayAsBase64Serializer::class)
+    val signature: ByteArray
+) : SecureChatPacket {
+    init {
+        require(packetId.isNotBlank()) { "Packet ID must not be blank" }
+        require(version > 0) { "Protocol version must be positive" }
+        require(invitationId.isNotBlank()) { "Invitation ID must not be blank" }
+        require(revokedAtEpochMilliseconds >= 0L) { "Revocation timestamp must not be negative" }
+        require(inviteChallenge.size == CHALLENGE_SIZE) { "Invitation challenge must contain $CHALLENGE_SIZE bytes" }
+        require(revokerSigningPublicKey.size == PUBLIC_KEY_SIZE) { "Revoker signing key must contain $PUBLIC_KEY_SIZE bytes" }
+        require(signature.size == SIGNATURE_SIZE) { "Revocation signature must contain $SIGNATURE_SIZE bytes" }
+    }
+
+    override fun equals(other: Any?): Boolean =
+        other is DirectChatAuthorizationRevokedPacket &&
+            packetId == other.packetId &&
+            version == other.version &&
+            invitationId == other.invitationId &&
+            revokedAtEpochMilliseconds == other.revokedAtEpochMilliseconds &&
+            inviteChallenge.contentEquals(other.inviteChallenge) &&
+            revokerSigningPublicKey.contentEquals(other.revokerSigningPublicKey) &&
+            signature.contentEquals(other.signature)
+
+    override fun hashCode(): Int {
+        var result = packetId.hashCode()
+        result = 31 * result + version
+        result = 31 * result + invitationId.hashCode()
+        result = 31 * result + revokedAtEpochMilliseconds.hashCode()
+        result = 31 * result + inviteChallenge.contentHashCode()
+        result = 31 * result + revokerSigningPublicKey.contentHashCode()
+        result = 31 * result + signature.contentHashCode()
+        return result
+    }
+}
+
 private const val CHALLENGE_SIZE = 32
 private const val PUBLIC_KEY_SIZE = 32
 private const val SIGNATURE_SIZE = 64

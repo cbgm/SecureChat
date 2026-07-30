@@ -5,6 +5,9 @@ presentation, and the typed protocol handlers whose packets affect chats.
 
 It does not own WebSocket lifecycle or relay routing.
 
+See [Conversation, Messaging, and Delivery Flow](message-transport-flow.md) for the exact outgoing,
+incoming, group-membership, and conversation-deletion call chains.
+
 ## Package structure
 
 ```text
@@ -54,6 +57,7 @@ feature/chats/.../feature/chats/
 | `AddGroupMembers` | Send owner-signed invitations from group details |
 | `RemoveGroupMember` | Remove a pending member or rotate the epoch after removing an active member |
 | `LeaveGroup` | Queue a signed member leave request and make the local group read-only while the owner rotates the epoch |
+| `DeleteConversation` | Revoke direct-chat authorization before local deletion, leave/decline a joined group before hiding it locally, or propagate owner deletion |
 | `AcceptGroupInvitation` / `DeclineGroupInvitation` | Apply the invitee's explicit decision |
 | `ObserveGroupConversation` | Group metadata and participants |
 | `ObserveTypingIndicator` / `SetTypingIndicator` | Ephemeral typing through a gateway |
@@ -72,6 +76,13 @@ Outgoing messages are persisted before their packets are enqueued. This gives th
 
 `DirectConversationStore` centralizes reuse/creation of direct conversations so outgoing and
 incoming paths do not invent separate IDs.
+
+Direct-message permission is separate from stored identity keys. In automatic mode,
+`IdentityInvitationService.requireDirectChatAuthorization()` requires the contact's latest
+invitation state to be `MUTUAL_UNVERIFIED`. `DefaultChatsRepository.sendMessage()` checks it before
+persisting an outgoing message, and `ChatMessagePacketHandler` checks it before accepting an
+incoming message. A decline or signed direct-conversation deletion therefore makes the composer
+read-only until a fresh invitation is accepted.
 
 ## Direct and group messages
 
@@ -106,6 +117,7 @@ Chat-owned typed handlers:
 | `GroupCreatedPacketHandler` | Verify owner, unwrap the epoch key, persist membership, and acknowledge readiness |
 | `GroupReadyAcknowledgementPacketHandler` | Verify that a member installed the welcome key |
 | `GroupMemberRemovedPacketHandler` | Verify an owner removal, clear local group security, retain history, and make the chat read-only |
+| `GroupConversationDeletedPacketHandler` | Verify an owner deletion, retain member history, clear group security, and mark the chat read-only |
 | `GroupChatMessagePacketHandler` | Verify membership/signature, decrypt, persist, queue receipt |
 | `DeliveryReceiptPacketHandler` | Apply `DELIVERY_CONFIRMED` |
 | `ReadReceiptPacketHandler` | Apply `READ_CONFIRMED` |
@@ -143,7 +155,7 @@ a fresh key to the resulting membership.
 | Class | Responsibility |
 |---|---|
 | `GroupInvitationCoordinator` | Create/receive per-member invitations, add/remove members, distribute or rotate epochs, propagate active membership, and flush queued content |
-| `GroupInvitationManager` | Create and verify signed invite, join, decline, leave, removal, and ready-acknowledgement packets |
+| `GroupInvitationManager` | Create and verify signed invite, join, decline, leave, removal, deletion, and ready-acknowledgement packets |
 | `GroupInvitationDao` / `GroupInvitationEntity` | Persist every per-contact invitation transition |
 | `GroupMessageSender` | Persist pre-activation messages and fan them out after every member is ready |
 | `GroupSecurityManager` | Orchestrate welcome creation/opening and group-message protection |

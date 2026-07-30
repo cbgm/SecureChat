@@ -10,6 +10,9 @@ internal object GroupInvitationStateMapper {
         invitations: List<GroupInvitationEntity>,
         hasLocalMembershipRemoval: Boolean = false
     ): GroupConversationState {
+        if (invitations.anyWithStatus(GroupInvitationStatus.GROUP_DELETED)) {
+            return GroupConversationState.DELETED
+        }
         val currentInvitations =
             invitations.filterNot { invitation ->
                 invitation.status == GroupInvitationStatus.REMOVED.name
@@ -62,8 +65,10 @@ internal object GroupInvitationStateMapper {
 
     fun memberStates(invitations: List<GroupInvitationEntity>): List<GroupMemberInvitationState> =
         invitations
-            .filterNot { invitation -> invitation.status == GroupInvitationStatus.REMOVED.name }
-            .map { invitation ->
+            .filterNot { invitation ->
+                invitation.status == GroupInvitationStatus.REMOVED.name ||
+                    invitation.status == GroupInvitationStatus.GROUP_DELETED.name
+            }.map { invitation ->
                 GroupMemberInvitationState(
                     contactId = invitation.contactId,
                     status = invitation.status.toMemberStatus()

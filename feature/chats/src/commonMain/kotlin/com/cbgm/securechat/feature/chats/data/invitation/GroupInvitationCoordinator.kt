@@ -6,6 +6,7 @@ import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentityProvider
 import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPair
 import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPairProvider
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
+import com.cbgm.securechat.core.protocol.packet.GroupConversationDeletedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInvitePacket
 import com.cbgm.securechat.core.protocol.packet.GroupJoinRequestPacket
@@ -20,6 +21,7 @@ import com.cbgm.securechat.core.protocol.phone.LocalPhoneNumberProvider
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
 import com.cbgm.securechat.data.database.dao.GroupInvitationDao
+import com.cbgm.securechat.data.database.dao.GroupVerificationDao
 import com.cbgm.securechat.data.database.entity.ConversationEntity
 import com.cbgm.securechat.data.database.entity.ConversationParticipantEntity
 import com.cbgm.securechat.data.database.entity.GroupInvitationEntity
@@ -50,7 +52,8 @@ class GroupInvitationCoordinator(
     private val groupInvitationManager: GroupInvitationManager,
     private val groupSecurityManager: GroupSecurityManager,
     private val groupMessageSender: GroupMessageSender,
-    private val groupVerificationCoordinator: GroupVerificationCoordinator
+    private val groupVerificationCoordinator: GroupVerificationCoordinator,
+    private val groupVerificationDao: GroupVerificationDao
 ) {
     private val activationMutex = Mutex()
 
@@ -269,6 +272,21 @@ class GroupInvitationCoordinator(
             }
         }
 
+    suspend fun deleteGroupConversation(groupId: String): Result<Unit> =
+        runCatching {
+            require(groupId.isNotBlank()) { "Group ID must not be blank" }
+            val invitations = groupInvitationDao.findByGroupId(groupId)
+            val isOwner =
+                groupSecurityManager.isOwnedGroup(groupId).getOrThrow()
+                    ?: invitations.none { invitation -> invitation.status.isIncomingStatus() }
+
+            if (isOwner) {
+                deleteOwnedGroupConversation(groupId, invitations)
+            } else {
+                deleteJoinedGroupConversation(groupId, invitations)
+            }
+        }
+
     suspend fun receiveLeaveRequest(
         memberContactId: String,
         packet: GroupLeaveRequestPacket
@@ -327,6 +345,17 @@ class GroupInvitationCoordinator(
     ): Result<Unit> =
         runCatching {
             groupInvitationManager.verifyInvite(packet).getOrThrow()
+            val localDeletionTimestamp =
+                chatDao.findMessageTimestampByTransportMode(
+                    conversationId = packet.groupId,
+                    transportMode = GroupMembershipMessageFactory.LOCAL_CONVERSATION_DELETED_TRANSPORT_MODE
+                )
+            if (localDeletionTimestamp != null) {
+                if (packet.createdAtEpochMilliseconds <= localDeletionTimestamp) {
+                    return@runCatching
+                }
+                chatDao.deleteConversationMessages(packet.groupId)
+            }
             val persistedAtEpochMilliseconds =
                 resolveInvitationUpdatedAt(
                     createdAtEpochMilliseconds = packet.createdAtEpochMilliseconds,
@@ -581,12 +610,29 @@ class GroupInvitationCoordinator(
             groupInvitationManager.verifyDecline(packet).getOrThrow()
             ensureSigningIdentityMatches(memberContactId, packet.memberSigningPublicKey)
 
-            if (invitation.status == GroupInvitationStatus.DECLINED.name) {
+            if (
+                invitation.status == GroupInvitationStatus.DECLINED.name ||
+                invitation.status == GroupInvitationStatus.REMOVED.name
+            ) {
+                return@runCatching
+            }
+            if (
+                invitation.status == GroupInvitationStatus.WELCOME_SENT.name ||
+                invitation.status == GroupInvitationStatus.ACTIVE.name
+            ) {
+                activationMutex.withLock {
+                    removeMemberLocked(
+                        groupId = packet.groupId,
+                        contactId = memberContactId,
+                        reason = GroupMemberRemovedPacket.REASON_MEMBER_LEFT
+                    )
+                }
                 return@runCatching
             }
             check(
                 invitation.status == GroupInvitationStatus.INVITE_SENT.name ||
-                    invitation.status == GroupInvitationStatus.WAITING_FOR_IDENTITY.name
+                    invitation.status == GroupInvitationStatus.WAITING_FOR_IDENTITY.name ||
+                    invitation.status == GroupInvitationStatus.IDENTITY_READY.name
             ) {
                 "Group invitation cannot be declined after it was accepted"
             }
@@ -1208,7 +1254,98 @@ class GroupInvitationCoordinator(
         this == GroupInvitationStatus.DECLINED.name ||
             this == GroupInvitationStatus.EXPIRED.name ||
             this == GroupInvitationStatus.FAILED.name ||
-            this == GroupInvitationStatus.REMOVED.name
+            this == GroupInvitationStatus.REMOVED.name ||
+            this == GroupInvitationStatus.GROUP_DELETED.name
+
+    private suspend fun deleteOwnedGroupConversation(
+        groupId: String,
+        invitations: List<GroupInvitationEntity>
+    ) {
+        activationMutex.withLock {
+            val now =
+                maxOf(
+                    SystemClock.nowEpochMilliseconds(),
+                    invitations.maxOfOrNull(GroupInvitationEntity::createdAtEpochMilliseconds) ?: 0L
+                )
+            val epoch =
+                groupSecurityManager.findOwnedGroupEpoch(groupId).getOrThrow()
+                    ?: GroupConversationDeletedPacket.PENDING_GROUP_EPOCH
+            val signingKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
+
+            invitations
+                .filterNot { invitation -> invitation.status.isTerminalStatus() }
+                .forEach { invitation ->
+                    val packet =
+                        groupInvitationManager
+                            .createConversationDeleted(
+                                invitationId = invitation.invitationId,
+                                groupId = groupId,
+                                epoch = epoch,
+                                challenge = invitation.challenge,
+                                deletedAtEpochMilliseconds = now,
+                                ownerSigningKeyPair = signingKeyPair
+                            ).getOrThrow()
+                    protocolOutbox.enqueue(invitation.contactId, packet).getOrThrow()
+                }
+
+            deleteLocalGroupData(groupId, now)
+        }
+    }
+
+    private suspend fun deleteJoinedGroupConversation(
+        groupId: String,
+        invitations: List<GroupInvitationEntity>
+    ) {
+        val invitation =
+            invitations
+                .filter { candidate ->
+                    candidate.status.isIncomingStatus() ||
+                        candidate.status == GroupInvitationStatus.ACTIVE.name
+                }.maxByOrNull(GroupInvitationEntity::updatedAtEpochMilliseconds)
+        if (invitation != null) {
+            when (invitation.status) {
+                GroupInvitationStatus.ACTIVE.name -> leaveGroup(groupId).getOrThrow()
+                GroupInvitationStatus.AWAITING_ACCEPTANCE.name,
+                GroupInvitationStatus.JOIN_SENT.name,
+                GroupInvitationStatus.WAITING_FOR_ACTIVATION.name -> {
+                    val decline =
+                        groupInvitationManager
+                            .createDecline(
+                                invitationId = invitation.invitationId,
+                                groupId = groupId,
+                                challenge = invitation.challenge,
+                                memberSigningKeyPair =
+                                    localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
+                            ).getOrThrow()
+                    protocolOutbox.enqueue(invitation.contactId, decline).getOrThrow()
+                }
+            }
+        }
+
+        deleteLocalGroupData(
+            groupId = groupId,
+            deletedAtEpochMilliseconds =
+                maxOf(
+                    SystemClock.nowEpochMilliseconds(),
+                    invitations.maxOfOrNull(GroupInvitationEntity::createdAtEpochMilliseconds) ?: 0L
+                )
+        )
+    }
+
+    private suspend fun deleteLocalGroupData(
+        groupId: String,
+        deletedAtEpochMilliseconds: Long
+    ) {
+        chatDao.hideGroupConversation(
+            GroupMembershipMessageFactory.localConversationDeletedMarker(
+                conversationId = groupId,
+                createdAtEpochMilliseconds = deletedAtEpochMilliseconds
+            )
+        )
+        groupSecurityManager.deleteLocalGroup(groupId).getOrThrow()
+        groupVerificationDao.deleteByGroupId(groupId)
+        groupInvitationDao.deleteByGroupId(groupId)
+    }
 
     private suspend fun createRecipients(
         groupId: String,

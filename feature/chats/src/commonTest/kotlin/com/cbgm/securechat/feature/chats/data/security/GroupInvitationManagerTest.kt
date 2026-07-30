@@ -48,6 +48,35 @@ class GroupInvitationManagerTest {
         }
 
     @Test
+    fun groupDeletionBindsInvitationEpochAndTimestamp() =
+        runTest {
+            val deletion =
+                manager
+                    .createConversationDeleted(
+                        invitationId = "invite-delete",
+                        groupId = "group-delete",
+                        epoch = 4,
+                        challenge = CHALLENGE,
+                        deletedAtEpochMilliseconds = 500L,
+                        ownerSigningKeyPair =
+                            LocalSigningKeyPair(
+                                publicKey = OWNER_SIGNING_KEY,
+                                privateKey = OWNER_SIGNING_KEY
+                            )
+                    ).getOrThrow()
+
+            manager.verifyConversationDeleted(deletion, OWNER_SIGNING_KEY).getOrThrow()
+            assertEquals("group-conversation-deleted-invite-delete", deletion.packetId)
+            assertTrue(
+                manager
+                    .verifyConversationDeleted(
+                        deletion.copy(deletedAtEpochMilliseconds = 501L),
+                        OWNER_SIGNING_KEY
+                    ).isFailure
+            )
+        }
+
+    @Test
     fun joinRequestBindsInvitationAndMemberIdentity() =
         runTest {
             val invite =

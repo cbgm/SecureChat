@@ -47,6 +47,18 @@ class GroupSecurityManager(
             }
         }
 
+    suspend fun isOwnedGroup(groupId: String): Result<Boolean?> =
+        runCatching {
+            groupSecurityDao.findState(groupId)?.let { state -> state.ownerContactId == null }
+        }
+
+    suspend fun deleteLocalGroup(groupId: String): Result<Unit> =
+        runCatching {
+            require(groupId.isNotBlank()) { "Group ID must not be blank" }
+            groupKeyStorage.deleteGroup(groupId).getOrThrow()
+            groupSecurityDao.deleteGroup(groupId)
+        }
+
     suspend fun removeLocalMembership(
         packet: GroupMemberRemovedPacket,
         ownerContactId: String,

@@ -14,6 +14,7 @@ import com.cbgm.securechat.core.protocol.packet.ContactInviteAcceptedPacket
 import com.cbgm.securechat.core.protocol.packet.ContactInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.ContactInvitePacket
 import com.cbgm.securechat.core.protocol.packet.ContactReadyPacket
+import com.cbgm.securechat.core.protocol.packet.DirectChatAuthorizationRevokedPacket
 import com.cbgm.securechat.core.protocol.version.ProtocolVersion
 import com.cbgm.securechat.core.security.DirectIdentitySetupMode
 import com.cbgm.securechat.core.security.DirectIdentitySetupModeRepository
@@ -22,6 +23,7 @@ import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.data.database.dao.IdentityInvitationDao
 import com.cbgm.securechat.data.database.entity.IdentityInvitationEntity
 import com.cbgm.securechat.feature.contacts.domain.identity.ContactVerificationService
+import com.cbgm.securechat.feature.contacts.domain.identity.DirectChatAuthorizationRequiredException
 import com.cbgm.securechat.feature.contacts.domain.identity.IdentityInvitationService
 import com.cbgm.securechat.feature.contacts.domain.model.IdentityHandshakeState
 import com.cbgm.securechat.feature.contacts.domain.model.IdentityInvitationDirection
@@ -62,11 +64,11 @@ class IdentityInvitationCoordinator(
             mutex.withLock {
                 val contact = contactDao.findById(contactId) ?: error("Contact was not found: $contactId")
 
-                if (contact.publicIdentity?.keyExchangeStatus == KeyExchangeStatus.MUTUAL.name) {
-                    return@withLock
-                }
-
-                if (contact.publicIdentity?.locallyImported == true) {
+                if (
+                    invitationDao
+                        .findLatestForContact(contactId)
+                        ?.state == IdentityHandshakeState.MUTUAL_UNVERIFIED.name
+                ) {
                     return@withLock
                 }
 
@@ -352,7 +354,7 @@ class IdentityInvitationCoordinator(
                 when {
                     invitation.direction == IdentityInvitationDirection.INCOMING.name &&
                         state == IdentityHandshakeState.AWAITING_ACCEPTANCE -> {
-                        queueDeclineForManualMode(
+                        queueDecline(
                             contactId = invitation.contactId,
                             invitationId = invitation.invitationId,
                             inviteChallenge = invitation.inviteChallenge
@@ -378,6 +380,80 @@ class IdentityInvitationCoordinator(
                         )
                     }
                 }
+            }
+        }
+
+    override suspend fun requireDirectChatAuthorization(contactId: String): Result<Unit> =
+        runCatching {
+            require(contactId.isNotBlank()) {
+                "Contact ID must not be blank"
+            }
+
+            when (modeRepository.getMode()) {
+                DirectIdentitySetupMode.AUTOMATIC_INVITATION -> {
+                    val state = invitationDao.findLatestForContact(contactId)?.state
+                    if (state != IdentityHandshakeState.MUTUAL_UNVERIFIED.name) {
+                        throw DirectChatAuthorizationRequiredException(
+                            "A contact invitation must be accepted before messages can be sent"
+                        )
+                    }
+                }
+
+                DirectIdentitySetupMode.MANUAL_IDENTITY_SHARING -> {
+                    val keyExchangeStatus =
+                        contactDao
+                            .findPublicIdentityByContactId(contactId)
+                            ?.keyExchangeStatus
+                    if (keyExchangeStatus != KeyExchangeStatus.MUTUAL.name) {
+                        throw DirectChatAuthorizationRequiredException(
+                            "Both identities must be exchanged before messages can be sent"
+                        )
+                    }
+                }
+            }
+        }
+
+    override suspend fun revokeDirectChatAuthorization(contactId: String): Result<Unit> =
+        runCatching {
+            require(contactId.isNotBlank()) {
+                "Contact ID must not be blank"
+            }
+
+            mutex.withLock {
+                val invitation = invitationDao.findLatestForContact(contactId) ?: return@withLock
+                val state =
+                    IdentityHandshakeState.entries.firstOrNull { candidate ->
+                        candidate.name == invitation.state
+                    } ?: error("Unknown contact invitation state: ${invitation.state}")
+
+                if (state == IdentityHandshakeState.CONVERSATION_DELETED) {
+                    return@withLock
+                }
+
+                if (
+                    invitation.direction == IdentityInvitationDirection.INCOMING.name &&
+                    state == IdentityHandshakeState.AWAITING_ACCEPTANCE
+                ) {
+                    queueDecline(
+                        contactId = contactId,
+                        invitationId = invitation.invitationId,
+                        inviteChallenge = invitation.inviteChallenge
+                    )
+                } else if (
+                    state != IdentityHandshakeState.DECLINED &&
+                    state != IdentityHandshakeState.EXPIRED &&
+                    state != IdentityHandshakeState.FAILED
+                ) {
+                    queueDirectChatAuthorizationRevocation(invitation)
+                }
+
+                invitationDao.upsert(
+                    invitation.copy(
+                        state = IdentityHandshakeState.CONVERSATION_DELETED.name,
+                        updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
+                        lastError = null
+                    )
+                )
             }
         }
 
@@ -435,11 +511,8 @@ class IdentityInvitationCoordinator(
                     }
                 }
 
-                if (
-                    modeRepository.getMode() == DirectIdentitySetupMode.MANUAL_IDENTITY_SHARING ||
-                    storedIdentity?.locallyImported == true
-                ) {
-                    queueDeclineForManualMode(
+                if (modeRepository.getMode() == DirectIdentitySetupMode.MANUAL_IDENTITY_SHARING) {
+                    queueDecline(
                         contactId = context.contactId,
                         invitationId = packet.invitationId,
                         inviteChallenge = packet.inviteChallenge
@@ -472,10 +545,6 @@ class IdentityInvitationCoordinator(
                     check(existing.remoteSigningPublicKey.contentEquals(packet.signingPublicKey)) {
                         "Invitation replay changed its signing key"
                     }
-                    return@withLock
-                }
-
-                if (storedIdentity?.keyExchangeStatus == KeyExchangeStatus.MUTUAL.name) {
                     return@withLock
                 }
 
@@ -851,6 +920,63 @@ class IdentityInvitationCoordinator(
             }
         }
 
+    suspend fun receiveDirectChatAuthorizationRevoked(
+        context: IncomingPacketContext,
+        packet: DirectChatAuthorizationRevokedPacket
+    ): Result<Unit> =
+        runCatching {
+            mutex.withLock {
+                requirePacketId(
+                    actualPacketId = packet.packetId,
+                    expectedPrefix = "direct-chat-authorization-revoked",
+                    invitationId = packet.invitationId
+                )
+                val invitation =
+                    invitationDao.findById(packet.invitationId)
+                        ?: error("Invitation was not found: ${packet.invitationId}")
+                check(invitation.contactId == context.contactId) {
+                    "Authorization revocation contact does not match invitation"
+                }
+                check(invitation.inviteChallenge.contentEquals(packet.inviteChallenge)) {
+                    "Authorization revocation challenge does not match invitation"
+                }
+                check(invitation.remoteSigningPublicKey.contentEquals(packet.revokerSigningPublicKey)) {
+                    "Authorization revocation signing key does not match the contact identity"
+                }
+
+                val payload =
+                    payloadEncoder.encodeDirectChatAuthorizationRevoked(
+                        packetId = packet.packetId,
+                        version = packet.version,
+                        invitationId = packet.invitationId,
+                        revokedAtEpochMilliseconds = packet.revokedAtEpochMilliseconds,
+                        inviteChallenge = packet.inviteChallenge,
+                        revokerSigningPublicKey = packet.revokerSigningPublicKey
+                    )
+                detachedSignatureCrypto
+                    .verify(payload, packet.revokerSigningPublicKey, packet.signature)
+                    .getOrThrow()
+                require(
+                    packet.revokedAtEpochMilliseconds <=
+                        context.receivedAtEpochMilliseconds + MAX_CLOCK_SKEW_MILLISECONDS
+                ) {
+                    "Authorization revocation was created too far in the future"
+                }
+
+                if (invitation.state == IdentityHandshakeState.CONVERSATION_DELETED.name) {
+                    return@withLock
+                }
+
+                invitationDao.upsert(
+                    invitation.copy(
+                        state = IdentityHandshakeState.CONVERSATION_DELETED.name,
+                        updatedAtEpochMilliseconds = context.receivedAtEpochMilliseconds,
+                        lastError = null
+                    )
+                )
+            }
+        }
+
     private fun requirePacketId(
         actualPacketId: String,
         expectedPrefix: String,
@@ -909,13 +1035,45 @@ class IdentityInvitationCoordinator(
         }
     }
 
+    private suspend fun queueDirectChatAuthorizationRevocation(
+        invitation: IdentityInvitationEntity
+    ) {
+        val signingKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
+        val revokedAt = SystemClock.nowEpochMilliseconds()
+        val packetId = "direct-chat-authorization-revoked-${invitation.invitationId}"
+        val payload =
+            payloadEncoder.encodeDirectChatAuthorizationRevoked(
+                packetId = packetId,
+                version = ProtocolVersion.CURRENT,
+                invitationId = invitation.invitationId,
+                revokedAtEpochMilliseconds = revokedAt,
+                inviteChallenge = invitation.inviteChallenge,
+                revokerSigningPublicKey = signingKeyPair.publicKey
+            )
+        val signature = detachedSignatureCrypto.sign(payload, signingKeyPair.privateKey).getOrThrow()
+
+        protocolOutbox
+            .enqueue(
+                contactId = invitation.contactId,
+                packet =
+                    DirectChatAuthorizationRevokedPacket(
+                        packetId = packetId,
+                        invitationId = invitation.invitationId,
+                        revokedAtEpochMilliseconds = revokedAt,
+                        inviteChallenge = invitation.inviteChallenge.copyOf(),
+                        revokerSigningPublicKey = signingKeyPair.publicKey.copyOf(),
+                        signature = signature.copyOf()
+                    )
+            ).getOrThrow()
+    }
+
     private suspend fun requireAutomaticSetupEnabled() {
         check(modeRepository.getMode() == DirectIdentitySetupMode.AUTOMATIC_INVITATION) {
             "Automatic identity invitations are disabled"
         }
     }
 
-    private suspend fun queueDeclineForManualMode(
+    private suspend fun queueDecline(
         contactId: String,
         invitationId: String,
         inviteChallenge: ByteArray
@@ -959,6 +1117,7 @@ class IdentityInvitationCoordinator(
             listOf(
                 IdentityHandshakeState.MUTUAL_UNVERIFIED.name,
                 IdentityHandshakeState.DECLINED.name,
+                IdentityHandshakeState.CONVERSATION_DELETED.name,
                 IdentityHandshakeState.EXPIRED.name,
                 IdentityHandshakeState.FAILED.name
             )

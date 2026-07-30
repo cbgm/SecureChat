@@ -50,6 +50,7 @@ The actual property set depends on the packet class.
 | `contact_ready` | `ContactReadyPacket` | response challenge, accepted responder keys, inviter signature | `ContactReadyPacketHandler` |
 | `contact_verification_receipt` | `ContactVerificationReceiptPacket` | receipt ID, both identity snapshots, signature | `ContactVerificationReceiptPacketHandler` |
 | `contact_invite_declined` | `ContactInviteDeclinedPacket` | invitation ID, challenge, decliner key and signature | `ContactInviteDeclinedPacketHandler` |
+| `direct_chat_authorization_revoked` | `DirectChatAuthorizationRevokedPacket` | invitation ID, challenge, revocation timestamp, revoker key and signature | `DirectChatAuthorizationRevokedPacketHandler` |
 | `identity` | `IdentityPacket` | display name and public encryption/signing keys | `IdentityPacketHandler` |
 | `identity_acknowledgement` | `IdentityAcknowledgementPacket` | sender key, acknowledged keys, signature | `IdentityAcknowledgementPacketHandler` |
 | `group_invite` | `GroupInvitePacket` | invitation/group metadata, challenge, owner public identity, owner signature | `GroupInvitePacketHandler` |
@@ -61,6 +62,7 @@ The actual property set depends on the packet class.
 | `group_member_activated` | `GroupMemberActivatedPacket` | group/epoch, activation round, member snapshot, sender signature | `GroupMemberActivatedPacketHandler` |
 | `group_member_activation_acknowledgement` | `GroupMemberActivationAcknowledgementPacket` | group/epoch, activation packet ID and acknowledger signature | `GroupMemberActivationAcknowledgementPacketHandler` |
 | `group_member_removed` | `GroupMemberRemovedPacket` | invitation/group IDs, challenge, next epoch, reason, removed signing key, owner signature | `GroupMemberRemovedPacketHandler` |
+| `group_conversation_deleted` | `GroupConversationDeletedPacket` | invitation/group IDs, epoch, challenge, deletion timestamp, owner signature | `GroupConversationDeletedPacketHandler` |
 | `group_verification_receipt` | `GroupVerificationReceiptPacket` | group/invitation IDs, owner and participant identity snapshots, signature | `GroupVerificationReceiptPacketHandler` |
 | `group_verification_snapshot_request` | `GroupVerificationSnapshotRequestPacket` | group/invitation/request IDs and requester signature | `GroupVerificationSnapshotRequestPacketHandler` |
 | `group_verification_snapshot` | `GroupVerificationSnapshotPacket` | group ID, member verification rows, owner identity and signature | `GroupVerificationSnapshotPacketHandler` |
@@ -91,6 +93,21 @@ Decoding:
 
 Packet bytes are not a relay frame. The outgoing messaging pipeline next wraps them in
 `EncryptedTransportPayload` and encodes that value with `TransportPayloadCodec`.
+
+## Direct authorization packet rules
+
+`ContactInvitePacket`, `ContactInviteAcceptedPacket`, and `ContactReadyPacket` establish one
+direct-chat authorization. Stored public keys may be reused by a later handshake, but they do not
+authorize messages by themselves. `ContactInviteDeclinedPacket` makes the referenced outgoing
+invitation terminal.
+
+`DirectChatAuthorizationRevokedPacket` is queued before a direct conversation is deleted locally.
+`IdentityInvitationPayloadEncoder.encodeDirectChatAuthorizationRevoked()` binds the packet ID,
+version, invitation ID, revocation timestamp, original invitation challenge, and revoker signing
+key. `DirectChatAuthorizationRevokedPacketHandler` accepts it only for the matching contact and
+pinned remote signing key, then changes the invitation to `CONVERSATION_DELETED` without deleting
+the recipient's message history. A fresh invitation must complete before direct messages are
+accepted again.
 
 ## Secure group packet rules
 
@@ -142,6 +159,14 @@ overtakes the welcome; no installed key is required because the signed invitatio
 removed signing identity still authenticate the operation. `reason` defaults to
 `REMOVED_BY_OWNER`; the owner uses `MEMBER_LEFT` after a valid `GroupLeaveRequestPacket`, and that
 reason is included in the member-left signature domain.
+
+`GroupConversationDeletedPacket` is created separately for each non-terminal invitation. Its
+signature binds the recipient-specific invitation ID and challenge, group ID, last owner epoch,
+and deletion timestamp through `GroupProtocolPayloadEncoder.encodeConversationDeleted()`.
+`GroupConversationDeletedPacketHandler` therefore accepts deletion only from the owner stored on
+that exact invitation. It deletes local group keys, participants, and verification state but keeps
+the conversation and all visible messages. The invitation becomes `GROUP_DELETED`, which maps to
+the read-only `GroupConversationState.DELETED` banner.
 
 `GroupChatMessagePacket` never carries message plaintext. `GroupProtocolPayloadEncoder` defines:
 

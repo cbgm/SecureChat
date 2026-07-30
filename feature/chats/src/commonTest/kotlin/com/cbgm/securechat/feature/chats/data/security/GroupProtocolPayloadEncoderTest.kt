@@ -1,5 +1,6 @@
 package com.cbgm.securechat.feature.chats.data.security
 
+import com.cbgm.securechat.core.protocol.packet.GroupConversationDeletedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInvitePacket
@@ -60,6 +61,34 @@ class GroupProtocolPayloadEncoderTest {
                 .contentEquals(
                     encoder.encodeJoinRequest(
                         joinRequest.copy(memberSigningPublicKey = byteArrayOf(8))
+                    )
+                )
+        )
+    }
+
+    @Test
+    fun deletionEncodingIgnoresSignatureAndBindsDeletionMetadata() {
+        val deletion =
+            GroupConversationDeletedPacket(
+                packetId = "group-conversation-deleted-invite-1",
+                invitationId = "invite-1",
+                groupId = "group-1",
+                epoch = 2,
+                challenge = byteArrayOf(1),
+                deletedAtEpochMilliseconds = 300L,
+                ownerSignature = byteArrayOf(2)
+            )
+
+        assertContentEquals(
+            encoder.encodeConversationDeleted(deletion),
+            encoder.encodeConversationDeleted(deletion.copy(ownerSignature = byteArrayOf(99)))
+        )
+        assertFalse(
+            encoder
+                .encodeConversationDeleted(deletion)
+                .contentEquals(
+                    encoder.encodeConversationDeleted(
+                        deletion.copy(deletedAtEpochMilliseconds = 301L)
                     )
                 )
         )

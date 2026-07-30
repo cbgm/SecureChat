@@ -75,6 +75,7 @@ import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.DeliveryLabel
+import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.GroupConversationDeletedHint
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.GroupMembershipLeavingHint
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.GroupMembershipRemovedHint
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.GroupMembershipSystemMessage
@@ -99,6 +100,8 @@ import com.cbgm.securechat.resources.feature_chats_chat_verified_by_me_keys_desc
 import com.cbgm.securechat.resources.feature_chats_chat_verified_by_me_title
 import com.cbgm.securechat.resources.feature_chats_chat_verified_e2ee
 import com.cbgm.securechat.resources.feature_chats_chat_verified_keys_description
+import com.cbgm.securechat.resources.feature_chats_contact_invitation_declined_description
+import com.cbgm.securechat.resources.feature_chats_contact_invitation_declined_title
 import com.cbgm.securechat.resources.feature_chats_contact_invitation_finishing_description
 import com.cbgm.securechat.resources.feature_chats_contact_invitation_finishing_title
 import com.cbgm.securechat.resources.feature_chats_contact_invitation_received_description
@@ -107,10 +110,13 @@ import com.cbgm.securechat.resources.feature_chats_contact_invitation_sent_descr
 import com.cbgm.securechat.resources.feature_chats_contact_invitation_sent_title
 import com.cbgm.securechat.resources.feature_chats_decryption_failed
 import com.cbgm.securechat.resources.feature_chats_delivered
+import com.cbgm.securechat.resources.feature_chats_direct_chat_reinvite_required_description
+import com.cbgm.securechat.resources.feature_chats_direct_chat_reinvite_required_title
 import com.cbgm.securechat.resources.feature_chats_encrypted
 import com.cbgm.securechat.resources.feature_chats_failed
 import com.cbgm.securechat.resources.feature_chats_group_accept
 import com.cbgm.securechat.resources.feature_chats_group_decline
+import com.cbgm.securechat.resources.feature_chats_group_deleted_status
 import com.cbgm.securechat.resources.feature_chats_group_invitation_description
 import com.cbgm.securechat.resources.feature_chats_group_invitation_title
 import com.cbgm.securechat.resources.feature_chats_group_member_accepted
@@ -297,6 +303,7 @@ private fun ChatTopBar(
                 securityState = uiState.contactSecurityState,
                 identityHandshakeState = uiState.identityHandshakeState,
                 directIdentitySetupMode = uiState.directIdentitySetupMode,
+                isChatAuthorized = uiState.isMessageInputEnabled,
                 onVerifyIdentity = onVerifyIdentity,
                 onManualIdentitySetup = onManualIdentitySetup
             )
@@ -311,6 +318,8 @@ private fun ChatTopBar(
                 onAccept = onAcceptGroupInvitation,
                 onDecline = onDeclineGroupInvitation
             )
+        } else if (uiState.groupState == GroupConversationState.DELETED) {
+            GroupConversationDeletedHint()
         } else if (
             uiState.groupState == GroupConversationState.REMOVED ||
             (
@@ -373,6 +382,8 @@ private fun groupStateSubtitle(uiState: ChatUiState): String =
             stringResource(Res.string.feature_chats_group_status_leaving)
         GroupConversationState.REMOVED ->
             stringResource(Res.string.feature_chats_group_status_removed)
+        GroupConversationState.DELETED ->
+            stringResource(Res.string.feature_chats_group_deleted_status)
         GroupConversationState.DECLINED ->
             stringResource(Res.string.feature_chats_group_status_declined)
         GroupConversationState.EXPIRED ->
@@ -577,11 +588,12 @@ private fun SecurityBanner(
     securityState: ContactSecurityState,
     identityHandshakeState: IdentityHandshakeState?,
     directIdentitySetupMode: DirectIdentitySetupMode,
+    isChatAuthorized: Boolean,
     onVerifyIdentity: () -> Unit,
     onManualIdentitySetup: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (securityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED) {
+    if (securityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED && isChatAuthorized) {
         VerifiedSecurityIndicator(modifier = modifier)
         return
     }
@@ -625,11 +637,36 @@ private fun SecurityBanner(
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                     )
 
-                IdentityHandshakeState.MUTUAL_UNVERIFIED,
-                IdentityHandshakeState.DECLINED,
+                IdentityHandshakeState.DECLINED ->
+                    CombinedState(
+                        icon = Icons.Default.Warning,
+                        title = stringResource(Res.string.feature_chats_contact_invitation_declined_title),
+                        description = stringResource(Res.string.feature_chats_contact_invitation_declined_description),
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
+
+                IdentityHandshakeState.CONVERSATION_DELETED ->
+                    CombinedState(
+                        icon = Icons.Default.Warning,
+                        title = stringResource(Res.string.feature_chats_direct_chat_reinvite_required_title),
+                        description = stringResource(Res.string.feature_chats_direct_chat_reinvite_required_description),
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
+
                 IdentityHandshakeState.EXPIRED,
                 IdentityHandshakeState.FAILED,
-                null -> null
+                null ->
+                    CombinedState(
+                        icon = Icons.Default.Warning,
+                        title = stringResource(Res.string.feature_chats_direct_chat_reinvite_required_title),
+                        description = stringResource(Res.string.feature_chats_direct_chat_reinvite_required_description),
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
+
+                IdentityHandshakeState.MUTUAL_UNVERIFIED -> null
             }
         } else {
             null
@@ -702,10 +739,14 @@ private fun SecurityBanner(
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                 )
 
-            // MUTUAL_KEYS_VERIFIED is handled above and returns early — no branch
-            // needed here, so the dead commented-out entry that used to live in
-            // this `when` has been removed.
-            ContactSecurityState.MUTUAL_KEYS_VERIFIED -> error("Unreachable")
+            ContactSecurityState.MUTUAL_KEYS_VERIFIED ->
+                CombinedState(
+                    icon = Icons.Default.Warning,
+                    title = stringResource(Res.string.feature_chats_direct_chat_reinvite_required_title),
+                    description = stringResource(Res.string.feature_chats_direct_chat_reinvite_required_description),
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                )
         }
 
     Surface(

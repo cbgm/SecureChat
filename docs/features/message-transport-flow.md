@@ -63,6 +63,42 @@ AppDestination.Details
   -> GroupDetailsScreen
 ```
 
+## Direct-chat authorization
+
+Knowing a contact's public keys is not permission to send direct messages. In automatic invitation
+mode, the latest `IdentityInvitationEntity` for the contact must be
+`IdentityHandshakeState.MUTUAL_UNVERIFIED`. Verification is an additional authenticity signal; it
+does not replace invitation acceptance.
+
+`ChatViewModel.uiState` applies the presentation guard:
+
+```text
+IdentityInvitationService.observeState(contactId)
+  -> IdentityInvitationCoordinator.observeState(contactId)
+  -> IdentityInvitationDao.observeLatestForContact(contactId)
+  -> ChatViewModel.isDirectChatAuthorized(...)
+  -> ChatUiState.isMessageInputEnabled
+  -> ChatScreen disables MessageInput and the send button
+```
+
+`DefaultChatsRepository.sendMessage()` independently applies the data-layer guard through
+`IdentityInvitationService.requireDirectChatAuthorization(contactId)` before creating either a
+`MessageEntity` or `ChatMessagePacket`. `ChatMessagePacketHandler.handle()` applies the same check
+before persisting an incoming direct message. UI state therefore cannot bypass the authorization
+rule. `DefaultChatsRepository.retryMessage()` also repeats this check for a direct message, so a
+failed pre-decline packet cannot be retried after authorization is removed.
+
+An unauthorized incoming `ChatMessagePacket` fails with
+`DirectChatAuthorizationRequiredException`. `IncomingMessageProcessor` acknowledges and drops that
+packet instead of storing an invalid-message placeholder, so it cannot recreate a conversation
+that the local user deleted.
+
+If `IdentityInvitationCoordinator.receiveDeclined()` verifies a
+`ContactInviteDeclinedPacket`, it stores `DECLINED`. The inviter's open chat immediately becomes
+read-only even when the two contacts still have mutual or verified public keys. Opening the contact
+again calls `IdentityExchangeStarter.ensureStarted(contactId)`; `IdentityInvitationCoordinator.start()`
+creates a new invitation because only the latest accepted invitation authorizes the chat.
+
 ## Direct outgoing message
 
 ```mermaid
@@ -93,9 +129,10 @@ Exact behavior:
 2. `ChatViewModel.sendMessage()` trims the current input, clears it, calls `stopTyping()`, and
    invokes `SendMessage`.
 3. `SendMessage.invoke()` delegates to `ChatsRepository.sendMessage()`.
-4. `DefaultChatsRepository.sendMessage()` validates that the conversation is direct and loads its
-   contact.
-5. It creates one `ChatMessagePacket` and one visible `MessageEntity`.
+4. `DefaultChatsRepository.sendMessage()` validates that the conversation is direct and calls
+   `IdentityInvitationService.requireDirectChatAuthorization(contactId)`.
+5. Only after authorization succeeds does it load the contact and create one `ChatMessagePacket`
+   and one visible `MessageEntity`.
 6. `ChatDao.upsertMessage()` persists the visible row with `MessageDeliveryStatus.QUEUED`.
 7. `ProtocolOutbox.enqueue(contactId, packet)` persists the packet independently of the live
    WebSocket.
@@ -155,11 +192,12 @@ DefaultWebSocketTransportClient.incomingEnvelopes
 `ChatMessagePacketHandler.handle()`:
 
 1. validates the message text;
-2. resolves or creates the direct `ConversationEntity`;
-3. creates the incoming `MessageEntity`;
-4. calls `ChatDao.upsertIncomingChatMessage()`;
-5. creates a deterministic `DeliveryReceiptPacket`;
-6. calls `ProtocolOutbox.enqueue(context.contactId, receipt)`.
+2. calls `IdentityInvitationService.requireDirectChatAuthorization(context.contactId)`;
+3. resolves or creates the direct `ConversationEntity`;
+4. creates the incoming `MessageEntity`;
+5. calls `ChatDao.upsertIncomingChatMessage()`;
+6. creates a deterministic `DeliveryReceiptPacket`;
+7. calls `ProtocolOutbox.enqueue(context.contactId, receipt)`.
 
 Only after the complete incoming handler returns does
 `DefaultIncomingRelayRunner.processEnvelope()` call
@@ -193,6 +231,141 @@ ChatRoute or GroupChatRoute
 
 On the sender, `ReadReceiptPacketHandler.handle()` applies
 `MessageDeliveryEvent.READ_CONFIRMED`.
+
+## Deleting conversations
+
+Deletion starts in the overview; it is not a navigation route:
+
+```text
+SwipeRevealDeleteContainer
+  -> press the revealed delete IconButton
+  -> ChatsScreen.onDeleteConversation(conversationId)
+  -> ChatsRoute
+  -> ChatsViewModel.deleteConversation(conversationId)
+  -> DeleteConversation.invoke(conversationId)
+  -> DefaultChatsRepository.deleteConversation(conversationId)
+```
+
+Dragging left only reveals the red action. It never deletes automatically; the user must press the
+trash button.
+
+### Direct conversation deletion
+
+`DefaultChatsRepository.deleteConversation()` resolves the direct contact and calls
+`IdentityInvitationService.revokeDirectChatAuthorization(contactId)` before deleting local data:
+
+```text
+DefaultChatsRepository.deleteConversation(conversationId)
+  -> IdentityInvitationCoordinator.revokeDirectChatAuthorization(contactId)
+  -> IdentityInvitationDao.findLatestForContact(contactId)
+  -> IdentityInvitationPayloadEncoder.encodeDirectChatAuthorizationRevoked(...)
+  -> DetachedSignatureCrypto.sign(...)
+  -> ProtocolOutbox.enqueue(DirectChatAuthorizationRevokedPacket)
+  -> IdentityInvitationDao.upsert(state = CONVERSATION_DELETED)
+  -> ChatDao.deleteConversation(conversationId)
+```
+
+The packet is durably queued before `ChatDao.deleteConversation()` removes the deleting device's
+conversation and messages. Its signature binds the packet ID, protocol version, invitation ID,
+revocation timestamp, original invitation challenge, and revoker signing key.
+
+On the other device:
+
+```text
+DirectChatAuthorizationRevokedPacketHandler.handle()
+  -> IdentityInvitationCoordinator.receiveDirectChatAuthorizationRevoked(...)
+  -> verify invitation/contact/challenge/signing key/signature
+  -> IdentityInvitationDao.upsert(state = CONVERSATION_DELETED)
+  -> ChatViewModel observes the new state
+  -> ChatUiState.isMessageInputEnabled = false
+```
+
+The receiving device keeps its conversation and all message history. The deleting device loses
+only its local history. When either person opens the direct chat again,
+`IdentityExchangeStarter.ensureStarted(contactId)` creates a fresh `ContactInvitePacket`; neither
+side can send until that new invitation reaches `MUTUAL_UNVERIFIED`. After acceptance,
+`DirectConversationStore.getOrCreate(contactId)` gives the deleting device a new empty conversation,
+while the other device continues the retained history.
+
+### Participant deletes a group
+
+`GroupInvitationCoordinator.deleteGroupConversation(groupId)` first preserves membership
+semantics:
+
+| Local invitation status | Packet queued before local hiding |
+|---|---|
+| `ACTIVE` | `leaveGroup()` → `GroupLeaveRequestPacket` |
+| `AWAITING_ACCEPTANCE`, `JOIN_SENT`, `WAITING_FOR_ACTIVATION` | member-signed `GroupInviteDeclinedPacket` |
+| `LEAVE_SENT` | no duplicate; the leave request is already queued |
+
+After the control packet is durably enqueued,
+`GroupInvitationCoordinator.deleteLocalGroupData()` calls
+`ChatDao.hideGroupConversation()`, `GroupSecurityManager.deleteLocalGroup()`,
+`GroupVerificationDao.deleteByGroupId()`, and `GroupInvitationDao.deleteByGroupId()`.
+
+The owner receives either:
+
+```text
+GroupLeaveRequestPacketHandler.handle()
+  -> GroupInvitationCoordinator.receiveLeaveRequest()
+  -> removeMemberLocked(..., reason = MEMBER_LEFT)
+  -> rotateAfterRemoval()
+  -> GroupMembershipMessageFactory.memberLeft()
+```
+
+or:
+
+```text
+GroupInviteDeclinedPacketHandler.handle()
+  -> GroupInvitationCoordinator.receiveDecline()
+  -> status DECLINED for a pending invitation
+     or removeMemberLocked(..., reason = MEMBER_LEFT) after welcome/activation
+```
+
+Thus remaining members receive the epoch update and see “X left the group” when the deleted
+conversation represented installed membership.
+
+### Owner deletes a group
+
+The owner path is:
+
+```text
+GroupInvitationCoordinator.deleteOwnedGroupConversation()
+  -> GroupInvitationManager.createConversationDeleted() per non-terminal invitation
+  -> ProtocolOutbox.enqueue(contactId, GroupConversationDeletedPacket) per recipient
+  -> deleteLocalGroupData()
+```
+
+Each packet is signed over `GroupProtocolPayloadEncoder.encodeConversationDeleted()`, including the
+recipient's invitation ID and challenge. On a member:
+
+```text
+IncomingMessageProcessor
+  -> GroupConversationDeletedPacketHandler.handle()
+  -> GroupInvitationManager.verifyConversationDeleted()
+  -> GroupSecurityManager.deleteLocalGroup()
+  -> ChatDao.deleteConversationParticipants()
+  -> GroupVerificationDao.deleteByGroupId()
+  -> invitation status GROUP_DELETED
+  -> GroupConversationState.DELETED
+  -> GroupConversationDeletedHint
+```
+
+Members keep all visible messages and receive the “This group conversation was deleted” banner.
+The composer stays disabled.
+
+### Local group tombstone and stale packets
+
+`ChatDao.hideGroupConversation()` clears local messages/participants and stores one hidden
+`MessageEntity` with transport mode `SYSTEM_LOCAL_CONVERSATION_DELETED`. The overview query excludes
+that conversation. `IncomingMessageProcessor.shouldIgnoreDeletedGroupPacket()` acknowledges but
+does not dispatch stale group packets, preventing an old welcome, activation, or group message from
+recreating the deleted conversation.
+
+`GroupInvitationCoordinator.receiveInvite()` is the one reopening path. It first verifies the
+owner signature. An invite whose `createdAtEpochMilliseconds` is not newer than the local deletion
+marker is treated as a replay. A newer invite clears the marker and starts a clean local group
+conversation.
 
 ## Group creation and per-member activation
 

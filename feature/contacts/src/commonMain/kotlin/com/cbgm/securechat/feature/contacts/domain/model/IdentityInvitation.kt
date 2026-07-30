@@ -12,6 +12,7 @@ enum class IdentityHandshakeState {
     WAITING_FOR_READY,
     MUTUAL_UNVERIFIED,
     DECLINED,
+    CONVERSATION_DELETED,
     EXPIRED,
     FAILED
 }

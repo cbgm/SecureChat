@@ -117,6 +117,18 @@ class GroupInvitationStateMapperTest {
         assertTrue(GroupInvitationStateMapper.isIncoming(leaving))
     }
 
+    @Test
+    fun ownerDeletionKeepsHistoryReadOnly() {
+        val deleted = listOf(invitation(GroupInvitationStatus.GROUP_DELETED))
+
+        assertEquals(
+            GroupConversationState.DELETED,
+            GroupInvitationStateMapper.conversationState(deleted)
+        )
+        assertFalse(GroupInvitationStateMapper.isIncoming(deleted))
+        assertTrue(GroupInvitationStateMapper.memberStates(deleted).isEmpty())
+    }
+
     private fun invitation(
         status: GroupInvitationStatus,
         contactId: String = "contact-1"

@@ -25,6 +25,7 @@ fun ChatsRoute(
         onChatClick = { chat ->
             onChatClick(chat.conversationId, chat.contactId, chat.contactName, chat.isGroup)
         },
+        onDeleteConversation = viewModel::deleteConversation,
         listState = listState,
         innerPadding = innerPadding,
         modifier = modifier

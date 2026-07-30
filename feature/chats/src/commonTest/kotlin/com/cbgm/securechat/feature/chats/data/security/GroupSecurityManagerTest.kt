@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class GroupSecurityManagerTest {
@@ -33,6 +34,31 @@ class GroupSecurityManagerTest {
             groupSecurityDao = dao,
             groupKeyStorage = keyStorage
         )
+
+    @Test
+    fun localGroupDeletionClearsSecurityStateAndKeys() =
+        runTest {
+            manager
+                .createOwnedGroup(
+                    groupId = GROUP_ID,
+                    title = "Group",
+                    createdAtEpochMilliseconds = 100L,
+                    memberPayloads = emptyList(),
+                    memberKeys = emptyList(),
+                    recipients = emptyList(),
+                    localSigningKeyPair =
+                        LocalSigningKeyPair(
+                            publicKey = LOCAL_SIGNING_KEY,
+                            privateKey = LOCAL_SIGNING_KEY
+                        )
+                ).getOrThrow()
+
+            assertEquals(true, manager.isOwnedGroup(GROUP_ID).getOrThrow())
+            manager.deleteLocalGroup(GROUP_ID).getOrThrow()
+
+            assertNull(manager.isOwnedGroup(GROUP_ID).getOrThrow())
+            assertNull(keyStorage.load(GROUP_ID, EPOCH).getOrThrow())
+        }
 
     @Test
     fun ownerActivationIsRetrySafe() =

@@ -8,6 +8,7 @@ enum class GroupConversationState {
     DISTRIBUTING_KEYS,
     LEAVING,
     REMOVED,
+    DELETED,
     DECLINED,
     EXPIRED,
     FAILED

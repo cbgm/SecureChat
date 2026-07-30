@@ -12,6 +12,7 @@ import com.cbgm.securechat.feature.chats.data.outbox.ChatOutboxDeliveryStateList
 import com.cbgm.securechat.feature.chats.data.protocol.ChatMessagePacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.DeliveryReceiptPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupChatMessagePacketHandler
+import com.cbgm.securechat.feature.chats.data.protocol.GroupConversationDeletedPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupCreatedPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupInviteDeclinedPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupInvitePacketHandler
@@ -39,6 +40,7 @@ import com.cbgm.securechat.feature.chats.domain.usecase.AcceptGroupInvitation
 import com.cbgm.securechat.feature.chats.domain.usecase.AddGroupMembers
 import com.cbgm.securechat.feature.chats.domain.usecase.CreateGroupConversation
 import com.cbgm.securechat.feature.chats.domain.usecase.DeclineGroupInvitation
+import com.cbgm.securechat.feature.chats.domain.usecase.DeleteConversation
 import com.cbgm.securechat.feature.chats.domain.usecase.GetOrCreateDirectConversation
 import com.cbgm.securechat.feature.chats.domain.usecase.LeaveGroup
 import com.cbgm.securechat.feature.chats.domain.usecase.MarkConversationRead
@@ -104,6 +106,10 @@ val chatsModule =
             bind<TypedProtocolPacketHandler>()
         }
 
+        singleOf(::GroupConversationDeletedPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
         singleOf(::GroupInvitePacketHandler) {
             bind<TypedProtocolPacketHandler>()
         }
@@ -162,6 +168,7 @@ val chatsModule =
         single { AddGroupMembers(repository = get()) }
         single { CreateGroupConversation(repository = get()) }
         single { DeclineGroupInvitation(repository = get()) }
+        single { DeleteConversation(repository = get()) }
         single { GetOrCreateDirectConversation(repository = get()) }
         single { LeaveGroup(repository = get()) }
         single { MarkConversationRead(repository = get()) }
@@ -202,12 +209,16 @@ val chatsModule =
                 protocolOutbox = get(),
                 groupInvitationDao = get(),
                 groupInvitationCoordinator = get(),
-                groupMessageSender = get()
+                groupMessageSender = get(),
+                identityInvitationService = get()
             )
         }
 
         viewModel {
-            ChatsViewModel(observeConversations = get())
+            ChatsViewModel(
+                observeConversations = get(),
+                deleteConversationUseCase = get()
+            )
         }
 
         viewModel {

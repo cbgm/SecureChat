@@ -27,7 +27,7 @@ interface IdentityInvitationDao {
         FROM identity_invitations
         WHERE contactId = :contactId
           AND state NOT IN (:terminalStates)
-        ORDER BY updatedAtEpochMilliseconds DESC
+        ORDER BY createdAtEpochMilliseconds DESC, updatedAtEpochMilliseconds DESC
         LIMIT 1
         """
     )
@@ -41,7 +41,18 @@ interface IdentityInvitationDao {
         SELECT *
         FROM identity_invitations
         WHERE contactId = :contactId
-        ORDER BY updatedAtEpochMilliseconds DESC
+        ORDER BY createdAtEpochMilliseconds DESC, updatedAtEpochMilliseconds DESC
+        LIMIT 1
+        """
+    )
+    suspend fun findLatestForContact(contactId: String): IdentityInvitationEntity?
+
+    @Query(
+        """
+        SELECT *
+        FROM identity_invitations
+        WHERE contactId = :contactId
+        ORDER BY createdAtEpochMilliseconds DESC, updatedAtEpochMilliseconds DESC
         LIMIT 1
         """
     )

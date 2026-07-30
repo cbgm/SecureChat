@@ -11,6 +11,7 @@ internal object GroupMembershipMessageFactory {
     const val LOCAL_MEMBERSHIP_REMOVED_TRANSPORT_MODE = "SYSTEM_LOCAL_GROUP_MEMBERSHIP_REMOVED"
     const val MEMBER_LEFT_TRANSPORT_MODE = "SYSTEM_GROUP_MEMBER_LEFT"
     const val LOCAL_MEMBERSHIP_LEFT_TRANSPORT_MODE = "SYSTEM_LOCAL_GROUP_MEMBERSHIP_LEFT"
+    const val LOCAL_CONVERSATION_DELETED_TRANSPORT_MODE = "SYSTEM_LOCAL_CONVERSATION_DELETED"
 
     fun memberAdded(
         conversationId: String,
@@ -89,6 +90,19 @@ internal object GroupMembershipMessageFactory {
             conversationId = conversationId,
             text = "You left this group",
             transportMode = LOCAL_MEMBERSHIP_LEFT_TRANSPORT_MODE,
+            senderContactId = null,
+            createdAtEpochMilliseconds = createdAtEpochMilliseconds
+        )
+
+    fun localConversationDeletedMarker(
+        conversationId: String,
+        createdAtEpochMilliseconds: Long
+    ): MessageEntity =
+        systemMessage(
+            id = "local-conversation-deleted-$conversationId",
+            conversationId = conversationId,
+            text = "",
+            transportMode = LOCAL_CONVERSATION_DELETED_TRANSPORT_MODE,
             senderContactId = null,
             createdAtEpochMilliseconds = createdAtEpochMilliseconds
         )

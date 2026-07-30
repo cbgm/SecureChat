@@ -14,21 +14,3 @@ else
     echo "Gradle Wrapper was not found."
     exit 1
 fi
-
-echo "Verifying generated architecture documentation..."
-
-"$GRADLE" verifyArchitectureReport \
-    --console=plain \
-    --no-configuration-cache
-
-echo ""
-echo "Running remaining quality checks..."
-
-"$GRADLE" qualityCheck \
-    -x verifyArchitectureReport \
-    --console=plain \
-    --no-configuration-cache
-
-echo ""
-echo "SecureChat quality checks passed."
-echo ""

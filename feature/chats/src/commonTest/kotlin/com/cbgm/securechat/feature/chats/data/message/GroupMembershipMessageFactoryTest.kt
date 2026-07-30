@@ -95,4 +95,19 @@ class GroupMembershipMessageFactoryTest {
             GroupMembershipMessageFactory.typeOf(localMessage.transportMode)
         )
     }
+
+    @Test
+    fun localConversationDeletionMarkerIsHiddenControlState() {
+        val marker =
+            GroupMembershipMessageFactory.localConversationDeletedMarker(
+                conversationId = "group-1",
+                createdAtEpochMilliseconds = 500L
+            )
+
+        assertEquals("", marker.text)
+        assertEquals(
+            GroupMembershipMessageFactory.LOCAL_CONVERSATION_DELETED_TRANSPORT_MODE,
+            marker.transportMode
+        )
+    }
 }

@@ -125,6 +125,20 @@ interface ChatDao {
 
     @Query(
         """
+        SELECT createdAtEpochMilliseconds
+        FROM messages
+        WHERE conversationId = :conversationId
+          AND transportMode = :transportMode
+        LIMIT 1
+        """
+    )
+    suspend fun findMessageTimestampByTransportMode(
+        conversationId: String,
+        transportMode: String
+    ): Long?
+
+    @Query(
+        """
         SELECT EXISTS(
             SELECT 1
             FROM messages
@@ -240,16 +254,38 @@ interface ChatDao {
         conversations.updatedAtEpochMilliseconds AS updatedAtEpochMilliseconds
     FROM conversations
     LEFT JOIN contacts ON contacts.id = conversations.contactId
-    WHERE conversations.type = 'GROUP'
-       OR EXISTS (
+    WHERE (
+        conversations.type = 'GROUP'
+        OR EXISTS (
+            SELECT 1
+            FROM messages
+            WHERE messages.conversationId = conversations.id
+        )
+    )
+      AND NOT EXISTS (
         SELECT 1
         FROM messages
         WHERE messages.conversationId = conversations.id
+          AND messages.transportMode = :localDeletionTransportMode
     )
     ORDER BY conversations.updatedAtEpochMilliseconds DESC
     """
     )
-    fun observeConversationSummaries(): Flow<List<ConversationSummary>>
+    fun observeConversationSummaries(localDeletionTransportMode: String): Flow<List<ConversationSummary>>
+
+    @Query("DELETE FROM messages WHERE conversationId = :conversationId")
+    suspend fun deleteConversationMessages(conversationId: String)
+
+    @Transaction
+    suspend fun hideGroupConversation(marker: MessageEntity) {
+        deleteConversationMessages(marker.conversationId)
+        deleteConversationParticipants(marker.conversationId)
+        upsertMessage(marker)
+        updateConversationTimestamp(
+            conversationId = marker.conversationId,
+            timestamp = marker.createdAtEpochMilliseconds
+        )
+    }
 
     @Query(
         """

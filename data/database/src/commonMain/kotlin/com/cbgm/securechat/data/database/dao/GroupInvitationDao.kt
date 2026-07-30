@@ -54,6 +54,9 @@ interface GroupInvitationDao {
         contactId: String
     )
 
+    @Query("DELETE FROM group_invitations WHERE groupId = :groupId")
+    suspend fun deleteByGroupId(groupId: String)
+
     @Transaction
     suspend fun replaceForGroupAndContact(invitation: GroupInvitationEntity) {
         deleteByGroupAndContact(

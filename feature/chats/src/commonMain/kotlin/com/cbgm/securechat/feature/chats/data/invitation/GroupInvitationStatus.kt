@@ -13,5 +13,6 @@ enum class GroupInvitationStatus {
     EXPIRED,
     FAILED,
     REMOVED,
+    GROUP_DELETED,
     ACTIVE
 }

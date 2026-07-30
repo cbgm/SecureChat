@@ -1,6 +1,7 @@
 package com.cbgm.securechat.feature.chats.data.security
 
 import com.cbgm.securechat.core.crypto.util.ByteArrays
+import com.cbgm.securechat.core.protocol.packet.GroupConversationDeletedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInvitePacket
@@ -14,6 +15,18 @@ import com.cbgm.securechat.core.protocol.packet.GroupMembershipChangePayload
 import com.cbgm.securechat.core.protocol.packet.GroupReadyAcknowledgementPacket
 
 class GroupProtocolPayloadEncoder {
+    fun encodeConversationDeleted(packet: GroupConversationDeletedPacket): ByteArray =
+        ByteArrays.concatenate(
+            CONVERSATION_DELETED_DOMAIN,
+            ByteArrays.encodeInt(packet.version),
+            encodeString(packet.packetId),
+            encodeString(packet.invitationId),
+            encodeString(packet.groupId),
+            ByteArrays.encodeInt(packet.epoch),
+            ByteArrays.withLengthPrefix(packet.challenge),
+            ByteArrays.encodeLong(packet.deletedAtEpochMilliseconds)
+        )
+
     fun encodeInvite(packet: GroupInvitePacket): ByteArray =
         ByteArrays.concatenate(
             INVITE_DOMAIN,
@@ -208,6 +221,7 @@ class GroupProtocolPayloadEncoder {
             "securechat.group-member-activation-acknowledgement.v1".encodeToByteArray()
         val MEMBER_REMOVED_DOMAIN = "securechat.group-member-removed.v1".encodeToByteArray()
         val MEMBER_LEFT_DOMAIN = "securechat.group-member-left.v1".encodeToByteArray()
+        val CONVERSATION_DELETED_DOMAIN = "securechat.group-conversation-deleted.v1".encodeToByteArray()
         val LEAVE_REQUEST_DOMAIN = "securechat.group-leave-request.v1".encodeToByteArray()
         val INVITE_DOMAIN = "securechat.group-invite.v1".encodeToByteArray()
         val JOIN_REQUEST_DOMAIN = "securechat.group-join-request.v1".encodeToByteArray()
