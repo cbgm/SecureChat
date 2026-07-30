@@ -224,6 +224,20 @@ Launch work from appropriate lifecycle-aware scopes.
 
 ---
 
+# Logging
+
+Use the project-owned `SecureChatLogger` from `:core` for application and shared Kotlin code.
+The standalone relay uses SLF4J with Logback.
+
+Do not use `print`, `println`, `System.out`, `System.err`, or `printStackTrace`.
+
+Pass failures to the logger as a `Throwable` and use lazy message lambdas. Never log message
+contents, phone numbers, cryptographic material, safety numbers, or encoded payloads.
+
+See the [Logging guide](logging.md) for levels, examples, privacy rules, and extension points.
+
+---
+
 # Flow
 
 Prefer Flow for asynchronous state.
@@ -263,6 +277,18 @@ Composable functions should
 - emit UI only
 
 Business logic belongs inside ViewModels and UseCases.
+
+Feature UI rules:
+
+- keep one rendered component per Kotlin file;
+- colocate that component's `@Preview` in the same file;
+- place detailed rendering in `presentation/component/<screen-name>`;
+- keep `*Screen.kt` focused on its public state and callback contract;
+- keep `*Route.kt` and `*Flow.kt` focused on state collection and orchestration;
+- do not place validation, repositories, crypto work, or coroutine controllers in composables.
+
+Preview data may be shared through a non-composable `*PreviewData` object in the same component
+package. Routes, flows, ViewModels, and non-UI models do not require previews.
 
 ---
 

@@ -7,21 +7,21 @@ import java.util.concurrent.TimeUnit
 
 actual fun createPlatformHttpClient(): HttpClient =
     HttpClient(
-        OkHttp,
+        OkHttp
     ) {
         install(
-            WebSockets,
+            WebSockets
         )
 
         engine {
             config {
                 retryOnConnectionFailure(
-                    true,
+                    true
                 )
 
                 pingInterval(
                     20L,
-                    TimeUnit.SECONDS,
+                    TimeUnit.SECONDS
                 )
             }
         }

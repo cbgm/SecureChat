@@ -4,14 +4,14 @@ import com.cbgm.securechat.core.crypto.SodiumRuntime
 import com.ionspin.kotlin.crypto.signature.Signature
 
 class SodiumIdentityAcknowledgementCrypto(
-    private val payloadEncoder: IdentityAcknowledgementPayloadEncoder,
+    private val payloadEncoder: IdentityAcknowledgementPayloadEncoder
 ) : IdentityAcknowledgementCrypto {
     @OptIn(ExperimentalUnsignedTypes::class)
     override suspend fun sign(
         acknowledgedEncryptionPublicKey: ByteArray,
         acknowledgedSigningPublicKey: ByteArray,
         senderSigningPublicKey: ByteArray,
-        senderSigningPrivateKey: ByteArray,
+        senderSigningPrivateKey: ByteArray
     ): Result<ByteArray> =
         runCatching {
             SodiumRuntime.initialize().getOrThrow()
@@ -24,13 +24,13 @@ class SodiumIdentityAcknowledgementCrypto(
                 payloadEncoder.encode(
                     acknowledgedEncryptionPublicKey = acknowledgedEncryptionPublicKey,
                     acknowledgedSigningPublicKey = acknowledgedSigningPublicKey,
-                    senderSigningPublicKey = senderSigningPublicKey,
+                    senderSigningPublicKey = senderSigningPublicKey
                 )
 
             Signature
                 .detached(
                     message = payload.toUByteArray(),
-                    secretKey = senderSigningPrivateKey.toUByteArray(),
+                    secretKey = senderSigningPrivateKey.toUByteArray()
                 ).toByteArray()
         }
 
@@ -39,7 +39,7 @@ class SodiumIdentityAcknowledgementCrypto(
         acknowledgedEncryptionPublicKey: ByteArray,
         acknowledgedSigningPublicKey: ByteArray,
         senderSigningPublicKey: ByteArray,
-        signature: ByteArray,
+        signature: ByteArray
     ): Result<Unit> =
         runCatching {
             SodiumRuntime.initialize().getOrThrow()
@@ -52,13 +52,13 @@ class SodiumIdentityAcknowledgementCrypto(
                 payloadEncoder.encode(
                     acknowledgedEncryptionPublicKey = acknowledgedEncryptionPublicKey,
                     acknowledgedSigningPublicKey = acknowledgedSigningPublicKey,
-                    senderSigningPublicKey = senderSigningPublicKey,
+                    senderSigningPublicKey = senderSigningPublicKey
                 )
 
             Signature.verifyDetached(
                 signature = signature.toUByteArray(),
                 message = payload.toUByteArray(),
-                publicKey = senderSigningPublicKey.toUByteArray(),
+                publicKey = senderSigningPublicKey.toUByteArray()
             )
         }
 }

@@ -16,29 +16,29 @@ import com.cbgm.securechat.core.ui.theme.spacing
 fun ListingRow(
     index: String,
     title: String,
-    description: String,
+    description: String
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = MaterialTheme.spacing.base),
-        verticalAlignment = Alignment.Top,
+        verticalAlignment = Alignment.Top
     ) {
         Text(
             text = index,
             color = MaterialTheme.colorScheme.secondary,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Bold
         )
         Column(Modifier.padding(start = MaterialTheme.spacing.medium)) {
             Text(
                 text = title,
                 color = MaterialTheme.colorScheme.onPrimary,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.SemiBold
             )
             Text(
                 text = description,
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .66f),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodySmall
             )
         }
     }

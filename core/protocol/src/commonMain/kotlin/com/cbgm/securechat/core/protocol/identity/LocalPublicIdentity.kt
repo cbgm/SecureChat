@@ -2,7 +2,7 @@ package com.cbgm.securechat.core.protocol.identity
 
 data class LocalPublicIdentity(
     val encryptionPublicKey: ByteArray,
-    val signingPublicKey: ByteArray,
+    val signingPublicKey: ByteArray
 ) {
     init {
         require(encryptionPublicKey.isNotEmpty()) {
@@ -21,7 +21,7 @@ data class LocalPublicIdentity(
 
         return encryptionPublicKey.contentEquals(other.encryptionPublicKey) &&
             signingPublicKey.contentEquals(
-                other.signingPublicKey,
+                other.signingPublicKey
             )
     }
 

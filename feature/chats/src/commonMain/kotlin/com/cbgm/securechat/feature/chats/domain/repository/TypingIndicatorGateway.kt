@@ -7,6 +7,6 @@ interface TypingIndicatorGateway {
 
     suspend fun sendTypingState(
         contactId: String,
-        isTyping: Boolean,
+        isTyping: Boolean
     ): Result<Unit>
 }

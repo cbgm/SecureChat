@@ -41,6 +41,7 @@ Completed areas include
 - Documentation generation
 - Architecture validation
 - Quality automation
+- Centralized multiplatform logging
 
 ---
 
@@ -82,13 +83,24 @@ Attachments should use exactly the same encryption pipeline as text messages.
 
 ## Groups
 
-Planned functionality
+Implemented foundation
 
 - Group creation
-- Group administration
-- Member management
-- Group encryption
-- Group invitations
+- Signed invitation and join-request identity bootstrap for ordinary contacts
+- Independent per-member activation after explicit acceptance
+- Shared XChaCha20-Poly1305 epoch key
+- Signed per-sender group messages
+- Signed, recipient-wrapped epoch-1 key distribution
+- Android Keystore protection for local group keys
+- Owner group administration inside group details
+- Invitations for adding members to an active group
+- Epoch rotation when adding or removing an active member
+- Signed cancellation/removal notification with local key deletion
+
+Remaining functionality
+
+- Multi-admin roles and ownership transfer
+- Sender-key or ratcheting research if stronger post-compromise properties are required
 
 Architecture should remain compatible with one-to-one messaging.
 

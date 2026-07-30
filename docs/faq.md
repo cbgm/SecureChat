@@ -315,9 +315,9 @@ The architecture has been designed to support additional Kotlin Multiplatform ta
 
 ### Will group chats be supported?
 
-Yes.
-
-Group messaging is planned as a future feature.
+Group chats are supported, including signed invitations, encrypted group messages, verification,
+and owner-controlled member add/remove with epoch rotation. See
+[Conversation, Messaging, and Delivery Flow](features/message-transport-flow.md#group-creation-and-per-member-activation).
 
 ---
 

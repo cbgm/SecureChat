@@ -14,14 +14,14 @@ import androidx.room.PrimaryKey
     indices = [
         Index(
             value = ["deviceContactId"],
-            unique = false,
+            unique = false
         ),
 
         Index(
             value = ["preferredPhoneNumberId"],
-            unique = false,
-        ),
-    ],
+            unique = false
+        )
+    ]
 )
 data class ContactEntity(
     @PrimaryKey
@@ -41,5 +41,5 @@ data class ContactEntity(
      */
     val preferredPhoneNumberId: String?,
     val createdAtEpochMilliseconds: Long,
-    val updatedAtEpochMilliseconds: Long,
+    val updatedAtEpochMilliseconds: Long
 )

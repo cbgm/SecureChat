@@ -13,13 +13,13 @@ object ByteArrayAsBase64Serializer : KSerializer<ByteArray> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor(
             serialName = "SecureChatBase64ByteArray",
-            kind = PrimitiveKind.STRING,
+            kind = PrimitiveKind.STRING
         )
 
     @OptIn(ExperimentalEncodingApi::class)
     override fun serialize(
         encoder: Encoder,
-        value: ByteArray,
+        value: ByteArray
     ) {
         encoder.encodeString(Base64.encode(value))
     }
@@ -28,8 +28,8 @@ object ByteArrayAsBase64Serializer : KSerializer<ByteArray> {
     override fun deserialize(decoder: Decoder): ByteArray {
         val encoded = decoder.decodeString()
 
-        require(encoded.isNotBlank()) {
-            "Encoded byte array must not be blank"
+        if (encoded.isEmpty()) {
+            return byteArrayOf()
         }
 
         return Base64.decode(encoded)

@@ -4,7 +4,7 @@ import com.cbgm.securechat.feature.identity.domain.model.PublicIdentity
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
 
 class CreateIdentity(
-    private val repository: IdentityRepository,
+    private val repository: IdentityRepository
 ) {
     suspend operator fun invoke(): Result<PublicIdentity> = repository.createIdentity()
 }

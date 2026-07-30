@@ -2,5 +2,5 @@ package com.cbgm.securechat.feature.chats.domain.model
 
 enum class MessageSecurity {
     INSECURE,
-    END_TO_END_ENCRYPTED,
+    END_TO_END_ENCRYPTED
 }

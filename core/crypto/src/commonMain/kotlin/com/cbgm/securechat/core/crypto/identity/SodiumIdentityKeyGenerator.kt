@@ -18,7 +18,7 @@ class SodiumIdentityKeyGenerator : IdentityKeyGenerator {
                 encryptionPublicKey = encryptionKeyPair.publicKey,
                 encryptionPrivateKey = encryptionKeyPair.secretKey,
                 signingPublicKey = signingKeyPair.publicKey,
-                signingPrivateKey = signingKeyPair.secretKey,
+                signingPrivateKey = signingKeyPair.secretKey
             )
         }
 }

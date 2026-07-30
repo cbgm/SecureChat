@@ -14,7 +14,7 @@ import org.jetbrains.compose.resources.stringResource
 fun DisclaimerRoute(
     type: DisclaimerType,
     modifier: Modifier = Modifier,
-    onBack: () -> Unit,
+    onBack: () -> Unit
 ) {
     MarkdownDisclaimerScreen(
         title =
@@ -28,6 +28,6 @@ fun DisclaimerRoute(
                 DisclaimerType.DATA_DISCLAIMER -> DisclaimerContent.dataDisclaimer
             },
         onBack = onBack,
-        modifier = modifier,
+        modifier = modifier
     )
 }
