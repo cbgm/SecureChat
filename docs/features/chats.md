@@ -25,12 +25,16 @@ feature/chats/.../feature/chats/
 ├── androidMain/data/security/
 │   └── AndroidGroupKeyStorage.kt
 ├── presentation/
+│   ├── component/
+│   │   └── groupdetails/ # one previewable component per file
 │   ├── mapper/
 │   ├── model/
-│   └── screen/
+│   ├── screen/
 │       ├── overview/
-│       ├── chat/component/
+│       ├── chat/
+│       ├── details/
 │       └── create/
+│   └── *Route.kt        # state collection and navigation-facing contracts
 └── di/ChatsModule.kt
 ```
 
@@ -125,14 +129,14 @@ encryption selection, and class-by-class flow.
 ## Secure group architecture
 
 Group content uses one random 256-bit key per group epoch. Epoch 1 is created with the group.
-When selected contacts do not yet have SecureChat identities, the local group remains pending until
-the signed invitation handshake has completed for every selected contact. Membership-change UI is
-not implemented yet, but the state and key tables include `epoch` so a future add/remove operation
-can rotate the key rather than reusing it.
+Every selected contact has an independent invitation and activation state. As soon as one accepted
+member reaches `ACTIVE`, the owner can send encrypted group messages to that member while other
+invitations remain pending. Membership-change UI is not implemented yet, but the state and key
+tables include `epoch` so a future add/remove operation can rotate the key rather than reusing it.
 
 | Class | Responsibility |
 |---|---|
-| `GroupInvitationCoordinator` | Create/receive invitations, apply decisions, distribute epoch 1, and flush queued content |
+| `GroupInvitationCoordinator` | Create/receive per-member invitations, apply decisions, distribute epoch 1 independently, propagate active membership, and flush queued content |
 | `GroupInvitationManager` | Create and verify signed invite, join, decline, and ready-acknowledgement packets |
 | `GroupInvitationDao` / `GroupInvitationEntity` | Persist every per-contact invitation transition |
 | `GroupMessageSender` | Persist pre-activation messages and fan them out after every member is ready |
@@ -173,21 +177,23 @@ The complete state flow is:
 | Creator | `INVITE_SENT` | `createGroup()` signs and enqueues `GroupInvitePacket` |
 | Recipient | `AWAITING_ACCEPTANCE` | `receiveInvite()` verifies the owner and creates the visible pending group |
 | Recipient | `JOIN_SENT` | `acceptInvitation()` marks the owner identity mutual and enqueues `GroupJoinRequestPacket` |
-| Creator | `IDENTITY_READY` | `receiveJoinRequest()` verifies the member identity and waits for all invitees |
-| Creator | `WELCOME_SENT` | `activateGroupIfReady()` creates epoch 1 and enqueues one `GroupCreatedPacket` per member |
-| Recipient | `ACTIVE` | `GroupCreatedPacketHandler` unwraps/persists the key and enqueues `GroupReadyAcknowledgementPacket` with key confirmation |
-| Creator | `ACTIVE` | `receiveReadyAcknowledgement()` verifies identity and key possession; all-active flushes queued messages |
+| Creator | `IDENTITY_READY` | `receiveJoinRequest()` verifies this member identity and immediately calls `activateGroupIfReady()` |
+| Creator | `WELCOME_SENT` | `distributeGroupKeyToMember()` enqueues this member's `GroupCreatedPacket` |
+| Recipient | `WAITING_FOR_ACTIVATION` | `GroupCreatedPacketHandler` unwraps/persists the key and enqueues `GroupReadyAcknowledgementPacket` |
+| Creator | `ACTIVE` | `receiveReadyAcknowledgement()` verifies key possession, adds this participant, and propagates `GroupMemberActivatedPacket` |
+| Recipient | `ACTIVE` | `GroupMemberActivatedPacketHandler` applies the final activation for the local member |
 
 Declining follows a separate signed path:
 `DeclineGroupInvitation` → `GroupInvitationCoordinator.declineInvitation()` →
 `GroupInviteDeclinedPacket` → `GroupInviteDeclinedPacketHandler` → creator status `DECLINED`.
 The recipient removes its pending conversation only after the decline packet is queued.
 
-The creator may type while members are pending. `GroupMessageSender.queueOrSend()` stores a visible
-`MessageEntity` with `QUEUED`, but creates no ciphertext, recipient state, or outbox packet yet.
-Only after every creator-side row is `ACTIVE` does `flushQueued()` encrypt each stored message once,
-create one `MessageRecipientStateEntity` and `GroupChatMessagePacket` per member, and enqueue them.
-The invitee cannot send until its welcome has been installed.
+The creator may type while members are pending. If no participant is active,
+`GroupMessageSender.queueOrSend()` stores a visible `MessageEntity` with `QUEUED`, but creates no
+ciphertext, recipient state, or outbox packet yet. As soon as at least one member is active,
+`flushQueued()` encrypts stored messages once and creates one `MessageRecipientStateEntity` and
+`GroupChatMessagePacket` per currently active member. Later pending invitations do not block these
+sends. An invitee cannot send until its own welcome and final activation have been installed.
 
 Activation is retry-safe: `GroupSecurityManager.createOwnedGroup()` reuses an already stored owner
 key and deterministic welcome packet IDs after an interrupted attempt. Ready acknowledgement and
@@ -213,15 +219,18 @@ Do not mutate an old epoch's membership or reuse its key.
 ## Presentation
 
 `ChatsViewModel` owns the overview state. `ChatViewModel` owns a direct conversation.
-`GroupConversationViewModel` owns a group conversation. `CreateGroupViewModel` owns group title,
-selection, and creation.
+`GroupChatViewModel` owns a group conversation. `GroupVerificationViewModel` owns group details and
+verification selection. `GroupMemberQrVerificationViewModel` owns group QR verification state.
+`CreateGroupViewModel` owns group title, selection, and creation.
 
 `CreateGroupScreen` reuses `ContactsScreen` from `:feature:contacts` with
 `ContactsScreenMode.GroupSelection`; the normal contacts route uses the same screen with
 `ContactsScreenMode.Overview`.
 
-Screen-specific components live below the corresponding screen package. ViewModels call use cases,
-not DAOs, `ProtocolOutbox`, crypto implementations, or `WebSocketTransportClient`.
+Screen-specific components live in `presentation/component/<screen-name>`, one component per file,
+with a preview next to the component. Screens render state; flows collect state and coordinate
+screen changes; ViewModels call use cases rather than DAOs, `ProtocolOutbox`, crypto
+implementations, or `WebSocketTransportClient`.
 
 ## Extension rules
 

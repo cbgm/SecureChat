@@ -1,4 +1,4 @@
-package com.cbgm.securechat.feature.chats.presentation.screen.chat
+package com.cbgm.securechat.feature.chats.presentation.screen.details
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -27,7 +27,7 @@ data class GroupVerificationUiState(
     val errorMessage: String? = null
 )
 
-class GroupChatVerificationViewModel(
+class GroupVerificationViewModel(
     private val conversationId: String,
     observeGroupVerification: ObserveGroupVerification,
     private val synchronizeGroupVerification: SynchronizeGroupVerification,

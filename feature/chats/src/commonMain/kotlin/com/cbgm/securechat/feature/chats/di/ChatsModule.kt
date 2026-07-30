@@ -51,9 +51,10 @@ import com.cbgm.securechat.feature.chats.domain.usecase.SynchronizeGroupVerifica
 import com.cbgm.securechat.feature.chats.domain.usecase.VerifyGroupMember
 import com.cbgm.securechat.feature.chats.presentation.screen.ChatsViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.ChatViewModel
-import com.cbgm.securechat.feature.chats.presentation.screen.chat.GroupChatVerificationViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.GroupChatViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.create.CreateGroupViewModel
+import com.cbgm.securechat.feature.chats.presentation.screen.details.GroupMemberQrVerificationViewModel
+import com.cbgm.securechat.feature.chats.presentation.screen.details.GroupVerificationViewModel
 import com.cbgm.securechat.feature.contacts.domain.identity.IdentityExchangeStarter
 import com.cbgm.securechat.feature.contacts.domain.identity.IdentityInvitationService
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContactSafetyNumber
@@ -213,12 +214,22 @@ val chatsModule =
         }
 
         viewModel { parameters ->
-            GroupChatVerificationViewModel(
+            GroupVerificationViewModel(
                 conversationId = parameters.get(),
                 observeGroupVerification = get(),
                 synchronizeGroupVerification = get(),
                 verifyGroupMember = get(),
                 getContactSafetyNumber = get<GetContactSafetyNumber>()
+            )
+        }
+
+        viewModel { parameters ->
+            GroupMemberQrVerificationViewModel(
+                groupId = parameters.get(),
+                contactId = parameters.get(),
+                identityShareCodec = get(),
+                getContact = get(),
+                verifyGroupMember = get()
             )
         }
 

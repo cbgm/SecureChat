@@ -35,7 +35,9 @@ class ContactDetailsViewModel(
             val contact =
                 contactResult.getOrElse { error ->
                     _uiState.value =
-                        ContactDetailsUiState.Error(message = error.message ?: "Failed to load contact")
+                        ContactDetailsUiState.Error(
+                            message = error.message ?: "Failed to load contact"
+                        )
 
                     return@launch
                 }

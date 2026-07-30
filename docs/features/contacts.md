@@ -21,7 +21,9 @@ feature/contacts/.../feature/contacts/
 │   ├── protocol/     # identity packet handlers
 │   └── repository/   # repository and key-exchange implementations
 ├── presentation/
-│   ├── component/    # reusable contact list/detail components
+│   ├── component/
+│   │   ├── contactdetails/ # one previewable contact-detail component per file
+│   │   └── contactlist/    # reusable contact-list components
 │   ├── mapper/
 │   ├── model/        # UI state, events, effects, screen mode
 │   ├── platform/     # permission abstraction
@@ -112,6 +114,28 @@ The acknowledgement proves receipt of the identity. It does not itself change tr
 generator. `VerifyContact` persists the user's explicit verification decision. Replacing remote
 keys must not silently retain verification; that rule belongs in `DefaultContactKeyExchangeStore`.
 
+The manual path is:
+
+```text
+DetailsRoute
+  -> ContactDetailsFlow
+  -> ContactDetailsViewModel.confirmVerification()
+  -> VerifyContact.invoke()
+```
+
+The QR path is:
+
+```text
+AppDestination.VerifyIdentityQr(groupId = null)
+  -> VerifyIdentityQrRoute
+  -> ContactQrVerificationFlow
+  -> VerifyContactQrViewModel.onQrCodeScanned()
+  -> VerifyContactByQr.invoke()
+```
+
+`ContactDetailsScreen` renders state only. Its detailed renderers live in
+`presentation/component/contactdetails`, one component and its preview per file.
+
 ## Messaging integration
 
 Contacts do not use WebSockets directly.
@@ -129,7 +153,7 @@ See [Messaging and Delivery Flow](message-transport-flow.md).
 
 - Add contact business operations as domain use cases.
 - Keep Room entities and DAOs out of presentation and domain models.
-- Put shared contacts-list visuals under `presentation/component`.
+- Put feature visuals under `presentation/component/<screen-name>`, one component and preview per file.
 - Add behavior differences through `ContactsScreenMode` when the visual list remains the same.
 - Keep group creation state in `:feature:chats`; contacts only supplies reusable selection UI.
 - Keep platform address-book APIs behind device-contact ports.

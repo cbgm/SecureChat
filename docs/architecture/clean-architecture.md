@@ -104,6 +104,10 @@ presentation/
 
 Large `*Screen.kt` files must stay focused on their public contract. Detailed rendering belongs under `presentation/component/<screen-name>`.
 
+Each feature-owned UI component lives in its own Kotlin file and has a colocated `@Preview`.
+Routes and state-collecting flows are orchestration boundaries and do not require previews.
+Core UI is maintained independently and is not governed by the feature-preview rule.
+
 ---
 
 # Dependency Rule

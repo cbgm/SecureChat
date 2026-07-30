@@ -264,6 +264,18 @@ Composable functions should
 
 Business logic belongs inside ViewModels and UseCases.
 
+Feature UI rules:
+
+- keep one rendered component per Kotlin file;
+- colocate that component's `@Preview` in the same file;
+- place detailed rendering in `presentation/component/<screen-name>`;
+- keep `*Screen.kt` focused on its public state and callback contract;
+- keep `*Route.kt` and `*Flow.kt` focused on state collection and orchestration;
+- do not place validation, repositories, crypto work, or coroutine controllers in composables.
+
+Preview data may be shared through a non-composable `*PreviewData` object in the same component
+package. Routes, flows, ViewModels, and non-UI models do not require previews.
+
 ---
 
 # Modifier

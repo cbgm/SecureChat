@@ -1,7 +1,6 @@
 package com.cbgm.securechat.feature.chats.presentation
 
 import androidx.compose.runtime.Composable
-import com.cbgm.securechat.feature.chats.presentation.screen.GroupMemberQrVerificationFlow
 import com.cbgm.securechat.feature.contactimport.presentation.ContactQrVerificationFlow
 
 @Composable

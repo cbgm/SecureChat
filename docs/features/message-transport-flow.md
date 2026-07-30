@@ -1,584 +1,480 @@
-# Messaging and Delivery Flow
+# Conversation, Messaging, and Delivery Flow
 
-This is the implementation guide for SecureChat messaging. It follows the current production
-classes from UI intent to relay storage and back to the receiving database, then explains how to
-extend the design safely.
+This document follows the production call chain for direct and group conversations. Class and
+function names are the names used by the current source code.
 
-For module ownership first, read [Messaging Boundary](../architecture/messaging-boundary.md).
+For module ownership, read [Messaging Boundary](../architecture/messaging-boundary.md).
 
-## Mental model
+## Representations and ownership
 
-A message crosses four different representations:
-
-| Representation | Example type | Owner |
+| Representation | Important types | Owner |
 |---|---|---|
-| Domain/chat state | `MessageEntity`, `MessageDeliveryStatus` | `:feature:chats` and `:data:database` |
-| Protocol packet | `ChatMessagePacket`, `DeliveryReceiptPacket` | `:core:protocol` |
-| Encoded transport payload | `EncryptedTransportPayload` encoded by `TransportPayloadCodec` | `:core:crypto` |
-| Relay frame | `RelayClientMessage.SendEnvelope` containing a `RelayEnvelope` | `:feature:transport` |
+| Conversation UI | `ChatUiState`, `ChatMessageUi`, `GroupVerificationSummaryUi` | `:feature:chats` |
+| Persistent chat data | `ConversationEntity`, `MessageEntity`, `MessageRecipientStateEntity` | `:data:database` |
+| Protocol work | `SecureChatPacket`, `ProtocolOutboxItem` | `:core:protocol` |
+| Transport payload | `EncryptedTransportPayload`, `TransportEncryptionMode` | `:core:crypto` |
+| Relay frame | `RelayEnvelope`, `RelayClientMessage`, `RelayServerMessage` | `:feature:transport` |
 
-Do not collapse these layers. A protocol packet describes meaning; a transport payload describes
-protection; a relay envelope describes routing.
+A protocol packet describes meaning. A transport payload describes pairwise protection. A relay
+envelope describes routing. Group message content also has its own authenticated group encryption
+inside the protocol packet.
 
-## Complete direct-message path
+## Opening conversations
+
+### Direct conversation
+
+The navigation path is:
+
+```text
+AppNavigation
+  -> AppDestination.Chat
+  -> ChatRoute
+  -> koinViewModel<ChatViewModel>(conversationId, contactId, contactName)
+  -> ChatScreen
+```
+
+`ChatViewModel.uiState` combines `ObserveConversation`, the current contact identity state, message
+input, typing state, and errors. `ChatRoute` calls `ChatViewModel.markConversationRead()` when the
+screen opens and whenever the observed incoming message IDs change.
+
+### Group conversation
+
+The navigation path is:
+
+```text
+AppNavigation
+  -> AppDestination.GroupConversation
+  -> GroupChatRoute
+  -> koinViewModel<GroupChatViewModel>(conversationId)
+  -> koinViewModel<GroupVerificationViewModel>(conversationId)
+  -> ChatScreen
+```
+
+`GroupChatViewModel` observes the group conversation and invitation state.
+`GroupVerificationViewModel` observes the authoritative group-wide verification snapshot.
+`GroupChatRoute` merges the verification counts into the `ChatUiState` rendered by `ChatScreen`.
+
+The group header opens:
+
+```text
+AppDestination.Details
+  -> DetailsRoute
+  -> GroupDetailsFlow
+  -> GroupDetailsScreen
+```
+
+## Direct outgoing message
 
 ```mermaid
 sequenceDiagram
     actor User
+    participant Screen as ChatScreen
     participant VM as ChatViewModel
+    participant UseCase as SendMessage
     participant Repo as DefaultChatsRepository
     participant Outbox as DefaultProtocolOutbox
+    participant Runner as DefaultOutboxRunner
     participant Processor as DefaultOutboxProcessor
     participant Wire as WebSocketOutgoingWireSender
-    participant Relay as RelayWebSocketHandler
-    participant Incoming as DefaultIncomingRelayRunner
-    participant Decoder as IncomingMessageProcessor
-    participant Handler as ChatMessagePacketHandler
 
-    User->>VM: send text
-    VM->>Repo: sendMessage(conversationId, text)
+    User->>Screen: tap send
+    Screen->>VM: sendMessage()
+    VM->>UseCase: invoke(conversationId, text)
+    UseCase->>Repo: sendMessage(conversationId, text)
     Repo->>Repo: persist MessageEntity(QUEUED)
-    Repo->>Outbox: enqueue(ChatMessagePacket)
-    Processor->>Outbox: markProcessing
-    Processor->>Processor: encode and optionally encrypt
-    Processor->>Wire: send(relayId, payload)
-    Wire->>Relay: SendEnvelope
-    Relay-->>Wire: EnvelopeAccepted
-    Processor->>Outbox: markSent
-    Relay-->>Incoming: IncomingEnvelope
-    Incoming->>Decoder: handle(contactId, payload, keys)
-    Decoder->>Handler: handle(context, packet)
-    Handler->>Handler: persist incoming MessageEntity
-    Handler->>Outbox: enqueue(DeliveryReceiptPacket)
-    Incoming-->>Relay: AcknowledgeEnvelope
+    Repo->>Outbox: enqueue(contactId, ChatMessagePacket)
+    Runner->>Processor: processPending()
+    Processor->>Wire: send(recipientAddress, encodedTransportPayload)
 ```
 
-There are two acknowledgements:
+Exact behavior:
 
-- `EnvelopeAccepted` means the relay accepted the outgoing envelope. The sender becomes `SENT`.
-- `DeliveryReceiptPacket` means the recipient decoded and stored the message. The sender becomes
-  `DELIVERED`.
+1. `ChatScreen` invokes `ChatViewModel.sendMessage()`.
+2. `ChatViewModel.sendMessage()` trims the current input, clears it, calls `stopTyping()`, and
+   invokes `SendMessage`.
+3. `SendMessage.invoke()` delegates to `ChatsRepository.sendMessage()`.
+4. `DefaultChatsRepository.sendMessage()` validates that the conversation is direct and loads its
+   contact.
+5. It creates one `ChatMessagePacket` and one visible `MessageEntity`.
+6. `ChatDao.upsertMessage()` persists the visible row with `MessageDeliveryStatus.QUEUED`.
+7. `ProtocolOutbox.enqueue(contactId, packet)` persists the packet independently of the live
+   WebSocket.
+8. If enqueueing fails, `MessageDeliveryStateCoordinator.applyPacketEvent()` applies
+   `MessageDeliveryEvent.SEND_FAILED`.
 
-`AcknowledgeEnvelope` is different again: it lets the relay remove its pending copy after the
-recipient finishes local processing.
+The UI never sends directly to `WebSocketTransportClient`.
 
-## Runtime startup and connection lifecycle
+## Persistent outbox and wire send
 
-`SecureChatApplication` waits until `IdentityRepository.observeIdentity()` returns an identity and
-`LocalPhoneNameStorage.observePhoneNumber()` returns a non-blank phone number. It then calls
-`startRuntimeServices()`:
+`DefaultOutboxRunner.start()` collects `ProtocolOutbox.observePending()` and drains work through
+`OutboxProcessor.processPending()`. Reconnect recovery calls `requeueInterrupted()` and
+`retryFailed()` before draining.
 
-1. `IncomingRelayRunner.start()` starts collecting `WebSocketTransportClient.incomingEnvelopes`.
-2. `RelayConnectionManager.start()` starts the relay connection loop.
-3. `SecureChatApplication` observes `RelayConnectionManager.connectionState`.
-4. Each time the state becomes `TransportConnectionState.Connected`, it calls
-   `OutboxRunner.start()`.
+For each `ProtocolOutboxItem`, `DefaultOutboxProcessor` calls:
 
-`DefaultRelayConnectionManager` resolves the local address through `LocalRelayIdProvider`, connects
-with `WebSocketTransportClient.connect()`, and retries after failures. The backoff starts at one
-second, doubles, and is capped at 30 seconds. A connection attempt times out after 15 seconds.
+```text
+processPending(limit)
+  -> processItem(item)
+  -> ProtocolOutbox.markProcessing(item.id)
+  -> OutboxDeliveryStateListener.onProcessing(item.packetId)
+  -> prepareAndSend(item)
+      -> GetContact(item.contactId)
+      -> PacketCodec.decode(item.encodedPacket)
+      -> createTransportPayload(...)
+      -> TransportPayloadCodec.encode(...)
+      -> OutboxDeliveryStateListener.onPrepared(...)
+      -> ContactRelayIdResolver.resolve(item.contactId)
+      -> OutgoingWireSender.send(...)
+      -> ProtocolOutbox.markSent(item.id)
+  -> OutboxDeliveryStateListener.onSent(item.packetId)
+```
 
-`DefaultOutboxRunner.start()` is intentionally safe to call after every reconnect. It:
+The production `OutgoingWireSender` is `WebSocketOutgoingWireSender`. Its `send()` creates a
+`RelayEnvelope` and calls `WebSocketTransportClient.sendEnvelopeAndAwaitAcceptance()`.
 
-- creates the `ProtocolOutbox.observePending()` collector only when one is not already active;
-- calls `ProtocolOutbox.requeueInterrupted()` for rows left in `PROCESSING`;
-- calls `ProtocolOutbox.retryFailed()` for failed attempts;
-- drains all currently available items.
+`RelayServerMessage.EnvelopeAccepted` means the relay accepted the envelope. It does not mean that
+the recipient stored the message.
 
-The `processingMutex` prevents the Room observer and reconnect recovery from draining concurrently.
-Batches contain at most 20 items.
+## Direct incoming message
 
-## Creating outgoing work
+```text
+DefaultWebSocketTransportClient.incomingEnvelopes
+  -> DefaultIncomingRelayRunner.processEnvelope()
+  -> ContactByRelayIdResolver.resolveContactId()
+  -> IncomingMessageHandler.handle()
+  -> IncomingMessageProcessor.handle()
+  -> IncomingTransportMessageDecoder.decode()
+  -> PacketCodec.decode()
+  -> DefaultProtocolPacketHandler.handle()
+  -> ChatMessagePacketHandler.handle()
+```
 
-### Direct message
+`ChatMessagePacketHandler.handle()`:
 
-`ChatViewModel` calls the `SendMessage` use case, which delegates to
-`DefaultChatsRepository.sendMessage()`.
+1. validates the message text;
+2. resolves or creates the direct `ConversationEntity`;
+3. creates the incoming `MessageEntity`;
+4. calls `ChatDao.upsertIncomingChatMessage()`;
+5. creates a deterministic `DeliveryReceiptPacket`;
+6. calls `ProtocolOutbox.enqueue(context.contactId, receipt)`.
 
-The repository:
+Only after the complete incoming handler returns does
+`DefaultIncomingRelayRunner.processEnvelope()` call
+`WebSocketTransportClient.acknowledgeIncomingEnvelope(envelopeId)`. That acknowledgement allows
+the relay to delete its pending copy.
 
-1. trims and validates the text;
-2. loads a direct `ConversationEntity` and its contact;
-3. creates one `ChatMessagePacket`;
-4. stores the visible `MessageEntity` with `QUEUED`;
+## Delivery and read receipts
+
+There are three separate acknowledgements:
+
+| Signal | Meaning |
+|---|---|
+| `RelayServerMessage.EnvelopeAccepted` | The relay accepted the outgoing envelope |
+| `DeliveryReceiptPacket` | The recipient decoded and persisted the message |
+| `RelayClientMessage.AcknowledgeEnvelope` | The recipient finished local envelope processing |
+
+`DeliveryReceiptPacketHandler.handle()` applies `MessageDeliveryEvent.DELIVERY_CONFIRMED` through
+`MessageDeliveryStateCoordinator`.
+
+For read receipts:
+
+```text
+ChatRoute or GroupChatRoute
+  -> ViewModel.markConversationRead()
+  -> MarkConversationRead.invoke()
+  -> DefaultChatsRepository.markConversationRead()
+  -> ChatDao.findMessagesAwaitingReadReceipt()
+  -> ProtocolOutbox.enqueue(ReadReceiptPacket)
+  -> ChatDao.markReadReceiptSent()
+```
+
+On the sender, `ReadReceiptPacketHandler.handle()` applies
+`MessageDeliveryEvent.READ_CONFIRMED`.
+
+## Group creation and per-member activation
+
+The current implementation does not wait for every invited contact before activating the first
+member. Each accepted member becomes active independently.
+
+### Creating the invitations
+
+```text
+CreateGroupViewModel
+  -> CreateGroupConversation.invoke()
+  -> DefaultChatsRepository.createGroupConversation()
+  -> GroupInvitationCoordinator.createGroup()
+```
+
+`GroupInvitationCoordinator.createGroup()`:
+
+1. creates the local group `ConversationEntity`;
+2. creates one `GroupInvitationEntity(INVITE_SENT)` per selected contact;
+3. calls `GroupInvitationManager.createInvite()` for every contact;
+4. calls `GroupVerificationCoordinator.initializeOwnedGroup(groupId)`;
+5. calls `ProtocolOutbox.enqueue(contactId, GroupInvitePacket)` for every contact.
+
+Every selected contact gets its own invitation and packet. Existing pairwise keys do not replace
+explicit group consent.
+
+### Receiving and accepting one invitation
+
+```text
+GroupInvitePacketHandler.handle()
+  -> GroupInvitationCoordinator.receiveInvite()
+  -> status AWAITING_ACCEPTANCE
+
+GroupChatViewModel.acceptInvitation()
+  -> AcceptGroupInvitation.invoke()
+  -> DefaultChatsRepository.acceptGroupInvitation()
+  -> GroupInvitationCoordinator.acceptInvitation()
+  -> GroupInvitationManager.createJoinRequest()
+  -> status JOIN_SENT
+  -> ProtocolOutbox.enqueue(GroupJoinRequestPacket)
+```
+
+On the owner:
+
+```text
+GroupJoinRequestPacketHandler.handle()
+  -> GroupInvitationCoordinator.receiveJoinRequest()
+  -> storeMutualIdentity(...)
+  -> status IDENTITY_READY
+  -> activateGroupIfReady(groupId)
+  -> distributeGroupKeyToMember(groupId, invitation)
+  -> GroupSecurityManager.createOwnedGroup(...)
+  -> ProtocolOutbox.enqueue(GroupCreatedPacket)
+  -> status WELCOME_SENT
+```
+
+`activateGroupIfReady()` processes every invitation currently in `IDENTITY_READY`; it does not
+require all invitations to reach that state.
+
+### Installing the group key
+
+On the accepted participant:
+
+```text
+GroupCreatedPacketHandler.handle()
+  -> GroupSecurityManager.openWelcome()
+  -> ContactKeyExchangeStore.markMutual()
+  -> GroupSecurityManager.persistJoinedGroup()
+  -> GroupInvitationManager.createReadyAcknowledgement()
+  -> ProtocolOutbox.enqueue(GroupReadyAcknowledgementPacket)
+  -> status WAITING_FOR_ACTIVATION
+```
+
+On the owner:
+
+```text
+GroupReadyAcknowledgementPacketHandler.handle()
+  -> GroupInvitationCoordinator.receiveReadyAcknowledgement()
+  -> GroupSecurityManager.verifyKeyConfirmation()
+  -> status ACTIVE
+  -> ChatDao.upsertConversationParticipant()
+  -> GroupVerificationCoordinator.onOwnedMembershipChanged()
+  -> flushQueuedIfGroupHasActiveMembers()
+```
+
+The owner also sends `GroupMemberActivatedPacket` messages so existing active members learn the new
+member and the new member learns the active membership. The reciprocal acknowledgement chain is:
+
+```text
+GroupMemberActivatedPacketHandler.handle()
+  -> ProtocolOutbox.enqueue(GroupMemberActivationAcknowledgementPacket)
+
+GroupMemberActivationAcknowledgementPacketHandler.handle()
+  -> GroupInvitationCoordinator.receiveMemberActivationAcknowledgement()
+  -> enqueueMemberActivation(...) for the next activation round
+```
+
+Final activation packets update `ConversationParticipantEntity` and the epoch-specific
+`GroupMemberKeyEntity`.
+
+### Declining
+
+```text
+GroupChatViewModel.declineInvitation()
+  -> DeclineGroupInvitation.invoke()
+  -> DefaultChatsRepository.declineGroupInvitation()
+  -> GroupInvitationCoordinator.declineInvitation()
+  -> ProtocolOutbox.enqueue(GroupInviteDeclinedPacket)
+```
+
+`GroupInviteDeclinedPacketHandler.handle()` calls `GroupInvitationCoordinator.receiveDecline()`,
+which persists `DECLINED` and refreshes the owner verification snapshot.
+
+## Group outgoing message
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant VM as GroupChatViewModel
+    participant UseCase as SendGroupMessage
+    participant Repo as DefaultChatsRepository
+    participant Sender as GroupMessageSender
+    participant Security as GroupSecurityManager
+    participant Outbox as ProtocolOutbox
+
+    User->>VM: sendMessage()
+    VM->>UseCase: invoke(conversationId, text)
+    UseCase->>Repo: sendGroupMessage(conversationId, text)
+    Repo->>Sender: queueOrSend(conversationId, text, invitations)
+    Sender->>Security: encryptMessage(...)
+    Sender->>Outbox: enqueue one packet per active participant
+```
+
+`GroupMessageSender.queueOrSend()` rejects only an incoming invitation that this device has not
+finished accepting. On the owner:
+
+- no active `ConversationParticipantEntity` rows: persist the visible message as `QUEUED`;
+- at least one active participant: call `flushQueuedNow()` and `encryptAndEnqueue(message)`.
+
+Pending or declined invitations do not block sends to active participants.
+
+`GroupMessageSender.encryptAndEnqueue()`:
+
+1. loads active participants with `ChatDao.findConversationParticipants()`;
+2. calls `GroupSecurityManager.encryptMessage()` once;
+3. creates one `GroupChatMessagePacket` per active participant;
+4. reuses the authenticated nonce, ciphertext, and sender signature;
+5. gives each recipient packet a deterministic recipient-specific `packetId`;
+6. creates one `MessageRecipientStateEntity` per participant;
+7. calls `ChatDao.upsertOutgoingGroupMessage()`;
+8. calls `ProtocolOutbox.enqueue(participant.contactId, packet)` for every active participant.
+
+The visible group delivery status is aggregated from all recipient rows by
+`MessageDeliveryStateMachine.aggregate()`.
+
+## Group incoming message
+
+The common incoming pipeline resolves `GroupChatMessagePacket.groupId` as the conversation ID and
+dispatches to `GroupChatMessagePacketHandler.handle()`.
+
+The handler:
+
+1. verifies that the group conversation exists;
+2. detects duplicate/conflicting `messageId` values;
+3. calls `GroupSecurityManager.decryptMessage(packet, senderContactId)`;
+4. persists `MessageEntity` with transport mode `GROUP_E2EE`;
 5. updates the conversation timestamp;
-6. calls `ProtocolOutbox.enqueue(contactId, packet)`.
+6. enqueues a deterministic recipient-specific `DeliveryReceiptPacket`.
 
-The visible message is stored before the outbox row. If enqueue fails,
-`MessageDeliveryStateCoordinator` applies `SEND_FAILED`.
+`GroupSecurityManager.decryptMessage()` validates membership, epoch, signature, associated data,
+and XChaCha20-Poly1305 authentication before plaintext reaches Room.
 
-### Group creation
+## Transport encryption policy
 
-`CreateGroupConversation` calls `DefaultChatsRepository.createGroupConversation()`, which delegates
-to `GroupInvitationCoordinator.createGroup()`. The coordinator creates a local pending group and a
-`GroupInvitationEntity` for every selected contact.
+`DefaultOutboxProcessor.createTransportPayload()` selects the outer transport:
 
-For every selected contact, the coordinator:
-
-1. creates a random invitation challenge with `GroupInvitationManager`;
-2. signs a `GroupInvitePacket` containing the owner's public identity but no group key;
-3. sends it to the contact's phone-derived relay ID;
-4. lets `GroupInvitePacketHandler` verify it and persist a recipient-side group in
-   `AWAITING_ACCEPTANCE`;
-5. waits until `AcceptGroupInvitation` explicitly creates the signed `GroupJoinRequestPacket`;
-6. verifies that join on the creator and stores the discovered identity as mutual but unverified;
-7. changes the creator-side row from `INVITE_SENT` to `IDENTITY_READY`.
-
-Known identities still receive an invitation because knowing a key is not consent to join a
-group. Only when every selected contact has accepted does `GroupInvitationCoordinator` call
-`GroupSecurityManager.createOwnedGroup()`.
-
-`GroupSecurityManager`:
-
-1. generates a random epoch-1 key through `GroupCrypto.generateGroupKey()`;
-2. saves it through `GroupKeyStorage`;
-3. snapshots remote member keys through `GroupSecurityDao`;
-4. wraps the same key separately for every recipient with `GroupCrypto.wrapGroupKey()`;
-5. signs each canonical welcome from `GroupProtocolPayloadEncoder.encodeWelcome()`;
-6. returns one deterministic `GroupCreatedPacket` per contact.
-
-Only `wrappedGroupKey` enters the persistent outbox. `DefaultOutboxProcessor` requires
-`SEALED_BOX` transport for `GroupCreatedPacket` and fails instead of falling back to plaintext.
-Invitation packets may use plaintext outer transport because their signatures protect integrity
-and they never contain a group key or message content.
-
-Receiving the welcome is not assumed to mean the member is ready. `GroupCreatedPacketHandler`
-verifies and persists the key first, then signs and queues `GroupReadyAcknowledgementPacket`. Its
-SHA-256 key-confirmation field is derived from the group ID, epoch, and recovered 256-bit key.
-`GroupReadyAcknowledgementPacketHandler` changes the creator-side member row from `WELCOME_SENT`
-to `ACTIVE` only after the creator recomputes the same confirmation. Only when every row is
-`ACTIVE` may queued group content fan out.
-
-### Group message
-
-`SendGroupMessage` calls `DefaultChatsRepository.sendGroupMessage()`, which delegates to
-`GroupMessageSender.queueOrSend()`.
-
-If the creator is still waiting for accepts or ready acknowledgements, `GroupMessageSender` stores
-only the visible `MessageEntity(QUEUED)`. The input remains disabled for an invitee until
-`GroupCreatedPacketHandler` has installed the welcome. When the group becomes fully active,
-`GroupMessageSender.flushQueued()` processes the creator's stored rows in creation order.
-
-For each active message, `GroupMessageSender`:
-
-1. validates that the conversation is a group;
-2. creates one shared `messageId`;
-3. calls `GroupSecurityManager.encryptMessage()` once;
-4. binds version, group ID, epoch, message ID, and timestamp as AEAD associated data;
-5. encrypts with XChaCha20-Poly1305 and signs the header, nonce, and ciphertext with Ed25519;
-6. creates a distinct `GroupChatMessagePacket.packetId` for every participant while reusing the
-   authenticated ciphertext;
-7. stores one visible `MessageEntity` and one `MessageRecipientStateEntity` per participant;
-8. enqueues each packet for its participant.
-
-Per-recipient rows are the source of truth for group delivery. The visible message status is
-recomputed by `MessageDeliveryStateMachine.aggregate()`.
-
-### Identity exchange and receipts
-
-The same outbox also carries control packets:
-
-- `DefaultIdentityExchangeStarter` enqueues `IdentityPacket`.
-- `IdentityPacketHandler` enqueues `IdentityAcknowledgementPacket`.
-- `ChatMessagePacketHandler` and `GroupChatMessagePacketHandler` enqueue
-  `DeliveryReceiptPacket`.
-- `DefaultChatsRepository.markConversationRead()` enqueues `ReadReceiptPacket`.
-
-No handler sends directly to the WebSocket. Persisting through `ProtocolOutbox` gives every packet
-the same retry and recovery behavior.
-
-## Persistent protocol outbox
-
-`ProtocolOutbox` is the transport-independent contract in `:core:protocol`.
-`DefaultProtocolOutbox` is the Room-backed implementation in `:data:database`, using
-`ProtocolOutboxDao` and `ProtocolOutboxEntity`.
-
-`DefaultProtocolOutbox.enqueue()`:
-
-- validates the contact and packet IDs;
-- returns the existing row when `packetId` is already present;
-- encodes the `SecureChatPacket` with `PacketCodec`;
-- persists a new row as `PENDING`.
-
-The idempotency key is `packetId`, not `messageId`.
-
-### Outbox state machine
-
-```mermaid
-stateDiagram-v2
-    [*] --> PENDING: enqueue
-    PENDING --> PROCESSING: PROCESSING_STARTED
-    PROCESSING --> SENT: SEND_SUCCEEDED
-    PROCESSING --> FAILED: SEND_FAILED
-    FAILED --> PENDING: RETRY_REQUESTED
-    PROCESSING --> PENDING: RECOVERY_REQUESTED
-```
-
-`OutboxStateMachine` defines valid transitions and `DefaultProtocolOutbox` validates them before
-DAO updates. `retryFailed()` and `requeueInterrupted()` are bulk recovery operations used on
-connection availability.
-
-## Preparing and sending a queued packet
-
-`DefaultOutboxProcessor.processPending()` loads up to the requested limit and continues processing
-other rows if one item fails. For each `ProtocolOutboxItem`, `processItem()` performs:
-
-1. `ProtocolOutbox.markProcessing(item.id)`;
-2. `OutboxDeliveryStateListener.onProcessing(item.packetId)`;
-3. `GetContact(item.contactId)`;
-4. packet protection through `createTransportPayload()`;
-5. encoding through `TransportPayloadCodec.encode()`;
-6. `OutboxDeliveryStateListener.onPrepared()` to persist the exact payload and mode;
-7. recipient resolution through `ContactRelayIdResolver`;
-8. `OutgoingWireSender.send(recipientRelayId, encodedTransportPayload)`;
-9. `ProtocolOutbox.markSent(item.id)`;
-10. `OutboxDeliveryStateListener.onSent(item.packetId)`.
-
-Any failure before `markSent()` changes the outbox row to `FAILED` and calls
-`OutboxDeliveryStateListener.onFailed()`.
-
-The production listener is `ChatOutboxDeliveryStateListener`. It delegates to
-`MessageDeliveryStateCoordinator`; control packets without visible chat state are valid and simply
-produce no chat-row transition.
-
-## Plaintext and sealed-box selection
-
-`DefaultOutboxProcessor.createTransportPayload()` selects the current transport mode:
-
-| Condition | Mode |
+| Condition | Outer mode |
 |---|---|
-| Packet is `GroupCreatedPacket`, but identity is not mutual | Fail; never plaintext |
-| Contact has no `SecureChatIdentity` | `PLAINTEXT` |
-| Contact encryption key is empty | `PLAINTEXT` |
-| `KeyExchangeStatus` is not `MUTUAL` | `PLAINTEXT` |
-| Contact has a non-empty key and `KeyExchangeStatus.MUTUAL` | `SEALED_BOX` |
+| No usable mutual contact identity | `PLAINTEXT` when the packet permits it |
+| Mutual contact identity | `SEALED_BOX` |
+| Packet `requiresEncryption()` but no mutual identity | Fail the outbox item |
 
-For `SEALED_BOX`, the processor calls
-`TransportMessageCipher.encryptForRecipient(plaintext, recipientPublicKey)`. For plaintext, it
-constructs `EncryptedTransportPayload` directly. Both modes are encoded by
-`TransportPayloadCodec`; therefore “plaintext” means the protocol bytes are not end-to-end
-encrypted, not that raw protocol JSON is placed directly in a WebSocket frame.
+`GroupCreatedPacket`, member activation packets, group verification packets,
+`ContactReadyPacket`, and `ContactVerificationReceiptPacket` require encrypted pairwise transport.
 
-`GroupChatMessagePacket` may also use plaintext outer transport because its content is already
-authenticated ciphertext under the shared group epoch key. Incoming and outgoing group messages
-are persisted with transport mode `GROUP_E2EE`, so the UI reports their actual content security
-instead of the optional outer wrapper.
+`GroupChatMessagePacket` may use plaintext outer transport because its message content is already
+authenticated group ciphertext. Its stored message mode remains `GROUP_E2EE`.
 
-`DefaultChatsRepository.plannedTransportMode()` mirrors the same contact conditions so the UI can
-store the intended mode immediately. `DefaultOutboxProcessor` remains authoritative when the packet
-is actually sent.
+## Direct identity verification
 
-## Relay address resolution
-
-The wire uses relay IDs, while chat and contacts use contact IDs.
-
-### Outgoing
-
-`DefaultContactRelayIdResolver.resolve(contactId)`:
-
-1. returns an existing `ContactRelayIdDao` mapping;
-2. otherwise loads the contact with `GetContact`;
-3. selects the preferred phone number or first available number;
-4. derives the relay ID with `RelayIdGenerator`;
-5. persists `ContactRelayIdEntity`.
-
-The production generator is `Sha256RelayIdGenerator`.
-
-### Incoming
-
-`DefaultContactByRelayIdResolver.resolveContactId(relayId)`:
-
-1. checks `ContactRelayIdDao`;
-2. derives relay IDs for known contact phone numbers until one matches;
-3. persists the match if found;
-4. otherwise creates an unlinked placeholder `ContactEntity` and stores the relay mapping.
-
-This placeholder lets the incoming pipeline continue for a previously unknown sender. A later chat
-packet may call `ContactDao.usePhoneNumberAsDisplayNameWhenMissing()` using
-`ChatMessagePacket.senderPhoneNumber`.
-
-## WebSocket send and relay acceptance
-
-`WebSocketOutgoingWireSender` implements the protocol port `OutgoingWireSender`. It gets the sender
-ID from `LocalRelayIdProvider`, creates a `RelayEnvelope`, and calls
-`WebSocketTransportClient.sendEnvelopeAndAwaitAcceptance()`.
-
-`DefaultWebSocketTransportClient`:
-
-- requires `TransportConnectionState.Connected`;
-- stores a `CompletableDeferred` by `envelopeId`;
-- sends `RelayClientMessage.SendEnvelope`;
-- waits for `RelayServerMessage.EnvelopeAccepted`;
-- fails on timeout, connection closure, or send failure.
-
-A `RelayServerMessage.Error` is logged but does not automatically close the socket. The pending
-acceptance eventually times out, causing the outbox item to fail.
-
-## Relay-side routing
-
-`RelayWebSocketHandler` requires `RelayClientMessage.Register` before other operations.
-`InMemoryRelayConnectionRegistry` maps a relay ID to its active `RelayClientConnection`.
-
-For `RelayClientMessage.SendEnvelope`, the handler:
-
-1. rejects a sender ID that differs from the registered relay ID;
-2. calls `DefaultRelayEnvelopeRouter.accept()`;
-3. sends `RelayServerMessage.EnvelopeAccepted` after storage succeeds;
-4. calls `deliverPending(recipientId)` for immediate delivery when possible.
-
-`DefaultRelayEnvelopeRouter.accept()` writes to `PendingEnvelopeStore`. The current implementation,
-`InMemoryPendingEnvelopeStore`, uses `putIfAbsent(envelopeId, envelope)` so submitting the same
-envelope again does not duplicate it.
-
-When a recipient registers, `RelayWebSocketHandler.handleRegistration()` also calls
-`deliverPending()`. Envelopes remain in the store until the recipient sends
-`RelayClientMessage.AcknowledgeEnvelope`.
-
-!!! warning "Current durability limit"
-    `InMemoryPendingEnvelopeStore` survives client disconnects but not a relay-process restart.
-    Client outbox rows are durable in Room; accepted relay envelopes are not yet durable.
-
-## Incoming decoding and dispatch
-
-`DefaultWebSocketTransportClient` emits `RelayServerMessage.IncomingEnvelope.envelope` through
-`incomingEnvelopes`.
-
-`DefaultIncomingRelayRunner`:
-
-1. maps `RelayEnvelope.senderId` to a contact with `ContactByRelayIdResolver`;
-2. obtains keys from `LocalEncryptionKeyPairProvider`;
-3. calls `IncomingMessageHandler.handle()` with the contact, payload, and key pair;
-4. calls `WebSocketTransportClient.acknowledgeIncomingEnvelope()` only after handling returns.
-
-`IncomingMessageProcessor` is the `IncomingMessageHandler` implementation. It calls
-`IncomingTransportMessageDecoder.decode()` and handles four outcomes:
-
-| Decoder result | Behavior |
-|---|---|
-| `DecodedTransportMessage.Readable` | Decode the protocol packet and dispatch it |
-| `DecodedTransportMessage.InvalidPacket` | Store an unreadable direct message with `INVALID_PACKET` |
-| `DecodedTransportMessage.InvalidPlaintext` | Store with `INVALID_PLAINTEXT_PACKET` |
-| `DecodedTransportMessage.DecryptionFailed` | Store with `TRANSPORT_DECRYPTION_FAILED` |
-
-For readable data, `KotlinxPacketCodec` decodes a `SecureChatPacket`. The processor creates
-`IncomingPacketContext`, including contact ID, resolved conversation ID, original transport payload,
-transport mode, and receive time.
-
-`DefaultProtocolPacketHandler` selects the first registered `TypedProtocolPacketHandler` whose
-`canHandle()` returns true. If there is no handler, or the selected handler fails, the relay
-envelope is normally not acknowledged and may be delivered again. A direct `ChatMessagePacket`
-handler failure is represented as an unreadable stored message instead.
-
-## Registered packet handlers
-
-`protocolModule` builds `DefaultProtocolPacketHandler` from all Koin bindings of
-`TypedProtocolPacketHandler`. `chatsModule` and `contactsModule` contribute the handlers:
-
-| `packetType` | Packet class | Handler | Effect |
-|---|---|---|---|
-| `chat_message` | `ChatMessagePacket` | `ChatMessagePacketHandler` | Upsert direct message; queue delivery receipt |
-| `group_invite` | `GroupInvitePacket` | `GroupInvitePacketHandler` | Verify owner identity proof and persist an invitation awaiting user consent |
-| `group_join_request` | `GroupJoinRequestPacket` | `GroupJoinRequestPacketHandler` | Verify invited contact and challenge, store identity, continue activation |
-| `group_invite_declined` | `GroupInviteDeclinedPacket` | `GroupInviteDeclinedPacketHandler` | Verify the invited contact's signed decline |
-| `group_created` | `GroupCreatedPacket` | `GroupCreatedPacketHandler` | Verify owner, unwrap/persist key, create epoch snapshot, queue ready acknowledgement |
-| `group_ready_acknowledgement` | `GroupReadyAcknowledgementPacket` | `GroupReadyAcknowledgementPacketHandler` | Verify key installation and activate the creator-side member row |
-| `group_chat_message` | `GroupChatMessagePacket` | `GroupChatMessagePacketHandler` | Verify member/signature, decrypt, persist, queue receipt |
-| `delivery_receipt` | `DeliveryReceiptPacket` | `DeliveryReceiptPacketHandler` | Apply `DELIVERY_CONFIRMED` |
-| `read_receipt` | `ReadReceiptPacket` | `ReadReceiptPacketHandler` | Apply `READ_CONFIRMED` |
-| `identity` | `IdentityPacket` | `IdentityPacketHandler` | Store remote identity and queue signed acknowledgement |
-| `identity_acknowledgement` | `IdentityAcknowledgementPacket` | `IdentityAcknowledgementPacketHandler` | Verify acknowledgement against stored remote and current local keys |
-
-## Message idempotency and receipts
-
-`ChatMessagePacketHandler` uses `ChatMessagePacket.messageId` as the incoming Room primary key.
-Repeated delivery therefore updates the same message instead of creating another visible row. It
-queues a delivery receipt only after persistence succeeds.
-
-Direct-message receipt IDs are deterministic:
+Manual safety-number verification:
 
 ```text
-delivery-receipt-<messageId>
-read-receipt-<messageId>
+DetailsRoute
+  -> ContactDetailsFlow
+  -> ContactDetailsViewModel.confirmVerification()
+  -> VerifyContact.invoke()
 ```
 
-For group messages, the delivery receipt includes the receiver contact in its packet ID:
+QR verification:
 
 ```text
-delivery-receipt-<messageId>-<contactId>
+AppDestination.VerifyIdentityQr(groupId = null)
+  -> VerifyIdentityQrRoute
+  -> ContactQrVerificationFlow
+  -> VerifyContactQrViewModel.onQrCodeScanned()
+  -> VerifyContactByQr.invoke()
 ```
 
-`DefaultChatsRepository.markConversationRead()` finds incoming messages awaiting a receipt, enqueues
-`ReadReceiptPacket`, and only then marks the local row as having a read receipt sent.
+Both paths verify the contact identity. They do not create a second conversation.
 
-## User-visible delivery state
+## Group verification
 
-`MessageDeliveryStateMachine` defines the user-visible state:
+Group verification belongs to `(groupId, invitationId)`, not to the global contact verification
+flag.
 
-```mermaid
-stateDiagram-v2
-    [*] --> QUEUED
-    QUEUED --> SENDING: SEND_STARTED
-    SENDING --> SENT: SEND_SUCCEEDED
-    QUEUED --> FAILED: SEND_FAILED
-    SENDING --> FAILED: SEND_FAILED
-    FAILED --> QUEUED: RETRY_REQUESTED
-    SENT --> DELIVERED: DELIVERY_CONFIRMED
-    DELIVERED --> READ: READ_CONFIRMED
+The UI path is:
+
+```text
+GroupDetailsFlow
+  -> GroupVerificationViewModel.selectMember()
+  -> IdentityVerificationScreen
+  -> GroupVerificationViewModel.verifySelectedMember()
+  -> VerifyGroupMember.invoke()
+  -> GroupVerificationCoordinator.verify()
 ```
 
-Delivery and read confirmations may also arrive from an earlier local state. The state machine
-accepts them without regressing later states, making duplicate and reordered receipts safe.
+The QR path uses the same domain operation:
 
-| Status | Exact meaning |
-|---|---|
-| `NOT_APPLICABLE` | Incoming message; outgoing delivery progress does not apply |
-| `QUEUED` | Visible state and protocol packet are intended for local queueing |
-| `SENDING` | The outbox is preparing or transmitting the packet |
-| `SENT` | The relay accepted the envelope |
-| `DELIVERED` | The recipient persisted the message and returned a delivery receipt |
-| `READ` | The recipient queued a read receipt after marking the conversation read |
-| `FAILED` | The local preparation or wire attempt failed |
+```text
+AppDestination.VerifyIdentityQr(groupId != null)
+  -> VerifyIdentityQrRoute
+  -> GroupMemberQrVerificationFlow
+  -> GroupMemberQrVerificationViewModel.scan()
+  -> GroupMemberQrVerificationViewModel.confirm()
+  -> VerifyGroupMember.invoke()
+```
 
-For groups, `MessageDeliveryStateCoordinator` updates the matching
-`MessageRecipientStateEntity` by `packetId`, then calls `MessageDeliveryStateMachine.aggregate()`.
-`SENT`, `DELIVERED`, and `READ` require every recipient to have reached that level or later.
+Owner and participant behavior:
 
-## Manual retry
+- owner: `verifyParticipantAsOwnerLocked()` updates the owner row and broadcasts a signed snapshot;
+- participant: `verifyOwnerAsParticipantLocked()` enqueues `GroupVerificationReceiptPacket`;
+- owner receipt: `GroupVerificationReceiptPacketHandler` calls `receiveReceipt()` and broadcasts a
+  new snapshot;
+- participant synchronization:
+  `GroupVerificationSnapshotRequestPacketHandler` calls `receiveSnapshotRequest()`;
+- snapshot consumption:
+  `GroupVerificationSnapshotPacketHandler` calls `receiveSnapshot()`.
 
-`RetryMessage` calls `DefaultChatsRepository.retryMessage(messageId)`. The repository requires an
-outgoing `FAILED` message, finds linked outbox rows by packet ID, calls
-`ProtocolOutbox.retry(itemId)`, and applies `RETRY_REQUESTED`.
+All active members therefore render the same owner-authoritative verification counters.
 
-For a group, only failed recipient rows are retried. A pending-flow emission wakes
-`DefaultOutboxRunner`; a later reconnect also retries failed rows automatically.
+## Typing
 
-## Typing indicators
+Typing is deliberately not persisted:
 
-Typing state is deliberately outside the persistent protocol outbox. It is ephemeral.
+```text
+ChatViewModel.onMessageTextChanged()
+  -> SetTypingIndicator.invoke()
+  -> TypingIndicatorGateway
 
-`ChatViewModel` and `GroupConversationViewModel` call `SetTypingIndicator` and observe
-`ObserveTypingIndicator`. Both use the `TypingIndicatorGateway` domain port from `:feature:chats`.
+GroupChatViewModel.onMessageTextChanged()
+  -> SetTypingIndicator.invoke() once per active participant
+```
 
-`RelayTypingIndicatorGateway` in `:feature:messaging`:
+Incoming typing comes through `WebSocketTransportClient.incomingTypingEvents` and
+`ObserveTypingIndicator`. Timeouts in the ViewModels clear stale indicators.
 
-- resolves a contact ID through `ContactRelayIdResolver`;
-- sends with `WebSocketTransportClient.sendTypingState()`;
-- filters `incomingTypingEvents` by the resolved sender relay ID;
-- applies `distinctUntilChanged()`.
+## Retry behavior
 
-The transport serializes `RelayClientMessage.TypingState`. `RelayWebSocketHandler` forwards it only
-to a currently connected recipient as `RelayServerMessage.TypingState`; it is not persisted in
-`PendingEnvelopeStore`.
+`ChatViewModel.retryMessage()` and `GroupChatViewModel.retryMessage()` call `RetryMessage`.
+`DefaultChatsRepository.retryMessage()`:
 
-## Failure and duplicate behavior
+- retries the single linked outbox row for a direct message;
+- retries only failed `MessageRecipientStateEntity` rows for a group message;
+- applies `MessageDeliveryEvent.RETRY_REQUESTED` through
+  `MessageDeliveryStateCoordinator`.
 
-| Failure point | Persisted result | Relay acknowledgement |
-|---|---|---|
-| Outbox packet preparation or send fails | Outbox `FAILED`; visible outgoing state `FAILED` when linked | Not applicable |
-| Relay accepted, but client missed `EnvelopeAccepted` | Local attempt times out and may retry; relay deduplicates the same `envelopeId` | Not applicable |
-| Incoming payload is unreadable but stored as failure | Failed incoming `MessageEntity` exists | Sent after handler returns |
-| Typed packet handler fails | No successful application result | Not sent |
-| Incoming envelope acknowledgement send fails | Application work may already be stored | Relay retains and redelivers; handlers must remain idempotent |
-| Relay process restarts | Client outbox survives; in-memory relay pending data does not | Pending data is lost |
+## Invariants
 
-Every new incoming handler must assume at-least-once delivery.
-
-## How to add a protocol packet
-
-Use this checklist:
-
-1. Add a serializable packet under `:core:protocol/.../packet` implementing `SecureChatPacket`.
-2. Give it a unique `@SerialName`; `createProtocolJson()` uses `packetType` as the discriminator.
-3. Add encode/decode coverage to `KotlinxPacketCodecTest`.
-4. Put the behavior in the feature that owns the meaning.
-5. Implement `TypedProtocolPacketHandler` there.
-6. Bind the handler as `TypedProtocolPacketHandler` in that feature’s Koin module.
-7. Create the packet from a repository, use case adapter, or existing packet handler and enqueue it
-   through `ProtocolOutbox`.
-8. Make persistence idempotent by a stable business identifier; do not rely only on relay
-   deduplication.
-9. Decide whether the packet follows normal encryption selection. If it must never use plaintext,
-   add it to the explicit requirement in `DefaultOutboxProcessor` and test both mutual and
-   non-mutual contacts.
-10. Document its delivery semantics here and in [Protocol](../api/protocol.md).
-
-Do not add a `when` branch to `DefaultProtocolPacketHandler`; registration is polymorphic through
-`TypedProtocolPacketHandler`.
-
-## How to add or replace a wire transport
-
-The stable outgoing port is `OutgoingWireSender`. The current adapter is
-`WebSocketOutgoingWireSender`.
-
-For another wire:
-
-1. Implement `OutgoingWireSender.send(recipientAddress, encodedTransportPayload)`.
-2. Define what successful return means. To preserve current delivery state, success must mean that
-   the transport has durably accepted responsibility, equivalent to `EnvelopeAccepted`.
-3. Bind the implementation in DI instead of `WebSocketOutgoingWireSender`.
-4. If incoming data is also different, expose it behind an incoming transport port and adapt
-   `DefaultIncomingRelayRunner`; do not put transport-specific frames in `IncomingMessageProcessor`.
-5. Keep `DefaultOutboxProcessor`, `ProtocolOutbox`, packet handlers, and delivery state independent
-   of the wire format.
-
-## How to change relay addressing
-
-Address derivation is isolated by:
-
-- `RelayIdGenerator`;
-- `LocalRelayIdProvider`;
-- `ContactRelayIdResolver`;
-- `ContactByRelayIdResolver`.
-
-Change or replace these contracts and adapters together. Plan a migration for persisted
-`ContactRelayIdEntity` rows. Do not derive relay IDs inside chat repositories or ViewModels.
-
-## How to add a delivery state
-
-Delivery state exists at two levels:
-
-- `OutboxStatus` describes the send attempt.
-- `MessageDeliveryStatus` describes user-visible progress.
-
-For an outbox lifecycle change, update `OutboxEvent`, `OutboxStateMachine`, persistence operations,
-and `OutboxStateMachineTest`.
-
-For a visible state, update `MessageDeliveryEvent`, `MessageDeliveryStateMachine`,
-`MessageDeliveryStateCoordinator`, group aggregation, database serialization, UI mapping, and
-`MessageDeliveryStateMachineTest`. Define how late and duplicate events behave before changing the
-code.
-
-## Tests to protect when extending messaging
-
-The repository currently has focused tests for:
-
-- packet encoding in `KotlinxPacketCodecTest`, `GroupInvitationPacketCodecTest`,
-  `GroupCreatedPacketCodecTest`, and `GroupChatMessagePacketCodecTest`;
-- outbox transitions in `OutboxStateMachineTest`;
-- visible delivery transitions and aggregation in `MessageDeliveryStateMachineTest`;
-- transport payload codec in `DefaultTransportPayloadCodecTest`;
-- device crypto in `SodiumTransportMessageCipherTest` and `SodiumGroupCryptoTest`;
-- canonical group authentication data in `GroupProtocolPayloadEncoderTest`;
-- invitation signing and verification in `GroupInvitationManagerTest`;
-- group security orchestration in `GroupSecurityManagerTest`;
-- protected epoch-key persistence in `AndroidGroupKeyStorageTest`.
-
-New orchestration behavior should add tests around `DefaultOutboxProcessor`,
-`DefaultOutboxRunner`, `DefaultIncomingRelayRunner`, typed handlers, and relay acknowledgement
-timing. Those are the boundaries where a refactor can otherwise change reliability semantics while
-still compiling.
-
-## Class index
-
-| Area | Classes and interfaces |
-|---|---|
-| Startup | `SecureChatApplication`, `RelayConnectionManager`, `DefaultRelayConnectionManager`, `TransportConnectionState` |
-| Outgoing orchestration | `OutboxRunner`, `DefaultOutboxRunner`, `OutboxProcessor`, `DefaultOutboxProcessor` |
-| Persistent queue | `ProtocolOutbox`, `DefaultProtocolOutbox`, `ProtocolOutboxDao`, `ProtocolOutboxItem`, `OutboxStateMachine` |
-| Delivery state | `ChatOutboxDeliveryStateListener`, `MessageDeliveryStateCoordinator`, `MessageDeliveryStateMachine` |
-| Address mapping | `RelayIdGenerator`, `Sha256RelayIdGenerator`, `ContactRelayIdResolver`, `DefaultContactRelayIdResolver`, `ContactByRelayIdResolver`, `DefaultContactByRelayIdResolver` |
-| Wire transport | `OutgoingWireSender`, `WebSocketOutgoingWireSender`, `WebSocketTransportClient`, `DefaultWebSocketTransportClient` |
-| Incoming orchestration | `IncomingRelayRunner`, `DefaultIncomingRelayRunner`, `IncomingMessageHandler`, `IncomingMessageProcessor` |
-| Packet dispatch | `ProtocolPacketHandler`, `DefaultProtocolPacketHandler`, `TypedProtocolPacketHandler`, `IncomingPacketContext` |
-| Relay server | `RelayWebSocketHandler`, `DefaultRelayEnvelopeRouter`, `InMemoryRelayConnectionRegistry`, `InMemoryPendingEnvelopeStore` |
-| Typing | `TypingIndicatorGateway`, `RelayTypingIndicatorGateway`, `RelayTypingEvent` |
+- Persist visible outgoing state before enqueueing protocol work.
+- Never send from a screen, route, ViewModel, or packet handler directly to the WebSocket.
+- Treat `packetId` as the outbox idempotency key.
+- Treat `messageId` as the visible message identity.
+- Keep group delivery state per recipient.
+- Send group content only to active participants; pending invitations do not block them.
+- Require `SEALED_BOX` for group key, activation, and verification control packets.
+- A successful invitation handshake establishes mutual keys but does not prove real-world identity.
+- Direct verification and group verification are separate security decisions.

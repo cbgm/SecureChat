@@ -17,7 +17,7 @@ import com.cbgm.securechat.core.ui.component.IdentityVerificationScreen
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactDetailsUiState
-import com.cbgm.securechat.feature.contacts.presentation.screen.ContactDetailsScreen
+import com.cbgm.securechat.feature.contacts.presentation.screen.details.ContactDetailsScreen
 import com.cbgm.securechat.feature.contacts.presentation.screen.details.ContactDetailsViewModel
 import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.base_contact

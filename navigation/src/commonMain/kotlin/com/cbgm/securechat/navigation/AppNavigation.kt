@@ -150,10 +150,9 @@ fun AppNavigation() {
 
             composable<AppDestination.ImportContact> { backStackEntry ->
                 val destination = backStackEntry.toRoute<AppDestination.ImportContact>()
-                val scannedIdentityFromScanner by
-                    backStackEntry.savedStateHandle
-                        .getStateFlow<String?>("scannedIdentity", null)
-                        .collectAsStateWithLifecycle()
+                val scannedIdentityFromScanner by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("scannedIdentity", null)
+                    .collectAsStateWithLifecycle()
 
                 var destinationScannedIdentity by remember(destination.scannedIdentity) {
                     mutableStateOf(destination.scannedIdentity)

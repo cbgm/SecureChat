@@ -12,9 +12,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.cbgm.securechat.feature.chats.presentation.screen.GroupDetailsOverviewRoute
-import com.cbgm.securechat.feature.chats.presentation.screen.GroupDetailsVerifyRoute
-import com.cbgm.securechat.feature.chats.presentation.screen.chat.GroupChatVerificationViewModel
+import com.cbgm.securechat.core.ui.component.IdentityVerificationScreen
+import com.cbgm.securechat.feature.chats.presentation.model.GroupDetailsUiState
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -31,7 +30,7 @@ fun GroupDetailsFlow(
     modifier: Modifier = Modifier
 ) {
     val verificationViewModel =
-        koinViewModel<GroupChatVerificationViewModel> {
+        koinViewModel<GroupVerificationViewModel> {
             parametersOf(conversationId)
         }
     val uiState by verificationViewModel.uiState.collectAsStateWithLifecycle()
@@ -76,8 +75,8 @@ fun GroupDetailsFlow(
     ) { target ->
         when (target) {
             DetailsContent.Overview -> {
-                GroupDetailsOverviewRoute(
-                    summary = uiState.summary,
+                GroupDetailsScreen(
+                    uiState = GroupDetailsUiState.Content(uiState.summary),
                     onBack = onClose,
                     onVerifyMember = {
                         verificationViewModel.selectMember(it)
@@ -88,8 +87,8 @@ fun GroupDetailsFlow(
 
             DetailsContent.VerifyIdentity -> {
                 uiState.selectedMember?.let { member ->
-                    GroupDetailsVerifyRoute(
-                        member = member,
+                    IdentityVerificationScreen(
+                        contactName = member.displayName,
                         safetyNumber = uiState.safetyNumber,
                         isLoadingSafetyNumber = uiState.isLoadingSafetyNumber,
                         isVerifying = uiState.isVerifying,

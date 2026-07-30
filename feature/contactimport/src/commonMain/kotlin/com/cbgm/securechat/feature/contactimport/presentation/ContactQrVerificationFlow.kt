@@ -1,12 +1,5 @@
 package com.cbgm.securechat.feature.contactimport.presentation
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -15,21 +8,17 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cbgm.securechat.core.extensions.toFingerprint
+import com.cbgm.securechat.feature.contactimport.presentation.component.verification.QrVerificationErrorDialog
+import com.cbgm.securechat.feature.contactimport.presentation.component.verification.QrVerificationProgressDialog
 import com.cbgm.securechat.feature.contactimport.presentation.model.ScannedIdentityPreview
 import com.cbgm.securechat.feature.contactimport.presentation.screen.VerifyContactQrViewModel
 import com.cbgm.securechat.feature.contactimport.presentation.screen.components.ScannedIdentityConfirmationDialog
 import com.cbgm.securechat.feature.identity.domain.service.IdentityShareCodec
 import com.cbgm.securechat.resources.Res
-import com.cbgm.securechat.resources.base_cancel
-import com.cbgm.securechat.resources.base_retry
 import com.cbgm.securechat.resources.feature_contactimport_invalid_identity_qr
-import com.cbgm.securechat.resources.feature_contactimport_qr_verification_failed
 import com.cbgm.securechat.resources.feature_contactimport_trust_and_verify
-import com.cbgm.securechat.resources.feature_contactimport_verifying_identity_qr
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -99,55 +88,20 @@ fun ContactQrVerificationFlow(
     }
 
     if (uiState.isVerifying) {
-        AlertDialog(
-            onDismissRequest = { },
-            title = {
-                Text(text = stringResource(Res.string.feature_contactimport_verifying_identity_qr))
-            },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            },
-            confirmButton = { }
-        )
+        QrVerificationProgressDialog()
     }
 
     val verificationErrorMessage = scanErrorMessage ?: uiState.errorMessage
 
     verificationErrorMessage?.let { errorMessage ->
-        AlertDialog(
-            onDismissRequest = {
+        QrVerificationErrorDialog(
+            message = errorMessage,
+            onRetry = {
                 scanErrorMessage = null
                 viewModel.dismissError()
                 scanAttempt++
             },
-            title = {
-                Text(text = stringResource(Res.string.feature_contactimport_qr_verification_failed))
-            },
-            text = {
-                Text(text = errorMessage)
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        scanErrorMessage = null
-                        viewModel.dismissError()
-                        scanAttempt++
-                    }
-                ) {
-                    Text(text = stringResource(Res.string.base_retry))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onBack) {
-                    Text(text = stringResource(Res.string.base_cancel))
-                }
-            }
+            onCancel = onBack
         )
     }
 }
