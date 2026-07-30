@@ -2,7 +2,7 @@ package com.cbgm.securechat.core.protocol.identity
 
 data class LocalEncryptionKeyPair(
     val publicKey: ByteArray,
-    val privateKey: ByteArray,
+    val privateKey: ByteArray
 ) {
     init {
         require(publicKey.isNotEmpty()) {

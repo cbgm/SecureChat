@@ -27,7 +27,7 @@ class SodiumIdentityKeyGeneratorTest {
                 generator.generate()
 
             assertTrue(
-                result.isSuccess,
+                result.isSuccess
             )
 
             val keyPair =
@@ -36,25 +36,25 @@ class SodiumIdentityKeyGeneratorTest {
             assertTrue(
                 keyPair
                     .encryptionPublicKey
-                    .isNotEmpty(),
+                    .isNotEmpty()
             )
 
             assertTrue(
                 keyPair
                     .encryptionPrivateKey
-                    .isNotEmpty(),
+                    .isNotEmpty()
             )
 
             assertTrue(
                 keyPair
                     .signingPublicKey
-                    .isNotEmpty(),
+                    .isNotEmpty()
             )
 
             assertTrue(
                 keyPair
                     .signingPrivateKey
-                    .isNotEmpty(),
+                    .isNotEmpty()
             )
         }
 
@@ -76,8 +76,8 @@ class SodiumIdentityKeyGeneratorTest {
                     .encryptionPublicKey
                     .contentEquals(
                         second
-                            .encryptionPublicKey,
-                    ),
+                            .encryptionPublicKey
+                    )
             )
 
             assertFalse(
@@ -85,8 +85,8 @@ class SodiumIdentityKeyGeneratorTest {
                     .signingPublicKey
                     .contentEquals(
                         second
-                            .signingPublicKey,
-                    ),
+                            .signingPublicKey
+                    )
             )
         }
 }

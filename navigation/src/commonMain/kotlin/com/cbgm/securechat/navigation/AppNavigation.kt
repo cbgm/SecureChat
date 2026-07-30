@@ -7,37 +7,32 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.cbgm.securechat.feature.chats.presentation.ChatRoute
+import com.cbgm.securechat.feature.chats.presentation.GroupChatRoute
+import com.cbgm.securechat.feature.chats.presentation.VerifyIdentityQrRoute
+import com.cbgm.securechat.feature.chats.presentation.details.DetailsRoute
+import com.cbgm.securechat.feature.chats.presentation.details.DetailsTarget
 import com.cbgm.securechat.feature.contactimport.presentation.ImportIdentityRoute
 import com.cbgm.securechat.feature.contactimport.presentation.ScanIdentityRoute
-import com.cbgm.securechat.feature.contacts.presentation.ContactDetailsRoute
-import com.cbgm.securechat.feature.contacts.presentation.ContactsRoute
-import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
-import com.cbgm.securechat.feature.identity.domain.model.SharedContactDetails
-import com.cbgm.securechat.feature.identity.domain.model.SharedIdentityPayload
-import com.cbgm.securechat.feature.identity.platform.rememberIdentityShareLauncher
+import com.cbgm.securechat.feature.contacts.presentation.ContactInvitationRoute
 import com.cbgm.securechat.feature.identity.presentation.ShareIdentityRoute
 import com.cbgm.securechat.feature.settings.presentation.DeveloperMenuRoute
 import com.cbgm.securechat.feature.settings.presentation.DisclaimerRoute
 import com.cbgm.securechat.feature.settings.presentation.LicensesRoute
 import com.cbgm.securechat.feature.settings.presentation.model.DisclaimerType
-import com.cbgm.securechat.presentation.screen.MainScreen
-import com.cbgm.securechat.resources.Res
-import com.cbgm.securechat.resources.base_share_contact
+import com.cbgm.securechat.presentation.MainRoute
 import com.cbgm.securechat.startup.presentation.StartupRoute
 import com.cbgm.securechat.startup.presentation.screen.component.SecureChatAppBackground
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 
 @Composable
 fun AppNavigation() {
@@ -51,8 +46,8 @@ fun AppNavigation() {
                 Modifier
                     .fillMaxSize()
                     .background(
-                        MaterialTheme.colorScheme.background,
-                    ),
+                        MaterialTheme.colorScheme.background
+                    )
         ) {
             composable<AppDestination.Licences>(
                 enterTransition = {
@@ -60,8 +55,8 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Left,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 },
                 exitTransition = {
@@ -69,10 +64,10 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Right,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
-                },
+                }
             ) {
                 LicensesRoute(onBack = { navController.popBackStack() })
             }
@@ -83,8 +78,8 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Left,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 },
                 exitTransition = {
@@ -92,10 +87,10 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Right,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
-                },
+                }
             ) {
                 DeveloperMenuRoute(onBack = { navController.popBackStack() })
             }
@@ -106,8 +101,8 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Left,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 },
                 exitTransition = {
@@ -115,17 +110,33 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Right,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
-                },
+                }
             ) { backStackEntry ->
                 val destination =
                     backStackEntry.toRoute<AppDestination.Disclaimer>()
 
                 DisclaimerRoute(
                     type = destination.type,
-                    onBack = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable<AppDestination.GroupConversation> { backStackEntry ->
+                val destination = backStackEntry.toRoute<AppDestination.GroupConversation>()
+                GroupChatRoute(
+                    conversationId = destination.conversationId,
+                    onClickHeader = {
+                        navController.navigate(
+                            AppDestination.Details(
+                                child = DetailsChild.GROUP,
+                                conversationId = destination.conversationId
+                            )
+                        )
+                    },
+                    onBack = { navController.popBackStack() }
                 )
             }
 
@@ -133,72 +144,50 @@ fun AppNavigation() {
                 ShareIdentityRoute(
                     onBack = {
                         navController.popBackStack()
-                    },
+                    }
                 )
             }
 
             composable<AppDestination.ImportContact> { backStackEntry ->
-                val scannedIdentity = backStackEntry.toRoute<AppDestination.ImportContact>()
+                val destination = backStackEntry.toRoute<AppDestination.ImportContact>()
+                val scannedIdentityFromScanner by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("scannedIdentity", null)
+                    .collectAsStateWithLifecycle()
+
+                var destinationScannedIdentity by remember(destination.scannedIdentity) {
+                    mutableStateOf(destination.scannedIdentity)
+                }
 
                 ImportIdentityRoute(
-                    scannedIdentity = scannedIdentity.scannedIdentity,
+                    contactId = destination.contactId,
+                    scannedIdentity = scannedIdentityFromScanner ?: destinationScannedIdentity,
+                    onScannedIdentityConsumed = {
+                        backStackEntry.savedStateHandle.remove<String>("scannedIdentity")
+                        destinationScannedIdentity = null
+                    },
                     onScanQrCode = {
                         navController.navigate(AppDestination.ScanIdentity)
                     },
                     onBack = {
                         navController.popBackStack()
-                    },
-                )
-            }
-
-            composable<AppDestination.Contacts>(
-                enterTransition = {
-                    slideIntoContainer(
-                        towards = AnimatedContentTransitionScope.SlideDirection.Up,
-                        animationSpec =
-                            spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
-                    )
-                },
-                exitTransition = {
-                    slideOutOfContainer(
-                        towards = AnimatedContentTransitionScope.SlideDirection.Down,
-                        animationSpec =
-                            spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
-                    )
-                },
-            ) {
-                ContactsRoute(
-                    onBack = {
-                        navController.popBackStack()
-                    },
-                    onImportContact = {
-                        navController.navigate(AppDestination.ImportContact)
-                    },
-                    onContactClick = { contactId, contactName ->
-                        navController.navigate(
-                            AppDestination.Chat(
-                                contactId = contactId,
-                                contactName = contactName,
-                            ),
-                        )
-                    },
+                    }
                 )
             }
 
             composable<AppDestination.Main> {
-                MainScreen(
-                    onOpenChat = { contactId, contactName ->
-
-                        navController.navigate(
-                            AppDestination.Chat(
-                                contactId = contactId,
-                                contactName = contactName,
-                            ),
-                        )
+                MainRoute(
+                    onOpenChat = { conversationId, contactId, contactName, isGroup ->
+                        if (isGroup) {
+                            navController.navigate(AppDestination.GroupConversation(conversationId))
+                        } else {
+                            navController.navigate(
+                                AppDestination.Chat(
+                                    conversationId = conversationId,
+                                    contactId = contactId,
+                                    contactName = contactName
+                                )
+                            )
+                        }
                     },
                     onShareIdentity = {
                         navController.navigate(AppDestination.ShareIdentity)
@@ -206,15 +195,15 @@ fun AppNavigation() {
                     onNavigateToPrivacyPolicy = {
                         navController.navigate(
                             AppDestination.Disclaimer(
-                                type = DisclaimerType.PRIVACY_POLICY,
-                            ),
+                                type = DisclaimerType.PRIVACY_POLICY
+                            )
                         )
                     },
                     onNavigateToDataDisclaimer = {
                         navController.navigate(
                             AppDestination.Disclaimer(
-                                type = DisclaimerType.DATA_DISCLAIMER,
-                            ),
+                                type = DisclaimerType.DATA_DISCLAIMER
+                            )
                         )
                     },
                     onNavigateToLicenses = {
@@ -224,8 +213,8 @@ fun AppNavigation() {
                         navController.navigate(AppDestination.DeveloperMenu)
                     },
                     onImportContact = {
-                        navController.navigate(AppDestination.ImportContact)
-                    },
+                        navController.navigate(AppDestination.ImportContact())
+                    }
                 )
             }
 
@@ -235,8 +224,8 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Left,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
                 },
                 exitTransition = {
@@ -244,86 +233,154 @@ fun AppNavigation() {
                         towards = AnimatedContentTransitionScope.SlideDirection.Right,
                         animationSpec =
                             spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
-                },
+                }
             ) { backStackEntry ->
                 val destination = backStackEntry.toRoute<AppDestination.Chat>()
 
                 ChatRoute(
+                    conversationId = destination.conversationId,
                     contactId = destination.contactId,
                     contactName = destination.contactName,
                     onBack = {
                         navController.popBackStack(AppDestination.Main, false)
                     },
                     onClickHeader = {
-                        navController.navigate(AppDestination.ContactDetails(destination.contactId))
+                        navController.navigate(
+                            AppDestination.Details(
+                                child = DetailsChild.CONTACT,
+                                conversationId = destination.conversationId,
+                                contactId = destination.contactId
+                            )
+                        )
                     },
+                    onVerifyIdentity = {
+                        navController.navigate(
+                            AppDestination.Details(
+                                child = DetailsChild.CONTACT,
+                                conversationId = destination.conversationId,
+                                contactId = destination.contactId,
+                                openVerification = true
+                            )
+                        )
+                    },
+                    onShareIdentity = {
+                        navController.navigate(AppDestination.ShareIdentity)
+                    },
+                    onImportIdentity = {
+                        navController.navigate(
+                            AppDestination.ImportContact(contactId = destination.contactId)
+                        )
+                    }
                 )
             }
 
-            composable<AppDestination.ContactDetails> { backStackEntry ->
-                val destination = backStackEntry.toRoute<AppDestination.ContactDetails>()
-
-                val identityShareCodec = koinInject<IdentityShareCodec>()
-
-                var encodedContactToShare by remember { mutableStateOf("") }
-
-                val shareContact =
-                    rememberIdentityShareLauncher(
-                        encodedIdentity = encodedContactToShare,
-                        shareTitle = stringResource(Res.string.base_share_contact),
+            composable<AppDestination.Details>(
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
                     )
-
-                var shouldLaunchShare by remember { mutableStateOf(false) }
-
-                LaunchedEffect(encodedContactToShare, shouldLaunchShare) {
-                    if (
-                        shouldLaunchShare &&
-                        encodedContactToShare.isNotBlank()
-                    ) {
-                        shareContact()
-                        shouldLaunchShare = false
-                    }
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                    )
+                },
+                popEnterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                    )
+                },
+                popExitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec =
+                            spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                    )
                 }
+            ) { backStackEntry ->
+                val destination = backStackEntry.toRoute<AppDestination.Details>()
+                val verificationRevision by
+                    backStackEntry.savedStateHandle
+                        .getStateFlow("verificationRevision", 0)
+                        .collectAsStateWithLifecycle()
+                val detailsTarget =
+                    when (destination.child) {
+                        DetailsChild.CONTACT ->
+                            DetailsTarget.Contact(
+                                contactId = requireNotNull(destination.contactId)
+                            )
 
-                ContactDetailsRoute(
-                    contactId = destination.contactId,
+                        DetailsChild.GROUP ->
+                            DetailsTarget.Group(
+                                conversationId = destination.conversationId
+                            )
+                    }
+
+                DetailsRoute(
+                    target = detailsTarget,
+                    openVerification = destination.openVerification,
+                    verificationRevision = verificationRevision,
                     onBack = {
                         navController.popBackStack()
                     },
-                    onShareContact = { contact ->
-                        val identity = contact.secureChatIdentity
-
-                        val phoneNumber =
-                            contact
-                                .preferredPhoneNumber
-                                ?.value
-                                ?.takeIf { value ->
-                                    value.isNotBlank()
-                                }
-
-                        if (identity != null && phoneNumber != null) {
-                            identityShareCodec
-                                .encode(
-                                    payload =
-                                        SharedIdentityPayload(
-                                            version = 1,
-                                            encryptionPublicKey = identity.encryptionPublicKey,
-                                            signingPublicKey = identity.signingPublicKey,
-                                            contactDetails =
-                                                SharedContactDetails(
-                                                    displayName = contact.displayName,
-                                                    phoneNumber = phoneNumber,
-                                                ),
-                                        ),
-                                ).onSuccess { encodedIdentity ->
-                                    encodedContactToShare = encodedIdentity
-                                    shouldLaunchShare = true
-                                }
-                        }
+                    onScanContactQr = { contactId ->
+                        navController.navigate(
+                            AppDestination.VerifyIdentityQr(contactId = contactId)
+                        )
                     },
+                    onScanGroupMemberQr = { groupId, contactId ->
+                        navController.navigate(
+                            AppDestination.VerifyIdentityQr(
+                                contactId = contactId,
+                                groupId = groupId
+                            )
+                        )
+                    }
+                )
+            }
+
+            composable<AppDestination.VerifyIdentityQr> { backStackEntry ->
+                val destination = backStackEntry.toRoute<AppDestination.VerifyIdentityQr>()
+
+                VerifyIdentityQrRoute(
+                    contactId = destination.contactId,
+                    groupId = destination.groupId,
+                    onVerified = {
+                        if (destination.groupId == null) {
+                            val previousEntry = navController.previousBackStackEntry
+                            val previousRevision =
+                                previousEntry
+                                    ?.savedStateHandle
+                                    ?.get<Int>("verificationRevision")
+                                    ?: 0
+
+                            previousEntry
+                                ?.savedStateHandle
+                                ?.set("verificationRevision", previousRevision + 1)
+                        }
+
+                        navController.popBackStack()
+                    },
+                    onBack = {
+                        navController.popBackStack()
+                    }
                 )
             }
 
@@ -339,14 +396,14 @@ fun AppNavigation() {
                             ?.savedStateHandle
                             ?.set(
                                 "scannedIdentity",
-                                encodedIdentity,
+                                encodedIdentity
                             )
 
                         navController.popBackStack()
                     },
                     onBack = {
                         navController.popBackStack()
-                    },
+                    }
                 )
             }
 
@@ -358,9 +415,11 @@ fun AppNavigation() {
                                 inclusive = true
                             }
                         }
-                    },
+                    }
                 )
             }
         }
+
+        ContactInvitationRoute()
     }
 }

@@ -9,7 +9,7 @@ val startupModule =
     module {
 
         single {
-            AppInitializer(identityStartupManager = get())
+            AppInitializer(getIdentityStatus = get())
         }
 
         viewModel {

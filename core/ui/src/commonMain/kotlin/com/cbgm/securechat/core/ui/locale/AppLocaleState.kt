@@ -8,7 +8,7 @@ var currentAppLanguage by mutableStateOf(AppLanguage.ENGLISH)
     private set
 
 fun setAppLanguage(
-    language: AppLanguage,
+    language: AppLanguage
 ) {
     currentAppLanguage = language
 }

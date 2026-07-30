@@ -18,7 +18,7 @@ private val ColorScheme =
         surface = Colors.Surface,
         primaryContainer = Colors.PrimaryContainer,
         surfaceVariant = Colors.SurfaceVariant,
-        background = Colors.Background,
+        background = Colors.Background
     )
 
 @Composable
@@ -27,6 +27,6 @@ fun SecureChatTheme(content: @Composable () -> Unit) {
         colorScheme = ColorScheme,
         typography = Typography,
         shapes = Shapes,
-        content = content,
+        content = content
     )
 }

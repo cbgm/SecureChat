@@ -6,7 +6,7 @@ import com.cbgm.securechat.feature.settings.domain.usecase.InitAppLanguageUseCas
 import kotlinx.coroutines.launch
 
 class AppViewModel(
-    private val initAppLanguageUseCase: InitAppLanguageUseCase,
+    private val initAppLanguageUseCase: InitAppLanguageUseCase
 ) : ViewModel() {
     init {
         viewModelScope.launch {

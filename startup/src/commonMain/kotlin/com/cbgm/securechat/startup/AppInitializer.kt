@@ -1,17 +1,17 @@
 package com.cbgm.securechat.startup
 
-import com.cbgm.securechat.feature.identity.startup.IdentityStartupManager
-import com.cbgm.securechat.feature.identity.startup.IdentityStartupResult
+import com.cbgm.securechat.feature.identity.domain.model.IdentityStatus
+import com.cbgm.securechat.feature.identity.domain.usecase.GetIdentityStatus
 
 class AppInitializer(
-    private val identityStartupManager: IdentityStartupManager,
+    private val getIdentityStatus: GetIdentityStatus
 ) {
     suspend fun initialize(): Result<AppInitializationResult> =
         runCatching {
-            val identityResult = identityStartupManager.ensureIdentityExists().getOrThrow()
+            val identityStatus = getIdentityStatus().getOrThrow()
 
             AppInitializationResult(
-                identityReady = identityResult == IdentityStartupResult.ALREADY_EXISTS,
+                identityReady = identityStatus == IdentityStatus.READY
             )
         }
 }

@@ -17,7 +17,7 @@ class InMemoryPendingEnvelopeStore : PendingEnvelopeStore {
              */
             envelopesById.putIfAbsent(
                 envelope.envelopeId,
-                envelope,
+                envelope
             )
         }
     }
@@ -32,13 +32,13 @@ class InMemoryPendingEnvelopeStore : PendingEnvelopeStore {
                         it.createdAtEpochMilliseconds
                     }.thenBy {
                         it.envelopeId
-                    },
+                    }
                 )
         }
 
     override suspend fun remove(
         recipientId: String,
-        envelopeId: String,
+        envelopeId: String
     ) {
         mutex.withLock {
             val envelope = envelopesById[envelopeId]

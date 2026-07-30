@@ -1,13 +1,16 @@
 package com.cbgm.securechat.core.protocol.handler
 
+import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 
 class DefaultProtocolPacketHandler(
-    private val handlers: List<TypedProtocolPacketHandler>,
+    private val handlers: List<TypedProtocolPacketHandler>
 ) : ProtocolPacketHandler {
+    private val logger = SecureChatLog.withTag("DefaultProtocolPacketHandler")
+
     override suspend fun handle(
         context: IncomingPacketContext,
-        packet: SecureChatPacket,
+        packet: SecureChatPacket
     ): Result<Unit> =
         runCatching {
             val matchingHandler =
@@ -15,32 +18,29 @@ class DefaultProtocolPacketHandler(
                     handler.canHandle(packet = packet)
                 } ?: error("No handler registered for " + packet::class.simpleName)
 
-            println(
+            logger.debug {
                 "Handling protocol packet: " +
                     "type=${packet::class.simpleName}, " +
                     "packetId=${packet.packetId}, " +
-                    "contactId=${context.contactId}",
-            )
+                    "contactId=${context.contactId}"
+            }
 
             matchingHandler
                 .handle(
                     context = context,
-                    packet = packet,
+                    packet = packet
                 ).getOrThrow()
 
-            println(
+            logger.debug {
                 "Protocol packet handled successfully: " +
                     "type=${packet::class.simpleName}, " +
-                    "packetId=${packet.packetId}",
-            )
+                    "packetId=${packet.packetId}"
+            }
         }.onFailure { error ->
-            println(
+            logger.error(error) {
                 "Protocol packet handling failed: " +
                     "type=${packet::class.simpleName}, " +
-                    "packetId=${packet.packetId}, " +
-                    "error=${error.message}",
-            )
-
-            error.printStackTrace()
+                    "packetId=${packet.packetId}"
+            }
         }
 }

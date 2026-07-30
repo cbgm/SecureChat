@@ -27,25 +27,25 @@ import org.jetbrains.compose.resources.stringResource
 fun WelcomePage(onNext: () -> Unit) {
     Column(
         Modifier.padding(MaterialTheme.spacing.medium),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = stringResource(Res.string.feature_onboarding_welcome_to_securechat),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onPrimary,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.SemiBold
         )
         Spacer(Modifier.height(MaterialTheme.spacing.small))
         Text(
             text = stringResource(Res.string.feature_onboarding_welcome_description),
             color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .74f),
             style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
         SecureChatApprovalButton(
             onClick = onNext,
-            text = stringResource(Res.string.base_continue_action),
+            text = stringResource(Res.string.base_continue_action)
         )
     }
 }

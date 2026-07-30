@@ -152,6 +152,17 @@ The relay never performs encryption or decryption.
 
 Only the communicating devices possess the keys required to decrypt message contents.
 
+Direct packets use recipient sealed-box transport. Group messages use one XChaCha20-Poly1305 key
+per epoch plus an Ed25519 signature from the individual sender. See
+[Encryption](encryption.md#secure-group-messages) for the concrete classes and trust boundaries.
+
+A group can be created from ordinary contacts even when their secure identities are not stored
+yet. The recipient explicitly accepts a signed `GroupInvitePacket`; its signed
+`GroupJoinRequestPacket` then proves possession of the exchanged public keys. After welcome-key
+installation, `GroupReadyAcknowledgementPacket` prevents the creator from releasing queued content
+too early. Automatically discovered identities remain unverified until users compare safety
+numbers.
+
 ---
 
 # Transport

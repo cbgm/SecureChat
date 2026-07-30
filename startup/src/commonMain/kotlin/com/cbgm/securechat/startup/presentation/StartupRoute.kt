@@ -15,14 +15,13 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun StartupRoute(
     onStartupComplete: () -> Unit,
-    startupViewModel: StartupViewModel = koinViewModel(),
+    startupViewModel: StartupViewModel = koinViewModel()
 ) {
     val startupUiState by startupViewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(startupUiState) {
         if (startupUiState == StartupUiState.Ready) {
             delay(1000)
-            // here goes loading of data
             onStartupComplete()
         }
     }
@@ -38,7 +37,7 @@ fun StartupRoute(
                 onRequestPhoneNumberHint = {},
                 onPhoneNumberChanged = {},
                 onCreateIdentity = {},
-                onRetry = startupViewModel::retry,
+                onRetry = startupViewModel::retry
             )
         }
     }

@@ -10,7 +10,7 @@ class SafetyNumberGeneratorTest {
     private val generator =
         SafetyNumberGenerator(
             cryptoHash =
-                DefaultCryptoHash(),
+                DefaultCryptoHash()
         )
 
     @Test
@@ -22,15 +22,15 @@ class SafetyNumberGeneratorTest {
                         1,
                         2,
                         3,
-                        4,
+                        4
                     ),
                 encryptionPublicKey =
                     byteArrayOf(
                         5,
                         6,
                         7,
-                        8,
-                    ),
+                        8
+                    )
             )
 
         val bob =
@@ -40,36 +40,36 @@ class SafetyNumberGeneratorTest {
                         11,
                         12,
                         13,
-                        14,
+                        14
                     ),
                 encryptionPublicKey =
                     byteArrayOf(
                         15,
                         16,
                         17,
-                        18,
-                    ),
+                        18
+                    )
             )
 
         val aliceView =
             generator
                 .generate(
                     firstIdentity = alice,
-                    secondIdentity = bob,
+                    secondIdentity = bob
                 ).getOrThrow()
 
         val bobView =
             generator
                 .generate(
                     firstIdentity = bob,
-                    secondIdentity = alice,
+                    secondIdentity = alice
                 ).getOrThrow()
 
         assertEquals(
             expected =
                 aliceView.groups,
             actual =
-                bobView.groups,
+                bobView.groups
         )
     }
 
@@ -81,14 +81,14 @@ class SafetyNumberGeneratorTest {
                     byteArrayOf(
                         1,
                         2,
-                        3,
+                        3
                     ),
                 encryptionPublicKey =
                     byteArrayOf(
                         4,
                         5,
-                        6,
-                    ),
+                        6
+                    )
             )
 
         val originalRemote =
@@ -97,14 +97,14 @@ class SafetyNumberGeneratorTest {
                     byteArrayOf(
                         7,
                         8,
-                        9,
+                        9
                     ),
                 encryptionPublicKey =
                     byteArrayOf(
                         10,
                         11,
-                        12,
-                    ),
+                        12
+                    )
             )
 
         val changedRemote =
@@ -116,8 +116,8 @@ class SafetyNumberGeneratorTest {
                     byteArrayOf(
                         10,
                         11,
-                        13,
-                    ),
+                        13
+                    )
             )
 
         val originalNumber =
@@ -126,7 +126,7 @@ class SafetyNumberGeneratorTest {
                     firstIdentity =
                     local,
                     secondIdentity =
-                    originalRemote,
+                    originalRemote
                 ).getOrThrow()
 
         val changedNumber =
@@ -135,14 +135,14 @@ class SafetyNumberGeneratorTest {
                     firstIdentity =
                     local,
                     secondIdentity =
-                    changedRemote,
+                    changedRemote
                 ).getOrThrow()
 
         assertNotEquals(
             illegal =
                 originalNumber.groups,
             actual =
-                changedNumber.groups,
+                changedNumber.groups
         )
     }
 
@@ -153,7 +153,7 @@ class SafetyNumberGeneratorTest {
                 signingPublicKey =
                     byteArrayOf(1),
                 encryptionPublicKey =
-                    byteArrayOf(2),
+                    byteArrayOf(2)
             )
 
         val originalRemote =
@@ -161,7 +161,7 @@ class SafetyNumberGeneratorTest {
                 signingPublicKey =
                     byteArrayOf(3),
                 encryptionPublicKey =
-                    byteArrayOf(4),
+                    byteArrayOf(4)
             )
 
         val changedRemote =
@@ -169,7 +169,7 @@ class SafetyNumberGeneratorTest {
                 signingPublicKey =
                     byteArrayOf(5),
                 encryptionPublicKey =
-                    byteArrayOf(4),
+                    byteArrayOf(4)
             )
 
         val originalNumber =
@@ -178,7 +178,7 @@ class SafetyNumberGeneratorTest {
                     firstIdentity =
                     local,
                     secondIdentity =
-                    originalRemote,
+                    originalRemote
                 ).getOrThrow()
 
         val changedNumber =
@@ -187,14 +187,14 @@ class SafetyNumberGeneratorTest {
                     firstIdentity =
                     local,
                     secondIdentity =
-                    changedRemote,
+                    changedRemote
                 ).getOrThrow()
 
         assertNotEquals(
             illegal =
                 originalNumber.groups,
             actual =
-                changedNumber.groups,
+                changedNumber.groups
         )
     }
 
@@ -205,7 +205,7 @@ class SafetyNumberGeneratorTest {
                 signingPublicKey =
                     byteArrayOf(1),
                 encryptionPublicKey =
-                    byteArrayOf(2),
+                    byteArrayOf(2)
             )
 
         val second =
@@ -213,20 +213,20 @@ class SafetyNumberGeneratorTest {
                 signingPublicKey =
                     byteArrayOf(3),
                 encryptionPublicKey =
-                    byteArrayOf(4),
+                    byteArrayOf(4)
             )
 
         val safetyNumber =
             generator
                 .generate(
                     firstIdentity = first,
-                    secondIdentity = second,
+                    secondIdentity = second
                 ).getOrThrow()
 
         assertEquals(
             expected = 16,
             actual =
-                safetyNumber.groups.size,
+                safetyNumber.groups.size
         )
 
         safetyNumber.groups
@@ -234,7 +234,7 @@ class SafetyNumberGeneratorTest {
                 assertEquals(
                     expected = 5,
                     actual =
-                        group.length,
+                        group.length
                 )
             }
     }

@@ -4,38 +4,24 @@ import com.cbgm.securechat.core.protocol.handler.IncomingPacketContext
 import com.cbgm.securechat.core.protocol.handler.TypedProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.packet.ReadReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
-import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
+import com.cbgm.securechat.feature.chats.data.delivery.MessageDeliveryStateCoordinator
+import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryEvent
 
 class ReadReceiptPacketHandler(
-    private val messageDeliveryStatusDao: MessageDeliveryStatusDao,
+    private val deliveryStateCoordinator: MessageDeliveryStateCoordinator
 ) : TypedProtocolPacketHandler {
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is ReadReceiptPacket
 
     override suspend fun handle(
         context: IncomingPacketContext,
-        packet: SecureChatPacket,
+        packet: SecureChatPacket
     ): Result<Unit> =
         runCatching {
-            val receipt =
-                packet as? ReadReceiptPacket
-                    ?: error(
-                        "ReadReceiptPacketHandler received an incompatible packet",
-                    )
-
-            val updatedRows =
-                messageDeliveryStatusDao
-                    .markOutgoingMessageRead(
-                        messageId =
-                            receipt.messageId,
-                        contactId =
-                            context.contactId,
-                    )
-
-            println(
-                "Read receipt handled: " +
-                    "messageId=${receipt.messageId}, " +
-                    "contactId=${context.contactId}, " +
-                    "updatedRows=$updatedRows",
+            val receipt = packet as? ReadReceiptPacket ?: error("ReadReceiptPacketHandler received an incompatible packet")
+            deliveryStateCoordinator.applyReceiptEvent(
+                messageId = receipt.messageId,
+                contactId = context.contactId,
+                event = MessageDeliveryEvent.READ_CONFIRMED
             )
         }
 }

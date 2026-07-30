@@ -15,7 +15,7 @@ class KotlinxPacketCodecTest {
     private val codec =
         KotlinxPacketCodec(
             json =
-                createProtocolJson(),
+                createProtocolJson()
         )
 
     @Test
@@ -29,31 +29,31 @@ class KotlinxPacketCodecTest {
                 sentAtEpochMilliseconds =
                 123_456L,
                 text =
-                    "Hello",
+                    "Hello"
             )
 
         val encoded =
             codec
                 .encode(
-                    packet = original,
+                    packet = original
                 ).getOrThrow()
 
         val decoded =
             codec
                 .decode(
-                    encodedPacket = encoded,
+                    encodedPacket = encoded
                 ).getOrThrow()
 
         val packet =
             assertIs<ChatMessagePacket>(
-                decoded,
+                decoded
             )
 
         assertEquals(
             expected =
             original,
             actual =
-            packet,
+            packet
         )
     }
 
@@ -69,14 +69,14 @@ class KotlinxPacketCodecTest {
                     byteArrayOf(
                         1,
                         2,
-                        3,
+                        3
                     ),
                 signingPublicKey =
                     byteArrayOf(
                         4,
                         5,
-                        6,
-                    ),
+                        6
+                    )
             )
 
         val decoded =
@@ -85,41 +85,41 @@ class KotlinxPacketCodecTest {
                     encodedPacket =
                         codec
                             .encode(
-                                packet = original,
-                            ).getOrThrow(),
+                                packet = original
+                            ).getOrThrow()
                 ).getOrThrow()
 
         val packet =
             assertIs<IdentityPacket>(
-                decoded,
+                decoded
             )
 
         assertEquals(
             expected =
                 original.packetId,
             actual =
-                packet.packetId,
+                packet.packetId
         )
 
         assertEquals(
             expected =
                 original.displayName,
             actual =
-                packet.displayName,
+                packet.displayName
         )
 
         assertContentEquals(
             expected =
                 original.encryptionPublicKey,
             actual =
-                packet.encryptionPublicKey,
+                packet.encryptionPublicKey
         )
 
         assertContentEquals(
             expected =
                 original.signingPublicKey,
             actual =
-                packet.signingPublicKey,
+                packet.signingPublicKey
         )
     }
 
@@ -132,29 +132,29 @@ class KotlinxPacketCodecTest {
                 messageId =
                     "message-1",
                 deliveredAtEpochMilliseconds =
-                123_456L,
+                123_456L
             )
 
         val encoded =
             codec
                 .encode(
-                    packet = original,
+                    packet = original
                 ).getOrThrow()
 
         val decoded =
             codec
                 .decode(
-                    encodedPacket = encoded,
+                    encodedPacket = encoded
                 ).getOrThrow()
 
         val receipt =
             assertIs<DeliveryReceiptPacket>(
-                decoded,
+                decoded
             )
 
         assertEquals(
             expected = original,
-            actual = receipt,
+            actual = receipt
         )
     }
 
@@ -169,62 +169,62 @@ class KotlinxPacketCodecTest {
                         1,
                         2,
                         3,
-                        4,
+                        4
                     ),
                 acknowledgedEncryptionPublicKey =
                     byteArrayOf(
                         5,
                         6,
                         7,
-                        8,
+                        8
                     ),
                 acknowledgedSigningPublicKey =
                     byteArrayOf(
                         9,
                         10,
                         11,
-                        12,
+                        12
                     ),
                 signature =
                     byteArrayOf(
                         13,
                         14,
                         15,
-                        16,
-                    ),
+                        16
+                    )
             )
 
         val encoded =
             codec
                 .encode(
-                    packet = original,
+                    packet = original
                 ).getOrThrow()
 
         val decoded =
             codec
                 .decode(
-                    encodedPacket = encoded,
+                    encodedPacket = encoded
                 ).getOrThrow()
 
         val acknowledgement =
             assertIs<
-                IdentityAcknowledgementPacket,
+                IdentityAcknowledgementPacket
             >(
-                decoded,
+                decoded
             )
 
         assertEquals(
             expected =
                 original.packetId,
             actual =
-                acknowledgement.packetId,
+                acknowledgement.packetId
         )
 
         assertEquals(
             expected =
                 original.version,
             actual =
-                acknowledgement.version,
+                acknowledgement.version
         )
 
         assertContentEquals(
@@ -232,7 +232,7 @@ class KotlinxPacketCodecTest {
                 original.senderSigningPublicKey,
             actual =
                 acknowledgement
-                    .senderSigningPublicKey,
+                    .senderSigningPublicKey
         )
 
         assertContentEquals(
@@ -241,7 +241,7 @@ class KotlinxPacketCodecTest {
                     .acknowledgedEncryptionPublicKey,
             actual =
                 acknowledgement
-                    .acknowledgedEncryptionPublicKey,
+                    .acknowledgedEncryptionPublicKey
         )
 
         assertContentEquals(
@@ -250,14 +250,14 @@ class KotlinxPacketCodecTest {
                     .acknowledgedSigningPublicKey,
             actual =
                 acknowledgement
-                    .acknowledgedSigningPublicKey,
+                    .acknowledgedSigningPublicKey
         )
 
         assertContentEquals(
             expected =
                 original.signature,
             actual =
-                acknowledgement.signature,
+                acknowledgement.signature
         )
     }
 
@@ -270,29 +270,29 @@ class KotlinxPacketCodecTest {
                 messageId =
                     "message-1",
                 readAtEpochMilliseconds =
-                123_456L,
+                123_456L
             )
 
         val encoded =
             codec
                 .encode(
-                    packet = original,
+                    packet = original
                 ).getOrThrow()
 
         val decoded =
             codec
                 .decode(
-                    encodedPacket = encoded,
+                    encodedPacket = encoded
                 ).getOrThrow()
 
         val receipt =
             assertIs<ReadReceiptPacket>(
-                decoded,
+                decoded
             )
 
         assertEquals(
             expected = original,
-            actual = receipt,
+            actual = receipt
         )
     }
 
@@ -307,19 +307,19 @@ class KotlinxPacketCodecTest {
                 sentAtEpochMilliseconds =
                 1L,
                 text =
-                    "Hello",
+                    "Hello"
             )
 
         val encoded =
             codec
                 .encode(
-                    packet = packet,
+                    packet = packet
                 ).getOrThrow()
                 .decodeToString()
 
         assertTrue {
             encoded.contains(
-                "\"packetType\":\"chat_message\"",
+                "\"packetType\":\"chat_message\""
             )
         }
     }
@@ -330,11 +330,11 @@ class KotlinxPacketCodecTest {
             codec.decode(
                 encodedPacket =
                     "not-json"
-                        .encodeToByteArray(),
+                        .encodeToByteArray()
             )
 
         assertTrue(
-            result.isFailure,
+            result.isFailure
         )
     }
 }

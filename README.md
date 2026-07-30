@@ -31,18 +31,21 @@ The project follows a feature-based **Clean Architecture** with centralized Grad
 # Project Structure
 
 ```text
-androidApp/        Android application
-iosApp/            iOS application
-
-core/              Shared reusable libraries
-feature/           Feature modules
-navigation/        Navigation layer
-data/              Database & repositories
-relay/             Relay server
-
-build-logic/       Convention plugins
-quality/           Custom Detekt rules
-docs/              Project documentation
+androidApp/          Android application and runtime startup
+shared/              Shared Compose application shell
+startup/             Startup UI and initialization checks
+navigation/          Application navigation
+core/                Shared protocol, crypto, UI, and utilities
+data/database/       Room database and persistent protocol outbox
+feature/chats/       Conversations, messages, receipts, and chat UI
+feature/contacts/    Contacts and remote identity exchange
+feature/identity/    Local identity and identity-sharing UI
+feature/messaging/   Send/receive application orchestration
+feature/transport/   Relay addressing, WebSocket, and wire transport
+relay/               Standalone Ktor relay server
+build-logic/         Convention and architecture plugins
+quality/             Custom Detekt rules
+docs/                MkDocs engineering handbook
 ```
 
 ---
@@ -52,6 +55,10 @@ docs/              Project documentation
 ## Main Documentation
 
 - 📘 [Documentation Index](docs/index.md)
+- 🧭 [Architecture Overview](docs/architecture/overview.md)
+- 🧩 [Messaging Boundary](docs/architecture/messaging-boundary.md)
+- ✉️ [Conversation, Messaging, and Delivery Flow](docs/features/message-transport-flow.md)
+- 🪵 [Logging](docs/development/logging.md)
 
 ## Generated Documentation
 
@@ -59,10 +66,11 @@ Generated automatically by the architecture tooling.
 
 - 🏗️ [Architecture Overview](docs/generated/architecture.md)
 - 📦 [Module Documentation](docs/generated/modules.md)
-- 🔗 [Dependency Matrix](docs/generated/dependencies.md)
+- 🔗 [Dependency Matrix](docs/generated/dependency-matrix.md)
 - 📊 [Project Statistics](docs/generated/statistics.md)
-- 📈 `docs/generated/module-graph.mmd`
-- 🗂️ `docs/generated/architecture.json`
+- 📈 [Mermaid Module Graph](docs/generated/architecture.mmd)
+- 🗂️ [Dependency JSON](docs/generated/dependencies.json)
+- 🗂️ [Module JSON](docs/generated/modules.json)
 
 ---
 
@@ -86,7 +94,7 @@ Run once after cloning:
 
 # Code Quality
 
-Automatically formats source code and runs all quality tools.
+Run the repository's local quality workflow:
 
 ```bash
 ./gradlew quality
@@ -163,6 +171,7 @@ in Xcode and run the application.
 - Koin
 - Room
 - Ktor
+- Kermit
 - LibSodium
 - Gradle Convention Plugins
 - Detekt
@@ -184,6 +193,10 @@ SecureChat follows a modular architecture consisting of:
 - Feature-based Clean Architecture
 
 The generated architecture documentation is considered the source of truth for the project's dependency graph.
+
+The hand-written architecture pages explain intent and runtime behavior. If they disagree with
+`docs/generated/`, first verify the current Gradle configuration and then update the hand-written
+page. Never edit generated files manually.
 
 ---
 

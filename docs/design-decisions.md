@@ -444,6 +444,36 @@ Every generated artifact derives from the same architecture model.
 
 ---
 
+# ADR-021
+
+## Project-Owned Multiplatform Logging
+
+### Decision
+
+Expose `SecureChatLogger` from `:core` and back it with Kermit for shared and application code.
+Keep the standalone relay on SLF4J with Logback.
+
+### Rationale
+
+Kermit provides platform-specific output for Kotlin Multiplatform targets. A project-owned facade
+keeps feature modules independent of the logging vendor and provides one place for future crash
+reporting or telemetry integration.
+
+The relay already runs in a JVM server environment where SLF4J is the standard boundary and
+Logback is configured.
+
+### Consequences
+
+- feature modules use `SecureChatLog.withTag(...)`;
+- Kermit remains an implementation dependency of `:core`;
+- relay logs participate in the existing server logging pipeline;
+- Detekt rejects raw console and stack-trace printing;
+- log messages must follow the project's privacy policy.
+
+See the [Logging guide](development/logging.md).
+
+---
+
 # Future ADRs
 
 Every significant architectural decision should be recorded here.

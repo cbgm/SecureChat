@@ -1,38 +1,52 @@
 package com.cbgm.securechat.feature.chats.domain.repository
 
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
+import com.cbgm.securechat.feature.chats.domain.model.GroupConversation
 import kotlinx.coroutines.flow.Flow
 
 interface ChatsRepository {
     fun observeConversations(): Flow<List<Conversation>>
 
-    fun observeConversation(contactId: String): Flow<Conversation?>
+    fun observeConversation(conversationId: String): Flow<Conversation?>
 
-    suspend fun createConversation(contactId: String)
+    suspend fun getOrCreateDirectConversation(contactId: String): String
+
+    suspend fun createGroupConversation(
+        title: String,
+        contactIds: Set<String>
+    ): String
+
+    suspend fun addGroupMembers(
+        conversationId: String,
+        contactIds: Set<String>
+    ): Result<Unit>
+
+    suspend fun removeGroupMember(
+        conversationId: String,
+        contactId: String
+    ): Result<Unit>
+
+    suspend fun leaveGroup(conversationId: String): Result<Unit>
+
+    suspend fun deleteConversation(conversationId: String): Result<Unit>
+
+    fun observeGroupConversation(conversationId: String): Flow<GroupConversation?>
+
+    suspend fun acceptGroupInvitation(conversationId: String): Result<Unit>
+
+    suspend fun declineGroupInvitation(conversationId: String): Result<Unit>
+
+    suspend fun sendGroupMessage(
+        conversationId: String,
+        text: String
+    ): Result<Unit>
 
     suspend fun sendMessage(
-        contactId: String,
-        text: String,
-    )
-
-    /**
-     * Stores one packet received from the transport layer.
-     *
-     * The local encryption key pair is supplied by the transport or
-     * identity integration layer.
-     */
-    suspend fun receiveMessage(
-        contactId: String,
-        encodedTransportPayload: String,
-        localEncryptionPublicKey: ByteArray,
-        localEncryptionPrivateKey: ByteArray,
+        conversationId: String,
+        text: String
     )
 
     suspend fun retryMessage(messageId: String): Result<Unit>
 
-    /**
-     * Marks all currently unread incoming messages in this conversation as
-     * read by queueing one deterministic ReadReceiptPacket per message.
-     */
-    suspend fun markConversationRead(contactId: String): Result<Unit>
+    suspend fun markConversationRead(conversationId: String): Result<Unit>
 }

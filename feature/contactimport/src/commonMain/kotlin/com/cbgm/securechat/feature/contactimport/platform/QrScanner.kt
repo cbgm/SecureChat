@@ -12,5 +12,5 @@ import androidx.compose.ui.Modifier
 @Composable
 expect fun QrScanner(
     onQrCodeScanned: (String) -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 )

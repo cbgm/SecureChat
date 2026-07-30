@@ -11,7 +11,7 @@ kotlin {
 
 application {
     mainClass.set(
-        "com.cbgm.securechat.relay.ApplicationKt",
+        "com.cbgm.securechat.relay.ApplicationKt"
     )
 }
 

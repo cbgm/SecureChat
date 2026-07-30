@@ -14,5 +14,5 @@ enum class ContactVerificationStatus {
      * The user verified the key fingerprint or exchanged the
      * identity through a trusted in-person process.
      */
-    VERIFIED,
+    VERIFIED
 }

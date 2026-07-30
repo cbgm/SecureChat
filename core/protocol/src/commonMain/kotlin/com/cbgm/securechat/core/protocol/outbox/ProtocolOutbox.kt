@@ -11,7 +11,7 @@ interface ProtocolOutbox {
      */
     suspend fun enqueue(
         contactId: String,
-        packet: SecureChatPacket,
+        packet: SecureChatPacket
     ): Result<ProtocolOutboxItem>
 
     fun observePending(): Flow<List<ProtocolOutboxItem>>
@@ -24,7 +24,7 @@ interface ProtocolOutbox {
 
     suspend fun markFailed(
         itemId: String,
-        errorMessage: String,
+        errorMessage: String
     ): Result<Unit>
 
     suspend fun retry(itemId: String): Result<Unit>

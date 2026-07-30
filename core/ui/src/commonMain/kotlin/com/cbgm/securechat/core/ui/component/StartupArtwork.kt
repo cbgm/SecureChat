@@ -27,7 +27,7 @@ fun StartupArtwork(modifier: Modifier = Modifier) {
         painter = painterResource(resource = Res.drawable.startup),
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = modifier,
+        modifier = modifier
     )
 }
 
@@ -49,9 +49,9 @@ fun PulsingLogo(modifier: Modifier = Modifier) {
         animationSpec =
             tween(
                 durationMillis = 700,
-                easing = FastOutSlowInEasing,
+                easing = FastOutSlowInEasing
             ),
-        label = "startupEntranceScale",
+        label = "startupEntranceScale"
     )
 
     val entranceAlpha by animateFloatAsState(
@@ -62,7 +62,7 @@ fun PulsingLogo(modifier: Modifier = Modifier) {
                 0f
             },
         animationSpec = tween(durationMillis = 600),
-        label = "startupEntranceAlpha",
+        label = "startupEntranceAlpha"
     )
 
     val infiniteTransition = rememberInfiniteTransition(label = "startupPulse")
@@ -76,11 +76,11 @@ fun PulsingLogo(modifier: Modifier = Modifier) {
                     animation =
                         tween(
                             durationMillis = 2_300,
-                            easing = FastOutSlowInEasing,
+                            easing = FastOutSlowInEasing
                         ),
-                    repeatMode = RepeatMode.Reverse,
+                    repeatMode = RepeatMode.Reverse
                 ),
-            label = "startupPulseScale",
+            label = "startupPulseScale"
         )
 
     StartupArtwork(
@@ -90,6 +90,6 @@ fun PulsingLogo(modifier: Modifier = Modifier) {
                     alpha = entranceAlpha
                     scaleX = entranceScale * pulseScale
                     scaleY = entranceScale * pulseScale
-                },
+                }
     )
 }

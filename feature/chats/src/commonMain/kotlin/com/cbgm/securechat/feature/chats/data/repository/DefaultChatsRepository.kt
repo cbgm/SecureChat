@@ -1,64 +1,185 @@
 package com.cbgm.securechat.feature.chats.data.repository
 
-import com.cbgm.securechat.core.crypto.transport.DecodedTransportMessage
-import com.cbgm.securechat.core.crypto.transport.IncomingTransportMessageDecoder
 import com.cbgm.securechat.core.crypto.transport.TransportEncryptionMode
-import com.cbgm.securechat.core.protocol.codec.PacketCodec
-import com.cbgm.securechat.core.protocol.handler.IncomingPacketContext
-import com.cbgm.securechat.core.protocol.handler.ProtocolPacketHandler
+import com.cbgm.securechat.core.id.IdGenerator
+import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.packet.ChatMessagePacket
 import com.cbgm.securechat.core.protocol.packet.ReadReceiptPacket
+import com.cbgm.securechat.core.protocol.phone.LocalPhoneNumberProvider
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
-import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
-import com.cbgm.securechat.data.database.entity.ConversationEntity
+import com.cbgm.securechat.data.database.dao.GroupInvitationDao
+import com.cbgm.securechat.data.database.dao.MessageRecipientStateDao
 import com.cbgm.securechat.data.database.entity.MessageEntity
+import com.cbgm.securechat.data.database.entity.MessageRecipientStateEntity
 import com.cbgm.securechat.data.database.model.ConversationSummary
 import com.cbgm.securechat.data.database.model.ConversationWithMessages
+import com.cbgm.securechat.feature.chats.data.conversation.DirectConversationStore
+import com.cbgm.securechat.feature.chats.data.delivery.MessageDeliveryStateCoordinator
+import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationCoordinator
+import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationStateMapper
+import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationStatus
+import com.cbgm.securechat.feature.chats.data.message.GroupMembershipMessageFactory
+import com.cbgm.securechat.feature.chats.data.message.GroupMessageSender
+import com.cbgm.securechat.feature.chats.data.security.GROUP_END_TO_END_ENCRYPTED_MODE
 import com.cbgm.securechat.feature.chats.domain.model.ChatMessage
+import com.cbgm.securechat.feature.chats.domain.model.ChatMessageType
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
+import com.cbgm.securechat.feature.chats.domain.model.GroupConversation
+import com.cbgm.securechat.feature.chats.domain.model.GroupConversationState
+import com.cbgm.securechat.feature.chats.domain.model.GroupMemberInvitationState
 import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
+import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryEvent
+import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryProgress
+import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStateMachine
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
 import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
-import com.cbgm.securechat.feature.contacts.domain.identity.IdentityExchangeStarter
+import com.cbgm.securechat.feature.contacts.domain.identity.IdentityInvitationService
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
-import kotlin.random.Random
 
 class DefaultChatsRepository(
     private val chatDao: ChatDao,
-    private val messageDeliveryStatusDao: MessageDeliveryStatusDao,
+    private val messageRecipientStateDao: MessageRecipientStateDao,
+    private val directConversationStore: DirectConversationStore,
+    private val deliveryStateCoordinator: MessageDeliveryStateCoordinator,
     private val getContact: GetContact,
-    private val identityExchangeStarter: IdentityExchangeStarter,
+    private val localPhoneNumberProvider: LocalPhoneNumberProvider,
     private val protocolOutbox: ProtocolOutbox,
-    private val incomingTransportMessageDecoder: IncomingTransportMessageDecoder,
-    private val packetCodec: PacketCodec,
-    private val protocolPacketHandler: ProtocolPacketHandler,
+    private val groupInvitationDao: GroupInvitationDao,
+    private val groupInvitationCoordinator: GroupInvitationCoordinator,
+    private val groupMessageSender: GroupMessageSender,
+    private val identityInvitationService: IdentityInvitationService
 ) : ChatsRepository {
+    private val logger = SecureChatLog.withTag("DefaultChatsRepository")
+
     override fun observeConversations(): Flow<List<Conversation>> =
-        chatDao.observeConversationSummaries().map { summaries ->
-            summaries.map { summary ->
-                summary.toDomain()
+        chatDao
+            .observeConversationSummaries(
+                localDeletionTransportMode =
+                    GroupMembershipMessageFactory.LOCAL_CONVERSATION_DELETED_TRANSPORT_MODE
+            ).map { summaries ->
+                summaries.map { summary ->
+                    summary.toDomain()
+                }
+            }
+
+    override fun observeConversation(conversationId: String): Flow<Conversation?> =
+        combine(
+            chatDao.observeConversationWithMessagesById(conversationId),
+            chatDao.observeConversationParticipants(conversationId),
+            messageRecipientStateDao.observeByConversationId(conversationId),
+            groupInvitationDao.observeByGroupId(conversationId)
+        ) { result, participants, recipientStates, invitations ->
+            val pendingParticipantCount =
+                invitations.count { invitation ->
+                    invitation.status.isPendingMembershipStatus()
+                }
+            val groupState =
+                GroupInvitationStateMapper.conversationState(
+                    invitations = invitations,
+                    hasLocalMembershipRemoval =
+                        result
+                            ?.messages
+                            .orEmpty()
+                            .any { message ->
+                                GroupMembershipMessageFactory.typeOf(message.transportMode) ==
+                                    ChatMessageType.LOCAL_GROUP_MEMBERSHIP_REMOVED ||
+                                    GroupMembershipMessageFactory.typeOf(message.transportMode) ==
+                                    ChatMessageType.LOCAL_GROUP_MEMBERSHIP_LEFT
+                            }
+                )
+            result?.toDomain(
+                participantContactIds = participants.map { it.contactId },
+                recipientStates = recipientStates,
+                pendingParticipantCount = pendingParticipantCount,
+                isGroupReady = groupState == GroupConversationState.READY,
+                groupState = groupState,
+                isIncomingGroupInvitation = GroupInvitationStateMapper.isIncoming(invitations),
+                groupMemberInvitationStates = GroupInvitationStateMapper.memberStates(invitations)
+            )
+        }
+
+    override suspend fun getOrCreateDirectConversation(contactId: String): String = directConversationStore.getOrCreate(contactId).id
+
+    override suspend fun createGroupConversation(
+        title: String,
+        contactIds: Set<String>
+    ): String = groupInvitationCoordinator.createGroup(title, contactIds).getOrThrow()
+
+    override suspend fun addGroupMembers(
+        conversationId: String,
+        contactIds: Set<String>
+    ): Result<Unit> = groupInvitationCoordinator.addMembers(conversationId, contactIds)
+
+    override suspend fun removeGroupMember(
+        conversationId: String,
+        contactId: String
+    ): Result<Unit> = groupInvitationCoordinator.removeMember(conversationId, contactId)
+
+    override suspend fun leaveGroup(conversationId: String): Result<Unit> = groupInvitationCoordinator.leaveGroup(conversationId)
+
+    override suspend fun deleteConversation(conversationId: String): Result<Unit> =
+        runCatching {
+            val conversation =
+                chatDao.findConversationById(conversationId)
+                    ?: return@runCatching
+            if (conversation.type == GROUP_CONVERSATION_TYPE) {
+                groupInvitationCoordinator.deleteGroupConversation(conversationId).getOrThrow()
+            } else {
+                val contactId = requireNotNull(conversation.contactId) { "Direct conversation has no contact" }
+                identityInvitationService
+                    .revokeDirectChatAuthorization(contactId)
+                    .getOrThrow()
+                chatDao.deleteConversation(conversationId)
             }
         }
 
-    override fun observeConversation(contactId: String): Flow<Conversation?> =
-        chatDao.observeConversationByContactId(contactId = contactId).map { result ->
-            result?.toDomain()
+    override fun observeGroupConversation(conversationId: String): Flow<GroupConversation?> =
+        combine(
+            chatDao.observeConversationById(conversationId),
+            chatDao.observeConversationParticipants(conversationId),
+            groupInvitationDao.observeByGroupId(conversationId)
+        ) { conversation, participants, invitations ->
+            if (conversation == null || conversation.type != GROUP_CONVERSATION_TYPE) {
+                null
+            } else {
+                GroupConversation(
+                    id = conversation.id,
+                    title = conversation.title.orEmpty(),
+                    participantContactIds = participants.map { it.contactId },
+                    pendingParticipantContactIds =
+                        invitations
+                            .filter { invitation ->
+                                invitation.status.isPendingMembershipStatus()
+                            }.map { it.contactId }
+                )
+            }
         }
 
-    override suspend fun createConversation(contactId: String) {
-        getOrCreateConversation(contactId = contactId)
-    }
+    override suspend fun acceptGroupInvitation(conversationId: String): Result<Unit> = groupInvitationCoordinator.acceptInvitation(conversationId)
+
+    override suspend fun declineGroupInvitation(conversationId: String): Result<Unit> = groupInvitationCoordinator.declineInvitation(conversationId)
+
+    override suspend fun sendGroupMessage(
+        conversationId: String,
+        text: String
+    ): Result<Unit> =
+        groupMessageSender.queueOrSend(
+            conversationId = conversationId,
+            text = text,
+            invitations = groupInvitationDao.findByGroupId(conversationId)
+        )
 
     override suspend fun sendMessage(
-        contactId: String,
-        text: String,
+        conversationId: String,
+        text: String
     ) {
         val normalizedText = text.trim()
 
@@ -66,127 +187,148 @@ class DefaultChatsRepository(
             return
         }
 
-        val contact =
-            getContact(contactId = contactId).getOrThrow() ?: error("Contact was not found")
-
-        /*
-         * For an existing ONE_WAY contact, make sure IdentityPacket is
-         * queued before the chat packet.
-         *
-         * For phone-book-only contacts, this is a harmless no-op.
-         *
-         * For MUTUAL contacts, this is also a no-op.
-         */
-        identityExchangeStarter.ensureStarted(contactId = contactId).getOrThrow()
-
-        val conversation = getOrCreateConversation(contactId = contactId)
+        val conversation =
+            chatDao.findConversationById(conversationId)
+                ?: error("Conversation was not found")
+        check(conversation.type == DIRECT_CONVERSATION_TYPE) { "Conversation is not direct" }
+        val contactId = requireNotNull(conversation.contactId) { "Direct conversation has no contact" }
+        identityInvitationService
+            .requireDirectChatAuthorization(contactId)
+            .getOrThrow()
+        val contact = getContact(contactId).getOrThrow() ?: error("Contact was not found")
 
         val now = SystemClock.nowEpochMilliseconds()
-
-        val messageId = createId(prefix = "message")
+        val messageId = IdGenerator.generate(prefix = "message")
+        val localPhoneNumber = localPhoneNumberProvider.getLocalPhoneNumber().getOrThrow()
 
         val packet =
             ChatMessagePacket(
-                packetId = createId(prefix = "packet"),
+                packetId = IdGenerator.generate(prefix = "packet"),
                 messageId = messageId,
                 sentAtEpochMilliseconds = now,
                 text = normalizedText,
+                senderPhoneNumber = localPhoneNumber
             )
-
-        protocolOutbox
-            .enqueue(
-                contactId = contactId,
-                packet = packet,
-            ).getOrThrow()
 
         val plannedTransportMode = contact.plannedTransportMode()
 
         chatDao.upsertMessage(
             MessageEntity(
                 id = messageId,
-                conversationId = conversation.id,
+                conversationId = conversationId,
                 packetId = packet.packetId,
                 text = normalizedText,
                 transportPayload = null,
                 transportMode = plannedTransportMode.name,
                 contentStatus = MessageContentStatus.READABLE.name,
                 deliveryStatus = MessageDeliveryStatus.QUEUED.name,
+                senderContactId = null,
                 isMine = true,
-                createdAtEpochMilliseconds = now,
-            ),
+                createdAtEpochMilliseconds = now
+            )
         )
 
         chatDao.updateConversationTimestamp(
-            conversationId = conversation.id,
-            timestamp = now,
+            conversationId = conversationId,
+            timestamp = now
         )
+
+        val enqueueResult =
+            protocolOutbox.enqueue(
+                contactId = contactId,
+                packet = packet
+            )
+
+        if (enqueueResult.isFailure) {
+            val error = enqueueResult.exceptionOrNull()
+
+            deliveryStateCoordinator.applyPacketEvent(
+                packetId = packet.packetId,
+                event = MessageDeliveryEvent.SEND_FAILED,
+                errorMessage = error?.message
+            )
+
+            throw error ?: IllegalStateException("Message could not be queued")
+        }
     }
 
-    override suspend fun retryMessage(messageId: String): Result<Unit> =
+    override suspend fun retryMessage(
+        messageId: String
+    ): Result<Unit> =
         runCatching {
-            require(messageId.isNotBlank()) {
-                "Message ID must not be blank"
-            }
+            require(messageId.isNotBlank()) { "Message ID must not be blank" }
 
-            val message =
-                chatDao.findMessageById(messageId = messageId) ?: error("Message was not found")
-
-            check(message.isMine) {
-                "Only outgoing messages can be retried"
-            }
-
-            check(message.deliveryStatus == MessageDeliveryStatus.FAILED.name) {
+            val message = chatDao.findMessageById(messageId) ?: error("Message was not found")
+            check(message.isMine) { "Only outgoing messages can be retried" }
+            check(
+                MessageDeliveryStateMachine.canTransition(
+                    current = message.deliveryStatus.toMessageDeliveryStatus(),
+                    event = MessageDeliveryEvent.RETRY_REQUESTED
+                )
+            ) {
                 "Only failed messages can be retried"
             }
 
-            val packetId =
-                message.packetId?.takeIf { it.isNotBlank() }
-                    ?: error("Message has no linked protocol packet")
+            val conversation =
+                chatDao.findConversationById(message.conversationId)
+                    ?: error("Conversation was not found")
+            if (conversation.type == DIRECT_CONVERSATION_TYPE) {
+                val contactId = requireNotNull(conversation.contactId) { "Direct conversation has no contact" }
+                identityInvitationService
+                    .requireDirectChatAuthorization(contactId)
+                    .getOrThrow()
+            }
 
-            val outboxItem =
-                protocolOutbox.findByPacketId(packetId = packetId).getOrThrow()
-                    ?: error("Linked outbox item was not found")
-
-            protocolOutbox.retry(itemId = outboxItem.id).getOrThrow()
-
-            val updatedRows =
-                messageDeliveryStatusDao.updateDeliveryStatusByMessageId(
-                    messageId = messageId,
-                    deliveryStatus = MessageDeliveryStatus.QUEUED.name,
-                )
-
-            check(updatedRows == 1) {
-                "Message delivery status could not be updated"
+            val recipientStates = messageRecipientStateDao.findByMessageId(messageId)
+            if (recipientStates.isNotEmpty()) {
+                recipientStates
+                    .filter { it.deliveryStatus == MessageDeliveryStatus.FAILED.name }
+                    .forEach { state ->
+                        val packetId = state.packetId ?: error("Recipient state has no packet")
+                        val outboxItem =
+                            protocolOutbox.findByPacketId(packetId).getOrThrow()
+                                ?: error("Linked outbox item was not found")
+                        protocolOutbox.retry(outboxItem.id).getOrThrow()
+                        deliveryStateCoordinator.applyRetryEvent(
+                            messageId = messageId,
+                            contactId = state.contactId
+                        )
+                    }
+            } else {
+                val packetId =
+                    message.packetId?.takeIf(String::isNotBlank)
+                        ?: error("Message has no linked protocol packet")
+                val outboxItem =
+                    protocolOutbox.findByPacketId(packetId).getOrThrow()
+                        ?: error("Linked outbox item was not found")
+                protocolOutbox.retry(outboxItem.id).getOrThrow()
+                deliveryStateCoordinator.applyRetryEvent(messageId = messageId)
             }
         }
 
-    override suspend fun markConversationRead(contactId: String): Result<Unit> =
+    override suspend fun markConversationRead(
+        conversationId: String
+    ): Result<Unit> =
         runCatching {
-            require(contactId.isNotBlank()) {
-                "Contact ID must not be blank"
-            }
+            require(conversationId.isNotBlank()) { "Conversation ID must not be blank" }
 
-            val messages = chatDao.findMessagesAwaitingReadReceipt(contactId = contactId)
+            val messages = chatDao.findMessagesAwaitingReadReceipt(conversationId)
 
             messages.forEach { message ->
-                /*
-                 * Deterministic packet ID makes the operation idempotent.
-                 *
-                 * If the app crashes after enqueueing but before updating
-                 * readReceiptSent, the same packet ID is used next time,
-                 * and ProtocolOutbox returns the existing item.
-                 */
                 val receipt =
                     ReadReceiptPacket(
-                        packetId = createReadReceiptPacketId(messageId = message.messageId),
+                        packetId =
+                            createReadReceiptPacketId(
+                                messageId = message.messageId
+                            ),
                         messageId = message.messageId,
-                        readAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
+                        readAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
                     )
 
                 protocolOutbox
                     .enqueue(
-                        contactId = contactId,
-                        packet = receipt,
+                        contactId = message.contactId,
+                        packet = receipt
                     ).getOrThrow()
 
                 val updatedRows = chatDao.markReadReceiptSent(messageId = message.messageId)
@@ -195,176 +337,17 @@ class DefaultChatsRepository(
                     "Incoming message could not be marked as read"
                 }
 
-                println("Read receipt queued: " + "messageId=${message.messageId}, " + "contactId=$contactId")
+                logger.debug {
+                    "Read receipt queued: " +
+                        "messageId=${message.messageId}, " +
+                        "contactId=${message.contactId}"
+                }
             }
         }
 
-    private fun createReadReceiptPacketId(messageId: String): String = "read-receipt-$messageId"
-
-    override suspend fun receiveMessage(
-        contactId: String,
-        encodedTransportPayload: String,
-        localEncryptionPublicKey: ByteArray,
-        localEncryptionPrivateKey: ByteArray,
-    ) {
-        require(
-            encodedTransportPayload.isNotBlank(),
-        ) {
-            "Incoming transport payload must not be blank"
-        }
-
-        val conversation = getOrCreateConversation(contactId = contactId)
-
-        val receivedAt = SystemClock.nowEpochMilliseconds()
-
-        val decodedTransport =
-            incomingTransportMessageDecoder.decode(
-                encodedPayload = encodedTransportPayload,
-                localPublicKey = localEncryptionPublicKey,
-                localPrivateKey = localEncryptionPrivateKey,
-            )
-
-        when (decodedTransport) {
-            is DecodedTransportMessage.Readable -> {
-                handleReadableTransportPacket(
-                    contactId = contactId,
-                    conversation = conversation,
-                    encodedTransportPayload = encodedTransportPayload,
-                    decodedTransport = decodedTransport,
-                    receivedAt = receivedAt,
-                )
-            }
-
-            is DecodedTransportMessage.InvalidPacket -> {
-                storeFailedIncomingMessage(
-                    conversation = conversation,
-                    encodedTransportPayload = encodedTransportPayload,
-                    text = "Invalid transport packet",
-                    transportMode = UNKNOWN_TRANSPORT_MODE,
-                    contentStatus = MessageContentStatus.INVALID_PACKET,
-                    receivedAt = receivedAt,
-                )
-            }
-
-            is DecodedTransportMessage.InvalidPlaintext -> {
-                storeFailedIncomingMessage(
-                    conversation = conversation,
-                    encodedTransportPayload = encodedTransportPayload,
-                    text = "Unable to read plaintext message",
-                    transportMode = TransportEncryptionMode.PLAINTEXT.name,
-                    contentStatus = MessageContentStatus.INVALID_PLAINTEXT_PACKET,
-                    receivedAt = receivedAt,
-                )
-            }
-
-            is DecodedTransportMessage.DecryptionFailed -> {
-                storeFailedIncomingMessage(
-                    conversation = conversation,
-                    encodedTransportPayload = encodedTransportPayload,
-                    text = "Unable to decrypt secure message",
-                    transportMode = TransportEncryptionMode.SEALED_BOX.name,
-                    contentStatus = MessageContentStatus.TRANSPORT_DECRYPTION_FAILED,
-                    receivedAt = receivedAt,
-                )
-            }
-        }
-    }
-
-    private suspend fun handleReadableTransportPacket(
-        contactId: String,
-        conversation: ConversationEntity,
-        encodedTransportPayload: String,
-        decodedTransport: DecodedTransportMessage.Readable,
-        receivedAt: Long,
-    ) {
-        val packet =
-            packetCodec.decode(encodedPacket = decodedTransport.plaintext).getOrElse {
-                storeFailedIncomingMessage(
-                    conversation = conversation,
-                    encodedTransportPayload = encodedTransportPayload,
-                    text = "Invalid protocol packet",
-                    transportMode = decodedTransport.mode.name,
-                    contentStatus = MessageContentStatus.INVALID_PACKET,
-                    receivedAt = receivedAt,
-                )
-
-                return
-            }
-
-        protocolPacketHandler
-            .handle(
-                context =
-                    IncomingPacketContext(
-                        contactId = contactId,
-                        conversationId = conversation.id,
-                        encodedTransportPayload = encodedTransportPayload,
-                        transportMode = decodedTransport.mode.name,
-                        receivedAtEpochMilliseconds = receivedAt,
-                    ),
-                packet = packet,
-            ).onFailure {
-                storeFailedIncomingMessage(
-                    conversation = conversation,
-                    encodedTransportPayload = encodedTransportPayload,
-                    text = "Unsupported or invalid protocol packet",
-                    transportMode = decodedTransport.mode.name,
-                    contentStatus = MessageContentStatus.INVALID_PACKET,
-                    receivedAt = receivedAt,
-                )
-            }
-    }
-
-    private suspend fun storeFailedIncomingMessage(
-        conversation: ConversationEntity,
-        encodedTransportPayload: String,
-        text: String,
-        transportMode: String,
-        contentStatus: MessageContentStatus,
-        receivedAt: Long,
-    ) {
-        chatDao.upsertMessage(
-            MessageEntity(
-                id = createId(prefix = "failed-message"),
-                conversationId = conversation.id,
-                packetId = null,
-                text = text,
-                transportPayload = encodedTransportPayload,
-                transportMode = transportMode,
-                contentStatus = contentStatus.name,
-                deliveryStatus = MessageDeliveryStatus.NOT_APPLICABLE.name,
-                isMine = false,
-                createdAtEpochMilliseconds = receivedAt,
-            ),
-        )
-
-        chatDao.updateConversationTimestamp(
-            conversationId = conversation.id,
-            timestamp = receivedAt,
-        )
-    }
-
-    private suspend fun getOrCreateConversation(contactId: String): ConversationEntity {
-        val existing = chatDao.findConversationByContactId(contactId = contactId)
-
-        if (existing != null) {
-            return existing
-        }
-
-        val now = SystemClock.nowEpochMilliseconds()
-
-        val conversation =
-            ConversationEntity(
-                id = createId(prefix = "conversation"),
-                contactId = contactId,
-                createdAtEpochMilliseconds = now,
-                updatedAtEpochMilliseconds = now,
-            )
-
-        chatDao.upsertConversation(conversation)
-
-        return chatDao.findConversationByContactId(contactId = contactId)
-            ?: error("Conversation could not be created")
-    }
+    private fun createReadReceiptPacketId(
+        messageId: String
+    ): String = "read-receipt-$messageId"
 
     private fun Contact.plannedTransportMode(): TransportEncryptionMode {
         val identity = secureChatIdentity
@@ -372,7 +355,8 @@ class DefaultChatsRepository(
         val canEncrypt =
             identity != null &&
                 identity.encryptionPublicKey.isNotEmpty() &&
-                identity.keyExchangeStatus == KeyExchangeStatus.MUTUAL
+                identity.keyExchangeStatus ==
+                KeyExchangeStatus.MUTUAL
 
         return if (canEncrypt) {
             TransportEncryptionMode.SEALED_BOX
@@ -381,25 +365,61 @@ class DefaultChatsRepository(
         }
     }
 
-    private fun ConversationWithMessages.toDomain(): Conversation =
-        Conversation(
+    private fun ConversationWithMessages.toDomain(
+        participantContactIds: List<String> = emptyList(),
+        recipientStates: List<MessageRecipientStateEntity> = emptyList(),
+        pendingParticipantCount: Int = 0,
+        isGroupReady: Boolean = true,
+        groupState: GroupConversationState = GroupConversationState.READY,
+        isIncomingGroupInvitation: Boolean = false,
+        groupMemberInvitationStates: List<GroupMemberInvitationState> = emptyList()
+    ): Conversation {
+        val isGroup = conversation.type == GROUP_CONVERSATION_TYPE
+        val contactId = conversation.contactId.orEmpty()
+        val statesByMessageId = recipientStates.groupBy { it.messageId }
+
+        return Conversation(
             id = conversation.id,
-            contactId = conversation.contactId,
-            contactName = "",
+            contactId = contactId,
+            contactName = if (isGroup) conversation.title.orEmpty() else "",
             messages =
-                messages.sortedBy { it.createdAtEpochMilliseconds }.map { entity ->
-                    entity.toDomain(contactId = conversation.contactId)
-                },
+                messages
+                    .sortedBy(MessageEntity::createdAtEpochMilliseconds)
+                    .map { entity ->
+                        entity.toDomain(
+                            contactId = contactId,
+                            recipientStates = statesByMessageId[entity.id].orEmpty()
+                        )
+                    },
             unreadCount =
                 messages.count { message ->
                     !message.isMine &&
                         !message.readReceiptSent &&
                         message.contentStatus == MessageContentStatus.READABLE.name
                 },
+            isGroup = isGroup,
+            participantContactIds = participantContactIds,
+            pendingParticipantCount = pendingParticipantCount,
+            isGroupReady = isGroupReady,
+            groupState = groupState,
+            isIncomingGroupInvitation = isIncomingGroupInvitation,
+            groupMemberInvitationStates = groupMemberInvitationStates
         )
+    }
 
-    private fun MessageEntity.toDomain(contactId: String): ChatMessage =
-        ChatMessage(
+    private fun MessageEntity.toDomain(
+        contactId: String,
+        recipientStates: List<MessageRecipientStateEntity> = emptyList()
+    ): ChatMessage {
+        val deliveryProgress = recipientStates.toDeliveryProgress()
+        val aggregatedDeliveryStatus =
+            if (recipientStates.isEmpty()) {
+                deliveryStatus.toMessageDeliveryStatus()
+            } else {
+                recipientStates.toAggregatedDeliveryStatus()
+            }
+
+        return ChatMessage(
             id = id,
             contactId = contactId,
             text = text,
@@ -408,65 +428,94 @@ class DefaultChatsRepository(
             security = transportMode.toMessageSecurity(),
             contentStatus = contentStatus.toMessageContentStatus(),
             deliveryStatus =
-                if (isMine) {
-                    deliveryStatus.toMessageDeliveryStatus()
-                } else {
-                    MessageDeliveryStatus.NOT_APPLICABLE
-                },
+                if (isMine) aggregatedDeliveryStatus else MessageDeliveryStatus.NOT_APPLICABLE,
+            type = GroupMembershipMessageFactory.typeOf(transportMode),
+            senderContactId = senderContactId,
+            deliveryProgress = deliveryProgress
         )
+    }
 
     private fun ConversationSummary.toDomain(): Conversation {
+        val isGroup = conversationType == GROUP_CONVERSATION_TYPE
+        val resolvedContactId = contactId.orEmpty()
+        val resolvedName =
+            if (isGroup) {
+                conversationTitle.orEmpty()
+            } else {
+                contactName?.takeIf(String::isNotBlank) ?: "Unknown contact"
+            }
         val lastMessage =
             lastMessageText?.let { text ->
                 ChatMessage(
                     id = "summary-$conversationId",
-                    contactId = contactId,
+                    contactId = resolvedContactId,
                     text = text,
                     isMine = true,
                     timestamp = lastMessageTimestamp ?: updatedAtEpochMilliseconds,
                     security = MessageSecurity.INSECURE,
                     contentStatus = MessageContentStatus.READABLE,
-                    deliveryStatus = MessageDeliveryStatus.NOT_APPLICABLE,
+                    deliveryStatus = MessageDeliveryStatus.NOT_APPLICABLE
                 )
             }
 
         return Conversation(
             id = conversationId,
-            contactId = contactId,
-            contactName = contactName?.takeIf { it.isNotBlank() } ?: "Unknown contact",
+            contactId = resolvedContactId,
+            contactName = resolvedName,
             messages = listOfNotNull(lastMessage),
             unreadCount = unreadCount,
+            isGroup = isGroup,
+            participantContactIds = if (isGroup) List(participantCount) { "" } else emptyList()
         )
     }
 
+    private fun List<MessageRecipientStateEntity>.toDeliveryProgress(): MessageDeliveryProgress =
+        MessageDeliveryProgress(
+            recipientCount = size,
+            deliveredCount =
+                count { state ->
+                    state.deliveryStatus == MessageDeliveryStatus.DELIVERED.name ||
+                        state.deliveryStatus == MessageDeliveryStatus.READ.name
+                },
+            readCount = count { state -> state.deliveryStatus == MessageDeliveryStatus.READ.name }
+        )
+
+    private fun List<MessageRecipientStateEntity>.toAggregatedDeliveryStatus(): MessageDeliveryStatus {
+        val statuses = map { state -> state.deliveryStatus.toMessageDeliveryStatus() }
+        return MessageDeliveryStateMachine.aggregate(statuses)
+    }
+
     private fun String.toMessageSecurity(): MessageSecurity =
-        if (this == TransportEncryptionMode.SEALED_BOX.name) {
+        if (
+            this == TransportEncryptionMode.SEALED_BOX.name ||
+            this == GROUP_END_TO_END_ENCRYPTED_MODE
+        ) {
             MessageSecurity.END_TO_END_ENCRYPTED
         } else {
             MessageSecurity.INSECURE
         }
 
     private fun String.toMessageContentStatus(): MessageContentStatus =
-        MessageContentStatus.entries.firstOrNull {
-            it.name == this
-        }
-            ?: MessageContentStatus.INVALID_PACKET
+        MessageContentStatus.entries.firstOrNull { status ->
+            status.name == this
+        } ?: MessageContentStatus.INVALID_PACKET
 
     private fun String.toMessageDeliveryStatus(): MessageDeliveryStatus =
-        MessageDeliveryStatus.entries.firstOrNull {
-            it.name == this
-        }
-            ?: MessageDeliveryStatus.NOT_APPLICABLE
-
-    private fun createId(prefix: String): String {
-        val timestamp = SystemClock.nowEpochMilliseconds()
-
-        val random = Random.nextLong().toString().replace(oldValue = "-", newValue = "")
-
-        return "$prefix-$timestamp-$random"
-    }
+        MessageDeliveryStatus.entries.firstOrNull { status ->
+            status.name == this
+        } ?: MessageDeliveryStatus.NOT_APPLICABLE
 
     private companion object {
-        const val UNKNOWN_TRANSPORT_MODE = "UNKNOWN"
+        const val DIRECT_CONVERSATION_TYPE = "DIRECT"
+        const val GROUP_CONVERSATION_TYPE = "GROUP"
     }
 }
+
+private fun String.isPendingMembershipStatus(): Boolean =
+    this != GroupInvitationStatus.ACTIVE.name &&
+        this != GroupInvitationStatus.LEAVE_SENT.name &&
+        this != GroupInvitationStatus.DECLINED.name &&
+        this != GroupInvitationStatus.EXPIRED.name &&
+        this != GroupInvitationStatus.FAILED.name &&
+        this != GroupInvitationStatus.REMOVED.name &&
+        this != GroupInvitationStatus.GROUP_DELETED.name

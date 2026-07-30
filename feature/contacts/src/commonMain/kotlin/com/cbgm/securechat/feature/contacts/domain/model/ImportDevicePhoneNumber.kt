@@ -9,5 +9,5 @@ package com.cbgm.securechat.feature.contacts.domain.model
 data class ImportDevicePhoneNumber(
     val value: String,
     val type: ContactPhoneNumberType,
-    val label: String?,
+    val label: String?
 )

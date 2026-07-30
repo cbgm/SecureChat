@@ -19,5 +19,5 @@ enum class MessageContentStatus {
     /**
      * A sealed-box packet could not be decrypted.
      */
-    TRANSPORT_DECRYPTION_FAILED,
+    TRANSPORT_DECRYPTION_FAILED
 }

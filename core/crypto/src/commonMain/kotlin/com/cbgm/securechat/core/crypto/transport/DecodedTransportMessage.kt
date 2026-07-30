@@ -3,7 +3,7 @@ package com.cbgm.securechat.core.crypto.transport
 sealed interface DecodedTransportMessage {
     data class Readable(
         val plaintext: ByteArray,
-        val mode: TransportEncryptionMode,
+        val mode: TransportEncryptionMode
     ) : DecodedTransportMessage {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -32,7 +32,7 @@ sealed interface DecodedTransportMessage {
      * - unsupported structure
      */
     data class InvalidPacket(
-        val cause: Throwable? = null,
+        val cause: Throwable? = null
     ) : DecodedTransportMessage
 
     /**
@@ -41,7 +41,7 @@ sealed interface DecodedTransportMessage {
      * No sealed-box decryption was attempted.
      */
     data class InvalidPlaintext(
-        val cause: Throwable? = null,
+        val cause: Throwable? = null
     ) : DecodedTransportMessage
 
     /**
@@ -50,6 +50,6 @@ sealed interface DecodedTransportMessage {
      * The ciphertext must never be interpreted as plaintext.
      */
     data class DecryptionFailed(
-        val cause: Throwable? = null,
+        val cause: Throwable? = null
     ) : DecodedTransportMessage
 }

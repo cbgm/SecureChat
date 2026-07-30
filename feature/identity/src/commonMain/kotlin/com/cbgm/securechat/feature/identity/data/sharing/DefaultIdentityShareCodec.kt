@@ -2,9 +2,9 @@ package com.cbgm.securechat.feature.identity.data.sharing
 
 import com.cbgm.securechat.core.extensions.escapeShareValue
 import com.cbgm.securechat.core.extensions.unescapeShareValue
-import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
 import com.cbgm.securechat.feature.identity.domain.model.SharedContactDetails
 import com.cbgm.securechat.feature.identity.domain.model.SharedIdentityPayload
+import com.cbgm.securechat.feature.identity.domain.service.IdentityShareCodec
 
 /**
  * Text codec for shared SecureChat identities.
@@ -74,10 +74,10 @@ class DefaultIdentityShareCodec : IdentityShareCodec {
 
                         part.substring(
                             startIndex = 0,
-                            endIndex = separatorIndex,
+                            endIndex = separatorIndex
                         ) to
                             part.substring(
-                                startIndex = separatorIndex + 1,
+                                startIndex = separatorIndex + 1
                             )
                     }
 
@@ -103,8 +103,8 @@ class DefaultIdentityShareCodec : IdentityShareCodec {
                 contactDetails =
                     SharedContactDetails(
                         displayName = displayName,
-                        phoneNumber = phoneNumber,
-                    ),
+                        phoneNumber = phoneNumber
+                    )
             )
         }
 

@@ -30,7 +30,7 @@ data class RelayEnvelope(
      * scmsg:1:SEALED_BOX:...
      */
     val payload: String,
-    val createdAtEpochMilliseconds: Long,
+    val createdAtEpochMilliseconds: Long
 ) {
     init {
         require(version > 0) {

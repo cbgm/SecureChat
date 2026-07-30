@@ -4,5 +4,5 @@ data class BuildInfo(
     val versionName: String,
     val versionCode: Int,
     val buildType: String,
-    val gitSha: String?,
+    val gitSha: String?
 )

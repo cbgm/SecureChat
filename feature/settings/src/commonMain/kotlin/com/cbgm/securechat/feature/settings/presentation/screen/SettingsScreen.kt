@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -26,7 +25,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.cbgm.securechat.core.security.DirectIdentitySetupMode
 import com.cbgm.securechat.core.ui.component.SecureChatCardNoAnimation
 import com.cbgm.securechat.core.ui.locale.AppLanguage
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
@@ -48,6 +49,9 @@ import com.cbgm.securechat.resources.base_developer
 import com.cbgm.securechat.resources.base_language
 import com.cbgm.securechat.resources.base_version
 import com.cbgm.securechat.resources.feature_settings_about
+import com.cbgm.securechat.resources.feature_settings_automatic_secure_setup
+import com.cbgm.securechat.resources.feature_settings_automatic_secure_setup_disabled_subtitle
+import com.cbgm.securechat.resources.feature_settings_automatic_secure_setup_enabled_subtitle
 import com.cbgm.securechat.resources.feature_settings_data_disclaimer
 import com.cbgm.securechat.resources.feature_settings_data_disclaimer_subtitle
 import com.cbgm.securechat.resources.feature_settings_developer_menu
@@ -58,6 +62,7 @@ import com.cbgm.securechat.resources.feature_settings_open_source_licenses
 import com.cbgm.securechat.resources.feature_settings_privacy_and_data
 import com.cbgm.securechat.resources.feature_settings_privacy_policy
 import com.cbgm.securechat.resources.feature_settings_privacy_policy_subtitle
+import com.cbgm.securechat.resources.feature_settings_security
 import org.jetbrains.compose.resources.stringResource
 
 private val CardColor = Color(0xFF102A46)
@@ -73,10 +78,11 @@ fun SettingsScreen(
     onOpenLanguagePicker: () -> Unit,
     onDismissLanguagePicker: () -> Unit,
     onLanguageSelected: (AppLanguage) -> Unit,
+    onDirectIdentitySetupModeChanged: (DirectIdentitySetupMode) -> Unit,
     onVersionRowTapped: () -> Unit,
     scrollState: ScrollState,
     innerPadding: PaddingValues,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     Column(
         modifier =
@@ -84,10 +90,10 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(
                     top = innerPadding.calculateTopPadding(),
-                    bottom = innerPadding.calculateBottomPadding(),
+                    bottom = innerPadding.calculateBottomPadding()
                 ).verticalScroll(scrollState)
                 .padding(MaterialTheme.spacing.screenPadding),
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
     ) {
         SettingsSection(title = stringResource(Res.string.feature_settings_general)) {
             SettingsRow(
@@ -95,7 +101,30 @@ fun SettingsScreen(
                 title = stringResource(Res.string.base_language),
                 subtitle = uiState.currentLanguage.nativeName,
                 onClick = onOpenLanguagePicker,
-                showChevron = false,
+                showChevron = false
+            )
+        }
+
+        SettingsSection(title = stringResource(Res.string.feature_settings_security)) {
+            SettingsSwitchRow(
+                icon = Icons.Default.Lock,
+                title = stringResource(Res.string.feature_settings_automatic_secure_setup),
+                subtitle =
+                    if (uiState.directIdentitySetupMode == DirectIdentitySetupMode.AUTOMATIC_INVITATION) {
+                        stringResource(Res.string.feature_settings_automatic_secure_setup_enabled_subtitle)
+                    } else {
+                        stringResource(Res.string.feature_settings_automatic_secure_setup_disabled_subtitle)
+                    },
+                checked = uiState.directIdentitySetupMode == DirectIdentitySetupMode.AUTOMATIC_INVITATION,
+                onCheckedChange = { enabled ->
+                    onDirectIdentitySetupModeChanged(
+                        if (enabled) {
+                            DirectIdentitySetupMode.AUTOMATIC_INVITATION
+                        } else {
+                            DirectIdentitySetupMode.MANUAL_IDENTITY_SHARING
+                        }
+                    )
+                }
             )
         }
 
@@ -104,7 +133,7 @@ fun SettingsScreen(
                 icon = Icons.Default.PrivacyTip,
                 title = stringResource(Res.string.feature_settings_privacy_policy),
                 subtitle = stringResource(Res.string.feature_settings_privacy_policy_subtitle),
-                onClick = onOpenPrivacyPolicy,
+                onClick = onOpenPrivacyPolicy
             )
 
             SettingsDivider()
@@ -113,7 +142,7 @@ fun SettingsScreen(
                 icon = Icons.Default.Lock,
                 title = stringResource(Res.string.feature_settings_data_disclaimer),
                 subtitle = stringResource(Res.string.feature_settings_data_disclaimer_subtitle),
-                onClick = onOpenDataDisclaimer,
+                onClick = onOpenDataDisclaimer
             )
         }
 
@@ -122,7 +151,7 @@ fun SettingsScreen(
                 icon = Icons.Default.Code,
                 title = stringResource(Res.string.feature_settings_open_source_licenses),
                 subtitle = stringResource(Res.string.feature_settings_licenses_subtitle),
-                onClick = onOpenLicenses,
+                onClick = onOpenLicenses
             )
 
             SettingsDivider()
@@ -130,9 +159,9 @@ fun SettingsScreen(
             SettingsRow(
                 icon = Icons.Default.Description,
                 title = stringResource(Res.string.base_version),
-                subtitle = "${uiState.buildInfo.versionName} (${uiState.buildInfo.versionCode}",
+                subtitle = "${uiState.buildInfo.versionName} (${uiState.buildInfo.versionCode})",
                 showChevron = false,
-                onClick = onVersionRowTapped,
+                onClick = onVersionRowTapped
             )
         }
 
@@ -143,7 +172,7 @@ fun SettingsScreen(
                     title = stringResource(Res.string.feature_settings_developer_menu),
                     subtitle = stringResource(Res.string.feature_settings_developer_menu_subtitle),
                     onClick = onOpenDeveloperMenu,
-                    iconTint = MaterialTheme.colorScheme.secondary,
+                    iconTint = MaterialTheme.colorScheme.secondary
                 )
             }
         }
@@ -155,7 +184,7 @@ fun SettingsScreen(
         LanguagePickerDialog(
             currentLanguage = uiState.currentLanguage,
             onLanguageSelected = onLanguageSelected,
-            onDismiss = onDismissLanguagePicker,
+            onDismiss = onDismissLanguagePicker
         )
     }
 }
@@ -163,7 +192,7 @@ fun SettingsScreen(
 @Composable
 private fun SettingsSection(
     title: String,
-    content: @Composable ColumnScope.() -> Unit,
+    content: @Composable ColumnScope.() -> Unit
 ) {
     Column {
         Text(
@@ -174,8 +203,8 @@ private fun SettingsSection(
             modifier =
                 Modifier.padding(
                     start = MaterialTheme.spacing.base.div(2),
-                    bottom = MaterialTheme.spacing.base,
-                ),
+                    bottom = MaterialTheme.spacing.base
+                )
         )
 
         SecureChatCardNoAnimation {
@@ -191,7 +220,7 @@ private fun SettingsRow(
     subtitle: String,
     onClick: () -> Unit,
     showChevron: Boolean = true,
-    iconTint: Color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+    iconTint: Color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
 ) {
     Row(
         modifier =
@@ -200,15 +229,15 @@ private fun SettingsRow(
                 .clickable(onClick = onClick)
                 .padding(
                     horizontal = MaterialTheme.spacing.small,
-                    vertical = MaterialTheme.spacing.small,
+                    vertical = MaterialTheme.spacing.small
                 ),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = iconTint,
-            modifier = Modifier.size(22.dp),
+            modifier = Modifier.size(22.dp)
         )
 
         Spacer(modifier = Modifier.size(MaterialTheme.spacing.small))
@@ -218,12 +247,12 @@ private fun SettingsRow(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
         }
 
@@ -232,9 +261,64 @@ private fun SettingsRow(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(20.dp)
             )
         }
+    }
+}
+
+@Composable
+private fun SettingsSwitchRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable {
+                    onCheckedChange(!checked)
+                }.padding(
+                    horizontal = MaterialTheme.spacing.small,
+                    vertical = MaterialTheme.spacing.small
+                ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+            modifier = Modifier.size(22.dp)
+        )
+
+        Spacer(modifier = Modifier.size(MaterialTheme.spacing.small))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+            )
+        }
+
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            colors =
+                SwitchDefaults.colors(
+                    checkedTrackColor = MaterialTheme.colorScheme.secondary,
+                    checkedThumbColor = MaterialTheme.colorScheme.primaryContainer
+                )
+        )
     }
 }
 
@@ -242,7 +326,7 @@ private fun SettingsRow(
 private fun SettingsDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(start = MaterialTheme.spacing.times(5)),
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.06f),
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.06f)
     )
 }
 
@@ -260,9 +344,9 @@ fun SettingsScreenPreview() {
                             versionName = "1.0.0",
                             versionCode = 1,
                             buildType = "debug",
-                            gitSha = null,
+                            gitSha = null
                         ),
-                    isDeveloperModeEnabled = true,
+                    isDeveloperModeEnabled = true
                 ),
             onOpenPrivacyPolicy = {},
             onOpenDataDisclaimer = {},
@@ -271,10 +355,11 @@ fun SettingsScreenPreview() {
             onOpenLanguagePicker = {},
             onDismissLanguagePicker = {},
             onLanguageSelected = {},
+            onDirectIdentitySetupModeChanged = {},
             onVersionRowTapped = {},
             snackbarHostState = SnackbarHostState(),
             scrollState = ScrollState(0),
-            innerPadding = PaddingValues(0.dp),
+            innerPadding = PaddingValues(0.dp)
         )
     }
 }

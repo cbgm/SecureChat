@@ -49,6 +49,7 @@ nav:
       - Clean Architecture: architecture/clean-architecture.md
       - Dependency Rules: architecture/dependency-rules.md
       - Module Types: architecture/module-types.md
+      - Messaging Boundary: architecture/messaging-boundary.md
   - Security:
       - Overview: security/overview.md
       - Identity: security/identity.md
@@ -61,10 +62,12 @@ nav:
       - Contacts: features/contacts.md
       - Identity: features/identity.md
       - Onboarding: features/onboarding.md
+      - Conversation, Messaging, and Delivery Flow: features/message-transport-flow.md
       - Transport: features/transport.md
   - Development:
       - Local Development and Manual Testing: development/local-development.md
       - Coding Style: development/coding-style.md
+      - Logging: development/logging.md
       - Testing: development/testing.md
       - Contributing: development/contributing.md
       - Release Process: development/release-process.md

@@ -5,7 +5,7 @@ data class IdentityKeyPair(
     val encryptionPublicKey: UByteArray,
     val encryptionPrivateKey: UByteArray,
     val signingPublicKey: UByteArray,
-    val signingPrivateKey: UByteArray,
+    val signingPrivateKey: UByteArray
 ) {
     init {
         require(encryptionPublicKey.isNotEmpty()) {

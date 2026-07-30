@@ -13,7 +13,7 @@ data class ReadReceiptPacket(
      * ChatMessagePacket.messageId that was read.
      */
     val messageId: String,
-    val readAtEpochMilliseconds: Long,
+    val readAtEpochMilliseconds: Long
 ) : SecureChatPacket {
     init {
         require(packetId.isNotBlank()) {

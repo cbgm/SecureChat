@@ -25,7 +25,7 @@ fun ContactWithPublicIdentity.toDomain(): Contact =
         deviceContactLinkStatus = contact.deviceContactLinkStatus.toDeviceContactLinkStatus(),
         secureChatIdentity = publicIdentity?.toDomain(),
         createdAtEpochMilliseconds = contact.createdAtEpochMilliseconds,
-        updatedAtEpochMilliseconds = contact.updatedAtEpochMilliseconds,
+        updatedAtEpochMilliseconds = contact.updatedAtEpochMilliseconds
     )
 
 private fun ContactPhoneNumberEntity.toDomain(): ContactPhoneNumber =
@@ -33,7 +33,7 @@ private fun ContactPhoneNumberEntity.toDomain(): ContactPhoneNumber =
         id = id,
         value = value,
         type = type.toContactPhoneNumberType(),
-        label = label,
+        label = label
     )
 
 private fun ContactPublicIdentityEntity.toDomain(): SecureChatIdentity =
@@ -41,8 +41,10 @@ private fun ContactPublicIdentityEntity.toDomain(): SecureChatIdentity =
         encryptionPublicKey = encryptionPublicKey.copyOf(),
         signingPublicKey = signingPublicKey.copyOf(),
         verificationStatus = verificationStatus.toContactVerificationStatus(),
+        verifiedByContact = verifiedByContact,
+        locallyImported = locallyImported,
         keyExchangeStatus = keyExchangeStatus.toKeyExchangeStatus(),
-        updatedAtEpochMilliseconds = updatedAtEpochMilliseconds,
+        updatedAtEpochMilliseconds = updatedAtEpochMilliseconds
     )
 
 private fun String.toContactPhoneNumberType(): ContactPhoneNumberType =
