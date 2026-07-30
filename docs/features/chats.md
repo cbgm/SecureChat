@@ -196,6 +196,9 @@ After the packet is queued, the recipient changes its own invitation from `AWAIT
 `DECLINED`. `GroupInvitationCoordinator.declineInvitation()` never deletes the conversation:
 existing messages and a newly created invitation chat both remain visible and read-only. Only an
 explicit user-initiated conversation deletion may remove the conversation and its cascaded data.
+When the retained conversation has messages, `ChatScreen` continues to render
+`GroupMembershipRemovedHint`; the accept/decline actions disappear, but the user still sees that
+they are no longer part of the group and can only read the existing history.
 
 The creator may type while members are pending. If no participant is active,
 `GroupMessageSender.queueOrSend()` stores a visible `MessageEntity` with `QUEUED`, but creates no

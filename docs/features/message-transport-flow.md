@@ -312,6 +312,20 @@ and messages remain intact and `GroupInvitationStateMapper.conversationState()` 
 read-only `DECLINED` state. Deleting the conversation and its cascaded data is reserved for an
 explicit user deletion action.
 
+The retained-history presentation path is:
+
+```text
+GroupInvitationDao.observeByGroupId()
+  -> GroupInvitationStateMapper.conversationState() = DECLINED
+  -> GroupChatViewModel.uiState(messages, groupState = DECLINED)
+  -> ChatScreen
+  -> GroupMembershipRemovedHint() when messages.isNotEmpty()
+```
+
+The invitation action banner is therefore removed after the decision, while the persistent
+“You are no longer a member” hint stays above existing history. A declined invitation without any
+messages does not show the history-specific hint.
+
 ### Adding members from group details
 
 This stays inside the chats feature; it does not add an application navigation destination:

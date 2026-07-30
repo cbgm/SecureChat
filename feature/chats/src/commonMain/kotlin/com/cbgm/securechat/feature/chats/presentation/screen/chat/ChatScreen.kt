@@ -311,7 +311,13 @@ private fun ChatTopBar(
                 onAccept = onAcceptGroupInvitation,
                 onDecline = onDeclineGroupInvitation
             )
-        } else if (uiState.groupState == GroupConversationState.REMOVED) {
+        } else if (
+            uiState.groupState == GroupConversationState.REMOVED ||
+            (
+                uiState.groupState == GroupConversationState.DECLINED &&
+                    uiState.messages.isNotEmpty()
+            )
+        ) {
             GroupMembershipRemovedHint()
         } else if (uiState.groupState == GroupConversationState.LEAVING) {
             GroupMembershipLeavingHint()
