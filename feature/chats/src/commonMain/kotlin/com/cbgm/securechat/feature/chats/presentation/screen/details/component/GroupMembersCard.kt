@@ -21,7 +21,8 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 internal fun GroupMembersCard(
     summary: GroupVerificationSummaryUiState,
-    onVerifyMember: (String) -> Unit
+    onVerifyMember: (String) -> Unit,
+    onRemoveMember: (String) -> Unit
 ) {
     Column {
         Text(
@@ -48,9 +49,16 @@ internal fun GroupMembersCard(
                     GroupMemberRow(
                         member = member,
                         showVerifyAction = summary.isLocalAdmin && member.canVerify,
+                        showRemoveAction =
+                            summary.isLocalAdmin &&
+                                !member.isGroupAdmin &&
+                                member.contactId != null,
                         showDivider = index < summary.members.lastIndex,
                         onVerify = {
                             member.contactId?.let(onVerifyMember)
+                        },
+                        onRemove = {
+                            member.contactId?.let(onRemoveMember)
                         }
                     )
                 }
@@ -65,7 +73,8 @@ private fun GroupMembersCardPreview() {
     SecureChatTheme {
         GroupMembersCard(
             summary = GroupDetailsPreviewData.summary,
-            onVerifyMember = {}
+            onVerifyMember = {},
+            onRemoveMember = {}
         )
     }
 }

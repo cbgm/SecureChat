@@ -45,7 +45,8 @@ class GroupInvitationStateMapperTest {
     }
 
     @Test
-    fun declineBlocksActivationAndIsVisiblePerMember() {
+    fun declinedInvitationRemainsVisibleAndBlocksActivation() {
+        val declined = listOf(invitation(GroupInvitationStatus.DECLINED))
         val invitations =
             listOf(
                 invitation(GroupInvitationStatus.IDENTITY_READY, contactId = "contact-1"),
@@ -54,12 +55,66 @@ class GroupInvitationStateMapperTest {
 
         assertEquals(
             GroupConversationState.DECLINED,
+            GroupInvitationStateMapper.conversationState(declined)
+        )
+        assertFalse(GroupInvitationStateMapper.isIncoming(declined))
+        assertEquals(
+            GroupConversationState.DECLINED,
             GroupInvitationStateMapper.conversationState(invitations)
         )
         assertEquals(
             GroupMemberInvitationStatus.DECLINED,
             GroupInvitationStateMapper.memberStates(invitations)[1].status
         )
+    }
+
+    @Test
+    fun removedMembersNoLongerAffectConversationOrMemberState() {
+        val invitations =
+            listOf(
+                invitation(GroupInvitationStatus.ACTIVE, contactId = "contact-1"),
+                invitation(GroupInvitationStatus.REMOVED, contactId = "contact-2")
+            )
+
+        assertEquals(
+            GroupConversationState.READY,
+            GroupInvitationStateMapper.conversationState(invitations)
+        )
+        assertEquals(
+            listOf("contact-1"),
+            GroupInvitationStateMapper.memberStates(invitations).map { member -> member.contactId }
+        )
+    }
+
+    @Test
+    fun localRemovalEventBlocksOnlyTheRemovedRecipient() {
+        val removed = listOf(invitation(GroupInvitationStatus.REMOVED))
+
+        assertEquals(
+            GroupConversationState.REMOVED,
+            GroupInvitationStateMapper.conversationState(
+                invitations = removed,
+                hasLocalMembershipRemoval = true
+            )
+        )
+        assertEquals(
+            GroupConversationState.READY,
+            GroupInvitationStateMapper.conversationState(
+                invitations = removed,
+                hasLocalMembershipRemoval = false
+            )
+        )
+    }
+
+    @Test
+    fun queuedLeaveRequestMakesTheRecipientReadOnly() {
+        val leaving = listOf(invitation(GroupInvitationStatus.LEAVE_SENT))
+
+        assertEquals(
+            GroupConversationState.LEAVING,
+            GroupInvitationStateMapper.conversationState(leaving)
+        )
+        assertTrue(GroupInvitationStateMapper.isIncoming(leaving))
     }
 
     private fun invitation(

@@ -6,6 +6,8 @@ enum class GroupConversationState {
     JOINING,
     WAITING_FOR_MEMBERS,
     DISTRIBUTING_KEYS,
+    LEAVING,
+    REMOVED,
     DECLINED,
     EXPIRED,
     FAILED

@@ -20,7 +20,8 @@ data class GroupVerificationContext(
     val hasSecurityState: Boolean,
     val isLocalAdmin: Boolean,
     val ownerContactId: String?,
-    val ownInvitationId: String?
+    val ownInvitationId: String?,
+    val isLeavePending: Boolean
 )
 
 data class GroupVerificationState(

@@ -87,18 +87,19 @@ Implemented foundation
 
 - Group creation
 - Signed invitation and join-request identity bootstrap for ordinary contacts
-- Pending-group activation only after every invited identity is ready
+- Independent per-member activation after explicit acceptance
 - Shared XChaCha20-Poly1305 epoch key
 - Signed per-sender group messages
 - Signed, recipient-wrapped epoch-1 key distribution
 - Android Keystore protection for local group keys
+- Owner group administration inside group details
+- Invitations for adding members to an active group
+- Epoch rotation when adding or removing an active member
+- Signed cancellation/removal notification with local key deletion
 
 Remaining functionality
 
-- Group administration
-- Member add/remove and owner-authorized rekey packets
-- Invitations for adding members to an already active group
-- Epoch activation/acknowledgement policy
+- Multi-admin roles and ownership transfer
 - Sender-key or ratcheting research if stronger post-compromise properties are required
 
 Architecture should remain compatible with one-to-one messaging.

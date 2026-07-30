@@ -4,6 +4,7 @@ import com.cbgm.securechat.data.database.dao.GroupInvitationDao
 import com.cbgm.securechat.data.database.dao.GroupSecurityDao
 import com.cbgm.securechat.data.database.dao.GroupVerificationDao
 import com.cbgm.securechat.data.database.entity.GroupVerificationPairEntity
+import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationStatus
 import com.cbgm.securechat.feature.chats.domain.model.GroupVerificationContext
 import com.cbgm.securechat.feature.chats.domain.model.GroupVerificationMembershipStatus
 import com.cbgm.securechat.feature.chats.domain.model.GroupVerificationPair
@@ -47,7 +48,9 @@ class DefaultGroupVerificationRepository(
                     } else {
                         securityState?.ownerContactId ?: localInvitation?.contactId
                     },
-                ownInvitationId = localInvitation?.invitationId
+                ownInvitationId = localInvitation?.invitationId,
+                isLeavePending =
+                    localInvitation?.status == GroupInvitationStatus.LEAVE_SENT.name
             )
         }
 }

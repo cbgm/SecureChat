@@ -35,6 +35,18 @@ interface GroupSecurityDao {
     @Query("SELECT * FROM group_security_states WHERE groupId = :groupId LIMIT 1")
     fun observeState(groupId: String): Flow<GroupSecurityStateEntity?>
 
+    @Query("DELETE FROM group_security_states WHERE groupId = :groupId")
+    suspend fun deleteState(groupId: String)
+
+    @Query("DELETE FROM group_member_keys WHERE groupId = :groupId")
+    suspend fun deleteMemberKeys(groupId: String)
+
+    @Transaction
+    suspend fun deleteGroup(groupId: String) {
+        deleteMemberKeys(groupId)
+        deleteState(groupId)
+    }
+
     @Query(
         """
         SELECT *

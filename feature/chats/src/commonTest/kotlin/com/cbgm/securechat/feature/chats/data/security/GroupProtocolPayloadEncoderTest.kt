@@ -5,6 +5,8 @@ import com.cbgm.securechat.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInvitePacket
 import com.cbgm.securechat.core.protocol.packet.GroupJoinRequestPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
+import com.cbgm.securechat.core.protocol.packet.GroupMemberRemovedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMembershipChangePayload
 import com.cbgm.securechat.core.protocol.packet.GroupReadyAcknowledgementPacket
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -81,6 +83,21 @@ class GroupProtocolPayloadEncoderTest {
                                 packet.members.mapIndexed { index, member ->
                                     if (index == 1) member.copy(role = "OWNER") else member
                                 }
+                        )
+                    )
+                )
+        )
+        assertFalse(
+            encoder
+                .encodeWelcome(packet)
+                .contentEquals(
+                    encoder.encodeWelcome(
+                        packet.copy(
+                            membershipChange =
+                                GroupMembershipChangePayload(
+                                    reason = GroupMemberRemovedPacket.REASON_MEMBER_LEFT,
+                                    memberSigningPublicKey = byteArrayOf(4)
+                                )
                         )
                     )
                 )

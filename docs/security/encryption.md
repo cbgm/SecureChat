@@ -178,11 +178,12 @@ group, challenge, and expiry.
 Discovered keys are stored as mutual but unverified. Users must still compare safety numbers to
 protect the first contact from relay-assisted identity substitution.
 
-Once every selected contact reaches `IDENTITY_READY`,
-`GroupSecurityManager.createOwnedGroup()` generates epoch 1, stores the local key through
-`GroupKeyStorage`, and creates one signed `GroupCreatedPacket` for each recipient. Creator messages
-written before this point remain local `QUEUED` rows. They are not encrypted or placed in the
-outbox yet.
+The first accepted contact causes `GroupSecurityManager.createOwnedGroup()` to generate epoch 1,
+store the local key through `GroupKeyStorage`, and create its signed `GroupCreatedPacket`. Each
+later accepted contact causes `GroupSecurityManager.rotateOwnedGroup()` to advance the epoch and
+create one recipient-specific packet for every active member plus the joining contact. This keeps
+pending contacts from blocking an already active group and prevents a new member from receiving an
+older epoch key.
 
 The raw epoch key is passed only in memory. `SodiumGroupCrypto.wrapGroupKey()` seals it to the
 recipient's X25519 public key before the packet is encoded or enqueued. Consequently:
@@ -195,8 +196,8 @@ recipient's X25519 public key before the packet is encoded or enqueued. Conseque
 After persisting the key, `GroupCreatedPacketHandler` sends a signed
 `GroupReadyAcknowledgementPacket` containing a SHA-256 confirmation derived from the group ID,
 epoch, and recovered 256-bit key. The creator recomputes it with its local epoch key and does not
-fan out queued content until every invited member has returned valid identity and key-possession
-proof.
+mark that member active until it has returned valid identity and key-possession proof. Pending
+invitations do not block messages to members that are already active.
 
 `GroupChatMessagePacket` may use plaintext outer transport because its content is already
 XChaCha20-Poly1305 ciphertext authenticated by the group epoch key and an individual sender
@@ -219,10 +220,43 @@ bound value makes signature verification or AEAD authentication fail.
 
 ## Epochs and rotation
 
-The initial implementation creates epoch 1 and is ready for rotation, but it does not yet expose
-membership-change UI or a rekey packet. Any future add/remove operation must generate a new random
-key and a complete member-key snapshot for `currentEpoch + 1`. It must never mutate or reuse an
-old epoch.
+`GroupInvitationCoordinator.distributeGroupKeyToMember()` rotates an existing group when a newly
+invited contact accepts. `GroupInvitationCoordinator.rotateAfterRemoval()` rotates before an
+active contact is removed. Both paths call `GroupSecurityManager.rotateOwnedGroup()`, which:
+
+1. requires a locally owned `GroupSecurityStateEntity`;
+2. creates `nextEpoch = currentEpoch + 1`;
+3. generates and stores a fresh 256-bit group key;
+4. replaces the current `GroupMemberKeyEntity` snapshot;
+5. signs a recipient-specific `GroupCreatedPacket` containing the complete membership and any
+   identity-bound membership-change metadata;
+6. wraps the new key separately for every remaining or joining recipient;
+7. deletes locally stored keys and key rows from older epochs.
+
+The removed contact is absent from the new snapshot and never receives the wrapped next-epoch key.
+Incoming group messages must match `GroupSecurityStateEntity.currentEpoch` and a current
+`GroupMemberKeyEntity`, so a removed sender's old-epoch packets are rejected. The owner also sends
+a signed `GroupMemberRemovedPacket`, bound to the original invitation challenge. The removed device
+verifies the owner and target identity, calls `GroupKeyStorage.deleteGroup()` and
+`GroupSecurityDao.deleteGroup()`, then keeps the existing conversation as read-only. If removal
+overtakes a welcome, the device can apply the owner-signed removal without an installed group state;
+the invitation binding and removed signing identity still prevent a different member or group from
+being targeted.
+
+Every recipient-specific welcome ID binds `(groupId, invitationId, epoch)`. A member joining an
+existing group may therefore install an epoch greater than 1 without previous local state, while a
+welcome signed for an older invitation cannot activate a later re-invitation.
+
+An active member leaves by signing `GroupLeaveRequestPacket` over the invitation ID/challenge,
+group ID, installed epoch, member signing key, and request timestamp. The packet is sent with
+pairwise `SEALED_BOX` outer encryption. After verifying that signature against the authenticated
+contact and stored active invitation, the owner uses the same `rotateAfterRemoval()` path: the
+leaving member is absent from the new key snapshot and receives no next-epoch key. The owner then
+sends an owner-signed `GroupMemberRemovedPacket(reason = MEMBER_LEFT)` so the leaving device can
+delete its old keys and retain only read-only history. The welcome sent to every remaining member
+contains a signed `GroupMembershipChangePayload` with the leaving member's signing key.
+`GroupCreatedPacketHandler` matches that key against the previous epoch before the key rows are
+replaced, which produces “X left the group” without trusting a display name or an unbound reason.
 
 ---
 

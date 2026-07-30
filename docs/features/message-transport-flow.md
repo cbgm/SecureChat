@@ -244,8 +244,9 @@ GroupJoinRequestPacketHandler.handle()
   -> status IDENTITY_READY
   -> activateGroupIfReady(groupId)
   -> distributeGroupKeyToMember(groupId, invitation)
-  -> GroupSecurityManager.createOwnedGroup(...)
-  -> ProtocolOutbox.enqueue(GroupCreatedPacket)
+  -> GroupSecurityManager.createOwnedGroup(...) for epoch 1
+     or GroupSecurityManager.rotateOwnedGroup(...) for an existing group
+  -> ProtocolOutbox.enqueue(GroupCreatedPacket) for every member in the target epoch
   -> status WELCOME_SENT
 ```
 
@@ -301,10 +302,214 @@ GroupChatViewModel.declineInvitation()
   -> DefaultChatsRepository.declineGroupInvitation()
   -> GroupInvitationCoordinator.declineInvitation()
   -> ProtocolOutbox.enqueue(GroupInviteDeclinedPacket)
+  -> GroupInvitationDao.updateStatus(AWAITING_ACCEPTANCE -> DECLINED)
 ```
 
 `GroupInviteDeclinedPacketHandler.handle()` calls `GroupInvitationCoordinator.receiveDecline()`,
 which persists `DECLINED` and refreshes the owner verification snapshot.
+The recipient does not call `ChatDao.deleteConversation()`: the conversation, participant history,
+and messages remain intact and `GroupInvitationStateMapper.conversationState()` exposes the
+read-only `DECLINED` state. Deleting the conversation and its cascaded data is reserved for an
+explicit user deletion action.
+
+### Adding members from group details
+
+This stays inside the chats feature; it does not add an application navigation destination:
+
+```text
+GroupDetailsFlow
+  -> AddGroupMembersScreen
+  -> GroupVerificationViewModel.addSelectedMembers()
+  -> AddGroupMembers.invoke(conversationId, contactIds)
+  -> DefaultChatsRepository.addGroupMembers()
+  -> GroupInvitationCoordinator.addMembers()
+  -> GroupInvitationManager.createInvite()
+  -> GroupInvitationDao.upsertAll(INVITE_SENT)
+  -> ProtocolOutbox.enqueue(GroupInvitePacket)
+```
+
+The invitee follows the normal consent path. When its signed `GroupJoinRequestPacket` arrives,
+`GroupInvitationCoordinator.distributeGroupKeyToMember()` builds the complete membership snapshot.
+For an already active group it calls `GroupSecurityManager.rotateOwnedGroup()`, advances the epoch,
+generates a fresh group key, and creates one recipient-specific `GroupCreatedPacket` for every
+active member plus the joining member. Existing members therefore install the new epoch before
+future group messages use it; the joining member never receives an older epoch key.
+
+The deterministic welcome ID is
+`GroupSecurityManager.welcomePacketId(groupId, invitationId, epoch)`. Binding the signed welcome
+and `GroupReadyAcknowledgementPacket` to the exact invitation prevents a delayed welcome from a
+previous membership from activating a later re-invitation. `GroupSecurityManager.openWelcome()`
+accepts an epoch greater than 1 when the recipient has no local group state, because a member added
+to an existing group must install the group's current epoch. `GroupCreatedPacketHandler.handle()`
+first verifies the current invitation-bound welcome ID, owner identity, signature, and local
+membership before that state is persisted.
+
+`GroupInvitationCoordinator.receiveInvite()` calls
+`GroupInvitationDao.replaceForGroupAndContact()` to atomically replace a terminal invitation for
+the same `(groupId, ownerContactId)`. This is the re-invitation path after `REMOVED`, `DECLINED`,
+`EXPIRED`, or `FAILED`; the unique Room index therefore cannot retain an old row that blocks the
+new invite.
+
+If the group already has timeline history, activation also creates a read-only membership event.
+The owner records it when key possession is confirmed:
+
+```text
+GroupInvitationCoordinator.receiveReadyAcknowledgement()
+  -> ChatDao.hasMessages(groupId)
+  -> GroupInvitationDao.updateStatus(WELCOME_SENT -> ACTIVE)
+  -> ChatDao.upsertConversationParticipant()
+  -> GroupMembershipMessageFactory.memberAdded()
+  -> ChatDao.upsertMessage()
+  -> ChatDao.updateConversationTimestamp()
+```
+
+Existing members receive the same result from the signed epoch snapshot:
+
+```text
+GroupCreatedPacketHandler.handle()
+  -> ChatDao.findConversationParticipants()
+  -> ChatDao.hasMessages(groupId)
+  -> compare previous and signed incoming participants
+  -> GroupMembershipMessageFactory.memberAdded()
+  -> ChatDao.replaceConversationParticipantsWithMessages()
+```
+
+`GroupCreatedPacketHandler` requires both existing participants and an existing message before it
+creates “X was added to the group”. A new or rejoining device therefore does not manufacture an
+“added” event for every member in its first local snapshot. Message IDs include the group, epoch,
+and contact (or the invitation on the owner), so replayed packets remain idempotent.
+
+### Removing members from group details
+
+Removal is also an internal details screen, not a navigation route:
+
+```text
+GroupDetailsFlow
+  -> RemoveGroupMemberScreen
+  -> GroupVerificationViewModel.confirmMemberRemoval()
+  -> RemoveGroupMember.invoke(conversationId, contactId)
+  -> DefaultChatsRepository.removeGroupMember()
+  -> GroupInvitationCoordinator.removeMember()
+```
+
+For an invitation whose key was never distributed, `removeMember()` sends a cancellation, changes
+the persisted status to `REMOVED`, and removes it from the current verification/member projection.
+For an active member or one whose welcome key is already queued, the secure path is:
+
+```text
+GroupInvitationCoordinator.rotateAfterRemoval()
+  -> GroupSecurityManager.findOwnedGroupEpoch()
+  -> GroupSecurityManager.rotateOwnedGroup()
+  -> GroupSecurityDao.replaceCurrentEpoch()
+  -> ProtocolOutbox.enqueue(GroupCreatedPacket) for every remaining member
+  -> ProtocolOutbox.enqueue(GroupMemberRemovedPacket) for the removed member
+  -> GroupInvitationDao.updateStatus(REMOVED)
+  -> ChatDao.deleteConversationParticipant()
+  -> GroupMembershipMessageFactory.memberRemoved()
+  -> ChatDao.upsertMessage()
+  -> GroupVerificationCoordinator.onOwnedMembershipChanged()
+```
+
+The removed contact is omitted from the new `GroupMemberKeyEntity` snapshot and receives no wrapped
+new group key. Its device processes the notification through:
+
+```text
+GroupMemberRemovedPacketHandler.handle()
+  -> GroupInvitationManager.verifyMemberRemoved()
+  -> GroupSecurityManager.removeLocalMembership()
+  -> GroupKeyStorage.deleteGroup()
+  -> GroupSecurityDao.deleteGroup()
+  -> GroupMembershipMessageFactory.localMembershipRemoved()
+  -> ChatDao.applyLocalGroupRemoval()
+  -> GroupInvitationDao.updateStatus(REMOVED)
+  -> GroupVerificationDao.deleteByGroupId()
+```
+
+`GroupMessageSender` no longer creates recipient packets for it, and
+`GroupSecurityManager.decryptMessage()` rejects its old-epoch messages. The conversation and
+existing history remain visible, but `GroupInvitationStateMapper.conversationState()` returns
+`REMOVED` when it sees both the terminal invitation and the local-removal system event,
+`GroupChatViewModel` disables input, and `GroupMembershipRemovedHint` explains the read-only state.
+The same packet uses epoch `0` to cancel a still-pending invitation.
+
+An epoch-advancing removal is valid while the recipient is still `JOIN_SENT`. This handles a
+removal that arrives before its queued welcome has been installed: the owner signature,
+invitation ID/challenge, and removed signing identity are still verified, then any partial local
+state is cleared. A later welcome is rejected because the invitation is already `REMOVED`.
+
+Remaining members learn the removal from the next `GroupCreatedPacket`.
+`GroupCreatedPacketHandler.handle()` compares the previous and incoming participant snapshots,
+creates one `GroupMembershipMessageFactory.memberRemoved()` event for every removed contact, then
+calls `ChatDao.replaceConversationParticipantsWithMessages()` so the membership snapshot and its
+system messages are persisted in one Room transaction.
+
+### Leaving a group as a member
+
+Leaving is owned entirely by `:feature:chats`. `GroupDetailsFlow` switches to
+`LeaveGroupScreen` through its private `DetailsContent.LeaveGroup` state; it does not introduce an
+`AppDestination` or application navigation route.
+
+The member-side call chain is:
+
+```text
+LeaveGroupAction
+  -> GroupDetailsFlow
+  -> LeaveGroupScreen
+  -> GroupVerificationViewModel.leaveGroup()
+  -> LeaveGroup.invoke(conversationId)
+  -> DefaultChatsRepository.leaveGroup()
+  -> GroupInvitationCoordinator.leaveGroup()
+  -> GroupSecurityManager.findJoinedGroupEpoch()
+  -> GroupInvitationManager.createLeaveRequest()
+  -> GroupInvitationDao.updateStatus(ACTIVE -> LEAVE_SENT)
+  -> ProtocolOutbox.enqueue(GroupLeaveRequestPacket)
+```
+
+`GroupLeaveRequestPacket` binds the invitation ID, group ID, current epoch, invitation challenge,
+member signing key, and request timestamp to the member signature. The outgoing transport policy
+requires `SEALED_BOX`, so the signed request is also encrypted to the group owner. If enqueueing
+fails, `leaveGroup()` attempts the compare-and-set rollback `LEAVE_SENT -> ACTIVE`.
+
+`LEAVE_SENT` maps to `GroupConversationState.LEAVING`. `GroupChatViewModel` disables message input,
+`GroupMembershipLeavingHint` explains the pending operation, and a restarted details flow hides
+the leave action through `GroupVerificationContext.isLeavePending`.
+
+The owner-side call chain is:
+
+```text
+IncomingMessageProcessor.resolveConversationId()
+  -> DefaultProtocolPacketHandler.handle()
+  -> GroupLeaveRequestPacketHandler.handle()
+  -> GroupInvitationCoordinator.receiveLeaveRequest()
+  -> GroupInvitationManager.verifyLeaveRequest()
+  -> GroupInvitationCoordinator.removeMemberLocked(reason = MEMBER_LEFT)
+  -> GroupMembershipChangePayload(reason = MEMBER_LEFT, memberSigningPublicKey)
+  -> GroupInvitationCoordinator.rotateAfterRemoval(membershipChange)
+  -> GroupSecurityManager.rotateOwnedGroup(membershipChange)
+  -> ProtocolOutbox.enqueue(GroupCreatedPacket) for every remaining member
+  -> ProtocolOutbox.enqueue(GroupMemberRemovedPacket) for the leaving member
+  -> GroupMembershipMessageFactory.memberLeft()
+```
+
+The owner accepts the request only for the stored active invitation/contact and a non-future group
+epoch. This allows an already signed request to survive an unrelated concurrent epoch rotation,
+while a request for an epoch the owner has never created is rejected. Duplicate delivery after the
+owner has already marked the invitation `REMOVED` succeeds without rotating again.
+
+The leaving device handles the final owner-signed packet through the existing
+`GroupMemberRemovedPacketHandler`. A `LEAVE_SENT` invitation is an allowed source state; the
+handler clears the group keys/security and verification rows, changes the invitation to `REMOVED`,
+retains the conversation history, and persists
+`GroupMembershipMessageFactory.localMembershipLeft()`. The final chat state is the same read-only
+`GroupConversationState.REMOVED`, but its timeline says “You left this group” rather than reporting
+an admin removal.
+
+For remaining devices, `GroupCreatedPacket.membershipChange` is part of the owner-signed welcome
+payload. `GroupCreatedPacketHandler.handle()` matches its `memberSigningPublicKey` against the
+previous epoch's `GroupMemberKeyEntity` before replacing that epoch. The matching removed contact
+is rendered through `GroupMembershipMessageFactory.memberLeft()` as “X left the group”; unmatched
+snapshot removals remain the generic admin-removal event. Tying the reason to a signing key also
+keeps the result correct if a device skips an intermediate epoch containing another removal.
 
 ## Group outgoing message
 
@@ -326,8 +531,8 @@ sequenceDiagram
     Sender->>Outbox: enqueue one packet per active participant
 ```
 
-`GroupMessageSender.queueOrSend()` rejects only an incoming invitation that this device has not
-finished accepting. On the owner:
+`GroupMessageSender.queueOrSend()` rejects an incoming invitation that this device has not
+finished accepting and a recipient-side `REMOVED` membership. On the owner:
 
 - no active `ConversationParticipantEntity` rows: persist the visible message as `QUEUED`;
 - at least one active participant: call `flushQueuedNow()` and `encryptAndEnqueue(message)`.

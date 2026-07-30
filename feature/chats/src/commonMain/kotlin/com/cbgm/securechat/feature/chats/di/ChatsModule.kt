@@ -16,8 +16,10 @@ import com.cbgm.securechat.feature.chats.data.protocol.GroupCreatedPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupInviteDeclinedPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupInvitePacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupJoinRequestPacketHandler
+import com.cbgm.securechat.feature.chats.data.protocol.GroupLeaveRequestPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupMemberActivatedPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupMemberActivationAcknowledgementPacketHandler
+import com.cbgm.securechat.feature.chats.data.protocol.GroupMemberRemovedPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupReadyAcknowledgementPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupVerificationReceiptPacketHandler
 import com.cbgm.securechat.feature.chats.data.protocol.GroupVerificationSnapshotPacketHandler
@@ -34,15 +36,18 @@ import com.cbgm.securechat.feature.chats.domain.repository.ChatsRepository
 import com.cbgm.securechat.feature.chats.domain.repository.GroupVerificationGateway
 import com.cbgm.securechat.feature.chats.domain.repository.GroupVerificationRepository
 import com.cbgm.securechat.feature.chats.domain.usecase.AcceptGroupInvitation
+import com.cbgm.securechat.feature.chats.domain.usecase.AddGroupMembers
 import com.cbgm.securechat.feature.chats.domain.usecase.CreateGroupConversation
 import com.cbgm.securechat.feature.chats.domain.usecase.DeclineGroupInvitation
 import com.cbgm.securechat.feature.chats.domain.usecase.GetOrCreateDirectConversation
+import com.cbgm.securechat.feature.chats.domain.usecase.LeaveGroup
 import com.cbgm.securechat.feature.chats.domain.usecase.MarkConversationRead
 import com.cbgm.securechat.feature.chats.domain.usecase.ObserveConversation
 import com.cbgm.securechat.feature.chats.domain.usecase.ObserveConversations
 import com.cbgm.securechat.feature.chats.domain.usecase.ObserveGroupConversation
 import com.cbgm.securechat.feature.chats.domain.usecase.ObserveGroupVerification
 import com.cbgm.securechat.feature.chats.domain.usecase.ObserveTypingIndicator
+import com.cbgm.securechat.feature.chats.domain.usecase.RemoveGroupMember
 import com.cbgm.securechat.feature.chats.domain.usecase.RetryMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SendGroupMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SendMessage
@@ -107,6 +112,10 @@ val chatsModule =
             bind<TypedProtocolPacketHandler>()
         }
 
+        singleOf(::GroupLeaveRequestPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
         singleOf(::GroupInviteDeclinedPacketHandler) {
             bind<TypedProtocolPacketHandler>()
         }
@@ -120,6 +129,10 @@ val chatsModule =
         }
 
         singleOf(::GroupMemberActivationAcknowledgementPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
+        singleOf(::GroupMemberRemovedPacketHandler) {
             bind<TypedProtocolPacketHandler>()
         }
 
@@ -146,9 +159,11 @@ val chatsModule =
         }
 
         single { AcceptGroupInvitation(repository = get()) }
+        single { AddGroupMembers(repository = get()) }
         single { CreateGroupConversation(repository = get()) }
         single { DeclineGroupInvitation(repository = get()) }
         single { GetOrCreateDirectConversation(repository = get()) }
+        single { LeaveGroup(repository = get()) }
         single { MarkConversationRead(repository = get()) }
         single { ObserveConversation(repository = get()) }
         single { ObserveConversations(repository = get()) }
@@ -161,6 +176,7 @@ val chatsModule =
         }
         single { ObserveTypingIndicator(gateway = get()) }
         single { RetryMessage(repository = get()) }
+        single { RemoveGroupMember(repository = get()) }
         single { SendMessage(repository = get()) }
         single { SendGroupMessage(repository = get()) }
         single { SetTypingIndicator(gateway = get()) }
@@ -219,7 +235,11 @@ val chatsModule =
                 observeGroupVerification = get(),
                 synchronizeGroupVerification = get(),
                 verifyGroupMember = get(),
-                getContactSafetyNumber = get<GetContactSafetyNumber>()
+                getContactSafetyNumber = get<GetContactSafetyNumber>(),
+                observeContacts = get(),
+                addGroupMembers = get(),
+                removeGroupMember = get(),
+                leaveGroup = get()
             )
         }
 

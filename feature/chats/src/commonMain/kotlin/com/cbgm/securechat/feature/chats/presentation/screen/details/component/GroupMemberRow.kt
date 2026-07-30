@@ -2,11 +2,13 @@ package com.cbgm.securechat.feature.chats.presentation.component.groupdetails
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Schedule
@@ -14,11 +16,13 @@ import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -40,14 +44,17 @@ import com.cbgm.securechat.resources.feature_chats_group_member_invitation_pendi
 import com.cbgm.securechat.resources.feature_chats_group_member_mutually_verified
 import com.cbgm.securechat.resources.feature_chats_group_member_participant_verified_admin
 import com.cbgm.securechat.resources.feature_chats_group_member_unverified
+import com.cbgm.securechat.resources.feature_chats_group_remove_member_name
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun GroupMemberRow(
     member: GroupMemberVerificationUiState,
     showVerifyAction: Boolean,
+    showRemoveAction: Boolean,
     showDivider: Boolean,
-    onVerify: () -> Unit
+    onVerify: () -> Unit,
+    onRemove: () -> Unit
 ) {
     val statusColor = member.verificationStatusColor()
     val displayName =
@@ -55,7 +62,7 @@ internal fun GroupMemberRow(
             ?: stringResource(Res.string.feature_chats_group_admin)
     val verifyDescription = stringResource(Res.string.base_verify_contact, displayName)
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth().padding(0.dp)) {
         ListItem(
             modifier =
                 Modifier
@@ -99,12 +106,29 @@ internal fun GroupMemberRow(
                 )
             },
             trailingContent = {
-                if (showVerifyAction) {
-                    StatusBadge(
-                        text = stringResource(Res.string.base_verify),
-                        icon = Icons.Default.Verified,
-                        color = statusColor
-                    )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (showVerifyAction) {
+                        StatusBadge(
+                            text = stringResource(Res.string.base_verify),
+                            icon = Icons.Default.Verified,
+                            color = statusColor
+                        )
+                    }
+                    if (showRemoveAction) {
+                        IconButton(onClick = onRemove) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteOutline,
+                                contentDescription =
+                                    stringResource(
+                                        Res.string.feature_chats_group_remove_member_name,
+                                        displayName
+                                    ),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             },
             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
@@ -180,6 +204,7 @@ private fun GroupMemberVerificationUiState.verificationStatusIcon(): ImageVector
             GroupMemberVerificationState.MUTUALLY_VERIFIED -> Icons.Default.CheckCircle
             GroupMemberVerificationState.ADMIN_VERIFIED_PARTICIPANT,
             GroupMemberVerificationState.PARTICIPANT_VERIFIED_ADMIN -> Icons.Default.Lock
+
             GroupMemberVerificationState.UNVERIFIED -> Icons.Default.Warning
             GroupMemberVerificationState.INVITATION_PENDING -> Icons.Default.Schedule
             GroupMemberVerificationState.GROUP_ADMIN -> Icons.Default.Group
@@ -193,8 +218,10 @@ private fun GroupMemberRowPreview() {
         GroupMemberRow(
             member = GroupDetailsPreviewData.participant,
             showVerifyAction = true,
+            showRemoveAction = true,
             showDivider = false,
-            onVerify = {}
+            onVerify = {},
+            onRemove = {}
         )
     }
 }

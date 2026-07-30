@@ -14,8 +14,10 @@ import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInvitePacket
 import com.cbgm.securechat.core.protocol.packet.GroupJoinRequestPacket
+import com.cbgm.securechat.core.protocol.packet.GroupLeaveRequestPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberActivatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberActivationAcknowledgementPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMemberRemovedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupReadyAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.GroupVerificationReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.GroupVerificationSnapshotPacket
@@ -147,10 +149,12 @@ class IncomingMessageProcessor(
             is ChatMessagePacket -> directConversationStore.getOrCreate(contactId).id
             is GroupCreatedPacket -> packet.groupId
             is GroupMemberActivatedPacket -> packet.groupId
+            is GroupMemberRemovedPacket -> packet.groupId
             is GroupMemberActivationAcknowledgementPacket -> packet.groupId
             is GroupChatMessagePacket -> packet.groupId
             is GroupInvitePacket -> packet.groupId
             is GroupJoinRequestPacket -> packet.groupId
+            is GroupLeaveRequestPacket -> packet.groupId
             is GroupInviteDeclinedPacket -> packet.groupId
             is GroupReadyAcknowledgementPacket -> packet.groupId
             is GroupVerificationReceiptPacket -> packet.groupId

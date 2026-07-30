@@ -5,9 +5,12 @@ import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInvitePacket
 import com.cbgm.securechat.core.protocol.packet.GroupJoinRequestPacket
+import com.cbgm.securechat.core.protocol.packet.GroupLeaveRequestPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberActivatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberActivationAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
+import com.cbgm.securechat.core.protocol.packet.GroupMemberRemovedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMembershipChangePayload
 import com.cbgm.securechat.core.protocol.packet.GroupReadyAcknowledgementPacket
 
 class GroupProtocolPayloadEncoder {
@@ -49,6 +52,19 @@ class GroupProtocolPayloadEncoder {
             ByteArrays.withLengthPrefix(packet.memberSigningPublicKey)
         )
 
+    fun encodeLeaveRequest(packet: GroupLeaveRequestPacket): ByteArray =
+        ByteArrays.concatenate(
+            LEAVE_REQUEST_DOMAIN,
+            ByteArrays.encodeInt(packet.version),
+            encodeString(packet.packetId),
+            encodeString(packet.invitationId),
+            encodeString(packet.groupId),
+            ByteArrays.encodeInt(packet.epoch),
+            ByteArrays.withLengthPrefix(packet.challenge),
+            ByteArrays.withLengthPrefix(packet.memberSigningPublicKey),
+            ByteArrays.encodeLong(packet.requestedAtEpochMilliseconds)
+        )
+
     fun encodeReadyAcknowledgement(packet: GroupReadyAcknowledgementPacket): ByteArray =
         ByteArrays.concatenate(
             READY_ACKNOWLEDGEMENT_DOMAIN,
@@ -88,6 +104,28 @@ class GroupProtocolPayloadEncoder {
             ByteArrays.encodeLong(packet.acknowledgedAtEpochMilliseconds)
         )
 
+    fun encodeMemberRemoved(packet: GroupMemberRemovedPacket): ByteArray =
+        ByteArrays.concatenate(
+            if (packet.reason == GroupMemberRemovedPacket.REASON_MEMBER_LEFT) {
+                MEMBER_LEFT_DOMAIN
+            } else {
+                MEMBER_REMOVED_DOMAIN
+            },
+            ByteArrays.encodeInt(packet.version),
+            encodeString(packet.packetId),
+            encodeString(packet.invitationId),
+            encodeString(packet.groupId),
+            ByteArrays.encodeInt(packet.epoch),
+            if (packet.reason == GroupMemberRemovedPacket.REASON_MEMBER_LEFT) {
+                encodeString(packet.reason)
+            } else {
+                byteArrayOf()
+            },
+            ByteArrays.withLengthPrefix(packet.challenge),
+            ByteArrays.withLengthPrefix(packet.removedMemberSigningPublicKey),
+            ByteArrays.encodeLong(packet.removedAtEpochMilliseconds)
+        )
+
     fun encodeWelcome(packet: GroupCreatedPacket): ByteArray =
         ByteArrays.concatenate(
             WELCOME_DOMAIN,
@@ -98,7 +136,8 @@ class GroupProtocolPayloadEncoder {
             ByteArrays.encodeLong(packet.createdAtEpochMilliseconds),
             ByteArrays.encodeInt(packet.epoch),
             encodeMembers(packet.members),
-            ByteArrays.withLengthPrefix(packet.wrappedGroupKey)
+            ByteArrays.withLengthPrefix(packet.wrappedGroupKey),
+            packet.membershipChange?.let(::encodeMembershipChange) ?: byteArrayOf()
         )
 
     fun encodeMessageAssociatedData(
@@ -144,6 +183,13 @@ class GroupProtocolPayloadEncoder {
                 }.toTypedArray()
         )
 
+    private fun encodeMembershipChange(change: GroupMembershipChangePayload): ByteArray =
+        ByteArrays.concatenate(
+            byteArrayOf(NON_NULL_VALUE),
+            encodeString(change.reason),
+            ByteArrays.withLengthPrefix(change.memberSigningPublicKey)
+        )
+
     private fun encodeString(value: String): ByteArray = ByteArrays.withLengthPrefix(value.encodeToByteArray())
 
     private fun encodeNullableString(value: String?): ByteArray =
@@ -160,6 +206,9 @@ class GroupProtocolPayloadEncoder {
         val MEMBER_ACTIVATED_DOMAIN = "securechat.group-member-activated.v1".encodeToByteArray()
         val MEMBER_ACTIVATION_ACKNOWLEDGEMENT_DOMAIN =
             "securechat.group-member-activation-acknowledgement.v1".encodeToByteArray()
+        val MEMBER_REMOVED_DOMAIN = "securechat.group-member-removed.v1".encodeToByteArray()
+        val MEMBER_LEFT_DOMAIN = "securechat.group-member-left.v1".encodeToByteArray()
+        val LEAVE_REQUEST_DOMAIN = "securechat.group-leave-request.v1".encodeToByteArray()
         val INVITE_DOMAIN = "securechat.group-invite.v1".encodeToByteArray()
         val JOIN_REQUEST_DOMAIN = "securechat.group-join-request.v1".encodeToByteArray()
         val INVITE_DECLINED_DOMAIN = "securechat.group-invite-declined.v1".encodeToByteArray()

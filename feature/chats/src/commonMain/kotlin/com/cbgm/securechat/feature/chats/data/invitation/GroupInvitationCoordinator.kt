@@ -9,9 +9,12 @@ import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInvitePacket
 import com.cbgm.securechat.core.protocol.packet.GroupJoinRequestPacket
+import com.cbgm.securechat.core.protocol.packet.GroupLeaveRequestPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberActivatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberActivationAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
+import com.cbgm.securechat.core.protocol.packet.GroupMemberRemovedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMembershipChangePayload
 import com.cbgm.securechat.core.protocol.packet.GroupReadyAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.phone.LocalPhoneNumberProvider
 import com.cbgm.securechat.core.time.SystemClock
@@ -21,6 +24,7 @@ import com.cbgm.securechat.data.database.entity.ConversationEntity
 import com.cbgm.securechat.data.database.entity.ConversationParticipantEntity
 import com.cbgm.securechat.data.database.entity.GroupInvitationEntity
 import com.cbgm.securechat.data.database.entity.GroupMemberKeyEntity
+import com.cbgm.securechat.feature.chats.data.message.GroupMembershipMessageFactory
 import com.cbgm.securechat.feature.chats.data.message.GroupMessageSender
 import com.cbgm.securechat.feature.chats.data.security.GroupInvitationManager
 import com.cbgm.securechat.feature.chats.data.security.GroupSecurityManager
@@ -120,6 +124,202 @@ class GroupInvitationCoordinator(
             groupId
         }
 
+    suspend fun addMembers(
+        groupId: String,
+        contactIds: Set<String>
+    ): Result<Unit> =
+        runCatching {
+            require(groupId.isNotBlank()) { "Group ID must not be blank" }
+            require(contactIds.isNotEmpty()) { "Choose at least one contact" }
+
+            activationMutex.withLock {
+                val conversation =
+                    chatDao.findConversationById(groupId)
+                        ?: error("Group conversation was not found")
+                check(conversation.type == GROUP_CONVERSATION_TYPE) {
+                    "Conversation is not a group"
+                }
+                val currentInvitations = groupInvitationDao.findByGroupId(groupId)
+                check(currentInvitations.none { invitation -> invitation.status.isIncomingStatus() }) {
+                    "Only the group owner may add members"
+                }
+                groupSecurityManager.findOwnedGroupEpoch(groupId).getOrThrow()
+
+                val activeOrPendingContactIds =
+                    currentInvitations
+                        .filterNot { invitation -> invitation.status.isTerminalStatus() }
+                        .mapTo(mutableSetOf(), GroupInvitationEntity::contactId)
+                check(contactIds.none(activeOrPendingContactIds::contains)) {
+                    "One or more contacts already belong to this group"
+                }
+
+                val contacts =
+                    contactIds
+                        .map { contactId -> loadContact(contactId) }
+                        .sortedBy(Contact::id)
+                val ownerIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
+                val ownerSigningKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
+                val now = SystemClock.nowEpochMilliseconds()
+                val expiresAt = now + INVITATION_VALIDITY_MILLISECONDS
+                val invitationsAndPackets =
+                    contacts.map { contact ->
+                        groupInvitationDao.deleteByGroupAndContact(groupId, contact.id)
+                        val invitationId = IdGenerator.generate(prefix = "group-invitation")
+                        val packet =
+                            groupInvitationManager
+                                .createInvite(
+                                    invitationId = invitationId,
+                                    groupId = groupId,
+                                    title = requireNotNull(conversation.title),
+                                    createdAtEpochMilliseconds = now,
+                                    expiresAtEpochMilliseconds = expiresAt,
+                                    ownerIdentity = ownerIdentity,
+                                    ownerSigningKeyPair = ownerSigningKeyPair
+                                ).getOrThrow()
+
+                        GroupInvitationEntity(
+                            invitationId = invitationId,
+                            groupId = groupId,
+                            contactId = contact.id,
+                            status = GroupInvitationStatus.INVITE_SENT.name,
+                            challenge = packet.challenge.copyOf(),
+                            createdAtEpochMilliseconds = now,
+                            expiresAtEpochMilliseconds = expiresAt,
+                            updatedAtEpochMilliseconds = now
+                        ) to packet
+                    }
+
+                groupInvitationDao.upsertAll(invitationsAndPackets.map { (entity, _) -> entity })
+                groupVerificationCoordinator.onOwnedMembershipChanged(groupId).getOrThrow()
+                invitationsAndPackets.forEach { (entity, packet) ->
+                    protocolOutbox.enqueue(entity.contactId, packet).getOrThrow()
+                }
+                chatDao.updateConversationTimestamp(groupId, now)
+            }
+        }
+
+    suspend fun removeMember(
+        groupId: String,
+        contactId: String
+    ): Result<Unit> =
+        runCatching {
+            require(groupId.isNotBlank()) { "Group ID must not be blank" }
+            require(contactId.isNotBlank()) { "Contact ID must not be blank" }
+
+            activationMutex.withLock {
+                removeMemberLocked(
+                    groupId = groupId,
+                    contactId = contactId,
+                    reason = GroupMemberRemovedPacket.REASON_REMOVED_BY_OWNER
+                )
+            }
+        }
+
+    suspend fun leaveGroup(groupId: String): Result<Unit> =
+        runCatching {
+            require(groupId.isNotBlank()) { "Group ID must not be blank" }
+
+            activationMutex.withLock {
+                val invitation = requireIncomingInvitation(groupId)
+                check(invitation.status == GroupInvitationStatus.ACTIVE.name) {
+                    "Only an active group member may leave the group"
+                }
+                val epoch =
+                    groupSecurityManager
+                        .findJoinedGroupEpoch(
+                            groupId = groupId,
+                            ownerContactId = invitation.contactId
+                        ).getOrThrow()
+                        ?: error("Active group security state was not found")
+                val requestedAt =
+                    maxOf(
+                        invitation.createdAtEpochMilliseconds,
+                        SystemClock.nowEpochMilliseconds()
+                    )
+                val leaveRequest =
+                    groupInvitationManager
+                        .createLeaveRequest(
+                            invitationId = invitation.invitationId,
+                            groupId = groupId,
+                            epoch = epoch,
+                            challenge = invitation.challenge,
+                            requestedAtEpochMilliseconds = requestedAt,
+                            memberSigningKeyPair =
+                                localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
+                        ).getOrThrow()
+                val updated =
+                    groupInvitationDao.updateStatus(
+                        invitationId = invitation.invitationId,
+                        expectedStatus = GroupInvitationStatus.ACTIVE.name,
+                        newStatus = GroupInvitationStatus.LEAVE_SENT.name,
+                        updatedAt = requestedAt
+                    )
+                check(updated == 1) { "Group membership changed before the leave request was queued" }
+
+                protocolOutbox
+                    .enqueue(invitation.contactId, leaveRequest)
+                    .onFailure {
+                        groupInvitationDao.updateStatus(
+                            invitationId = invitation.invitationId,
+                            expectedStatus = GroupInvitationStatus.LEAVE_SENT.name,
+                            newStatus = GroupInvitationStatus.ACTIVE.name,
+                            updatedAt = requestedAt
+                        )
+                    }.getOrThrow()
+            }
+        }
+
+    suspend fun receiveLeaveRequest(
+        memberContactId: String,
+        packet: GroupLeaveRequestPacket
+    ): Result<Unit> =
+        runCatching {
+            activationMutex.withLock {
+                val invitation =
+                    groupInvitationDao.findByInvitationId(packet.invitationId)
+                        ?: error("Leaving group member was not found")
+                check(invitation.groupId == packet.groupId) {
+                    "Group leave request references the wrong group"
+                }
+                check(invitation.contactId == memberContactId) {
+                    "Group leave request came from a different member"
+                }
+                check(invitation.challenge.contentEquals(packet.challenge)) {
+                    "Group leave request invitation challenge does not match"
+                }
+                val memberIdentity =
+                    loadContact(memberContactId).secureChatIdentity
+                        ?: error("Leaving group member identity was not found")
+                check(memberIdentity.signingPublicKey.contentEquals(packet.memberSigningPublicKey)) {
+                    "Group leave request signing identity does not match the member"
+                }
+                groupInvitationManager
+                    .verifyLeaveRequest(
+                        packet = packet,
+                        expectedMemberSigningPublicKey = memberIdentity.signingPublicKey
+                    ).getOrThrow()
+
+                if (invitation.status == GroupInvitationStatus.REMOVED.name) {
+                    return@withLock
+                }
+                check(invitation.status == GroupInvitationStatus.ACTIVE.name) {
+                    "Only an active group member may leave the group"
+                }
+                val currentEpoch =
+                    groupSecurityManager.findOwnedGroupEpoch(packet.groupId).getOrThrow()
+                        ?: error("Active group security state was not found")
+                check(packet.epoch <= currentEpoch) {
+                    "Group leave request references a future group epoch"
+                }
+
+                removeMemberLocked(
+                    groupId = packet.groupId,
+                    contactId = memberContactId,
+                    reason = GroupMemberRemovedPacket.REASON_MEMBER_LEFT
+                )
+            }
+        }
+
     suspend fun receiveInvite(
         ownerContactId: String,
         packet: GroupInvitePacket,
@@ -143,6 +343,13 @@ class GroupInvitationCoordinator(
                     "Group invitation conflicts with an existing invitation"
                 }
                 return@runCatching
+            }
+            val replacedInvitation =
+                groupInvitationDao.findByGroupAndContact(packet.groupId, ownerContactId)
+            if (replacedInvitation != null) {
+                check(replacedInvitation.status.isTerminalStatus()) {
+                    "A current group invitation already exists for this group"
+                }
             }
 
             val replacesUntrustedIdentity =
@@ -176,7 +383,7 @@ class GroupInvitationCoordinator(
                     updatedAtEpochMilliseconds = persistedAtEpochMilliseconds
                 )
             )
-            groupInvitationDao.upsert(
+            val invitation =
                 GroupInvitationEntity(
                     invitationId = packet.invitationId,
                     groupId = packet.groupId,
@@ -187,7 +394,11 @@ class GroupInvitationCoordinator(
                     expiresAtEpochMilliseconds = packet.expiresAtEpochMilliseconds,
                     updatedAtEpochMilliseconds = persistedAtEpochMilliseconds
                 )
-            )
+            if (replacedInvitation == null) {
+                groupInvitationDao.upsert(invitation)
+            } else {
+                groupInvitationDao.replaceForGroupAndContact(invitation)
+            }
         }
 
     suspend fun acceptInvitation(groupId: String): Result<Unit> =
@@ -279,7 +490,18 @@ class GroupInvitationCoordinator(
                     ).getOrThrow()
 
             protocolOutbox.enqueue(invitation.contactId, packet).getOrThrow()
-            chatDao.deleteConversation(groupId)
+            val updated =
+                groupInvitationDao.updateStatus(
+                    invitationId = invitation.invitationId,
+                    expectedStatus = GroupInvitationStatus.AWAITING_ACCEPTANCE.name,
+                    newStatus = GroupInvitationStatus.DECLINED.name,
+                    updatedAt =
+                        resolveInvitationUpdatedAt(
+                            createdAtEpochMilliseconds = invitation.createdAtEpochMilliseconds,
+                            candidateAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+                        )
+                )
+            check(updated == 1) { "Group invitation changed while it was declined" }
         }
 
     suspend fun receiveJoinRequest(
@@ -400,7 +622,11 @@ class GroupInvitationCoordinator(
                         ?: error("Group member identity was not found")
                 check(
                     packet.welcomePacketId ==
-                        groupSecurityManager.welcomePacketId(packet.groupId, packet.epoch, memberContactId)
+                        groupSecurityManager.welcomePacketId(
+                            groupId = packet.groupId,
+                            invitationId = invitation.invitationId,
+                            epoch = packet.epoch
+                        )
                 ) {
                     "Ready acknowledgement references the wrong welcome"
                 }
@@ -436,6 +662,7 @@ class GroupInvitationCoordinator(
                         invitation.createdAtEpochMilliseconds,
                         receivedAtEpochMilliseconds
                     )
+                val shouldRecordMemberAdded = chatDao.hasMessages(packet.groupId)
 
                 activeContacts.forEach { activeContact ->
                     enqueueMemberActivation(
@@ -477,6 +704,19 @@ class GroupInvitationCoordinator(
                         joinedAtEpochMilliseconds = activationTimestamp
                     )
                 )
+                if (shouldRecordMemberAdded) {
+                    chatDao.upsertMessage(
+                        GroupMembershipMessageFactory.memberAdded(
+                            conversationId = packet.groupId,
+                            epoch = packet.epoch,
+                            contactId = memberContactId,
+                            contactName = activatedContact.membershipDisplayName(),
+                            createdAtEpochMilliseconds = activationTimestamp,
+                            eventId = invitation.invitationId
+                        )
+                    )
+                    chatDao.updateConversationTimestamp(packet.groupId, activationTimestamp)
+                }
 
                 groupVerificationCoordinator
                     .onOwnedMembershipChanged(packet.groupId)
@@ -586,22 +826,47 @@ class GroupInvitationCoordinator(
         val localIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
         val localSigningKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
         val localPhoneNumber = localPhoneNumberProvider.getLocalPhoneNumber().getOrThrow()
+        val activeContacts =
+            groupInvitationDao
+                .findByGroupId(groupId)
+                .filter { existing -> existing.status == GroupInvitationStatus.ACTIVE.name }
+                .map { existing -> loadContact(existing.contactId) }
+        val members =
+            (activeContacts + contact)
+                .distinctBy(Contact::id)
+                .sortedBy(Contact::id)
+        val currentEpoch = groupSecurityManager.findOwnedGroupEpoch(groupId).getOrThrow()
+        val targetEpoch = currentEpoch?.plus(1) ?: INITIAL_GROUP_EPOCH
         val securedGroup =
-            groupSecurityManager
-                .createOwnedGroup(
+            if (currentEpoch == null) {
+                groupSecurityManager.createOwnedGroup(
                     groupId = groupId,
                     title = requireNotNull(conversation.title),
                     createdAtEpochMilliseconds = conversation.createdAtEpochMilliseconds,
-                    memberPayloads = createMemberPayloads(localIdentity, localPhoneNumber, listOf(contact)),
-                    memberKeys = createMemberKeys(groupId, listOf(contact)),
-                    recipients = createRecipients(listOf(contact)),
+                    memberPayloads = createMemberPayloads(localIdentity, localPhoneNumber, members),
+                    memberKeys = createMemberKeys(groupId, targetEpoch, members),
+                    recipients = createRecipients(groupId, members),
                     localSigningKeyPair = localSigningKeyPair
-                ).getOrThrow()
-        val welcomePacket =
-            securedGroup.welcomePacketsByContactId[contact.id]
-                ?: error("Recipient welcome packet was not created")
+                )
+            } else {
+                groupSecurityManager.rotateOwnedGroup(
+                    groupId = groupId,
+                    title = requireNotNull(conversation.title),
+                    createdAtEpochMilliseconds = conversation.createdAtEpochMilliseconds,
+                    updatedAtEpochMilliseconds = SystemClock.nowEpochMilliseconds(),
+                    memberPayloads = createMemberPayloads(localIdentity, localPhoneNumber, members),
+                    memberKeys = createMemberKeys(groupId, targetEpoch, members),
+                    recipients = createRecipients(groupId, members),
+                    localSigningKeyPair = localSigningKeyPair
+                )
+            }.getOrThrow()
+        check(contact.id in securedGroup.welcomePacketsByContactId) {
+            "Recipient welcome packet was not created"
+        }
 
-        protocolOutbox.enqueue(contact.id, welcomePacket).getOrThrow()
+        securedGroup.welcomePacketsByContactId.forEach { (recipientContactId, packet) ->
+            protocolOutbox.enqueue(recipientContactId, packet).getOrThrow()
+        }
 
         val updated =
             groupInvitationDao.updateStatus(
@@ -768,13 +1033,14 @@ class GroupInvitationCoordinator(
 
     private fun createMemberKeys(
         groupId: String,
+        epoch: Int,
         contacts: List<Contact>
     ): List<GroupMemberKeyEntity> =
         contacts.map { contact ->
             val identity = requireNotNull(contact.secureChatIdentity)
             GroupMemberKeyEntity(
                 groupId = groupId,
-                epoch = INITIAL_GROUP_EPOCH,
+                epoch = epoch,
                 contactId = contact.id,
                 encryptionPublicKey = identity.encryptionPublicKey.copyOf(),
                 signingPublicKey = identity.signingPublicKey.copyOf(),
@@ -782,13 +1048,187 @@ class GroupInvitationCoordinator(
             )
         }
 
-    private fun createRecipients(contacts: List<Contact>): List<GroupWelcomeRecipient> =
+    private suspend fun removeMemberLocked(
+        groupId: String,
+        contactId: String,
+        reason: String
+    ) {
+        val invitation =
+            groupInvitationDao.findByGroupAndContact(groupId, contactId)
+                ?: error("Group member was not found")
+        check(!invitation.status.isIncomingStatus()) {
+            "Only the group owner may remove members"
+        }
+        groupSecurityManager.findOwnedGroupEpoch(groupId).getOrThrow()
+        check(!invitation.status.isTerminalStatus()) {
+            "Group member is already inactive"
+        }
+
+        val now =
+            maxOf(
+                invitation.createdAtEpochMilliseconds,
+                SystemClock.nowEpochMilliseconds()
+            )
+        val removedContact = loadContact(contactId)
+        val membershipChange =
+            if (reason == GroupMemberRemovedPacket.REASON_MEMBER_LEFT) {
+                GroupMembershipChangePayload(
+                    reason = GroupMemberRemovedPacket.REASON_MEMBER_LEFT,
+                    memberSigningPublicKey =
+                        requireNotNull(removedContact.secureChatIdentity)
+                            .signingPublicKey
+                            .copyOf()
+                )
+            } else {
+                null
+            }
+        val removalEpoch =
+            if (
+                invitation.status == GroupInvitationStatus.ACTIVE.name ||
+                invitation.status == GroupInvitationStatus.WELCOME_SENT.name
+            ) {
+                rotateAfterRemoval(
+                    groupId = groupId,
+                    removedContactId = contactId,
+                    updatedAtEpochMilliseconds = now,
+                    membershipChange = membershipChange
+                )
+            } else {
+                GroupMemberRemovedPacket.PENDING_INVITATION_EPOCH
+            }
+        val removalPacket =
+            groupInvitationManager
+                .createMemberRemoved(
+                    invitationId = invitation.invitationId,
+                    groupId = groupId,
+                    epoch = removalEpoch,
+                    reason = reason,
+                    challenge = invitation.challenge,
+                    removedMemberSigningPublicKey =
+                        removedContact.secureChatIdentity
+                            ?.signingPublicKey
+                            ?.copyOf()
+                            ?: byteArrayOf(),
+                    removedAtEpochMilliseconds = now,
+                    ownerSigningKeyPair =
+                        localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
+                ).getOrThrow()
+        protocolOutbox.enqueue(contactId, removalPacket).getOrThrow()
+
+        val updated =
+            groupInvitationDao.updateStatus(
+                invitationId = invitation.invitationId,
+                expectedStatus = invitation.status,
+                newStatus = GroupInvitationStatus.REMOVED.name,
+                updatedAt = now
+            )
+        check(updated == 1) { "Group membership changed while the member was removed" }
+        chatDao.deleteConversationParticipant(groupId, contactId)
+        chatDao.upsertMessage(
+            if (reason == GroupMemberRemovedPacket.REASON_MEMBER_LEFT) {
+                GroupMembershipMessageFactory.memberLeft(
+                    conversationId = groupId,
+                    epoch = removalEpoch,
+                    contactId = contactId,
+                    contactName = removedContact.membershipDisplayName(),
+                    createdAtEpochMilliseconds = now,
+                    eventId = invitation.invitationId
+                )
+            } else {
+                GroupMembershipMessageFactory.memberRemoved(
+                    conversationId = groupId,
+                    epoch = removalEpoch,
+                    contactId = contactId,
+                    contactName = removedContact.membershipDisplayName(),
+                    createdAtEpochMilliseconds = now,
+                    eventId = invitation.invitationId
+                )
+            }
+        )
+        groupVerificationCoordinator.onOwnedMembershipChanged(groupId).getOrThrow()
+        chatDao.updateConversationTimestamp(groupId, now)
+    }
+
+    private suspend fun rotateAfterRemoval(
+        groupId: String,
+        removedContactId: String,
+        updatedAtEpochMilliseconds: Long,
+        membershipChange: GroupMembershipChangePayload?
+    ): Int {
+        val conversation =
+            chatDao.findConversationById(groupId)
+                ?: error("Group conversation was not found")
+        val currentEpoch =
+            groupSecurityManager.findOwnedGroupEpoch(groupId).getOrThrow()
+                ?: error("Active group security state was not found")
+        val remainingContacts =
+            groupInvitationDao
+                .findByGroupId(groupId)
+                .filter { invitation ->
+                    invitation.status == GroupInvitationStatus.ACTIVE.name &&
+                        invitation.contactId != removedContactId
+                }.map { invitation -> loadContact(invitation.contactId) }
+                .sortedBy(Contact::id)
+        val localIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
+        val localSigningKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
+        val localPhoneNumber = localPhoneNumberProvider.getLocalPhoneNumber().getOrThrow()
+        val nextEpoch = currentEpoch + 1
+        val securedGroup =
+            groupSecurityManager
+                .rotateOwnedGroup(
+                    groupId = groupId,
+                    title = requireNotNull(conversation.title),
+                    createdAtEpochMilliseconds = conversation.createdAtEpochMilliseconds,
+                    updatedAtEpochMilliseconds = updatedAtEpochMilliseconds,
+                    memberPayloads =
+                        createMemberPayloads(
+                            localIdentity = localIdentity,
+                            localPhoneNumber = localPhoneNumber,
+                            contacts = remainingContacts
+                        ),
+                    memberKeys = createMemberKeys(groupId, nextEpoch, remainingContacts),
+                    recipients = createRecipients(groupId, remainingContacts),
+                    localSigningKeyPair = localSigningKeyPair,
+                    membershipChange = membershipChange
+                ).getOrThrow()
+
+        securedGroup.welcomePacketsByContactId.forEach { (recipientContactId, packet) ->
+            protocolOutbox.enqueue(recipientContactId, packet).getOrThrow()
+        }
+        return nextEpoch
+    }
+
+    private fun String.isIncomingStatus(): Boolean =
+        this == GroupInvitationStatus.AWAITING_ACCEPTANCE.name ||
+            this == GroupInvitationStatus.JOIN_SENT.name ||
+            this == GroupInvitationStatus.WAITING_FOR_ACTIVATION.name ||
+            this == GroupInvitationStatus.LEAVE_SENT.name
+
+    private fun String.isTerminalStatus(): Boolean =
+        this == GroupInvitationStatus.DECLINED.name ||
+            this == GroupInvitationStatus.EXPIRED.name ||
+            this == GroupInvitationStatus.FAILED.name ||
+            this == GroupInvitationStatus.REMOVED.name
+
+    private suspend fun createRecipients(
+        groupId: String,
+        contacts: List<Contact>
+    ): List<GroupWelcomeRecipient> =
         contacts.map { contact ->
+            val invitation =
+                groupInvitationDao.findByGroupAndContact(groupId, contact.id)
+                    ?: error("Group invitation was not found for welcome recipient: ${contact.id}")
             GroupWelcomeRecipient(
                 contactId = contact.id,
+                invitationId = invitation.invitationId,
                 encryptionPublicKey = requireNotNull(contact.secureChatIdentity).encryptionPublicKey.copyOf()
             )
         }
+
+    private fun Contact.membershipDisplayName(): String =
+        displayName?.trim()?.takeIf(String::isNotEmpty)
+            ?: preferredPhoneNumber?.value?.trim()?.takeIf(String::isNotEmpty)
+            ?: "Member"
 
     private fun Contact.requirePhoneNumber(): String =
         preferredPhoneNumber?.value?.trim()?.takeIf(String::isNotEmpty)

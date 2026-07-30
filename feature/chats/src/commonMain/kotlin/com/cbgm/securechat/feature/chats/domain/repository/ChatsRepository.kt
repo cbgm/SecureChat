@@ -16,6 +16,18 @@ interface ChatsRepository {
         contactIds: Set<String>
     ): String
 
+    suspend fun addGroupMembers(
+        conversationId: String,
+        contactIds: Set<String>
+    ): Result<Unit>
+
+    suspend fun removeGroupMember(
+        conversationId: String,
+        contactId: String
+    ): Result<Unit>
+
+    suspend fun leaveGroup(conversationId: String): Result<Unit>
+
     fun observeGroupConversation(conversationId: String): Flow<GroupConversation?>
 
     suspend fun acceptGroupInvitation(conversationId: String): Result<Unit>

@@ -63,6 +63,7 @@ Use cases keep presentation independent of implementations: `ObserveContacts`, `
 |---|---|---|
 | `ContactsScreenMode.Overview` | Normal contacts overview | `OverviewContactsTopBar`, create-group row, contact status, import FAB and sheet |
 | `ContactsScreenMode.GroupSelection` | Selecting contacts for a group | `GroupSelectionContactsTopBar`, title/confirm controls, selection circles |
+| `ContactsScreenMode.MemberSelection` | Adding contacts to an existing group | `MemberSelectionContactsTopBar`, confirm control, selection circles |
 
 The shared screen always owns:
 
@@ -75,6 +76,10 @@ The shared screen always owns:
 `CreateGroupScreen` in `:feature:chats` supplies `GroupSelection` and owns the group-specific
 `CreateGroupViewModel`. This reuses contacts presentation without moving group creation into the
 contacts domain.
+
+`AddGroupMembersScreen` supplies `MemberSelection` from inside `GroupDetailsFlow`. It reuses the
+contact list without introducing an application navigation destination or moving membership
+behavior out of `:feature:chats`.
 
 ## Import and merge
 

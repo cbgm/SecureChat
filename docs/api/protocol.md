@@ -55,10 +55,12 @@ The actual property set depends on the packet class.
 | `group_invite` | `GroupInvitePacket` | invitation/group metadata, challenge, owner public identity, owner signature | `GroupInvitePacketHandler` |
 | `group_join_request` | `GroupJoinRequestPacket` | invitation/group IDs, challenge, member public identity, member signature | `GroupJoinRequestPacketHandler` |
 | `group_invite_declined` | `GroupInviteDeclinedPacket` | invitation/group IDs, challenge, member signing key/signature | `GroupInviteDeclinedPacketHandler` |
+| `group_leave_request` | `GroupLeaveRequestPacket` | invitation/group IDs, epoch, challenge, member signing key, request timestamp/signature | `GroupLeaveRequestPacketHandler` |
 | `group_created` | `GroupCreatedPacket` | group metadata, epoch, members, recipient-wrapped key, owner signature | `GroupCreatedPacketHandler` |
 | `group_ready_acknowledgement` | `GroupReadyAcknowledgementPacket` | group ID, epoch, welcome packet ID, key confirmation, member signature | `GroupReadyAcknowledgementPacketHandler` |
 | `group_member_activated` | `GroupMemberActivatedPacket` | group/epoch, activation round, member snapshot, sender signature | `GroupMemberActivatedPacketHandler` |
 | `group_member_activation_acknowledgement` | `GroupMemberActivationAcknowledgementPacket` | group/epoch, activation packet ID and acknowledger signature | `GroupMemberActivationAcknowledgementPacketHandler` |
+| `group_member_removed` | `GroupMemberRemovedPacket` | invitation/group IDs, challenge, next epoch, reason, removed signing key, owner signature | `GroupMemberRemovedPacketHandler` |
 | `group_verification_receipt` | `GroupVerificationReceiptPacket` | group/invitation IDs, owner and participant identity snapshots, signature | `GroupVerificationReceiptPacketHandler` |
 | `group_verification_snapshot_request` | `GroupVerificationSnapshotRequestPacket` | group/invitation/request IDs and requester signature | `GroupVerificationSnapshotRequestPacketHandler` |
 | `group_verification_snapshot` | `GroupVerificationSnapshotPacket` | group ID, member verification rows, owner identity and signature | `GroupVerificationSnapshotPacketHandler` |
@@ -103,17 +105,43 @@ the invitee signature. `GroupInvitationCoordinator` accepts it only for the exac
 invitation and contact, before expiry, and rejects conflicts with a previously stored identity.
 
 `GroupInviteDeclinedPacket` binds the same invitation, group, challenge, and invitee signing key.
-The creator accepts it only from the contact stored on that invitation.
+The creator accepts it only from the contact stored on that invitation. The invitee persists its
+local invitation as `DECLINED` after enqueueing the packet and retains the conversation and its
+message history; declining an invitation is not a conversation-deletion operation.
 
-`GroupCreatedPacket` is a signed group welcome. Every recipient gets a different packet because
-`wrappedGroupKey` is created for that recipient's X25519 encryption public key. The signed payload
+`GroupLeaveRequestPacket` is member-signed and valid only for the stored active invitation and
+authenticated sender contact. `GroupProtocolPayloadEncoder.encodeLeaveRequest()` binds the group
+epoch, original invitation challenge, member signing key, and request timestamp. The owner accepts
+the request when its epoch is current or older, but never when it references a future epoch; this
+keeps an already queued request valid across an unrelated owner rotation. The packet requires
+encrypted outer transport through `DefaultOutgoingPacketTransportPolicy`.
+
+`GroupCreatedPacket` is a signed initial welcome or later epoch update. Every recipient gets a
+different packet because `wrappedGroupKey` is created for that recipient's X25519 encryption
+public key. The signed payload
 binds `packetId`, protocol version, group ID/title/timestamp, epoch, the complete ordered
-`GroupMemberPayload` list, and `wrappedGroupKey`.
+`GroupMemberPayload` list, `wrappedGroupKey`, and any optional `membershipChange`. A voluntary
+leave uses `GroupMembershipChangePayload(reason = MEMBER_LEFT, memberSigningPublicKey)` so every
+remaining recipient can associate the snapshot removal with the exact previous-epoch identity.
+When `membershipChange` is absent, `encodeWelcome()` preserves the original welcome signing
+payload for compatibility. Its deterministic packet ID is
+`GroupSecurityManager.welcomePacketId(groupId, invitationId, epoch)`, so the signature also binds
+the welcome to that recipient's current invitation without adding another serialized field.
 
 `GroupReadyAcknowledgementPacket` is created only after `GroupCreatedPacketHandler` has unwrapped
 and persisted the epoch key. Its signature binds the group, epoch, deterministic welcome packet ID,
 and SHA-256 key-confirmation value. The creator verifies both the signature and the confirmation
 against its copy of the epoch key before changing that member to `ACTIVE`.
+
+`GroupMemberRemovedPacket` is owner-signed and bound to the original invitation ID and challenge.
+Epoch `0` cancels an invitation that never became active. Removing an active member carries the
+next epoch and the removed member's signing key; the recipient verifies both against its installed
+group state when present, deletes its local group keys/security snapshot, and retains the
+conversation as read-only. The same epoch-advancing packet may be applied from `JOIN_SENT` when it
+overtakes the welcome; no installed key is required because the signed invitation binding and
+removed signing identity still authenticate the operation. `reason` defaults to
+`REMOVED_BY_OWNER`; the owner uses `MEMBER_LEFT` after a valid `GroupLeaveRequestPacket`, and that
+reason is included in the member-left signature domain.
 
 `GroupChatMessagePacket` never carries message plaintext. `GroupProtocolPayloadEncoder` defines:
 
@@ -211,7 +239,8 @@ migration and compatibility policy before changing an existing serialized shape.
 1. Add a `@Serializable` class implementing `SecureChatPacket`.
 2. Add a unique `@SerialName`.
 3. Validate required fields in `init` where appropriate.
-4. Add round-trip and invalid-input coverage to `KotlinxPacketCodecTest`.
+4. Add round-trip and invalid-input coverage to the matching codec test, such as
+   `GroupInvitationPacketCodecTest`.
 5. Implement `TypedProtocolPacketHandler` in the owning feature.
 6. Bind it with `bind<TypedProtocolPacketHandler>()` in that feature’s Koin module.
 7. Create and enqueue it through `ProtocolOutbox`; do not send directly.

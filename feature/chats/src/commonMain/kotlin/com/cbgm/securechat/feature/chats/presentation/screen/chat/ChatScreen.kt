@@ -66,6 +66,7 @@ import com.cbgm.securechat.core.ui.component.SecureChatLazyScaffold
 import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.chats.domain.model.ChatMessage
+import com.cbgm.securechat.feature.chats.domain.model.ChatMessageType
 import com.cbgm.securechat.feature.chats.domain.model.ContactSecurityState
 import com.cbgm.securechat.feature.chats.domain.model.GroupConversationState
 import com.cbgm.securechat.feature.chats.domain.model.GroupMemberInvitationStatus
@@ -74,6 +75,9 @@ import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.DeliveryLabel
+import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.GroupMembershipLeavingHint
+import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.GroupMembershipRemovedHint
+import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.GroupMembershipSystemMessage
 import com.cbgm.securechat.feature.contacts.domain.model.IdentityHandshakeState
 import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.base_verify
@@ -124,7 +128,9 @@ import com.cbgm.securechat.resources.feature_chats_group_status_expired
 import com.cbgm.securechat.resources.feature_chats_group_status_failed
 import com.cbgm.securechat.resources.feature_chats_group_status_invited
 import com.cbgm.securechat.resources.feature_chats_group_status_joining
+import com.cbgm.securechat.resources.feature_chats_group_status_leaving
 import com.cbgm.securechat.resources.feature_chats_group_status_partial
+import com.cbgm.securechat.resources.feature_chats_group_status_removed
 import com.cbgm.securechat.resources.feature_chats_group_status_waiting
 import com.cbgm.securechat.resources.feature_chats_invalid_message_packet
 import com.cbgm.securechat.resources.feature_chats_invalid_packet
@@ -305,6 +311,10 @@ private fun ChatTopBar(
                 onAccept = onAcceptGroupInvitation,
                 onDecline = onDeclineGroupInvitation
             )
+        } else if (uiState.groupState == GroupConversationState.REMOVED) {
+            GroupMembershipRemovedHint()
+        } else if (uiState.groupState == GroupConversationState.LEAVING) {
+            GroupMembershipLeavingHint()
         } else if (
             uiState.isGroup &&
             uiState.groupState != GroupConversationState.READY &&
@@ -353,6 +363,10 @@ private fun groupStateSubtitle(uiState: ChatUiState): String =
                     uiState.groupPendingCount
                 )
             }
+        GroupConversationState.LEAVING ->
+            stringResource(Res.string.feature_chats_group_status_leaving)
+        GroupConversationState.REMOVED ->
+            stringResource(Res.string.feature_chats_group_status_removed)
         GroupConversationState.DECLINED ->
             stringResource(Res.string.feature_chats_group_status_declined)
         GroupConversationState.EXPIRED ->
@@ -810,10 +824,17 @@ private fun MessageList(
             items = messages,
             key = { message -> message.id }
         ) { message ->
-            MessageBubble(
-                message = message,
-                onRetryClick = { onRetryMessage(message.id) }
-            )
+            if (message.type == ChatMessageType.USER) {
+                MessageBubble(
+                    message = message,
+                    onRetryClick = { onRetryMessage(message.id) }
+                )
+            } else {
+                GroupMembershipSystemMessage(
+                    type = message.type,
+                    memberName = message.senderName
+                )
+            }
         }
     }
 }

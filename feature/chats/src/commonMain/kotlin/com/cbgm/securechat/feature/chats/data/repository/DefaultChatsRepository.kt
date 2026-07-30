@@ -20,9 +20,11 @@ import com.cbgm.securechat.feature.chats.data.delivery.MessageDeliveryStateCoord
 import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationCoordinator
 import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationStateMapper
 import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationStatus
+import com.cbgm.securechat.feature.chats.data.message.GroupMembershipMessageFactory
 import com.cbgm.securechat.feature.chats.data.message.GroupMessageSender
 import com.cbgm.securechat.feature.chats.data.security.GROUP_END_TO_END_ENCRYPTED_MODE
 import com.cbgm.securechat.feature.chats.domain.model.ChatMessage
+import com.cbgm.securechat.feature.chats.domain.model.ChatMessageType
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
 import com.cbgm.securechat.feature.chats.domain.model.GroupConversation
 import com.cbgm.securechat.feature.chats.domain.model.GroupConversationState
@@ -71,9 +73,22 @@ class DefaultChatsRepository(
         ) { result, participants, recipientStates, invitations ->
             val pendingParticipantCount =
                 invitations.count { invitation ->
-                    invitation.status != GroupInvitationStatus.ACTIVE.name
+                    invitation.status.isPendingMembershipStatus()
                 }
-            val groupState = GroupInvitationStateMapper.conversationState(invitations)
+            val groupState =
+                GroupInvitationStateMapper.conversationState(
+                    invitations = invitations,
+                    hasLocalMembershipRemoval =
+                        result
+                            ?.messages
+                            .orEmpty()
+                            .any { message ->
+                                GroupMembershipMessageFactory.typeOf(message.transportMode) ==
+                                    ChatMessageType.LOCAL_GROUP_MEMBERSHIP_REMOVED ||
+                                    GroupMembershipMessageFactory.typeOf(message.transportMode) ==
+                                    ChatMessageType.LOCAL_GROUP_MEMBERSHIP_LEFT
+                            }
+                )
             result?.toDomain(
                 participantContactIds = participants.map { it.contactId },
                 recipientStates = recipientStates,
@@ -92,6 +107,18 @@ class DefaultChatsRepository(
         contactIds: Set<String>
     ): String = groupInvitationCoordinator.createGroup(title, contactIds).getOrThrow()
 
+    override suspend fun addGroupMembers(
+        conversationId: String,
+        contactIds: Set<String>
+    ): Result<Unit> = groupInvitationCoordinator.addMembers(conversationId, contactIds)
+
+    override suspend fun removeGroupMember(
+        conversationId: String,
+        contactId: String
+    ): Result<Unit> = groupInvitationCoordinator.removeMember(conversationId, contactId)
+
+    override suspend fun leaveGroup(conversationId: String): Result<Unit> = groupInvitationCoordinator.leaveGroup(conversationId)
+
     override fun observeGroupConversation(conversationId: String): Flow<GroupConversation?> =
         combine(
             chatDao.observeConversationById(conversationId),
@@ -107,8 +134,9 @@ class DefaultChatsRepository(
                     participantContactIds = participants.map { it.contactId },
                     pendingParticipantContactIds =
                         invitations
-                            .filter { it.status != GroupInvitationStatus.ACTIVE.name }
-                            .map { it.contactId }
+                            .filter { invitation ->
+                                invitation.status.isPendingMembershipStatus()
+                            }.map { it.contactId }
                 )
             }
         }
@@ -366,6 +394,7 @@ class DefaultChatsRepository(
             contentStatus = contentStatus.toMessageContentStatus(),
             deliveryStatus =
                 if (isMine) aggregatedDeliveryStatus else MessageDeliveryStatus.NOT_APPLICABLE,
+            type = GroupMembershipMessageFactory.typeOf(transportMode),
             senderContactId = senderContactId,
             deliveryProgress = deliveryProgress
         )
@@ -446,3 +475,11 @@ class DefaultChatsRepository(
         const val GROUP_CONVERSATION_TYPE = "GROUP"
     }
 }
+
+private fun String.isPendingMembershipStatus(): Boolean =
+    this != GroupInvitationStatus.ACTIVE.name &&
+        this != GroupInvitationStatus.LEAVE_SENT.name &&
+        this != GroupInvitationStatus.DECLINED.name &&
+        this != GroupInvitationStatus.EXPIRED.name &&
+        this != GroupInvitationStatus.FAILED.name &&
+        this != GroupInvitationStatus.REMOVED.name

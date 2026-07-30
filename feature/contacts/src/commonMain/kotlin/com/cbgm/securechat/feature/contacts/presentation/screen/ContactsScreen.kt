@@ -28,6 +28,7 @@ import com.cbgm.securechat.feature.contacts.presentation.model.ContactGroupEntit
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactsScreenMode
 import com.cbgm.securechat.feature.contacts.presentation.model.ContactsUiState
 import com.cbgm.securechat.feature.contacts.presentation.screen.group.component.GroupSelectionContactsTopBar
+import com.cbgm.securechat.feature.contacts.presentation.screen.group.component.MemberSelectionContactsTopBar
 import com.cbgm.securechat.feature.contacts.presentation.screen.overview.component.ContactsFloatingActionButton
 import com.cbgm.securechat.feature.contacts.presentation.screen.overview.component.CreateGroupListItem
 import com.cbgm.securechat.feature.contacts.presentation.screen.overview.component.ImportContactBottomSheet
@@ -74,6 +75,19 @@ fun ContactsScreen(
                         containerColor = containerColor,
                         onBack = onBack,
                         onTitleChanged = mode.onTitleChanged,
+                        onSearchQueryChanged = onSearchQueryChanged,
+                        onConfirmed = mode.onConfirmed
+                    )
+                }
+
+                is ContactsScreenMode.MemberSelection -> {
+                    MemberSelectionContactsTopBar(
+                        title = mode.title,
+                        searchQuery = searchQuery,
+                        confirmEnabled = mode.confirmEnabled,
+                        confirming = mode.confirming,
+                        containerColor = containerColor,
+                        onBack = onBack,
                         onSearchQueryChanged = onSearchQueryChanged,
                         onConfirmed = mode.onConfirmed
                     )
@@ -219,6 +233,10 @@ private fun ContactsList(
                     is ContactsScreenMode.GroupSelection -> {
                         mode.onContactSelected(contact.id)
                     }
+
+                    is ContactsScreenMode.MemberSelection -> {
+                        mode.onContactSelected(contact.id)
+                    }
                 }
             },
             trailingContent = { contact ->
@@ -228,6 +246,12 @@ private fun ContactsList(
                     }
 
                     is ContactsScreenMode.GroupSelection -> {
+                        ContactSelectionCircle(
+                            selected = contact.id in mode.selectedContactIds
+                        )
+                    }
+
+                    is ContactsScreenMode.MemberSelection -> {
                         ContactSelectionCircle(
                             selected = contact.id in mode.selectedContactIds
                         )

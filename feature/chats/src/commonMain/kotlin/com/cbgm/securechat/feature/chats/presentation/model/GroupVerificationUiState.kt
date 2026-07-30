@@ -38,7 +38,8 @@ data class GroupVerificationSummaryUiState(
     val mutuallyVerifiedParticipantCount: Int = 0,
     val activeParticipantCount: Int = 0,
     val totalMemberCount: Int = 0,
-    val members: List<GroupMemberVerificationUiState> = emptyList()
+    val members: List<GroupMemberVerificationUiState> = emptyList(),
+    val canLeaveGroup: Boolean = false
 ) {
     val isFullyVerified: Boolean
         get() =
@@ -52,7 +53,8 @@ internal fun buildGroupVerificationSummary(
     ownerContactId: String?,
     ownerDisplayName: String,
     ownInvitationId: String?,
-    rows: List<GroupVerificationPair>
+    rows: List<GroupVerificationPair>,
+    isLeavePending: Boolean = false
 ): GroupVerificationSummaryUiState {
     val participantRows =
         rows
@@ -116,6 +118,10 @@ internal fun buildGroupVerificationSummary(
             },
         activeParticipantCount = activeRows.size,
         totalMemberCount = participantRows.size + 1,
+        canLeaveGroup =
+            !isLocalAdmin &&
+                !isLeavePending &&
+                ownPair?.isActive() == true,
         members =
             buildList {
                 add(adminMember)

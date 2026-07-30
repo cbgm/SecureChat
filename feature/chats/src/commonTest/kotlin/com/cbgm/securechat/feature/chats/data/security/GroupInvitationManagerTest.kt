@@ -4,6 +4,7 @@ import com.cbgm.securechat.core.crypto.group.GroupCiphertext
 import com.cbgm.securechat.core.crypto.group.GroupCrypto
 import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentity
 import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPair
+import com.cbgm.securechat.core.protocol.packet.GroupMemberRemovedPacket
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -138,6 +139,87 @@ class GroupInvitationManagerTest {
                         ready.copy(keyConfirmation = byteArrayOf(6)),
                         MEMBER_SIGNING_KEY
                     ).isFailure
+            )
+        }
+
+    @Test
+    fun memberRemovalBindsInvitationEpochAndRemovedIdentity() =
+        runTest {
+            val removal =
+                manager
+                    .createMemberRemoved(
+                        invitationId = "invite-4",
+                        groupId = "group-4",
+                        epoch = 2,
+                        challenge = CHALLENGE,
+                        removedMemberSigningPublicKey = MEMBER_SIGNING_KEY,
+                        removedAtEpochMilliseconds = 300L,
+                        ownerSigningKeyPair =
+                            LocalSigningKeyPair(
+                                publicKey = OWNER_SIGNING_KEY,
+                                privateKey = OWNER_SIGNING_KEY
+                            )
+                    ).getOrThrow()
+
+            manager.verifyMemberRemoved(removal, OWNER_SIGNING_KEY).getOrThrow()
+            assertTrue(
+                manager
+                    .verifyMemberRemoved(removal.copy(epoch = 3), OWNER_SIGNING_KEY)
+                    .isFailure
+            )
+            val voluntaryLeave =
+                manager
+                    .createMemberRemoved(
+                        invitationId = "invite-4",
+                        groupId = "group-4",
+                        epoch = 2,
+                        reason = GroupMemberRemovedPacket.REASON_MEMBER_LEFT,
+                        challenge = CHALLENGE,
+                        removedMemberSigningPublicKey = MEMBER_SIGNING_KEY,
+                        removedAtEpochMilliseconds = 300L,
+                        ownerSigningKeyPair =
+                            LocalSigningKeyPair(
+                                publicKey = OWNER_SIGNING_KEY,
+                                privateKey = OWNER_SIGNING_KEY
+                            )
+                    ).getOrThrow()
+
+            manager.verifyMemberRemoved(voluntaryLeave, OWNER_SIGNING_KEY).getOrThrow()
+            assertTrue(
+                manager
+                    .verifyMemberRemoved(
+                        voluntaryLeave.copy(
+                            reason = GroupMemberRemovedPacket.REASON_REMOVED_BY_OWNER
+                        ),
+                        OWNER_SIGNING_KEY
+                    ).isFailure
+            )
+        }
+
+    @Test
+    fun leaveRequestBindsMembershipEpochAndMemberIdentity() =
+        runTest {
+            val request =
+                manager
+                    .createLeaveRequest(
+                        invitationId = "invite-5",
+                        groupId = "group-5",
+                        epoch = 3,
+                        challenge = CHALLENGE,
+                        requestedAtEpochMilliseconds = 400L,
+                        memberSigningKeyPair =
+                            LocalSigningKeyPair(
+                                publicKey = MEMBER_SIGNING_KEY,
+                                privateKey = MEMBER_SIGNING_KEY
+                            )
+                    ).getOrThrow()
+
+            assertEquals("group-leave-invite-5-3", request.packetId)
+            manager.verifyLeaveRequest(request, MEMBER_SIGNING_KEY).getOrThrow()
+            assertTrue(
+                manager
+                    .verifyLeaveRequest(request.copy(epoch = 4), MEMBER_SIGNING_KEY)
+                    .isFailure
             )
         }
 

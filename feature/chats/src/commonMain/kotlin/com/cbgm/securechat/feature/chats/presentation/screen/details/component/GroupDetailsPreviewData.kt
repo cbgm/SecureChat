@@ -29,6 +29,8 @@ internal object GroupDetailsPreviewData {
 
     val summary =
         GroupVerificationSummaryUiState(
+            hasAuthoritativeState = true,
+            isLocalAdmin = true,
             members =
                 listOf(
                     admin,

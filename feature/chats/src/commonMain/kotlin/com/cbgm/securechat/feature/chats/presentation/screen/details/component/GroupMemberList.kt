@@ -19,6 +19,9 @@ import com.cbgm.securechat.feature.chats.presentation.model.GroupVerificationSum
 internal fun GroupMemberList(
     summary: GroupVerificationSummaryUiState,
     onVerifyMember: (String) -> Unit,
+    onAddMembers: () -> Unit,
+    onRemoveMember: (String) -> Unit,
+    onLeaveGroup: () -> Unit,
     innerPadding: PaddingValues,
     listState: LazyListState
 ) {
@@ -51,10 +54,21 @@ internal fun GroupMemberList(
             GroupDetailsSummary(summary = summary)
         }
 
+        if (summary.isLocalAdmin) {
+            item(key = "member-management") {
+                GroupMemberManagementActions(onAddMembers = onAddMembers)
+            }
+        } else if (summary.canLeaveGroup) {
+            item(key = "leave-group") {
+                LeaveGroupAction(onLeaveGroup = onLeaveGroup)
+            }
+        }
+
         item(key = "members") {
             GroupMembersCard(
                 summary = summary,
-                onVerifyMember = onVerifyMember
+                onVerifyMember = onVerifyMember,
+                onRemoveMember = onRemoveMember
             )
         }
     }
@@ -67,6 +81,9 @@ private fun GroupMemberListPreview() {
         GroupMemberList(
             summary = GroupDetailsPreviewData.summary,
             onVerifyMember = {},
+            onAddMembers = {},
+            onRemoveMember = {},
+            onLeaveGroup = {},
             innerPadding = PaddingValues(),
             listState = rememberLazyListState()
         )

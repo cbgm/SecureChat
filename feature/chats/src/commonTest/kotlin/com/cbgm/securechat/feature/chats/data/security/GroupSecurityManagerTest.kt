@@ -3,9 +3,13 @@ package com.cbgm.securechat.feature.chats.data.security
 import com.cbgm.securechat.core.crypto.group.GroupCiphertext
 import com.cbgm.securechat.core.crypto.group.GroupCrypto
 import com.cbgm.securechat.core.crypto.hash.DefaultCryptoHash
+import com.cbgm.securechat.core.protocol.identity.LocalEncryptionKeyPair
 import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPair
 import com.cbgm.securechat.core.protocol.packet.GroupChatMessagePacket
+import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
+import com.cbgm.securechat.core.protocol.packet.GroupMemberRemovedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMembershipChangePayload
 import com.cbgm.securechat.data.database.dao.GroupSecurityDao
 import com.cbgm.securechat.data.database.entity.GroupMemberKeyEntity
 import com.cbgm.securechat.data.database.entity.GroupSecurityStateEntity
@@ -77,6 +81,7 @@ class GroupSecurityManagerTest {
                             listOf(
                                 GroupWelcomeRecipient(
                                     contactId = REMOTE_CONTACT_ID,
+                                    invitationId = INVITATION_ID,
                                     encryptionPublicKey = byteArrayOf(5)
                                 )
                             ),
@@ -94,6 +99,7 @@ class GroupSecurityManagerTest {
                             listOf(
                                 GroupWelcomeRecipient(
                                     contactId = REMOTE_CONTACT_ID,
+                                    invitationId = INVITATION_ID,
                                     encryptionPublicKey = byteArrayOf(5)
                                 )
                             ),
@@ -105,6 +111,162 @@ class GroupSecurityManagerTest {
                 first.welcomePacketsByContactId.getValue(REMOTE_CONTACT_ID).packetId,
                 second.welcomePacketsByContactId.getValue(REMOTE_CONTACT_ID).packetId
             )
+        }
+
+    @Test
+    fun membershipRotationAdvancesEpochAndRewrapsTheGroupKey() =
+        runTest {
+            val signingKeyPair =
+                LocalSigningKeyPair(
+                    publicKey = LOCAL_SIGNING_KEY,
+                    privateKey = LOCAL_SIGNING_KEY
+                )
+            val memberPayloads =
+                listOf(
+                    GroupMemberPayload(
+                        displayName = null,
+                        encryptionPublicKey = byteArrayOf(8),
+                        signingPublicKey = LOCAL_SIGNING_KEY,
+                        role = "OWNER",
+                        phoneNumber = "+491"
+                    ),
+                    GroupMemberPayload(
+                        displayName = null,
+                        encryptionPublicKey = byteArrayOf(5),
+                        signingPublicKey = REMOTE_SIGNING_KEY,
+                        role = "MEMBER",
+                        phoneNumber = "+492"
+                    )
+                )
+            val recipient =
+                GroupWelcomeRecipient(
+                    contactId = REMOTE_CONTACT_ID,
+                    invitationId = INVITATION_ID,
+                    encryptionPublicKey = byteArrayOf(5)
+                )
+
+            manager
+                .createOwnedGroup(
+                    groupId = GROUP_ID,
+                    title = "Group",
+                    createdAtEpochMilliseconds = 100L,
+                    memberPayloads = memberPayloads,
+                    memberKeys = listOf(memberKey(epoch = EPOCH)),
+                    recipients = listOf(recipient),
+                    localSigningKeyPair = signingKeyPair
+                ).getOrThrow()
+            val rotated =
+                manager
+                    .rotateOwnedGroup(
+                        groupId = GROUP_ID,
+                        title = "Group",
+                        createdAtEpochMilliseconds = 100L,
+                        updatedAtEpochMilliseconds = 200L,
+                        memberPayloads = memberPayloads,
+                        memberKeys = listOf(memberKey(epoch = EPOCH + 1)),
+                        recipients = listOf(recipient),
+                        localSigningKeyPair = signingKeyPair,
+                        membershipChange =
+                            GroupMembershipChangePayload(
+                                reason = GroupMemberRemovedPacket.REASON_MEMBER_LEFT,
+                                memberSigningPublicKey = REMOTE_SIGNING_KEY
+                            )
+                    ).getOrThrow()
+
+            assertEquals(EPOCH + 1, manager.findOwnedGroupEpoch(GROUP_ID).getOrThrow())
+            assertEquals(
+                EPOCH + 1,
+                rotated.welcomePacketsByContactId.getValue(REMOTE_CONTACT_ID).epoch
+            )
+            assertEquals(
+                GroupMemberRemovedPacket.REASON_MEMBER_LEFT,
+                rotated.welcomePacketsByContactId
+                    .getValue(REMOTE_CONTACT_ID)
+                    .membershipChange
+                    ?.reason
+            )
+            assertEquals(2, crypto.generatedGroupKeyCount)
+        }
+
+    @Test
+    fun rejoiningMemberCanOpenCurrentEpochWithoutPreviousLocalState() =
+        runTest {
+            val localEncryptionKey = byteArrayOf(8)
+            val unsignedPacket =
+                GroupCreatedPacket(
+                    packetId = manager.welcomePacketId(GROUP_ID, INVITATION_ID, 3),
+                    groupId = GROUP_ID,
+                    title = "Group",
+                    createdAtEpochMilliseconds = 100L,
+                    epoch = 3,
+                    members =
+                        listOf(
+                            GroupMemberPayload(
+                                displayName = null,
+                                encryptionPublicKey = byteArrayOf(5),
+                                signingPublicKey = REMOTE_SIGNING_KEY,
+                                role = "OWNER",
+                                phoneNumber = "+491"
+                            ),
+                            GroupMemberPayload(
+                                displayName = null,
+                                encryptionPublicKey = localEncryptionKey,
+                                signingPublicKey = LOCAL_SIGNING_KEY,
+                                role = "MEMBER",
+                                phoneNumber = "+492"
+                            )
+                        ),
+                    wrappedGroupKey = GROUP_KEY + localEncryptionKey,
+                    ownerSignature = byteArrayOf(0)
+                )
+            val packet =
+                unsignedPacket.copy(
+                    ownerSignature =
+                        encoder.encodeWelcome(unsignedPacket) + REMOTE_SIGNING_KEY
+                )
+
+            val opened =
+                manager
+                    .openWelcome(
+                        packet = packet,
+                        expectedOwnerEncryptionPublicKey = byteArrayOf(5),
+                        expectedOwnerSigningPublicKey = REMOTE_SIGNING_KEY,
+                        localEncryptionKeyPair =
+                            LocalEncryptionKeyPair(
+                                publicKey = localEncryptionKey,
+                                privateKey = localEncryptionKey
+                            ),
+                        localSigningPublicKey = LOCAL_SIGNING_KEY
+                    ).getOrThrow()
+
+            assertEquals(3, opened.packet.epoch)
+            assertContentEquals(GROUP_KEY, opened.groupKey)
+        }
+
+    @Test
+    fun epochRemovalIsAcceptedWhenWelcomeHasNotBeenInstalledYet() =
+        runTest {
+            seedSecurityState()
+
+            manager
+                .removeLocalMembership(
+                    packet =
+                        GroupMemberRemovedPacket(
+                            packetId = "removal-packet",
+                            invitationId = INVITATION_ID,
+                            groupId = GROUP_ID,
+                            epoch = 3,
+                            challenge = byteArrayOf(1),
+                            removedMemberSigningPublicKey = LOCAL_SIGNING_KEY,
+                            removedAtEpochMilliseconds = 300L,
+                            ownerSignature = byteArrayOf(2)
+                        ),
+                    ownerContactId = REMOTE_CONTACT_ID,
+                    localSigningPublicKey = LOCAL_SIGNING_KEY
+                ).getOrThrow()
+
+            assertEquals(null, keyStorage.load(GROUP_ID, EPOCH).getOrThrow())
+            assertEquals(null, dao.findState(GROUP_ID))
         }
 
     @Test
@@ -198,6 +360,16 @@ class GroupSecurityManagerTest {
         )
         keyStorage.save(GROUP_ID, EPOCH, GROUP_KEY).getOrThrow()
     }
+
+    private fun memberKey(epoch: Int): GroupMemberKeyEntity =
+        GroupMemberKeyEntity(
+            groupId = GROUP_ID,
+            epoch = epoch,
+            contactId = REMOTE_CONTACT_ID,
+            encryptionPublicKey = byteArrayOf(5),
+            signingPublicKey = REMOTE_SIGNING_KEY,
+            role = "MEMBER"
+        )
 
     private fun createRemotePacket(text: String): GroupChatMessagePacket {
         val associatedData =
@@ -311,6 +483,13 @@ class GroupSecurityManagerTest {
                         storedGroupId == groupId && storedEpoch < epoch
                     }.forEach { key -> values.remove(key) }
             }
+
+        override suspend fun deleteGroup(groupId: String): Result<Unit> =
+            runCatching {
+                values.keys
+                    .filter { (storedGroupId, _) -> storedGroupId == groupId }
+                    .forEach { key -> values.remove(key) }
+            }
     }
 
     private class InMemoryGroupSecurityDao : GroupSecurityDao {
@@ -334,6 +513,16 @@ class GroupSecurityManagerTest {
 
         override suspend fun findState(groupId: String): GroupSecurityStateEntity? = state?.takeIf { it.groupId == groupId }
 
+        override suspend fun deleteState(groupId: String) {
+            if (state?.groupId == groupId) {
+                state = null
+            }
+        }
+
+        override suspend fun deleteMemberKeys(groupId: String) {
+            memberKeys.removeAll { member -> member.groupId == groupId }
+        }
+
         override suspend fun findMemberKey(
             groupId: String,
             epoch: Int,
@@ -355,6 +544,7 @@ class GroupSecurityManagerTest {
 
     private companion object {
         const val GROUP_ID = "group-1"
+        const val INVITATION_ID = "invitation-1"
         const val EPOCH = 1
         const val REMOTE_CONTACT_ID = "contact-remote"
         val GROUP_KEY = ByteArray(32) { index -> index.toByte() }

@@ -4,6 +4,7 @@ import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 
 data class GroupWelcomeRecipient(
     val contactId: String,
+    val invitationId: String,
     val encryptionPublicKey: ByteArray
 )
 

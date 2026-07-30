@@ -6,6 +6,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -19,7 +20,10 @@ import org.koin.core.parameter.parametersOf
 
 private enum class DetailsContent {
     Overview,
-    VerifyIdentity
+    VerifyIdentity,
+    AddMembers,
+    RemoveMember,
+    LeaveGroup
 }
 
 @Composable
@@ -37,22 +41,42 @@ fun GroupDetailsFlow(
     var content by rememberSaveable {
         mutableStateOf(DetailsContent.Overview)
     }
+    var observedMembershipRevision by rememberSaveable {
+        mutableStateOf(uiState.memberManagement.completedRevision)
+    }
+
+    LaunchedEffect(uiState.memberManagement.completedRevision) {
+        val revision = uiState.memberManagement.completedRevision
+        if (revision > observedMembershipRevision) {
+            observedMembershipRevision = revision
+            content = DetailsContent.Overview
+        }
+    }
+
+    LaunchedEffect(uiState.leave.isLeaveRequested) {
+        if (uiState.leave.isLeaveRequested) {
+            onClose()
+        }
+    }
 
     val visibleContent =
-        if (
-            content == DetailsContent.VerifyIdentity &&
-            uiState.selectedMember == null
-        ) {
-            DetailsContent.Overview
-        } else {
-            content
+        when {
+            content == DetailsContent.VerifyIdentity && uiState.selectedMember == null ->
+                DetailsContent.Overview
+            content == DetailsContent.RemoveMember &&
+                uiState.memberManagement.removalCandidate == null ->
+                DetailsContent.Overview
+            content == DetailsContent.LeaveGroup &&
+                !uiState.summary.canLeaveGroup ->
+                DetailsContent.Overview
+            else -> content
         }
 
     AnimatedContent(
         targetState = visibleContent,
         modifier = modifier,
         transitionSpec = {
-            if (targetState == DetailsContent.VerifyIdentity) {
+            if (targetState != DetailsContent.Overview) {
                 slideIntoContainer(
                     towards = AnimatedContentTransitionScope.SlideDirection.Left,
                     animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
@@ -78,6 +102,16 @@ fun GroupDetailsFlow(
                 GroupDetailsScreen(
                     uiState = GroupDetailsUiState.Content(uiState.summary),
                     onBack = onClose,
+                    onAddMembers = {
+                        content = DetailsContent.AddMembers
+                    },
+                    onRemoveMember = { contactId ->
+                        verificationViewModel.requestMemberRemoval(contactId)
+                        content = DetailsContent.RemoveMember
+                    },
+                    onLeaveGroup = {
+                        content = DetailsContent.LeaveGroup
+                    },
                     onVerifyMember = {
                         verificationViewModel.selectMember(it)
                         content = DetailsContent.VerifyIdentity
@@ -104,6 +138,45 @@ fun GroupDetailsFlow(
                         }
                     )
                 }
+            }
+
+            DetailsContent.AddMembers -> {
+                AddGroupMembersScreen(
+                    uiState = uiState.memberManagement,
+                    onSearchQueryChanged = verificationViewModel::updateMemberSearchQuery,
+                    onContactSelected = verificationViewModel::toggleMemberSelection,
+                    onAddMembers = verificationViewModel::addSelectedMembers,
+                    onBack = {
+                        content = DetailsContent.Overview
+                    }
+                )
+            }
+
+            DetailsContent.RemoveMember -> {
+                uiState.memberManagement.removalCandidate?.let { member ->
+                    RemoveGroupMemberScreen(
+                        member = member,
+                        isRemoving = uiState.memberManagement.isUpdating,
+                        errorMessage = uiState.memberManagement.errorMessage,
+                        onConfirm = verificationViewModel::confirmMemberRemoval,
+                        onBack = {
+                            verificationViewModel.dismissMemberRemoval()
+                            content = DetailsContent.Overview
+                        }
+                    )
+                }
+            }
+
+            DetailsContent.LeaveGroup -> {
+                LeaveGroupScreen(
+                    isLeaving = uiState.leave.isLeaving,
+                    errorMessage = uiState.leave.errorMessage,
+                    onConfirm = verificationViewModel::leaveGroup,
+                    onBack = {
+                        verificationViewModel.dismissLeaveError()
+                        content = DetailsContent.Overview
+                    }
+                )
             }
         }
     }

@@ -16,4 +16,6 @@ interface GroupKeyStorage {
         groupId: String,
         epoch: Int
     ): Result<Unit>
+
+    suspend fun deleteGroup(groupId: String): Result<Unit>
 }
