@@ -221,8 +221,8 @@
     "group": "feature",
     "directory": "feature/chats",
     "buildFile": "feature/chats/build.gradle.kts",
-    "kotlinSourceFileCount": 121,
-    "productionKotlinFileCount": 111,
+    "kotlinSourceFileCount": 122,
+    "productionKotlinFileCount": 112,
     "testKotlinFileCount": 10,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -284,8 +284,8 @@
     "group": "feature",
     "directory": "feature/contacts",
     "buildFile": "feature/contacts/build.gradle.kts",
-    "kotlinSourceFileCount": 95,
-    "productionKotlinFileCount": 92,
+    "kotlinSourceFileCount": 94,
+    "productionKotlinFileCount": 91,
     "testKotlinFileCount": 3,
     "resourceFileCount": 1,
     "sourceSets": [
