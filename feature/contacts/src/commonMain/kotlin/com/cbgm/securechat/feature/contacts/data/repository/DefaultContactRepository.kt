@@ -1,6 +1,7 @@
 package com.cbgm.securechat.feature.contacts.data.repository
 
 import com.cbgm.securechat.core.id.IdGenerator
+import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ContactDao
@@ -35,6 +36,8 @@ class DefaultContactRepository(
     private val phoneNumberNormalizer: PhoneNumberNormalizer,
     private val deviceContactWriter: DeviceContactWriter
 ) : ContactRepository {
+    private val logger = SecureChatLog.withTag("DefaultContactRepository")
+
     override suspend fun importContact(request: ImportContactRequest): Result<Contact> =
         runCatching {
             require(request.encryptionPublicKey.isNotEmpty()) {
@@ -175,20 +178,20 @@ class DefaultContactRepository(
                         )
                 ) {
                     AddDeviceContactResult.Added -> {
-                        println("fuckyou")
+                        logger.debug { "Device contact created for imported contact: contactId=$contactId" }
                     }
                     AddDeviceContactResult.AlreadyExists -> {
-                        println("fuckyou2")
+                        logger.debug { "Device contact already exists for imported contact: contactId=$contactId" }
                     }
                     AddDeviceContactResult.PermissionDenied -> {
-                        println("fuckyou3")
+                        logger.warn { "Device contact was not created because write permission is missing" }
                     }
                     AddDeviceContactResult.InvalidPhoneNumber -> {
-                        println("fuckyou4")
+                        logger.warn { "Device contact was not created because the phone number is invalid" }
                     }
 
                     is AddDeviceContactResult.Failure -> {
-                        result.throwable.printStackTrace()
+                        logger.error(result.throwable) { "Device contact creation failed" }
                     }
                 }
             }

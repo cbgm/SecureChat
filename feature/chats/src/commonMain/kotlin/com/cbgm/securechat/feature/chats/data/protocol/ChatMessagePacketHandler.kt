@@ -1,5 +1,6 @@
 package com.cbgm.securechat.feature.chats.data.protocol
 
+import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.core.protocol.handler.IncomingPacketContext
 import com.cbgm.securechat.core.protocol.handler.TypedProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
@@ -20,6 +21,8 @@ class ChatMessagePacketHandler(
     private val contactDao: ContactDao,
     private val protocolOutbox: ProtocolOutbox
 ) : TypedProtocolPacketHandler {
+    private val logger = SecureChatLog.withTag("ChatMessagePacketHandler")
+
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is ChatMessagePacket
 
     override suspend fun handle(
@@ -109,11 +112,11 @@ class ChatMessagePacketHandler(
                     packet = receipt
                 ).getOrThrow()
 
-            println(
+            logger.debug {
                 "Delivery receipt queued: " +
                     "messageId=${chatPacket.messageId}, " +
                     "contactId=${context.contactId}"
-            )
+            }
         }
 
     private fun createDeliveryReceiptPacketId(messageId: String): String = "delivery-receipt-$messageId"

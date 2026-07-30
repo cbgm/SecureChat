@@ -2,6 +2,7 @@ package com.cbgm.securechat.feature.chats.presentation.screen.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
 import com.cbgm.securechat.feature.chats.domain.model.GroupConversationState
 import com.cbgm.securechat.feature.chats.domain.model.GroupMemberInvitationStatus
@@ -46,6 +47,8 @@ class GroupChatViewModel(
     private val observeTypingIndicator: ObserveTypingIndicator,
     private val setTypingIndicator: SetTypingIndicator
 ) : ViewModel() {
+    private val logger = SecureChatLog.withTag("GroupChatViewModel")
+
     private val messageText = MutableStateFlow("")
     private val errorMessage = MutableStateFlow<String?>(null)
     private val typingContactIds = MutableStateFlow<Set<String>>(emptySet())
@@ -302,7 +305,7 @@ class GroupChatViewModel(
         participantContactIds.value.forEach { contactId ->
             setTypingIndicator(contactId, isTyping)
                 .onFailure { error ->
-                    println("Could not send group typing state for $contactId: ${error.message}")
+                    logger.warn(error) { "Could not send group typing state for $contactId" }
                 }
         }
     }

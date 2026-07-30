@@ -11,6 +11,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.bundles.coroutines)
+            implementation(libs.kermit)
         }
 
         commonTest.dependencies {

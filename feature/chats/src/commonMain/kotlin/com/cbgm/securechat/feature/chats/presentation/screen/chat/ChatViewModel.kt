@@ -2,6 +2,7 @@ package com.cbgm.securechat.feature.chats.presentation.screen.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.core.security.DirectIdentitySetupMode
 import com.cbgm.securechat.core.security.DirectIdentitySetupModeRepository
 import com.cbgm.securechat.feature.chats.domain.model.ContactSecurityState
@@ -48,6 +49,8 @@ class ChatViewModel(
     private val observeTypingIndicator: ObserveTypingIndicator,
     private val setTypingIndicator: SetTypingIndicator
 ) : ViewModel() {
+    private val logger = SecureChatLog.withTag("ChatViewModel")
+
     private val messageText = MutableStateFlow("")
 
     private val errorMessage = MutableStateFlow<String?>(null)
@@ -253,9 +256,7 @@ class ChatViewModel(
         viewModelScope.launch {
             markConversationReadUseCase(conversationId)
                 .onFailure { error ->
-                    println(
-                        "Could not mark conversation as read: " + error.message
-                    )
+                    logger.warn(error) { "Could not mark conversation as read" }
                 }
         }
     }
@@ -289,9 +290,7 @@ class ChatViewModel(
             contactId = contactId,
             isTyping = isTyping
         ).onFailure { error ->
-            println(
-                "Could not send typing state for $contactId: ${error.message}"
-            )
+            logger.warn(error) { "Could not send typing state for $contactId" }
         }
     }
 

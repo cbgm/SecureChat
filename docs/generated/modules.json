@@ -37,8 +37,8 @@
     "group": "core",
     "directory": "core",
     "buildFile": "core/build.gradle.kts",
-    "kotlinSourceFileCount": 8,
-    "productionKotlinFileCount": 8,
+    "kotlinSourceFileCount": 9,
+    "productionKotlinFileCount": 9,
     "testKotlinFileCount": 0,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -52,6 +52,7 @@
     ],
     "dependents": [
       ":androidApp",
+      ":core:protocol",
       ":data:database",
       ":feature:chats",
       ":feature:contactimport",
@@ -111,6 +112,7 @@
       "iosMain"
     ],
     "dependencies": [
+      ":core"
     ],
     "dependents": [
       ":androidApp",

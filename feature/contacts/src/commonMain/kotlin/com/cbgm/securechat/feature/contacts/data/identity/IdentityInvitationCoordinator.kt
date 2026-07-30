@@ -3,6 +3,7 @@ package com.cbgm.securechat.feature.contacts.data.identity
 import com.cbgm.securechat.core.crypto.random.SecureRandomGenerator
 import com.cbgm.securechat.core.crypto.signature.DetachedSignatureCrypto
 import com.cbgm.securechat.core.id.IdGenerator
+import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.core.protocol.handler.IncomingPacketContext
 import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentity
 import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentityProvider
@@ -46,6 +47,8 @@ class IdentityInvitationCoordinator(
     private val contactVerificationService: ContactVerificationService,
     private val modeRepository: DirectIdentitySetupModeRepository
 ) : IdentityInvitationService {
+    private val logger = SecureChatLog.withTag("IdentityInvitationCoordinator")
+
     private val mutex = Mutex()
 
     override suspend fun start(contactId: String): Result<Unit> =
@@ -685,7 +688,7 @@ class IdentityInvitationCoordinator(
                 contactVerificationService
                     .sendReceiptIfLocallyVerified(context.contactId)
                     .onFailure { error ->
-                        println("Could not queue contact verification receipt: ${error.message}")
+                        logger.warn(error) { "Could not queue contact verification receipt" }
                     }
             }
         }
@@ -778,7 +781,7 @@ class IdentityInvitationCoordinator(
                 contactVerificationService
                     .sendReceiptIfLocallyVerified(context.contactId)
                     .onFailure { error ->
-                        println("Could not queue contact verification receipt: ${error.message}")
+                        logger.warn(error) { "Could not queue contact verification receipt" }
                     }
             }
         }

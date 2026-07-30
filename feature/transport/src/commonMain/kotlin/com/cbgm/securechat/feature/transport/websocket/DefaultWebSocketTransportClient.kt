@@ -1,5 +1,6 @@
 package com.cbgm.securechat.feature.transport.websocket
 
+import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
 import com.cbgm.securechat.feature.transport.relay.model.RelayClientMessage
 import com.cbgm.securechat.feature.transport.relay.model.RelayEnvelope
@@ -37,6 +38,8 @@ class DefaultWebSocketTransportClient(
     private val httpClient: HttpClient,
     private val json: Json
 ) : WebSocketTransportClient {
+    private val logger = SecureChatLog.withTag("DefaultWebSocketTransportClient")
+
     private val clientScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val mutableConnectionState =
@@ -236,7 +239,7 @@ class DefaultWebSocketTransportClient(
                     session = this
                 }
 
-                println("WebSocket session opened")
+                logger.info { "WebSocket session opened" }
 
                 sendRegistration(
                     activeSession = this,
@@ -255,15 +258,15 @@ class DefaultWebSocketTransportClient(
                         is Frame.Close -> {
                             val reason = closeReason.await()
 
-                            println(
+                            logger.info {
                                 "Received WebSocket close frame: " +
                                     "code=${reason?.code}, " +
                                     "message=${reason?.message}"
-                            )
+                            }
                         }
 
                         is Frame.Binary -> {
-                            println("Ignoring unsupported binary WebSocket frame")
+                            logger.warn { "Ignoring unsupported binary WebSocket frame" }
                         }
 
                         is Frame.Ping -> {
@@ -282,11 +285,11 @@ class DefaultWebSocketTransportClient(
 
                 val reason = closeReason.await()
 
-                println(
+                logger.info {
                     "WebSocket session ended: " +
                         "code=${reason?.code}, " +
                         "message=${reason?.message}"
-                )
+                }
             }
 
             mutableConnectionState.value = TransportConnectionState.Disconnected
@@ -299,7 +302,7 @@ class DefaultWebSocketTransportClient(
         } catch (
             error: Throwable
         ) {
-            println("WebSocket connection failed: ${error.message}")
+            logger.error(error) { "WebSocket connection failed" }
 
             mutableConnectionState.value =
                 TransportConnectionState.Failed(
@@ -326,7 +329,7 @@ class DefaultWebSocketTransportClient(
 
         activeSession.send(Frame.Text(encodedRegistration))
 
-        println("Relay registration sent for $localRelayId")
+        logger.debug { "Relay registration sent for $localRelayId" }
     }
 
     private suspend fun sendEnvelopeFrame(envelope: RelayEnvelope) {
@@ -354,7 +357,7 @@ class DefaultWebSocketTransportClient(
             runCatching {
                 json.decodeFromString<RelayServerMessage>(encodedMessage)
             }.getOrElse { error ->
-                println("Invalid relay response: ${error.message}")
+                logger.error(error) { "Invalid relay response" }
 
                 mutableConnectionState.value =
                     TransportConnectionState.Failed(
@@ -373,7 +376,7 @@ class DefaultWebSocketTransportClient(
                     return
                 }
 
-                println("Relay registration accepted for ${message.relayId}")
+                logger.info { "Relay registration accepted for ${message.relayId}" }
 
                 mutableConnectionState.value =
                     TransportConnectionState.Connected(relayId = message.relayId)
@@ -402,7 +405,7 @@ class DefaultWebSocketTransportClient(
             }
 
             is RelayServerMessage.Error -> {
-                println("Relay error ${message.code}: ${message.message}")
+                logger.warn { "Relay error ${message.code}: ${message.message}" }
 
                 /*
                  * A relay error does not always mean the underlying

@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.cbgm.securechat.core.crypto.SodiumRuntime
 import com.cbgm.securechat.core.crypto.di.cryptoModule
+import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.core.protocol.di.protocolModule
 import com.cbgm.securechat.core.protocol.outbox.OutboxRunner
 import com.cbgm.securechat.data.database.di.androidDatabaseModule
@@ -43,6 +44,8 @@ import org.koin.core.context.startKoin
 
 class SecureChatApplication : Application() {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    private val logger = SecureChatLog.withTag("SecureChatApplication")
 
     override fun onCreate() {
         super.onCreate()
@@ -105,9 +108,7 @@ class SecureChatApplication : Application() {
             webSocketClient
                 .connectionState
                 .collect { state ->
-                    println(
-                        "SecureChat relay state: $state"
-                    )
+                    logger.debug { "SecureChat relay state: $state" }
                 }
         }
 
@@ -123,21 +124,21 @@ class SecureChatApplication : Application() {
                 .collect { state ->
                     when (state) {
                         is TransportConnectionState.Connected -> {
-                            println("Relay connected: ${state.relayId}")
+                            logger.info { "Relay connected: ${state.relayId}" }
 
                             koin.get<OutboxRunner>().start()
                         }
 
                         is TransportConnectionState.Connecting -> {
-                            println("Relay connecting")
+                            logger.debug { "Relay connecting" }
                         }
 
                         is TransportConnectionState.Disconnected -> {
-                            println("Relay disconnected")
+                            logger.info { "Relay disconnected" }
                         }
 
                         is TransportConnectionState.Failed -> {
-                            println("Relay failed: ${state.message}")
+                            logger.error { "Relay failed: ${state.message}" }
                         }
                     }
                 }
@@ -167,7 +168,7 @@ class SecureChatApplication : Application() {
             ) == PackageManager.PERMISSION_GRANTED
 
         if (!permissionGranted) {
-            println("Device contact sync skipped: READ_CONTACTS is not granted")
+            logger.info { "Device contact sync skipped: READ_CONTACTS is not granted" }
 
             return
         }
@@ -176,11 +177,9 @@ class SecureChatApplication : Application() {
             .get<ImportDeviceContacts>()
             .invoke()
             .onSuccess {
-                println("Device contact sync completed")
+                logger.info { "Device contact sync completed" }
             }.onFailure { error ->
-                println("Device contact sync failed: ${error.message}")
-
-                error.printStackTrace()
+                logger.error(error) { "Device contact sync failed" }
             }
     }
 

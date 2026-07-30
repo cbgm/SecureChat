@@ -36,7 +36,7 @@ features.
 | `:shared` | Shared Compose application shell |
 | `:navigation` | App destinations, navigation graph, app shell, and `MainRoute` |
 | `:startup` | Startup initialization result and startup UI |
-| `:core` | Small cross-cutting utilities such as IDs and time |
+| `:core` | Small cross-cutting utilities such as IDs, time, and the project-owned logging facade |
 | `:core:crypto` | Transport encryption, decryption, key operations, and payload codec |
 | `:core:protocol` | Transport-independent packet model, packet codec, handler and outbox contracts |
 | `:core:ui` | Reusable Compose design components |
@@ -49,7 +49,7 @@ features.
 | `:feature:contactimport` | Platform device-contact integration |
 | `:feature:onboarding` | Onboarding flow |
 | `:feature:settings` | Settings domain and UI |
-| `:relay` | Standalone Ktor WebSocket relay; it routes opaque payloads |
+| `:relay` | Standalone Ktor WebSocket relay; it routes opaque payloads and logs through SLF4J/Logback |
 | `:quality:detekt-rules` | Project-specific static-analysis rules |
 
 Empty grouping projects such as `:feature` and `:data` appear in the generated report but do not own
@@ -111,6 +111,14 @@ identity and phone number exist:
 
 This process-lifetime coordination is an Android application concern. The implementation of each
 runtime service remains in its owning feature.
+
+## Logging boundary
+
+Shared and application code logs through `SecureChatLogger` in `:core`. Its Kermit-backed
+implementation selects the platform output without exposing Kermit to feature code. The standalone
+relay keeps its JVM-native SLF4J/Logback pipeline.
+
+See [Logging](../development/logging.md) for levels, privacy rules, and the extension policy.
 
 ## Source-of-truth rule
 

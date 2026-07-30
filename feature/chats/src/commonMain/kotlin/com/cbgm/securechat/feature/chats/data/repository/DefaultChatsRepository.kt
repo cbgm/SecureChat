@@ -2,6 +2,7 @@ package com.cbgm.securechat.feature.chats.data.repository
 
 import com.cbgm.securechat.core.crypto.transport.TransportEncryptionMode
 import com.cbgm.securechat.core.id.IdGenerator
+import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.packet.ChatMessagePacket
 import com.cbgm.securechat.core.protocol.packet.ReadReceiptPacket
@@ -52,6 +53,8 @@ class DefaultChatsRepository(
     private val groupInvitationCoordinator: GroupInvitationCoordinator,
     private val groupMessageSender: GroupMessageSender
 ) : ChatsRepository {
+    private val logger = SecureChatLog.withTag("DefaultChatsRepository")
+
     override fun observeConversations(): Flow<List<Conversation>> =
         chatDao.observeConversationSummaries().map { summaries ->
             summaries.map { summary ->
@@ -271,11 +274,11 @@ class DefaultChatsRepository(
                     "Incoming message could not be marked as read"
                 }
 
-                println(
+                logger.debug {
                     "Read receipt queued: " +
                         "messageId=${message.messageId}, " +
                         "contactId=${message.contactId}"
-                )
+                }
             }
         }
 

@@ -1,5 +1,6 @@
 package com.cbgm.securechat.feature.messaging.application.outbox
 
+import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.core.protocol.outbox.OutboxProcessor
 import com.cbgm.securechat.core.protocol.outbox.OutboxRunner
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
@@ -16,6 +17,8 @@ class DefaultOutboxRunner(
     private val protocolOutbox: ProtocolOutbox,
     private val outboxProcessor: OutboxProcessor
 ) : OutboxRunner {
+    private val logger = SecureChatLog.withTag("DefaultOutboxRunner")
+
     private val runnerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val processingMutex = Mutex()
@@ -53,7 +56,7 @@ class DefaultOutboxRunner(
                     throw error
                 }
 
-                println("Outbox recovery failed: ${error.message}")
+                logger.error(error) { "Outbox recovery failed" }
             }
         }
     }

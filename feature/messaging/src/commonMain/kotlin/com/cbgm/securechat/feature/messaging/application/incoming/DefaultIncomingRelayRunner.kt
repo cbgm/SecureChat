@@ -1,5 +1,6 @@
 package com.cbgm.securechat.feature.messaging.application.incoming
 
+import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.core.protocol.handler.IncomingMessageHandler
 import com.cbgm.securechat.core.protocol.identity.LocalEncryptionKeyPairProvider
 import com.cbgm.securechat.feature.messaging.domain.relay.ContactByRelayIdResolver
@@ -17,6 +18,8 @@ class DefaultIncomingRelayRunner(
     private val localEncryptionKeyPairProvider: LocalEncryptionKeyPairProvider,
     private val incomingMessageHandler: IncomingMessageHandler
 ) : IncomingRelayRunner {
+    private val logger = SecureChatLog.withTag("DefaultIncomingRelayRunner")
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private var collectionJob: Job? = null
@@ -57,7 +60,7 @@ class DefaultIncomingRelayRunner(
                         relayId = senderRelayId
                     ).getOrThrow()
                     ?: run {
-                        println("Incoming envelope ignored: " + "unknown sender $senderRelayId")
+                        logger.warn { "Incoming envelope ignored: unknown sender $senderRelayId" }
 
                         return
                     }
@@ -76,10 +79,10 @@ class DefaultIncomingRelayRunner(
                     envelopeId = envelopeId
                 ).getOrThrow()
 
-            println(
+            logger.debug {
                 "Incoming envelope stored and acknowledged: " +
                     "envelopeId=$envelopeId, contactId=$contactId"
-            )
+            }
         } catch (
             error: CancellationException
         ) {
@@ -87,7 +90,7 @@ class DefaultIncomingRelayRunner(
         } catch (
             error: Throwable
         ) {
-            println("Incoming envelope failed: ${error.message}")
+            logger.error(error) { "Incoming envelope failed: envelopeId=$envelopeId" }
         }
     }
 }

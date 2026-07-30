@@ -67,6 +67,7 @@ nav:
   - Development:
       - Local Development and Manual Testing: development/local-development.md
       - Coding Style: development/coding-style.md
+      - Logging: development/logging.md
       - Testing: development/testing.md
       - Contributing: development/contributing.md
       - Release Process: development/release-process.md

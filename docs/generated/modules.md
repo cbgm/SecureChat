@@ -7,9 +7,9 @@ Select a module to open its generated detail page with source sets, file counts,
 | Module | Group | Kotlin | Tests | Resources | Dependencies | Dependents |
 |---|---|---:|---:|---:|---:|---:|
 | [`:androidApp`](modules/androidApp.md) | `androidApp` | 4 | 0 | 21 | 14 | 0 |
-| [`:core`](modules/core.md) | `core` | 8 | 0 | 1 | 0 | 11 |
+| [`:core`](modules/core.md) | `core` | 9 | 0 | 1 | 0 | 12 |
 | [`:core:crypto`](modules/core-crypto.md) | `core` | 36 | 5 | 1 | 0 | 5 |
-| [`:core:protocol`](modules/core-protocol.md) | `core` | 56 | 8 | 1 | 0 | 7 |
+| [`:core:protocol`](modules/core-protocol.md) | `core` | 56 | 8 | 1 | 1 | 7 |
 | [`:core:ui`](modules/core-ui.md) | `core` | 27 | 0 | 16 | 0 | 9 |
 | [`:data`](modules/data.md) | `data` | 0 | 0 | 0 | 0 | 0 |
 | [`:data:database`](modules/data-database.md) | `data` | 38 | 0 | 1 | 2 | 4 |

@@ -13,6 +13,7 @@
   {"source": ":androidApp", "target": ":feature:transport"},
   {"source": ":androidApp", "target": ":shared"},
   {"source": ":androidApp", "target": ":startup"},
+  {"source": ":core:protocol", "target": ":core"},
   {"source": ":data:database", "target": ":core"},
   {"source": ":data:database", "target": ":core:protocol"},
   {"source": ":feature:chats", "target": ":core"},

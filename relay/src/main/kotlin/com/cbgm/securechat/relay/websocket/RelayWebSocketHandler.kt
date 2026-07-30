@@ -13,6 +13,7 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.serialization.json.Json
+import org.slf4j.LoggerFactory
 
 class RelayWebSocketHandler(
     private val connectionRegistry: RelayConnectionRegistry,
@@ -20,6 +21,8 @@ class RelayWebSocketHandler(
     private val pendingEnvelopeStore: PendingEnvelopeStore,
     private val json: Json
 ) {
+    private val logger = LoggerFactory.getLogger(RelayWebSocketHandler::class.java)
+
     suspend fun handle(session: DefaultWebSocketServerSession) {
         var registeredConnection: RelayClientConnection? = null
 
@@ -189,9 +192,7 @@ class RelayWebSocketHandler(
                 recipientId = relayId
             )
         }.onFailure { error ->
-            println(
-                "Pending envelope delivery failed for $relayId: ${error.message}"
-            )
+            logger.error("Pending envelope delivery failed for {}", relayId, error)
         }
     }
 
@@ -215,9 +216,11 @@ class RelayWebSocketHandler(
                 )
             )
         }.onFailure { error ->
-            println(
-                "Typing state delivery failed from ${sender.relayId} " +
-                    "to $recipientId: ${error.message}"
+            logger.error(
+                "Typing state delivery failed from {} to {}",
+                sender.relayId,
+                recipientId,
+                error
             )
         }
     }
@@ -257,9 +260,10 @@ class RelayWebSocketHandler(
                         recipientId = envelope.recipientId
                     )
                 }.onFailure { error ->
-                    println(
-                        "Immediate envelope delivery failed for " +
-                            "${envelope.recipientId}: ${error.message}"
+                    logger.error(
+                        "Immediate envelope delivery failed for {}",
+                        envelope.recipientId,
+                        error
                     )
                 }
             }

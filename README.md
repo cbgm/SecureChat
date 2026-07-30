@@ -58,6 +58,7 @@ docs/                MkDocs engineering handbook
 - 🧭 [Architecture Overview](docs/architecture/overview.md)
 - 🧩 [Messaging Boundary](docs/architecture/messaging-boundary.md)
 - ✉️ [Conversation, Messaging, and Delivery Flow](docs/features/message-transport-flow.md)
+- 🪵 [Logging](docs/development/logging.md)
 
 ## Generated Documentation
 
@@ -170,6 +171,7 @@ in Xcode and run the application.
 - Koin
 - Room
 - Ktor
+- Kermit
 - LibSodium
 - Gradle Convention Plugins
 - Detekt

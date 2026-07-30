@@ -14,7 +14,7 @@ Generated automatically by `./gradlew architectureReport`.
 | Production Kotlin files | 48 |
 | Test Kotlin files | 8 |
 | Resource files | 1 |
-| Direct dependencies | 0 |
+| Direct dependencies | 1 |
 | Direct dependents | 7 |
 
 ## Source sets
@@ -28,7 +28,7 @@ Generated automatically by `./gradlew architectureReport`.
 
 ## Dependencies
 
-None.
+- [`:core`](../modules/core.md)
 
 ## Dependents
 

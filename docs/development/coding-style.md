@@ -224,6 +224,20 @@ Launch work from appropriate lifecycle-aware scopes.
 
 ---
 
+# Logging
+
+Use the project-owned `SecureChatLogger` from `:core` for application and shared Kotlin code.
+The standalone relay uses SLF4J with Logback.
+
+Do not use `print`, `println`, `System.out`, `System.err`, or `printStackTrace`.
+
+Pass failures to the logger as a `Throwable` and use lazy message lambdas. Never log message
+contents, phone numbers, cryptographic material, safety numbers, or encoded payloads.
+
+See the [Logging guide](logging.md) for levels, examples, privacy rules, and extension points.
+
+---
+
 # Flow
 
 Prefer Flow for asynchronous state.
