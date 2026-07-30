@@ -11,7 +11,7 @@ data class IncomingPacketContext(
     val conversationId: String,
     val encodedTransportPayload: String,
     val transportMode: String,
-    val receivedAtEpochMilliseconds: Long,
+    val receivedAtEpochMilliseconds: Long
 ) {
     init {
         require(contactId.isNotBlank()) {

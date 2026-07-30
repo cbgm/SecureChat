@@ -5,7 +5,7 @@ data class RelayTransportConfig(
     /**
      * Maximum wait for the relay to accept an envelope.
      */
-    val acknowledgementTimeoutMilliseconds: Long = 15_000L,
+    val acknowledgementTimeoutMilliseconds: Long = 15_000L
 ) {
     init {
         require(serverUrl.isNotBlank()) {

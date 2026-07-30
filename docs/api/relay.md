@@ -1,296 +1,107 @@
-# Relay API
+# Relay Server
 
-## Overview
+`:relay` is a standalone Ktor/JVM application that registers connections and routes opaque
+`RelayEnvelope` values. It does not depend on client feature modules and does not decode transport
+payloads or SecureChat packets.
 
-The SecureChat Relay is a lightweight message forwarding service.
+## Components
 
-Its only responsibility is to deliver encrypted packets between connected clients.
+| Class/interface | Responsibility |
+|---|---|
+| `RelayWebSocketHandler` | Decode client frames, enforce registration, accept sends, forward typing, process ACKs |
+| `RelayEnvelopeRouter` | Envelope acceptance and pending delivery contract |
+| `DefaultRelayEnvelopeRouter` | Store accepted envelopes and send pending data to active recipient |
+| `RelayConnectionRegistry` | Active connection contract |
+| `InMemoryRelayConnectionRegistry` | Map relay ID to `RelayClientConnection` |
+| `PendingEnvelopeStore` | Pending-envelope contract |
+| `InMemoryPendingEnvelopeStore` | Idempotent in-memory pending storage |
+| `RelayClientConnection` | Registered relay ID and serialized send access to its session |
+| `relayModule()` | Ktor installation, routes, and dependency construction |
 
-The relay is intentionally designed to be **stateless** with respect to message contents.
+The source interface filename is currently `RelayEnvvelopeRouter.kt`; the declared interface is
+`RelayEnvelopeRouter`.
 
-It does **not**
+## Registration
 
-- decrypt messages
-- inspect plaintext
-- verify Safety Numbers
-- generate identities
-- store private keys
+One socket may register once. `RelayWebSocketHandler.handleRegistration()`:
 
-The relay should be considered an untrusted transport component.
+1. creates `RelayClientConnection`;
+2. registers it in `RelayConnectionRegistry`;
+3. returns `RelayServerMessage.Registered`;
+4. calls `RelayEnvelopeRouter.deliverPending(relayId)`.
 
----
+If another connection registers the same relay ID, `InMemoryRelayConnectionRegistry.register()`
+replaces the mapped connection. On close, unregister removes the mapping only if it still points to
+that exact connection.
 
-# Responsibilities
+## Accepting an envelope
 
-The relay is responsible for
+For `RelayClientMessage.SendEnvelope`:
 
-- accepting WebSocket connections
-- registering connected clients
-- forwarding encrypted packets
-- tracking online clients
-- reporting connection state
+1. the socket must be registered;
+2. `RelayEnvelope.senderId` must equal the registered relay ID;
+3. `DefaultRelayEnvelopeRouter.accept()` calls `PendingEnvelopeStore.enqueue()`;
+4. successful storage returns `RelayServerMessage.EnvelopeAccepted`;
+5. the handler attempts immediate `deliverPending(recipientId)`.
 
-Everything else belongs to the clients.
+`InMemoryPendingEnvelopeStore.enqueue()` uses `putIfAbsent` by `envelopeId`. A repeated submission
+with the same ID does not add another pending row.
 
----
+## Pending delivery
 
-# Architecture
+`DefaultRelayEnvelopeRouter.deliverPending()`:
 
-```
-Client A
+- returns when the recipient has no active connection;
+- loads all pending envelopes for that recipient;
+- orders them by creation time and then envelope ID;
+- sends each as `RelayServerMessage.IncomingEnvelope`.
 
-↓
+Sending does not remove an envelope. The registered recipient must send
+`RelayClientMessage.AcknowledgeEnvelope`, after which `PendingEnvelopeStore.remove()` checks the
+recipient ID and envelope ID before deletion.
 
-Encrypted Packet
+This provides at-least-once delivery while the relay process remains alive.
 
-↓
+## Typing
 
-Relay
+`RelayClientMessage.TypingState` is forwarded to a currently connected recipient as
+`RelayServerMessage.TypingState(senderId, isTyping)`. It is silently dropped when the recipient is
+offline and is never added to the pending store.
 
-↓
+## Security boundary
 
-Encrypted Packet
+The relay can see:
 
-↓
+- relay sender and recipient IDs;
+- envelope IDs and timestamps;
+- encoded payload length and timing.
 
-Client B
-```
+It must not interpret `RelayEnvelope.payload`. Payload decryption and protocol dispatch happen on
+the client.
 
-The relay never processes plaintext.
+Registration currently proves possession of the socket session, not cryptographic ownership of a
+relay ID. Production threat-model changes may require authenticated registration.
 
----
+## Durability and scaling limits
 
-# Connection
+Both production bindings are currently process-local:
 
-Clients establish a persistent WebSocket connection.
+- `InMemoryRelayConnectionRegistry`;
+- `InMemoryPendingEnvelopeStore`.
 
-Typical flow
+Consequences:
 
-```
-Client
+- pending data is lost on relay restart;
+- multiple relay instances do not share sessions or pending envelopes;
+- there is no cross-instance delivery;
+- retention, quotas, and durable operational recovery are not yet implemented.
 
-↓
+A durable implementation should preserve `PendingEnvelopeStore` semantics: idempotent enqueue,
+recipient-scoped ordered lookup, and recipient-checked removal. A distributed connection design
+must also define how one instance reaches a socket owned by another.
 
-Connect
+## Related references
 
-↓
-
-Authenticate
-
-↓
-
-Register
-
-↓
-
-Ready
-```
-
-The relay assigns the connection to the authenticated identity.
-
----
-
-# Authentication
-
-Authentication identifies the client.
-
-Authentication **does not**
-
-- decrypt messages
-- establish trust
-- verify contacts
-
-Those responsibilities belong to the clients.
-
----
-
-# Registration
-
-After successful authentication
-
-```
-Connection
-
-↓
-
-Register Identity
-
-↓
-
-Ready
-```
-
-The relay stores only the information required to route packets.
-
----
-
-# Sending a Packet
-
-```
-Encrypt
-
-↓
-
-Serialize
-
-↓
-
-Transport Packet
-
-↓
-
-Relay
-
-↓
-
-Recipient
-```
-
-The relay forwards the packet without modification.
-
----
-
-# Receiving a Packet
-
-```
-Relay
-
-↓
-
-Transport Packet
-
-↓
-
-Decrypt
-
-↓
-
-Display
-```
-
-Only the recipient decrypts the payload.
-
----
-
-# Packet Routing
-
-Routing is based on the recipient identity contained in the transport metadata.
-
-The relay does not inspect encrypted payloads.
-
----
-
-# Offline Clients
-
-If the recipient is offline, behaviour depends on the relay implementation.
-
-Possible strategies include
-
-- temporary buffering
-- immediate rejection
-- future persistent queue
-
-The current implementation should document its chosen behaviour.
-
----
-
-# Delivery Confirmation
-
-The relay may acknowledge successful receipt of a packet.
-
-This acknowledgement indicates only that the relay accepted the packet.
-
-It does **not** confirm
-
-- recipient decryption
-- recipient display
-- message read
-
----
-
-# Errors
-
-Typical relay errors include
-
-- invalid authentication
-- malformed packet
-- unknown recipient
-- unsupported protocol version
-- connection timeout
-
-Errors should be reported using well-defined protocol messages.
-
----
-
-# Protocol Versioning
-
-Every packet should include a protocol version.
-
-This allows future protocol evolution while maintaining compatibility.
-
-Unsupported versions should be rejected gracefully.
-
----
-
-# Security
-
-The relay is considered untrusted.
-
-Compromise of the relay should not reveal
-
-- plaintext messages
-- private keys
-- Safety Numbers
-
-Only encrypted packets pass through the relay.
-
----
-
-# Logging
-
-Relay logs should avoid sensitive information.
-
-Recommended logging includes
-
-- connection established
-- connection closed
-- packet forwarded
-- protocol errors
-
-Avoid logging
-
-- plaintext
-- decrypted payloads
-- private identity material
-
----
-
-# Scaling
-
-Because the relay is stateless with respect to message contents, horizontal scaling is straightforward.
-
-Multiple relay instances can be introduced behind a load balancer provided client routing requirements are satisfied.
-
----
-
-# Future Extensions
-
-Possible future improvements include
-
-- multi-relay federation
-- persistent message queues
-- relay clustering
-- health monitoring
-- metrics endpoint
-
-These extensions should preserve the relay's role as a transport component rather than moving business logic into the server.
-
----
-
-# Summary
-
-The SecureChat Relay is intentionally minimal.
-
-Its sole responsibility is reliable forwarding of encrypted packets between authenticated clients.
-
-All cryptographic operations remain on the communicating devices.
+- [WebSocket API](websocket.md)
+- [SecureChat Protocol](protocol.md)
+- [Conversation, Messaging, and Delivery Flow](../features/message-transport-flow.md)

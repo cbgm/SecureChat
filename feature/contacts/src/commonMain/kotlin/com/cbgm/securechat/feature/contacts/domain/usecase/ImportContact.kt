@@ -10,7 +10,7 @@ import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
  * Both public keys are validated before reaching persistence.
  */
 class ImportContact(
-    private val repository: ContactRepository,
+    private val repository: ContactRepository
 ) {
     suspend operator fun invoke(request: ImportContactRequest): Result<Contact> =
         runCatching {
@@ -33,8 +33,8 @@ class ImportContact(
                             phoneNumber =
                                 request.phoneNumber
                                     ?.trim()
-                                    ?.takeIf { it.isNotEmpty() },
-                        ),
+                                    ?.takeIf { it.isNotEmpty() }
+                        )
                 ).getOrThrow()
         }
 }

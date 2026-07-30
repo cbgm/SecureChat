@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class LicensesViewModel(
-    private val licensesRepository: LicensesRepository,
+    private val licensesRepository: LicensesRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(LicensesUiState())
     val uiState: StateFlow<LicensesUiState> = _uiState.asStateFlow()
@@ -20,7 +20,7 @@ class LicensesViewModel(
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
-                    libraries = licensesRepository.getLibraries(),
+                    libraries = licensesRepository.getLibraries()
                 )
             }
         }

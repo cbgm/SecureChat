@@ -1,4 +1,4 @@
-package com.cbgm.securechat.feature.chats.presentation.screen.component
+package com.cbgm.securechat.core.ui.component
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -17,24 +17,28 @@ import androidx.compose.ui.unit.dp
 fun ContactAvatar(
     name: String,
     modifier: Modifier = Modifier,
-    size: Dp = 48.dp,
+    size: Dp = 48.dp
 ) {
     Surface(
         modifier = modifier.size(size),
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.secondaryContainer,
+        color = MaterialTheme.colorScheme.secondaryContainer
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
-                text =
-                    name
-                        .split(" ")
-                        .take(2)
-                        .joinToString("") { it.first().uppercase() },
+                text = name.toInitials(),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
             )
         }
     }
 }
+
+private fun String.toInitials(): String =
+    trim()
+        .split(' ')
+        .mapNotNull { part -> part.firstOrNull()?.uppercase() }
+        .take(2)
+        .joinToString(separator = "")
+        .ifEmpty { "?" }

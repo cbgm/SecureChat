@@ -9,31 +9,35 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.cbgm.securechat.feature.chats.domain.model.ContactSecurityState
 import com.cbgm.securechat.feature.chats.presentation.screen.ChatScreen
-import com.cbgm.securechat.feature.chats.presentation.screen.ChatViewModel
-import com.cbgm.securechat.feature.chats.presentation.screen.component.VerifyIdentityDialog
+import com.cbgm.securechat.feature.chats.presentation.screen.chat.ChatViewModel
+import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.ManualIdentitySetupDialog
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 @Composable
 fun ChatRoute(
+    conversationId: String,
     contactId: String,
     contactName: String,
     onBack: () -> Unit,
     onClickHeader: () -> Unit,
+    onVerifyIdentity: () -> Unit,
+    onShareIdentity: () -> Unit,
+    onImportIdentity: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ChatViewModel =
         koinViewModel {
             parametersOf(
+                conversationId,
                 contactId,
-                contactName,
+                contactName
             )
-        },
+        }
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var showVerificationDialog by remember(contactId) { mutableStateOf(false) }
+    var showManualIdentitySetupDialog by remember(contactId) { mutableStateOf(false) }
 
     LaunchedEffect(key1 = contactId) {
         viewModel.markConversationRead()
@@ -60,38 +64,33 @@ fun ChatRoute(
         }
     }
 
-    LaunchedEffect(key1 = uiState.contactSecurityState) {
-        if (uiState.contactSecurityState == ContactSecurityState.MUTUAL_KEYS_VERIFIED) {
-            showVerificationDialog = false
-        }
-    }
-
     ChatScreen(
         uiState = uiState,
         onMessageTextChanged = viewModel::onMessageTextChanged,
         onSendClick = viewModel::sendMessage,
         onRetryMessage = viewModel::retryMessage,
-        onVerifyIdentity = {
-            viewModel.refreshSafetyNumber()
-            showVerificationDialog = true
+        onVerifyIdentity = onVerifyIdentity,
+        onManualIdentitySetup = {
+            showManualIdentitySetupDialog = true
         },
         onClickHeader = onClickHeader,
         onBack = onBack,
-        modifier = modifier,
+        modifier = modifier
     )
 
-    if (
-        showVerificationDialog
-    ) {
-        VerifyIdentityDialog(
-            contactName = uiState.contactName,
-            safetyNumber = uiState.safetyNumber,
-            isLoadingSafetyNumber = uiState.isLoadingSafetyNumber,
-            isVerifying = uiState.isVerifyingIdentity,
-            onConfirm = viewModel::verifyIdentity,
-            onDismiss = {
-                showVerificationDialog = false
+    if (showManualIdentitySetupDialog) {
+        ManualIdentitySetupDialog(
+            onShareIdentity = {
+                showManualIdentitySetupDialog = false
+                onShareIdentity()
             },
+            onImportIdentity = {
+                showManualIdentitySetupDialog = false
+                onImportIdentity()
+            },
+            onDismiss = {
+                showManualIdentitySetupDialog = false
+            }
         )
     }
 }

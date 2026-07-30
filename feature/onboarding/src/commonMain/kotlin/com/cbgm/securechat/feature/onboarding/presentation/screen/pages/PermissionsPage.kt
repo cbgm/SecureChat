@@ -36,53 +36,53 @@ import org.jetbrains.compose.resources.stringResource
 fun PermissionsPage(onRequestPermissions: () -> Unit) {
     Column(
         Modifier.padding(MaterialTheme.spacing.medium),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = stringResource(Res.string.base_permissions),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onPrimary,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.SemiBold
         )
         Spacer(Modifier.height(MaterialTheme.spacing.base))
         Text(
             text = stringResource(Res.string.feature_onboarding_permissions_description),
             color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .74f),
             style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
         ListingRow(
             index = "01",
             title = stringResource(Res.string.base_notifications),
-            description = stringResource(Res.string.feature_onboarding_notifications_description),
+            description = stringResource(Res.string.feature_onboarding_notifications_description)
         )
         ListingRow(
             index = "02",
             title = stringResource(Res.string.base_contacts),
-            description = stringResource(Res.string.feature_onboarding_contacts_permission_description),
+            description = stringResource(Res.string.feature_onboarding_contacts_permission_description)
         )
         ListingRow(
             index = "03",
             title = stringResource(Res.string.feature_onboarding_camera),
-            description = stringResource(Res.string.feature_onboarding_camera_description),
+            description = stringResource(Res.string.feature_onboarding_camera_description)
         )
         ListingRow(
             index = "04",
             title = stringResource(Res.string.base_phone_number),
-            description = stringResource(Res.string.feature_onboarding_phone_number_permission_description),
+            description = stringResource(Res.string.feature_onboarding_phone_number_permission_description)
         )
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
         SecureChatApprovalButton(
             onClick = onRequestPermissions,
-            text = stringResource(Res.string.feature_onboarding_allow_and_continue),
+            text = stringResource(Res.string.feature_onboarding_allow_and_continue)
         )
         Spacer(Modifier.height(MaterialTheme.spacing.base))
         Text(
             text = stringResource(Res.string.feature_onboarding_permissions_settings_hint),
             style = MaterialTheme.typography.labelMedium,
             color = Color.White.copy(alpha = .58f),
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Center
         )
     }
 }

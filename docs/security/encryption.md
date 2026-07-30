@@ -6,7 +6,9 @@ Encryption is the core security mechanism of SecureChat.
 
 Every message is encrypted on the sender's device before it is transmitted over the network.
 
-Only the intended recipient possesses the cryptographic material required to decrypt the message.
+For direct packets, only the intended recipient possesses the private X25519 key needed to open the
+sealed transport payload. For group messages, every member of the current epoch possesses the same
+group key.
 
 The relay never has access to plaintext.
 
@@ -101,11 +103,11 @@ Each step has a clearly defined purpose.
 
 SecureChat uses authenticated encryption.
 
-Authenticated encryption provides
+Group-message XChaCha20-Poly1305 provides
 
 - confidentiality
 - integrity
-- authenticity
+- ciphertext authenticity for holders of the shared epoch key
 
 If encrypted data is modified during transport, decryption fails.
 
@@ -117,7 +119,7 @@ The application should never display partially decrypted data.
 
 Message encryption uses keys derived from the communicating identities.
 
-The encryption process does not reuse identity keys directly for message encryption.
+Group encryption does not reuse identity keys directly for message encryption.
 
 Instead
 
@@ -126,11 +128,11 @@ Identity Keys
 
 ↓
 
-Key Agreement
+Recipient-specific sealed key distribution
 
 ↓
 
-Encryption Key
+Random group epoch key
 
 ↓
 
@@ -138,6 +140,89 @@ Encrypt Message
 ```
 
 This separates long-term identity from message encryption.
+
+---
+
+# Secure Group Messages
+
+SecureChat group messages use a shared 256-bit key for each group epoch.
+
+| Property | Implementation |
+|---|---|
+| Symmetric encryption | XChaCha20-Poly1305 through `SodiumGroupCrypto` |
+| Nonce | New random 24-byte nonce for every encryption |
+| Member attribution | Ed25519 signature from the individual sender |
+| Key distribution | libsodium sealed box per recipient |
+| Key at rest | AES-GCM under an AES-256 Android Keystore key |
+| Epoch metadata | `GroupSecurityStateEntity` |
+| Remote member key snapshot | `GroupMemberKeyEntity` |
+
+AEAD alone cannot identify the sender because every current member knows the shared key.
+`GroupSecurityManager.encryptMessage()` therefore signs the canonical header, nonce, and
+ciphertext with the sender's Ed25519 private key. `GroupSecurityManager.decryptMessage()` selects
+the expected public key from the authenticated contact and the stored epoch membership; it never
+trusts a public key carried by the incoming message.
+
+## Group creation and key distribution
+
+`DefaultChatsRepository.createGroupConversation()` delegates to `GroupInvitationCoordinator`.
+The coordinator can start with ordinary contacts whose secure identities are not known yet. It
+creates a signed `GroupInvitePacket` with a random challenge for every selected contact. The
+recipient verifies the owner identity and sees a pending group, but sends no identity until the user
+accepts. Acceptance creates a signed `GroupJoinRequestPacket` carrying the invitee's public
+encryption and signing keys.
+`GroupInvitationManager` creates and verifies both signatures, while
+`GroupInvitationCoordinator` binds the response to the persisted invitation, expected contact,
+group, challenge, and expiry.
+
+Discovered keys are stored as mutual but unverified. Users must still compare safety numbers to
+protect the first contact from relay-assisted identity substitution.
+
+Once every selected contact reaches `IDENTITY_READY`,
+`GroupSecurityManager.createOwnedGroup()` generates epoch 1, stores the local key through
+`GroupKeyStorage`, and creates one signed `GroupCreatedPacket` for each recipient. Creator messages
+written before this point remain local `QUEUED` rows. They are not encrypted or placed in the
+outbox yet.
+
+The raw epoch key is passed only in memory. `SodiumGroupCrypto.wrapGroupKey()` seals it to the
+recipient's X25519 public key before the packet is encoded or enqueued. Consequently:
+
+- `ProtocolOutboxEntity.encodedPacket` contains only a wrapped key;
+- `GroupCreatedPacketHandler` must verify the owner's signature before accepting membership;
+- only the intended recipient can unwrap `GroupCreatedPacket.wrappedGroupKey`;
+- `DefaultOutboxProcessor` requires sealed outer transport for `GroupCreatedPacket`.
+
+After persisting the key, `GroupCreatedPacketHandler` sends a signed
+`GroupReadyAcknowledgementPacket` containing a SHA-256 confirmation derived from the group ID,
+epoch, and recovered 256-bit key. The creator recomputes it with its local epoch key and does not
+fan out queued content until every invited member has returned valid identity and key-possession
+proof.
+
+`GroupChatMessagePacket` may use plaintext outer transport because its content is already
+XChaCha20-Poly1305 ciphertext authenticated by the group epoch key and an individual sender
+signature. Such messages are stored as `GROUP_E2EE` so their security indicator describes the
+inner group protection.
+
+## Message protection
+
+`GroupProtocolPayloadEncoder.encodeMessageAssociatedData()` binds these unencrypted fields to the
+ciphertext:
+
+- protocol version;
+- group ID;
+- epoch;
+- message ID;
+- sent timestamp.
+
+`encodeMessageSignature()` additionally binds the random nonce and ciphertext. Changing any
+bound value makes signature verification or AEAD authentication fail.
+
+## Epochs and rotation
+
+The initial implementation creates epoch 1 and is ready for rotation, but it does not yet expose
+membership-change UI or a rekey packet. Any future add/remove operation must generate a new random
+key and a complete member-key snapshot for `currentEpoch + 1`. It must never mutate or reuse an
+old epoch.
 
 ---
 
@@ -250,10 +335,12 @@ Failures should produce explicit error states rather than undefined behaviour.
 
 # Message Authentication
 
-Successful decryption proves that
+Successful group AEAD decryption proves that
 
 - the ciphertext has not been modified
-- the correct cryptographic material was available
+- the sender possessed the current shared epoch key
+
+The verified Ed25519 `senderSignature` separately proves which current member sent it.
 
 Failed authentication should always result in message rejection.
 

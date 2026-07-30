@@ -1,0 +1,17 @@
+package com.cbgm.securechat.feature.settings.data.storage
+
+interface SettingsStorage {
+    suspend fun getLanguageTag(): String?
+
+    suspend fun setLanguageTag(languageTag: String)
+
+    suspend fun getDeveloperModeEnabled(): Boolean
+
+    suspend fun setDeveloperModeEnabled(enabled: Boolean)
+
+    suspend fun getDirectIdentitySetupMode(): String?
+
+    suspend fun setDirectIdentitySetupMode(mode: String)
+
+    suspend fun clear()
+}

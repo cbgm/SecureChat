@@ -18,14 +18,15 @@ kotlin {
             implementation(projects.core.protocol)
             implementation(projects.core.ui)
             implementation(projects.data.database)
+            implementation(projects.feature.contactimport)
             implementation(projects.feature.contacts)
+            implementation(projects.feature.identity)
 
             implementation(libs.bundles.compose)
             implementation(libs.bundles.coroutines)
             implementation(libs.bundles.koin.compose)
 
             implementation(compose.materialIconsExtended)
-            implementation(libs.okio)
         }
 
         commonTest.dependencies {

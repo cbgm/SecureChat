@@ -20,7 +20,7 @@ import kotlin.time.Duration.Companion.milliseconds
 class DefaultRelayConnectionManager(
     private val webSocketTransportClient: WebSocketTransportClient,
     private val localRelayIdProvider: LocalRelayIdProvider,
-    private val relayTransportConfig: RelayTransportConfig,
+    private val relayTransportConfig: RelayTransportConfig
 ) : RelayConnectionManager {
     private val connectionScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -58,7 +58,7 @@ class DefaultRelayConnectionManager(
 
                 webSocketTransportClient.connect(
                     serverUrl = relayTransportConfig.serverUrl,
-                    localRelayId = relayId,
+                    localRelayId = relayId
                 )
 
                 val connectionResult =
@@ -95,11 +95,11 @@ class DefaultRelayConnectionManager(
                     }
                 }
             } catch (
-                error: CancellationException,
+                error: CancellationException
             ) {
                 throw error
             } catch (
-                error: Throwable,
+                error: Throwable
             ) {
                 println("Relay connection error: ${error.message}")
             }

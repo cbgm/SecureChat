@@ -21,13 +21,13 @@ const val LOGO_WATERMARK_ALPHA =
 @Composable
 fun SecureChatAppBackground(
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
+    content: @Composable () -> Unit
 ) {
     Box(
         modifier =
             modifier
                 .fillMaxSize()
-                .background(color = MaterialTheme.colorScheme.background.copy(alpha = BACKGROUND_TINT_ALPHA)),
+                .background(color = MaterialTheme.colorScheme.background.copy(alpha = BACKGROUND_TINT_ALPHA))
     ) {
         StartupArtwork(
             modifier =
@@ -36,7 +36,7 @@ fun SecureChatAppBackground(
                     .size(300.dp)
                     .graphicsLayer {
                         alpha = LOGO_WATERMARK_ALPHA
-                    },
+                    }
         )
 
         content()

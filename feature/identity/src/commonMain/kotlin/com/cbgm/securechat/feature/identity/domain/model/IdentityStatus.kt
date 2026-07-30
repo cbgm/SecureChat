@@ -30,5 +30,5 @@ enum class IdentityStatus {
      * because doing so could permanently break access to encrypted
      * conversation history.
      */
-    INCOMPLETE,
+    INCOMPLETE
 }

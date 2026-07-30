@@ -1,35 +1,35 @@
 package com.cbgm.securechat.feature.settings.data.repository
 
 import com.cbgm.securechat.core.ui.locale.AppLanguage
-import com.cbgm.securechat.feature.settings.data.storage.InMemorySettingsStorage
+import com.cbgm.securechat.feature.settings.data.storage.SettingsStorage
 import com.cbgm.securechat.feature.settings.domain.model.BuildInfo
 import com.cbgm.securechat.feature.settings.domain.repository.BuildInfoProvider
 import com.cbgm.securechat.feature.settings.domain.repository.SettingsRepository
 
 class SettingsRepositoryImpl(
     private val buildInfoProvider: BuildInfoProvider,
-    private val settingsStorage: InMemorySettingsStorage,
+    private val settingsStorage: SettingsStorage
 ) : SettingsRepository {
     override suspend fun getLanguage(): AppLanguage =
         AppLanguage.fromLanguageTag(
-            settingsStorage.getLanguageTag(),
+            settingsStorage.getLanguageTag()
         )
 
     override suspend fun setLanguage(
-        language: AppLanguage,
+        language: AppLanguage
     ) {
         settingsStorage.setLanguageTag(
-            languageTag = language.languageTag,
+            languageTag = language.languageTag
         )
     }
 
     override suspend fun isDeveloperModeEnabled(): Boolean = settingsStorage.getDeveloperModeEnabled()
 
     override suspend fun setDeveloperModeEnabled(
-        enabled: Boolean,
+        enabled: Boolean
     ) {
         settingsStorage.setDeveloperModeEnabled(
-            enabled = enabled,
+            enabled = enabled
         )
     }
 

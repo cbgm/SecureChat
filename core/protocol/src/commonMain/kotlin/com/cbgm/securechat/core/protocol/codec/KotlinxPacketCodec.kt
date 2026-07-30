@@ -5,7 +5,7 @@ import com.cbgm.securechat.core.protocol.version.ProtocolVersion
 import kotlinx.serialization.json.Json
 
 class KotlinxPacketCodec(
-    private val json: Json,
+    private val json: Json
 ) : PacketCodec {
     override fun encode(packet: SecureChatPacket): Result<ByteArray> =
         runCatching {
@@ -16,7 +16,7 @@ class KotlinxPacketCodec(
             json
                 .encodeToString(
                     serializer = SecureChatPacket.serializer(),
-                    value = packet,
+                    value = packet
                 ).encodeToByteArray()
         }
 
@@ -31,7 +31,7 @@ class KotlinxPacketCodec(
             val packet =
                 json.decodeFromString(
                     deserializer = SecureChatPacket.serializer(),
-                    string = encodedText,
+                    string = encodedText
                 )
 
             require(ProtocolVersion.isSupported(packet.version)) {

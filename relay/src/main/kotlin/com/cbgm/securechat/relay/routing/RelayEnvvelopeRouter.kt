@@ -7,7 +7,7 @@ sealed interface RelayRoutingResult {
         RelayRoutingResult
 
     data class Failed(
-        val message: String,
+        val message: String
     ) : RelayRoutingResult
 }
 

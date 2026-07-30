@@ -11,7 +11,7 @@ sealed interface RelayClientMessage {
     @Serializable
     @SerialName("register")
     data class Register(
-        val relayId: String,
+        val relayId: String
     ) : RelayClientMessage {
         init {
             require(relayId.isNotBlank()) {
@@ -26,14 +26,14 @@ sealed interface RelayClientMessage {
     @Serializable
     @SerialName("send_envelope")
     data class SendEnvelope(
-        val envelope: RelayEnvelope,
+        val envelope: RelayEnvelope
     ) : RelayClientMessage
 
     @Serializable
     @SerialName("typing_state")
     data class TypingState(
         val recipientId: String,
-        val isTyping: Boolean,
+        val isTyping: Boolean
     ) : RelayClientMessage {
         init {
             require(recipientId.isNotBlank()) {
@@ -45,7 +45,7 @@ sealed interface RelayClientMessage {
     @Serializable
     @SerialName("acknowledge_envelope")
     data class AcknowledgeEnvelope(
-        val envelopeId: String,
+        val envelopeId: String
     ) : RelayClientMessage {
         init {
             require(envelopeId.isNotBlank()) {

@@ -65,6 +65,7 @@ dependencies {
     implementation(projects.core.protocol)
 
     implementation(projects.data.database)
+    implementation(projects.feature.messaging)
 
     implementation(projects.feature.chats)
     implementation(projects.feature.contactimport)

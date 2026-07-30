@@ -10,12 +10,12 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `core` |
 | Directory | `core/protocol` |
 | Build file | `core/protocol/build.gradle.kts` |
-| Kotlin files | 35 |
-| Production Kotlin files | 34 |
-| Test Kotlin files | 1 |
+| Kotlin files | 56 |
+| Production Kotlin files | 48 |
+| Test Kotlin files | 8 |
 | Resource files | 1 |
 | Direct dependencies | 0 |
-| Direct dependents | 6 |
+| Direct dependents | 7 |
 
 ## Source sets
 
@@ -37,4 +37,5 @@ None.
 - [`:feature:chats`](../modules/feature-chats.md)
 - [`:feature:contacts`](../modules/feature-contacts.md)
 - [`:feature:identity`](../modules/feature-identity.md)
+- [`:feature:messaging`](../modules/feature-messaging.md)
 - [`:feature:transport`](../modules/feature-transport.md)

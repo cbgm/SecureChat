@@ -11,20 +11,22 @@ import com.cbgm.securechat.core.protocol.outbox.OutboxRunner
 import com.cbgm.securechat.data.database.di.androidDatabaseModule
 import com.cbgm.securechat.di.appModule
 import com.cbgm.securechat.di.sharedModule
+import com.cbgm.securechat.feature.chats.di.androidChatsModule
 import com.cbgm.securechat.feature.chats.di.chatsModule
 import com.cbgm.securechat.feature.contactimport.di.contactImportModule
 import com.cbgm.securechat.feature.contacts.di.contactsModule
 import com.cbgm.securechat.feature.contacts.domain.usecase.ImportDeviceContacts
-import com.cbgm.securechat.feature.identity.core.LocalPhoneNameStorage
 import com.cbgm.securechat.feature.identity.di.androidIdentityStorageModule
 import com.cbgm.securechat.feature.identity.di.identityModule
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
+import com.cbgm.securechat.feature.identity.domain.repository.storage.LocalPhoneNameStorage
+import com.cbgm.securechat.feature.messaging.application.incoming.IncomingRelayRunner
+import com.cbgm.securechat.feature.messaging.di.messagingModule
 import com.cbgm.securechat.feature.onboarding.di.onboardingModule
 import com.cbgm.securechat.feature.settings.di.settingsModule
 import com.cbgm.securechat.feature.transport.connection.RelayConnectionManager
 import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
 import com.cbgm.securechat.feature.transport.di.transportModule
-import com.cbgm.securechat.feature.transport.incoming.IncomingRelayRunner
 import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
 import com.cbgm.securechat.startup.di.startupModule
 import kotlinx.coroutines.CoroutineScope
@@ -51,23 +53,25 @@ class SecureChatApplication : Application() {
             startKoin {
                 androidLogger()
                 androidContext(
-                    this@SecureChatApplication,
+                    this@SecureChatApplication
                 )
                 modules(
                     cryptoModule,
                     protocolModule,
-                    transportModule,
                     androidDatabaseModule,
                     androidIdentityStorageModule,
                     identityModule,
                     onboardingModule,
                     contactsModule,
+                    androidChatsModule,
+                    chatsModule,
+                    transportModule,
+                    messagingModule,
                     appModule,
                     sharedModule,
                     contactImportModule,
                     startupModule,
-                    chatsModule,
-                    settingsModule,
+                    settingsModule
                 )
             }
 
@@ -80,7 +84,7 @@ class SecureChatApplication : Application() {
 
             combine(
                 identityRepository.observeIdentity(),
-                phoneNumberStorage.observePhoneNumber(),
+                phoneNumberStorage.observePhoneNumber()
             ) { identity, phoneNumber ->
                 identity != null && !phoneNumber.isNullOrBlank()
             }.first { ready ->
@@ -102,7 +106,7 @@ class SecureChatApplication : Application() {
                 .connectionState
                 .collect { state ->
                     println(
-                        "SecureChat relay state: $state",
+                        "SecureChat relay state: $state"
                     )
                 }
         }
@@ -159,7 +163,7 @@ class SecureChatApplication : Application() {
         val permissionGranted =
             ContextCompat.checkSelfPermission(
                 this,
-                Manifest.permission.READ_CONTACTS,
+                Manifest.permission.READ_CONTACTS
             ) == PackageManager.PERMISSION_GRANTED
 
         if (!permissionGranted) {
@@ -185,7 +189,7 @@ class SecureChatApplication : Application() {
             SodiumRuntime.initialize().getOrElse { error ->
                 throw IllegalStateException(
                     "SecureChat could not initialize its cryptographic runtime",
-                    error,
+                    error
                 )
             }
         }

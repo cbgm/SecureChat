@@ -72,7 +72,7 @@ class DefaultIdentityRepositoryTest {
                     DefaultIdentityRepository(
                         identityKeyGenerator = SodiumIdentityKeyGenerator(),
                         privateKeyStorage = privateKeyStorage,
-                        publicIdentityStorage = publicIdentityStorage,
+                        publicIdentityStorage = publicIdentityStorage
                     )
 
                 /**
@@ -85,7 +85,7 @@ class DefaultIdentityRepositoryTest {
 
                 assertFalse(
                     existsBeforeCreation,
-                    "Identity should not exist before creation",
+                    "Identity should not exist before creation"
                 )
 
                 /**
@@ -98,12 +98,12 @@ class DefaultIdentityRepositoryTest {
                  */
                 assertTrue(
                     createdIdentity.encryptionPublicKey.isNotEmpty(),
-                    "Created encryption public key must not be empty",
+                    "Created encryption public key must not be empty"
                 )
 
                 assertTrue(
                     createdIdentity.signingPublicKey.isNotEmpty(),
-                    "Created signing public key must not be empty",
+                    "Created signing public key must not be empty"
                 )
 
                 /**
@@ -114,7 +114,7 @@ class DefaultIdentityRepositoryTest {
 
                 assertTrue(
                     existsAfterCreation,
-                    "Identity should exist after creation",
+                    "Identity should exist after creation"
                 )
 
                 /**
@@ -124,7 +124,7 @@ class DefaultIdentityRepositoryTest {
 
                 assertNotNull(
                     loadedIdentity,
-                    "Loaded public identity must not be null",
+                    "Loaded public identity must not be null"
                 )
 
                 /**
@@ -134,13 +134,13 @@ class DefaultIdentityRepositoryTest {
                 assertContentEquals(
                     createdIdentity.encryptionPublicKey,
                     loadedIdentity.encryptionPublicKey,
-                    "Loaded encryption public key must match created key",
+                    "Loaded encryption public key must match created key"
                 )
 
                 assertContentEquals(
                     createdIdentity.signingPublicKey,
                     loadedIdentity.signingPublicKey,
-                    "Loaded signing public key must match created key",
+                    "Loaded signing public key must match created key"
                 )
 
                 /**
@@ -156,12 +156,12 @@ class DefaultIdentityRepositoryTest {
 
                 assertNotNull(
                     loadedEncryptionPrivateKey,
-                    "Encryption private key must exist after creation",
+                    "Encryption private key must exist after creation"
                 )
 
                 assertNotNull(
                     loadedSigningPrivateKey,
-                    "Signing private key must exist after creation",
+                    "Signing private key must exist after creation"
                 )
             } finally {
                 /**
@@ -202,7 +202,7 @@ class DefaultIdentityRepositoryTest {
                     DefaultIdentityRepository(
                         identityKeyGenerator = SodiumIdentityKeyGenerator(),
                         privateKeyStorage = privateKeyStorage,
-                        publicIdentityStorage = publicIdentityStorage,
+                        publicIdentityStorage = publicIdentityStorage
                     )
 
                 /**
@@ -230,12 +230,12 @@ class DefaultIdentityRepositoryTest {
 
                 assertNotNull(
                     firstEncryptionPrivateKey,
-                    "First encryption private key must exist",
+                    "First encryption private key must exist"
                 )
 
                 assertNotNull(
                     firstSigningPrivateKey,
-                    "First signing private key must exist",
+                    "First signing private key must exist"
                 )
 
                 /**
@@ -245,7 +245,7 @@ class DefaultIdentityRepositoryTest {
 
                 assertTrue(
                     secondCreationResult.isFailure,
-                    "Creating an identity twice must fail",
+                    "Creating an identity twice must fail"
                 )
 
                 /**
@@ -255,7 +255,7 @@ class DefaultIdentityRepositoryTest {
 
                 assertNotNull(
                     identityAfterSecondAttempt,
-                    "Original identity must still exist",
+                    "Original identity must still exist"
                 )
 
                 /**
@@ -264,13 +264,13 @@ class DefaultIdentityRepositoryTest {
                 assertContentEquals(
                     firstIdentity.encryptionPublicKey,
                     identityAfterSecondAttempt.encryptionPublicKey,
-                    "Encryption public key must not change",
+                    "Encryption public key must not change"
                 )
 
                 assertContentEquals(
                     firstIdentity.signingPublicKey,
                     identityAfterSecondAttempt.signingPublicKey,
-                    "Signing public key must not change",
+                    "Signing public key must not change"
                 )
 
                 /**
@@ -288,12 +288,12 @@ class DefaultIdentityRepositoryTest {
 
                 assertNotNull(
                     encryptionPrivateKeyAfterSecondAttempt,
-                    "Encryption private key must still exist",
+                    "Encryption private key must still exist"
                 )
 
                 assertNotNull(
                     signingPrivateKeyAfterSecondAttempt,
-                    "Signing private key must still exist",
+                    "Signing private key must still exist"
                 )
 
                 /**
@@ -302,13 +302,13 @@ class DefaultIdentityRepositoryTest {
                 assertContentEquals(
                     firstEncryptionPrivateKey,
                     encryptionPrivateKeyAfterSecondAttempt,
-                    "Encryption private key must not change",
+                    "Encryption private key must not change"
                 )
 
                 assertContentEquals(
                     firstSigningPrivateKey,
                     signingPrivateKeyAfterSecondAttempt,
-                    "Signing private key must not change",
+                    "Signing private key must not change"
                 )
             } finally {
                 /**

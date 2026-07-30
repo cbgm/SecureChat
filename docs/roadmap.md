@@ -82,13 +82,23 @@ Attachments should use exactly the same encryption pipeline as text messages.
 
 ## Groups
 
-Planned functionality
+Implemented foundation
 
 - Group creation
+- Signed invitation and join-request identity bootstrap for ordinary contacts
+- Pending-group activation only after every invited identity is ready
+- Shared XChaCha20-Poly1305 epoch key
+- Signed per-sender group messages
+- Signed, recipient-wrapped epoch-1 key distribution
+- Android Keystore protection for local group keys
+
+Remaining functionality
+
 - Group administration
-- Member management
-- Group encryption
-- Group invitations
+- Member add/remove and owner-authorized rekey packets
+- Invitations for adding members to an already active group
+- Epoch activation/acknowledgement policy
+- Sender-key or ratcheting research if stronger post-compromise properties are required
 
 Architecture should remain compatible with one-to-one messaging.
 

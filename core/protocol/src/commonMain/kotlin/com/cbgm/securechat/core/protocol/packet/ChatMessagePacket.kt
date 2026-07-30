@@ -18,6 +18,7 @@ data class ChatMessagePacket(
     val messageId: String,
     val sentAtEpochMilliseconds: Long,
     val text: String,
+    val senderPhoneNumber: String? = null
 ) : SecureChatPacket {
     init {
         require(packetId.isNotBlank()) {
@@ -38,6 +39,10 @@ data class ChatMessagePacket(
 
         require(text.isNotBlank()) {
             "Message text must not be blank"
+        }
+
+        require(senderPhoneNumber == null || senderPhoneNumber.isNotBlank()) {
+            "Sender phone number must not be blank"
         }
     }
 }

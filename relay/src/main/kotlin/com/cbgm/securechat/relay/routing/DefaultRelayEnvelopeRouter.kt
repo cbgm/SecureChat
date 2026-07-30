@@ -9,7 +9,7 @@ import kotlinx.serialization.json.Json
 class DefaultRelayEnvelopeRouter(
     private val connectionRegistry: RelayConnectionRegistry,
     private val pendingEnvelopeStore: PendingEnvelopeStore,
-    private val json: Json,
+    private val json: Json
 ) : RelayEnvelopeRouter {
     override suspend fun accept(envelope: RelayEnvelope): RelayRoutingResult =
         runCatching {
@@ -31,8 +31,8 @@ class DefaultRelayEnvelopeRouter(
 
             recipientConnection.sendText(
                 json.encodeToString<RelayServerMessage>(
-                    serverMessage,
-                ),
+                    serverMessage
+                )
             )
         }
     }

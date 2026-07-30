@@ -3,7 +3,7 @@ package com.cbgm.securechat.core.crypto.transport
 data class EncryptedTransportPayload(
     val version: Int,
     val mode: TransportEncryptionMode,
-    val payload: ByteArray,
+    val payload: ByteArray
 ) {
     init {
         require(version > 0) {

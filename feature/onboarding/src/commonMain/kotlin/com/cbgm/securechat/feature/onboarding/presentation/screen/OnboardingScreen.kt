@@ -52,7 +52,7 @@ fun OnboardingScreen(
     onRetryAutomaticNumber: () -> Unit,
     onPhoneNumberChanged: (String) -> Unit,
     onApproveAndCreate: () -> Unit,
-    onNameChanged: (String) -> Unit,
+    onNameChanged: (String) -> Unit
 ) {
     Box(
         modifier =
@@ -60,11 +60,11 @@ fun OnboardingScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.primary)
                 .padding(MaterialTheme.spacing.screenPadding),
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             PulsingLogo(modifier = Modifier.size(200.dp))
             Spacer(Modifier.height(MaterialTheme.spacing.small))
@@ -72,12 +72,12 @@ fun OnboardingScreen(
                 text = stringResource(Res.string.base_app_name),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onPrimary,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Bold
             )
             Text(
                 text = stringResource(Res.string.base_tagline),
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .72f),
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyLarge
             )
             Spacer(Modifier.height(MaterialTheme.spacing.medium))
 
@@ -85,7 +85,7 @@ fun OnboardingScreen(
                 AnimatedContent(
                     targetState = state.page,
                     transitionSpec = { fadeIn() togetherWith fadeOut() },
-                    label = "onboardingPage",
+                    label = "onboardingPage"
                 ) { page ->
 
                     when (page) {
@@ -93,7 +93,7 @@ fun OnboardingScreen(
                         OnboardingPage.PRIVACY -> PrivacyPage(onNext)
                         OnboardingPage.PERMISSIONS ->
                             PermissionsPage(
-                                onRequestPermissions,
+                                onRequestPermissions
                             )
 
                         OnboardingPage.PHONE ->
@@ -105,7 +105,7 @@ fun OnboardingScreen(
                                 onRetryAutomaticNumber = onRetryAutomaticNumber,
                                 onPhoneNumberChanged = onPhoneNumberChanged,
                                 onApproveAndCreate = onApproveAndCreate,
-                                onNameChanged = onNameChanged,
+                                onNameChanged = onNameChanged
                             )
                     }
                 }
@@ -126,8 +126,8 @@ private fun OnboardingScreenPreview() {
                     publicIdentity =
                         PublicIdentity(
                             ByteArray(size = 0),
-                            ByteArray(size = 0),
-                        ),
+                            ByteArray(size = 0)
+                        )
                 ),
             onNext = {},
             onRequestPermissions = {},
@@ -135,7 +135,7 @@ private fun OnboardingScreenPreview() {
             onRetryAutomaticNumber = {},
             onPhoneNumberChanged = {},
             onApproveAndCreate = {},
-            onNameChanged = {},
+            onNameChanged = {}
         )
     }
 }
@@ -145,7 +145,7 @@ private fun OnboardingScreenPreview() {
 private fun OnboardingScreen2Preview() {
     SecureChatTheme {
         OnboardingScreen(
-            state = OnboardingUiState(page = OnboardingPage.PHONE),
+            state = OnboardingUiState(page = OnboardingPage.WELCOME),
             identityState = IdentityUiState.NoIdentity(),
             onNext = {},
             onRequestPermissions = {},
@@ -153,7 +153,7 @@ private fun OnboardingScreen2Preview() {
             onRetryAutomaticNumber = {},
             onPhoneNumberChanged = {},
             onApproveAndCreate = {},
-            onNameChanged = {},
+            onNameChanged = {}
         )
     }
 }

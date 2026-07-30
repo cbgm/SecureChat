@@ -7,7 +7,7 @@ interface SettingsRepository {
     suspend fun getLanguage(): AppLanguage
 
     suspend fun setLanguage(
-        language: AppLanguage,
+        language: AppLanguage
     )
 
     suspend fun isDeveloperModeEnabled(): Boolean

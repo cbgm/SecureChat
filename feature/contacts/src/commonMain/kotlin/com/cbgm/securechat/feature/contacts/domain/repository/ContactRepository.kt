@@ -20,7 +20,7 @@ interface ContactRepository {
     suspend fun updateContactDetails(
         contactId: String,
         displayName: String?,
-        phoneNumber: String?,
+        phoneNumber: String?
     ): Result<Contact>
 
     suspend fun markVerified(contactId: String): Result<Contact>
@@ -41,6 +41,6 @@ interface ContactRepository {
 
     suspend fun updateDeviceContactLinkStatus(
         deviceContactId: String,
-        status: DeviceContactLinkStatus,
+        status: DeviceContactLinkStatus
     ): Result<Contact?>
 }

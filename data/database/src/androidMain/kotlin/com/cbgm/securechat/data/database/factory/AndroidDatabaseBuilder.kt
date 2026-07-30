@@ -13,12 +13,12 @@ import com.cbgm.securechat.data.database.util.DatabaseConstants
  * an Activity or other short-lived Android component.
  */
 fun createAndroidDatabaseBuilder(
-    context: Context,
+    context: Context
 ): RoomDatabase.Builder<SecureChatDatabase> {
     val databaseFile = context.getDatabasePath(DatabaseConstants.DATABASE_NAME)
 
     return Room.databaseBuilder<SecureChatDatabase>(
         context = context.applicationContext,
-        name = databaseFile.absolutePath,
+        name = databaseFile.absolutePath
     )
 }

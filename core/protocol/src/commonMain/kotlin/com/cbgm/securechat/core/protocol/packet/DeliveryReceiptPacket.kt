@@ -14,7 +14,7 @@ data class DeliveryReceiptPacket(
      * stored by the recipient.
      */
     val messageId: String,
-    val deliveredAtEpochMilliseconds: Long,
+    val deliveredAtEpochMilliseconds: Long
 ) : SecureChatPacket {
     init {
         require(packetId.isNotBlank()) {
