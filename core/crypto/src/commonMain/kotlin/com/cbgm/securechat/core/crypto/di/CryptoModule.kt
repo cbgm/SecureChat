@@ -1,7 +1,5 @@
 package com.cbgm.securechat.core.crypto.di
 
-import com.cbgm.securechat.core.crypto.group.GroupCrypto
-import com.cbgm.securechat.core.crypto.group.SodiumGroupCrypto
 import com.cbgm.securechat.core.crypto.hash.CryptoHash
 import com.cbgm.securechat.core.crypto.hash.DefaultCryptoHash
 import com.cbgm.securechat.core.crypto.identity.IdentityAcknowledgementCrypto
@@ -9,11 +7,7 @@ import com.cbgm.securechat.core.crypto.identity.IdentityAcknowledgementPayloadEn
 import com.cbgm.securechat.core.crypto.identity.IdentityKeyGenerator
 import com.cbgm.securechat.core.crypto.identity.SodiumIdentityAcknowledgementCrypto
 import com.cbgm.securechat.core.crypto.identity.SodiumIdentityKeyGenerator
-import com.cbgm.securechat.core.crypto.random.SecureRandomGenerator
-import com.cbgm.securechat.core.crypto.random.SodiumSecureRandomGenerator
 import com.cbgm.securechat.core.crypto.safety.SafetyNumberGenerator
-import com.cbgm.securechat.core.crypto.signature.DetachedSignatureCrypto
-import com.cbgm.securechat.core.crypto.signature.SodiumDetachedSignatureCrypto
 import com.cbgm.securechat.core.crypto.transport.DefaultIncomingTransportMessageDecoder
 import com.cbgm.securechat.core.crypto.transport.DefaultTransportPayloadCodec
 import com.cbgm.securechat.core.crypto.transport.IncomingTransportMessageDecoder
@@ -31,7 +25,7 @@ val cryptoModule =
 
         single {
             SafetyNumberGenerator(
-                cryptoHash = get()
+                cryptoHash = get(),
             )
         }
 
@@ -41,24 +35,12 @@ val cryptoModule =
 
         single<IdentityAcknowledgementCrypto> {
             SodiumIdentityAcknowledgementCrypto(
-                payloadEncoder = get<IdentityAcknowledgementPayloadEncoder>()
+                payloadEncoder = get<IdentityAcknowledgementPayloadEncoder>(),
             )
         }
 
         single<IdentityKeyGenerator> {
             SodiumIdentityKeyGenerator()
-        }
-
-        single<SecureRandomGenerator> {
-            SodiumSecureRandomGenerator()
-        }
-
-        single<DetachedSignatureCrypto> {
-            SodiumDetachedSignatureCrypto()
-        }
-
-        single<GroupCrypto> {
-            SodiumGroupCrypto()
         }
 
         single<TransportMessageCipher> {
@@ -72,7 +54,7 @@ val cryptoModule =
         single<IncomingTransportMessageDecoder> {
             DefaultIncomingTransportMessageDecoder(
                 payloadCodec = get(),
-                transportCipher = get()
+                transportCipher = get(),
             )
         }
     }

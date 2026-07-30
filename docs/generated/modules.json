@@ -21,7 +21,6 @@
       ":feature:contactimport",
       ":feature:contacts",
       ":feature:identity",
-      ":feature:messaging",
       ":feature:onboarding",
       ":feature:settings",
       ":feature:transport",
@@ -37,8 +36,8 @@
     "group": "core",
     "directory": "core",
     "buildFile": "core/build.gradle.kts",
-    "kotlinSourceFileCount": 9,
-    "productionKotlinFileCount": 9,
+    "kotlinSourceFileCount": 7,
+    "productionKotlinFileCount": 7,
     "testKotlinFileCount": 0,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -52,14 +51,11 @@
     ],
     "dependents": [
       ":androidApp",
-      ":core:protocol",
       ":data:database",
       ":feature:chats",
       ":feature:contactimport",
       ":feature:contacts",
       ":feature:identity",
-      ":feature:messaging",
-      ":feature:settings",
       ":feature:transport",
       ":navigation",
       ":shared"
@@ -71,9 +67,9 @@
     "group": "core",
     "directory": "core/crypto",
     "buildFile": "core/crypto/build.gradle.kts",
-    "kotlinSourceFileCount": 36,
-    "productionKotlinFileCount": 31,
-    "testKotlinFileCount": 5,
+    "kotlinSourceFileCount": 29,
+    "productionKotlinFileCount": 25,
+    "testKotlinFileCount": 4,
     "resourceFileCount": 1,
     "sourceSets": [
       "androidDeviceTest",
@@ -90,7 +86,7 @@
       ":feature:chats",
       ":feature:contacts",
       ":feature:identity",
-      ":feature:messaging"
+      ":feature:transport"
     ]
   },
   {
@@ -99,9 +95,9 @@
     "group": "core",
     "directory": "core/protocol",
     "buildFile": "core/protocol/build.gradle.kts",
-    "kotlinSourceFileCount": 59,
-    "productionKotlinFileCount": 51,
-    "testKotlinFileCount": 8,
+    "kotlinSourceFileCount": 35,
+    "productionKotlinFileCount": 34,
+    "testKotlinFileCount": 1,
     "resourceFileCount": 1,
     "sourceSets": [
       "androidDeviceTest",
@@ -112,7 +108,6 @@
       "iosMain"
     ],
     "dependencies": [
-      ":core"
     ],
     "dependents": [
       ":androidApp",
@@ -120,7 +115,6 @@
       ":feature:chats",
       ":feature:contacts",
       ":feature:identity",
-      ":feature:messaging",
       ":feature:transport"
     ]
   },
@@ -130,8 +124,8 @@
     "group": "core",
     "directory": "core/ui",
     "buildFile": "core/ui/build.gradle.kts",
-    "kotlinSourceFileCount": 27,
-    "productionKotlinFileCount": 27,
+    "kotlinSourceFileCount": 22,
+    "productionKotlinFileCount": 22,
     "testKotlinFileCount": 0,
     "resourceFileCount": 16,
     "sourceSets": [
@@ -178,8 +172,8 @@
     "group": "data",
     "directory": "data/database",
     "buildFile": "data/database/build.gradle.kts",
-    "kotlinSourceFileCount": 38,
-    "productionKotlinFileCount": 38,
+    "kotlinSourceFileCount": 22,
+    "productionKotlinFileCount": 22,
     "testKotlinFileCount": 0,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -197,7 +191,7 @@
       ":androidApp",
       ":feature:chats",
       ":feature:contacts",
-      ":feature:messaging"
+      ":feature:transport"
     ]
   },
   {
@@ -223,9 +217,9 @@
     "group": "feature",
     "directory": "feature/chats",
     "buildFile": "feature/chats/build.gradle.kts",
-    "kotlinSourceFileCount": 145,
-    "productionKotlinFileCount": 134,
-    "testKotlinFileCount": 11,
+    "kotlinSourceFileCount": 25,
+    "productionKotlinFileCount": 25,
+    "testKotlinFileCount": 0,
     "resourceFileCount": 1,
     "sourceSets": [
       "androidDeviceTest",
@@ -241,13 +235,11 @@
       ":core:protocol",
       ":core:ui",
       ":data:database",
-      ":feature:contactimport",
-      ":feature:contacts",
-      ":feature:identity"
+      ":feature:contacts"
     ],
     "dependents": [
       ":androidApp",
-      ":feature:messaging",
+      ":feature:transport",
       ":navigation"
     ]
   },
@@ -257,8 +249,8 @@
     "group": "feature",
     "directory": "feature/contactimport",
     "buildFile": "feature/contactimport/build.gradle.kts",
-    "kotlinSourceFileCount": 23,
-    "productionKotlinFileCount": 22,
+    "kotlinSourceFileCount": 15,
+    "productionKotlinFileCount": 14,
     "testKotlinFileCount": 1,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -276,7 +268,6 @@
     ],
     "dependents": [
       ":androidApp",
-      ":feature:chats",
       ":navigation"
     ]
   },
@@ -286,9 +277,9 @@
     "group": "feature",
     "directory": "feature/contacts",
     "buildFile": "feature/contacts/build.gradle.kts",
-    "kotlinSourceFileCount": 95,
-    "productionKotlinFileCount": 92,
-    "testKotlinFileCount": 3,
+    "kotlinSourceFileCount": 52,
+    "productionKotlinFileCount": 51,
+    "testKotlinFileCount": 1,
     "resourceFileCount": 1,
     "sourceSets": [
       "androidDeviceTest",
@@ -303,13 +294,14 @@
       ":core:crypto",
       ":core:protocol",
       ":core:ui",
-      ":data:database"
+      ":data:database",
+      ":feature:identity"
     ],
     "dependents": [
       ":androidApp",
       ":feature:chats",
       ":feature:contactimport",
-      ":feature:messaging",
+      ":feature:transport",
       ":navigation"
     ]
   },
@@ -319,8 +311,8 @@
     "group": "feature",
     "directory": "feature/identity",
     "buildFile": "feature/identity/build.gradle.kts",
-    "kotlinSourceFileCount": 48,
-    "productionKotlinFileCount": 44,
+    "kotlinSourceFileCount": 45,
+    "productionKotlinFileCount": 41,
     "testKotlinFileCount": 4,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -338,39 +330,11 @@
     ],
     "dependents": [
       ":androidApp",
-      ":feature:chats",
       ":feature:contactimport",
+      ":feature:contacts",
       ":feature:onboarding",
       ":navigation",
       ":startup"
-    ]
-  },
-  {
-    "name": "messaging",
-    "path": ":feature:messaging",
-    "group": "feature",
-    "directory": "feature/messaging",
-    "buildFile": "feature/messaging/build.gradle.kts",
-    "kotlinSourceFileCount": 19,
-    "productionKotlinFileCount": 14,
-    "testKotlinFileCount": 5,
-    "resourceFileCount": 1,
-    "sourceSets": [
-      "androidMain",
-      "commonMain",
-      "commonTest"
-    ],
-    "dependencies": [
-      ":core",
-      ":core:crypto",
-      ":core:protocol",
-      ":data:database",
-      ":feature:chats",
-      ":feature:contacts",
-      ":feature:transport"
-    ],
-    "dependents": [
-      ":androidApp"
     ]
   },
   {
@@ -406,8 +370,8 @@
     "group": "feature",
     "directory": "feature/settings",
     "buildFile": "feature/settings/build.gradle.kts",
-    "kotlinSourceFileCount": 42,
-    "productionKotlinFileCount": 42,
+    "kotlinSourceFileCount": 32,
+    "productionKotlinFileCount": 32,
     "testKotlinFileCount": 0,
     "resourceFileCount": 2,
     "sourceSets": [
@@ -418,7 +382,6 @@
       "iosMain"
     ],
     "dependencies": [
-      ":core",
       ":core:ui"
     ],
     "dependents": [
@@ -433,25 +396,27 @@
     "group": "feature",
     "directory": "feature/transport",
     "buildFile": "feature/transport/build.gradle.kts",
-    "kotlinSourceFileCount": 23,
-    "productionKotlinFileCount": 21,
-    "testKotlinFileCount": 2,
+    "kotlinSourceFileCount": 31,
+    "productionKotlinFileCount": 31,
+    "testKotlinFileCount": 0,
     "resourceFileCount": 1,
     "sourceSets": [
       "androidDeviceTest",
       "androidHostTest",
       "androidMain",
       "commonMain",
-      "commonTest",
       "iosMain"
     ],
     "dependencies": [
       ":core",
-      ":core:protocol"
+      ":core:crypto",
+      ":core:protocol",
+      ":data:database",
+      ":feature:chats",
+      ":feature:contacts"
     ],
     "dependents": [
-      ":androidApp",
-      ":feature:messaging"
+      ":androidApp"
     ]
   },
   {
@@ -460,8 +425,8 @@
     "group": "navigation",
     "directory": "navigation",
     "buildFile": "navigation/build.gradle.kts",
-    "kotlinSourceFileCount": 5,
-    "productionKotlinFileCount": 5,
+    "kotlinSourceFileCount": 4,
+    "productionKotlinFileCount": 4,
     "testKotlinFileCount": 0,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -527,9 +492,9 @@
     "group": "relay",
     "directory": "relay",
     "buildFile": "relay/build.gradle.kts",
-    "kotlinSourceFileCount": 15,
+    "kotlinSourceFileCount": 14,
     "productionKotlinFileCount": 14,
-    "testKotlinFileCount": 1,
+    "testKotlinFileCount": 0,
     "resourceFileCount": 2,
     "sourceSets": [
       "androidDeviceTest",
@@ -537,8 +502,7 @@
       "androidMain",
       "commonMain",
       "iosMain",
-      "main",
-      "test"
+      "main"
     ],
     "dependencies": [
     ],

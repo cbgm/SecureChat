@@ -7,7 +7,7 @@ import kotlinx.coroutines.sync.withLock
 
 class RelayClientConnection(
     val relayId: String,
-    private val session: DefaultWebSocketServerSession
+    private val session: DefaultWebSocketServerSession,
 ) {
     private val sendMutex = Mutex()
 

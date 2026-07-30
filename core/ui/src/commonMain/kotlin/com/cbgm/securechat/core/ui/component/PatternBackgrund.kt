@@ -1,4 +1,4 @@
-package com.cbgm.securechat.core.ui.component
+package com.cbgm.securechat.feature.chats.presentation.screen.component
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -25,14 +25,14 @@ private data class PatternElement(
     val size: Dp,
     val rotation: Float,
     val offsetX: Dp,
-    val offsetY: Dp
+    val offsetY: Dp,
 )
 
 @Composable
 fun PatternBackground(
     modifier: Modifier = Modifier,
     backgroundColor: Color,
-    alpha: Float = 0.06f
+    alpha: Float = 0.06f,
 ) {
     val patternElements =
         remember {
@@ -42,43 +42,43 @@ fun PatternBackground(
                     size = 30.dp,
                     rotation = -12f,
                     offsetX = 10.dp,
-                    offsetY = 12.dp
+                    offsetY = 12.dp,
                 ),
                 PatternElement(
                     resource = Res.drawable.startup,
                     size = 44.dp,
                     rotation = 8f,
                     offsetX = 72.dp,
-                    offsetY = 4.dp
+                    offsetY = 4.dp,
                 ),
                 PatternElement(
                     resource = Res.drawable.startup,
                     size = 26.dp,
                     rotation = 18f,
                     offsetX = 142.dp,
-                    offsetY = 34.dp
+                    offsetY = 34.dp,
                 ),
                 PatternElement(
                     resource = Res.drawable.startup,
                     size = 38.dp,
                     rotation = -20f,
                     offsetX = 26.dp,
-                    offsetY = 86.dp
+                    offsetY = 86.dp,
                 ),
                 PatternElement(
                     resource = Res.drawable.startup,
                     size = 32.dp,
                     rotation = 6f,
                     offsetX = 104.dp,
-                    offsetY = 104.dp
+                    offsetY = 104.dp,
                 ),
                 PatternElement(
                     resource = Res.drawable.startup,
                     size = 22.dp,
                     rotation = 24f,
                     offsetX = 156.dp,
-                    offsetY = 112.dp
-                )
+                    offsetY = 112.dp,
+                ),
             )
         }
 
@@ -91,10 +91,10 @@ fun PatternBackground(
         modifier =
             modifier
                 .fillMaxSize()
-                .background(backgroundColor)
+                .background(backgroundColor),
     ) {
         Canvas(
-            modifier = Modifier.matchParentSize()
+            modifier = Modifier.matchParentSize(),
         ) {
             val cellWidthPx = 190.dp.toPx()
             val cellHeightPx = 150.dp.toPx()
@@ -121,7 +121,7 @@ fun PatternBackground(
                         withTransform({
                             translate(
                                 left = cellX + offsetXPx,
-                                top = cellY + offsetYPx
+                                top = cellY + offsetYPx,
                             )
 
                             rotate(
@@ -129,8 +129,8 @@ fun PatternBackground(
                                 pivot =
                                     Offset(
                                         x = elementSizePx / 2f,
-                                        y = elementSizePx / 2f
-                                    )
+                                        y = elementSizePx / 2f,
+                                    ),
                             )
                         }) {
                             with(painter) {
@@ -138,9 +138,9 @@ fun PatternBackground(
                                     size =
                                         Size(
                                             width = elementSizePx,
-                                            height = elementSizePx
+                                            height = elementSizePx,
                                         ),
-                                    alpha = alpha
+                                    alpha = alpha,
                                 )
                             }
                         }

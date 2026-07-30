@@ -1,14 +1,14 @@
 package com.cbgm.securechat.di
 
 import android.content.ContentResolver
-import com.cbgm.securechat.feature.contacts.data.device.AndroidDeviceContactWriter
-import com.cbgm.securechat.feature.contacts.data.device.AndroidDeviceContactsDataSource
-import com.cbgm.securechat.feature.contacts.domain.device.DeviceContactWriter
-import com.cbgm.securechat.feature.contacts.domain.device.DeviceContactsDataSource
+import com.cbgm.securechat.feature.contacts.devicecontacts.AndroidDeviceContactWriter
+import com.cbgm.securechat.feature.contacts.devicecontacts.AndroidDeviceContactsDataSource
+import com.cbgm.securechat.feature.contacts.devicecontacts.DeviceContactWriter
+import com.cbgm.securechat.feature.contacts.devicecontacts.DeviceContactsDataSource
+import com.cbgm.securechat.feature.identity.core.PrivateKeyStorage
+import com.cbgm.securechat.feature.identity.core.PublicIdentityStorage
 import com.cbgm.securechat.feature.identity.data.storage.AndroidPrivateKeyStorage
 import com.cbgm.securechat.feature.identity.data.storage.AndroidPublicIdentityStorage
-import com.cbgm.securechat.feature.identity.domain.repository.storage.PrivateKeyStorage
-import com.cbgm.securechat.feature.identity.domain.repository.storage.PublicIdentityStorage
 import com.cbgm.securechat.feature.settings.domain.repository.BuildInfoProvider
 import com.cbgm.securechat.feature.transport.relay.config.RelayTransportConfig
 import com.cbgm.securechat.provider.AndroidBuildInfoProvider
@@ -25,13 +25,13 @@ val appModule =
 
         single<PrivateKeyStorage> {
             AndroidPrivateKeyStorage(
-                context = androidContext()
+                context = androidContext(),
             )
         }
 
         single<PublicIdentityStorage> {
             AndroidPublicIdentityStorage(
-                context = androidContext()
+                context = androidContext(),
             )
         }
 
@@ -45,19 +45,19 @@ val appModule =
 
         single<DeviceContactsDataSource> {
             AndroidDeviceContactsDataSource(
-                contentResolver = get()
+                contentResolver = get(),
             )
         }
 
         single<DeviceContactWriter> {
             AndroidDeviceContactWriter(
-                context = androidContext()
+                context = androidContext(),
             )
         }
 
         single {
             RelayTransportConfig(
-                serverUrl = "ws://10.0.2.2:8080/relay"
+                serverUrl = "ws://10.0.2.2:8080/relay",
             )
         }
     }

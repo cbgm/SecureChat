@@ -11,14 +11,14 @@ import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
  * -> ChatMessagePacketHandler
  *
  * feature:contacts
- * -> ContactInvitePacketHandler
- * -> ContactReadyPacketHandler
+ * -> IdentityPacketHandler
+ * -> IdentityAcknowledgementPacketHandler
  */
 interface TypedProtocolPacketHandler {
     fun canHandle(packet: SecureChatPacket): Boolean
 
     suspend fun handle(
         context: IncomingPacketContext,
-        packet: SecureChatPacket
+        packet: SecureChatPacket,
     ): Result<Unit>
 }

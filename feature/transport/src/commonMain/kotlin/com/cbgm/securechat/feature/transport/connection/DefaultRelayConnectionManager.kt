@@ -1,6 +1,5 @@
 package com.cbgm.securechat.feature.transport.connection
 
-import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.feature.transport.relay.config.RelayTransportConfig
 import com.cbgm.securechat.feature.transport.relay.identity.LocalRelayIdProvider
 import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
@@ -21,10 +20,8 @@ import kotlin.time.Duration.Companion.milliseconds
 class DefaultRelayConnectionManager(
     private val webSocketTransportClient: WebSocketTransportClient,
     private val localRelayIdProvider: LocalRelayIdProvider,
-    private val relayTransportConfig: RelayTransportConfig
+    private val relayTransportConfig: RelayTransportConfig,
 ) : RelayConnectionManager {
-    private val logger = SecureChatLog.withTag("DefaultRelayConnectionManager")
-
     private val connectionScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private var connectionLoopJob: Job? = null
@@ -57,11 +54,11 @@ class DefaultRelayConnectionManager(
             try {
                 val relayId = localRelayIdProvider.getLocalRelayId().getOrThrow()
 
-                logger.debug { "Connecting to relay as $relayId" }
+                println("Connecting to relay as $relayId")
 
                 webSocketTransportClient.connect(
                     serverUrl = relayTransportConfig.serverUrl,
-                    localRelayId = relayId
+                    localRelayId = relayId,
                 )
 
                 val connectionResult =
@@ -76,7 +73,7 @@ class DefaultRelayConnectionManager(
 
                 when (connectionResult) {
                     is TransportConnectionState.Connected -> {
-                        logger.info { "Relay connected as ${connectionResult.relayId}" }
+                        println("Relay connected as ${connectionResult.relayId}")
 
                         reconnectDelay = INITIAL_RECONNECT_DELAY_MILLISECONDS
 
@@ -90,7 +87,7 @@ class DefaultRelayConnectionManager(
                     }
 
                     is TransportConnectionState.Failed -> {
-                        logger.warn { "Relay connection failed: ${connectionResult.message}" }
+                        println("Relay connection failed: ${connectionResult.message}")
                     }
 
                     else -> {
@@ -98,13 +95,13 @@ class DefaultRelayConnectionManager(
                     }
                 }
             } catch (
-                error: CancellationException
+                error: CancellationException,
             ) {
                 throw error
             } catch (
-                error: Throwable
+                error: Throwable,
             ) {
-                logger.error(error) { "Relay connection error" }
+                println("Relay connection error: ${error.message}")
             }
 
             /*
@@ -115,7 +112,7 @@ class DefaultRelayConnectionManager(
                 webSocketTransportClient.disconnect()
             }
 
-            logger.debug { "Relay reconnecting in ${reconnectDelay}ms" }
+            println("Relay reconnecting in ${reconnectDelay}ms")
 
             delay(reconnectDelay.milliseconds)
 

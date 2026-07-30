@@ -1,12 +1,10 @@
 package com.cbgm.securechat.core.crypto.identity
 
-import com.cbgm.securechat.core.crypto.util.ByteArrays
-
 class IdentityAcknowledgementPayloadEncoder {
     fun encode(
         acknowledgedEncryptionPublicKey: ByteArray,
         acknowledgedSigningPublicKey: ByteArray,
-        senderSigningPublicKey: ByteArray
+        senderSigningPublicKey: ByteArray,
     ): ByteArray {
         require(acknowledgedEncryptionPublicKey.isNotEmpty()) {
             "Acknowledged encryption key must not be empty"
@@ -20,13 +18,33 @@ class IdentityAcknowledgementPayloadEncoder {
             "Sender signing key must not be empty"
         }
 
-        return ByteArrays.concatenate(
-            DOMAIN_SEPARATOR.encodeToByteArray(),
-            ByteArrays.encodeInt(PROTOCOL_VERSION),
-            ByteArrays.withLengthPrefix(acknowledgedEncryptionPublicKey),
-            ByteArrays.withLengthPrefix(acknowledgedSigningPublicKey),
-            ByteArrays.withLengthPrefix(senderSigningPublicKey)
-        )
+        return buildList<Byte> {
+            addAll(DOMAIN_SEPARATOR.encodeToByteArray().asList())
+
+            addInt(PROTOCOL_VERSION)
+
+            addBytes(acknowledgedEncryptionPublicKey)
+
+            addBytes(acknowledgedSigningPublicKey)
+
+            addBytes(senderSigningPublicKey)
+        }.toByteArray()
+    }
+
+    private fun MutableList<Byte>.addBytes(value: ByteArray) {
+        addInt(value.size)
+
+        addAll(value.asList())
+    }
+
+    private fun MutableList<Byte>.addInt(value: Int) {
+        add(((value ushr 24) and 0xFF).toByte())
+
+        add(((value ushr 16) and 0xFF).toByte())
+
+        add(((value ushr 8) and 0xFF).toByte())
+
+        add((value and 0xFF).toByte())
     }
 
     private companion object {

@@ -3,7 +3,7 @@ val isMacOs =
         .getProperty("os.name")
         .startsWith(
             prefix = "Mac",
-            ignoreCase = true
+            ignoreCase = true,
         )
 
 plugins {
@@ -15,7 +15,7 @@ kotlin {
     if (isMacOs) {
         listOf(
             iosArm64(),
-            iosSimulatorArm64()
+            iosSimulatorArm64(),
         ).forEach { target ->
             target.binaries.framework {
                 baseName = "SecureChat"

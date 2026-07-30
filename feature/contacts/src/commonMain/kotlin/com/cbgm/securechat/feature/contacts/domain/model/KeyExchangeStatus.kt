@@ -14,5 +14,5 @@ enum class KeyExchangeStatus {
      *
      * Messages can be end-to-end encrypted.
      */
-    MUTUAL
+    MUTUAL,
 }

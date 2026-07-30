@@ -28,8 +28,8 @@ fun String.escapeShareValue(): String =
 
                 append(
                     character.code.toString(
-                        radix = 16
-                    )
+                        radix = 16,
+                    ),
                 )
 
                 append('%')
@@ -59,11 +59,11 @@ fun String.unescapeShareValue(): String =
             val closingIndex =
                 this@unescapeShareValue.indexOf(
                     char = '%',
-                    startIndex = index + 1
+                    startIndex = index + 1,
                 )
 
             require(
-                closingIndex > index + 1
+                closingIndex > index + 1,
             ) {
                 "Malformed escaped share value"
             }
@@ -71,13 +71,13 @@ fun String.unescapeShareValue(): String =
             val hexadecimalCode =
                 this@unescapeShareValue.substring(
                     startIndex = index + 1,
-                    endIndex = closingIndex
+                    endIndex = closingIndex,
                 )
 
             append(
                 hexadecimalCode
                     .toInt(radix = 16)
-                    .toChar()
+                    .toChar(),
             )
 
             index =

@@ -9,7 +9,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun App(
-    appViewModel: AppViewModel = koinViewModel()
+    appViewModel: AppViewModel = koinViewModel(),
 ) {
     AppLocaleEnvironment {
         SecureChatTheme {

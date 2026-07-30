@@ -6,12 +6,12 @@ import androidx.compose.runtime.key
 
 @Composable
 fun AppLocaleEnvironment(
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val language = currentAppLanguage
 
     CompositionLocalProvider(
-        LocalAppLocale provides language.languageTag
+        LocalAppLocale provides language.languageTag,
     ) {
         key(language.languageTag) {
             content()

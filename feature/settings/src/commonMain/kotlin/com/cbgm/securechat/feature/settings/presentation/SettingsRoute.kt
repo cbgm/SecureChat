@@ -9,8 +9,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.cbgm.securechat.feature.settings.presentation.model.SettingsEffect
-import com.cbgm.securechat.feature.settings.presentation.model.SettingsEvent
 import com.cbgm.securechat.feature.settings.presentation.screen.SettingsScreen
 import com.cbgm.securechat.feature.settings.presentation.screen.SettingsViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -24,16 +22,16 @@ fun SettingsRoute(
     onNavigateToDataDisclaimer: () -> Unit,
     onNavigateToLicenses: () -> Unit,
     onNavigateToDeveloperMenu: () -> Unit,
-    viewModel: SettingsViewModel = koinViewModel()
+    viewModel: SettingsViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(viewModel) {
-        viewModel.effects.collect { effect ->
-            when (effect) {
-                is SettingsEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
-            }
+    LaunchedEffect(uiState.snackbarMessage) {
+        uiState.snackbarMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.onSnackbarShown()
         }
     }
 
@@ -44,15 +42,12 @@ fun SettingsRoute(
         onOpenDataDisclaimer = onNavigateToDataDisclaimer,
         onOpenLicenses = onNavigateToLicenses,
         onOpenDeveloperMenu = onNavigateToDeveloperMenu,
-        onOpenLanguagePicker = { viewModel.onEvent(SettingsEvent.LanguagePickerOpened) },
-        onDismissLanguagePicker = { viewModel.onEvent(SettingsEvent.LanguagePickerDismissed) },
-        onLanguageSelected = { viewModel.onEvent(SettingsEvent.LanguageSelected(it)) },
-        onDirectIdentitySetupModeChanged = {
-            viewModel.onEvent(SettingsEvent.DirectIdentitySetupModeChanged(it))
-        },
-        onVersionRowTapped = { viewModel.onEvent(SettingsEvent.VersionRowTapped) },
+        onOpenLanguagePicker = viewModel::onOpenLanguagePicker,
+        onDismissLanguagePicker = viewModel::onDismissLanguagePicker,
+        onLanguageSelected = viewModel::onLanguageSelected,
+        onVersionRowTapped = viewModel::onVersionRowTapped,
         scrollState = scrollState,
         innerPadding = innerPadding,
-        modifier = modifier
+        modifier = modifier,
     )
 }

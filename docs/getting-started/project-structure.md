@@ -1,211 +1,524 @@
 # Project Structure
 
-SecureChat uses Gradle modules as architecture boundaries and packages as internal layers. The
-generated [module catalog](../generated/modules.md) is the source of truth for the current module
-list and dependencies.
+## Overview
 
-## Repository layout
+SecureChat is organized as a modular Kotlin Multiplatform project.
 
-```text
+Every directory has a single responsibility.
+
+The project intentionally avoids large monolithic modules by separating functionality into reusable libraries and feature modules.
+
+The overall structure follows Clean Architecture while taking advantage of Gradle convention plugins and Kotlin Multiplatform.
+
+---
+
+# Repository Layout
+
+The repository is organized as follows.
+
+```
 SecureChat/
-├── androidApp/              # Android entry point and runtime service startup
-├── shared/                  # shared Compose application shell
-├── startup/                 # startup initialization and UI
-├── navigation/              # cross-feature routes and graph
-├── core/
-│   ├── crypto/              # transport/identity crypto and codecs
-│   ├── protocol/            # packets and transport-independent ports
-│   └── ui/                  # reusable Compose UI
-├── data/
-│   └── database/            # Room entities, DAOs, and persistent outbox
-├── feature/
-│   ├── chats/
-│   ├── contactimport/
-│   ├── contacts/
-│   ├── identity/
-│   ├── messaging/
-│   ├── onboarding/
-│   ├── settings/
-│   └── transport/
-├── relay/                   # standalone Ktor relay server
-├── build-logic/             # included Gradle build and convention plugins
-├── quality/
-│   └── detekt-rules/        # custom static-analysis rules
-├── config/                  # tool configuration
-├── docs/                    # MkDocs handbook and generated reference
-├── gradle/                  # wrapper and version catalog
-└── .github/                 # CI and documentation publishing
+
+androidApp/
+
+build-logic/
+
+config/
+
+core/
+
+data/
+
+docs/
+
+feature/
+
+navigation/
+
+quality/
+
+relay/
+
+shared/
+
+startup/
+
+gradle/
+
+.github/
 ```
 
-The grouping projects `:core`, `:data`, and `:feature` may appear in generated architecture output.
-Behavior belongs in their child modules or appropriate root sources, not in a grouping module by
-default.
+Each directory has a clearly defined purpose.
 
-## Application composition modules
+---
 
-### `:androidApp`
+# androidApp
 
-Contains Android-specific entry points: `SecureChatApplication`, the Activity, manifest, and Koin
-assembly. It starts relay runtime services after local identity setup. Business logic remains in
-feature or core modules.
-
-### `:shared`
-
-Contains the shared Compose application shell and common app-level UI composition.
-
-### `:startup`
-
-Contains `AppInitializer`, startup result/state, `StartupViewModel`, `StartupRoute`,
-`StartupScreen`, and screen components. It is a standalone module, not a package inside identity.
-
-### `:navigation`
-
-Contains routes and the navigation graph. It coordinates feature entry points without implementing
-feature business rules.
-
-## Core modules
-
-### `:core`
-
-Small reusable primitives such as ID generation and time.
-
-### `:core:crypto`
-
-Key operations, identity acknowledgement crypto, safety numbers, transport encryption/decryption,
-`EncryptedTransportPayload`, and `TransportPayloadCodec`.
-
-### `:core:protocol`
-
-`SecureChatPacket` types, `PacketCodec`, typed incoming-handler contracts, persistent-outbox
-contracts/state machine, identity provider ports, phone-number ports, and `OutgoingWireSender`.
-
-It must remain independent of Ktor, Room, Compose, and feature repositories.
-
-### `:core:ui`
-
-Reusable Compose components, theming, and design-system utilities.
-
-## Data
-
-### `:data:database`
-
-Owns Room entities, DAOs, database initialization, and `DefaultProtocolOutbox`. Domain interfaces
-usually live in the feature that owns the behavior; this module supplies shared persistence
-infrastructure.
-
-## Feature modules
-
-### `:feature:chats`
-
-Conversations, direct/group messages, visible delivery state, receipts, typed chat packet handlers,
-and chat UI. See [Chats](../features/chats.md).
-
-### `:feature:contacts`
-
-Contacts, phone numbers, contact merge, remote identity exchange, verification, and reusable
-contacts UI. See [Contacts](../features/contacts.md).
-
-### `:feature:identity`
-
-Local identity lifecycle, identity storage ports/adapters, identity sharing, and setup/share UI.
-See [Identity](../features/identity.md).
-
-### `:feature:messaging`
-
-UI-less application orchestration:
-
-```text
-application/   incoming relay and outgoing outbox workflows
-domain/        contact/relay resolution ports
-data/          resolver and typing adapters
-di/            Koin wiring
+```
+androidApp/
 ```
 
-It connects chats, contacts, crypto, protocol, database, and transport. See
-[Messaging Boundary](../architecture/messaging-boundary.md).
+This module contains the Android application.
 
-### `:feature:transport`
+Responsibilities include
 
-Relay IDs, connection lifecycle, WebSocket frames, outgoing wire adapter, and platform HTTP clients.
-It moves opaque payloads. See [Transport](../features/transport.md).
+- Application class
+- Android Manifest
+- Android entry point
+- Koin initialization
+- Activity
+- Android-only resources
 
-### Other features
+The Android application should remain as small as possible.
 
-| Module | Responsibility |
-|---|---|
-| `:feature:contactimport` | Platform address-book implementations |
-| `:feature:onboarding` | Onboarding flow |
-| `:feature:settings` | Settings behavior and presentation |
+Business logic belongs elsewhere.
 
-## Relay server
+---
 
-`:relay` is a JVM/Ktor application, not a client feature. It owns registration, active connection
-tracking, pending-envelope storage, and opaque routing. The current pending store is in-memory.
+# build-logic
 
-## Standard feature layout
-
-A user-visible feature commonly uses:
-
-```text
-feature/<name>/.../feature/<name>/
-├── domain/
-│   ├── model/
-│   ├── repository/
-│   └── usecase/
-├── data/
-│   ├── mapper/
-│   └── repository/
-├── presentation/
-│   ├── model/
-│   ├── screen/
-│   └── component/
-└── di/
+```
+build-logic/
 ```
 
-Use only packages needed by the feature. Long-running, UI-less orchestration may add
-`application/`. Infrastructure features such as transport need not invent presentation or use-case
-packages.
+This is an included Gradle build.
 
-Screen-specific components should live under their screen package. Components shared by multiple
-screens belong under `presentation/component`.
+It contains
 
-## Source sets
+- Convention Plugins
+- Quality Plugin
+- Architecture Plugin
+- Gradle Utilities
+- Custom Tasks
+- Documentation Generator
 
-Kotlin Multiplatform modules commonly contain:
+This project configures the entire build.
 
-```text
-src/
-├── commonMain/
-├── commonTest/
-├── androidMain/
-├── androidDeviceTest/
-├── iosMain/
-└── platform-specific tests
+Individual modules should contain very little Gradle configuration.
+
+---
+
+# config
+
+```
+config/
 ```
 
-Not every module contains every source set. Platform APIs belong in platform source sets behind
-common interfaces.
+Contains configuration for development tools.
 
-## Build and documentation infrastructure
+Typical contents include
 
-`build-logic` supplies convention plugins and architecture-report tasks. `quality/detekt-rules`
-contains project-specific Detekt checks. `docs/generated/` is produced from Gradle and must not be
-edited manually.
+- Detekt
+- KtLint
+- Gradle
+- IDE configuration
 
-After module or dependency changes:
+Keeping configuration centralized ensures consistent behaviour across the project.
+
+---
+
+# core
+
+```
+core/
+```
+
+Contains reusable libraries shared by multiple features.
+
+Examples include
+
+- crypto
+- protocol
+- ui
+- id
+- recommendations
+
+Core modules should remain independent.
+
+They must never depend on feature modules.
+
+---
+
+# data
+
+```
+data/
+```
+
+Contains the data layer.
+
+Typical responsibilities include
+
+- Room
+- Database
+- Repository implementations
+- Local storage
+- Remote APIs
+
+Business rules should remain inside the domain layer.
+
+---
+
+# feature
+
+```
+feature/
+```
+
+Contains independent application features.
+
+Examples
+
+```
+contacts
+
+identity
+
+chats
+
+transport
+
+onboarding
+```
+
+Each feature should encapsulate
+
+- presentation
+- domain
+- data (if applicable)
+- navigation entry point
+
+Features communicate through public APIs rather than implementation details.
+
+---
+
+# navigation
+
+```
+navigation/
+```
+
+Contains application navigation.
+
+Responsibilities
+
+- Navigation Graph
+- Routes
+- Navigation APIs
+
+Business logic should never be implemented here.
+
+---
+
+# quality
+
+```
+quality/
+```
+
+Contains project-specific static analysis.
+
+Currently this includes
+
+- custom Detekt rules
+- Detekt registration
+- rule tests
+
+Only SecureChat-specific rules belong here.
+
+General-purpose rules should use the standard Detekt rule set.
+
+---
+
+# relay
+
+```
+relay/
+```
+
+Contains the SecureChat relay server.
+
+Responsibilities include
+
+- WebSocket handling
+- Client registration
+- Message forwarding
+- Connection management
+
+The relay intentionally remains lightweight and stores no persistent message history.
+
+---
+
+# shared
+
+```
+shared/
+```
+
+Contains modules shared by multiple application features.
+
+Examples include
+
+- shared UI
+- reusable navigation helpers
+- application-wide services
+
+Shared modules should avoid depending on individual features whenever possible.
+
+---
+
+# startup
+
+```
+startup/
+```
+
+Contains startup and initialization logic.
+
+Typical responsibilities include
+
+- application initialization
+- startup checks
+- dependency initialization
+
+Keeping startup separate improves maintainability and testability.
+
+---
+
+# docs
+
+```
+docs/
+```
+
+Contains the engineering handbook.
+
+Documentation is divided into
+
+```
+getting-started/
+
+architecture/
+
+build/
+
+security/
+
+development/
+
+features/
+
+api/
+
+generated/
+```
+
+Generated documentation should never be edited manually.
+
+---
+
+# gradle
+
+```
+gradle/
+```
+
+Contains
+
+- Version Catalog
+- Gradle Wrapper
+
+All dependency versions are managed centrally.
+
+Individual modules should never hardcode library versions.
+
+---
+
+# .github
+
+```
+.github/
+```
+
+Contains GitHub configuration.
+
+Typical contents
+
+- GitHub Actions
+- Issue Templates
+- Pull Request Templates
+
+CI configuration belongs here.
+
+---
+
+# Layered Architecture
+
+The project follows a layered architecture.
+
+```
+androidApp
+
+↓
+
+shared
+
+↓
+
+navigation
+
+↓
+
+feature
+
+↓
+
+data
+
+↓
+
+core
+```
+
+Dependencies should generally point downward.
+
+Lower layers must remain reusable.
+
+---
+
+# Feature Structure
+
+A typical feature module is organized as
+
+```
+feature/
+
+contacts/
+
+commonMain/
+
+androidMain/
+
+commonTest/
+```
+
+Inside
+
+```
+commonMain/
+```
+
+the feature usually contains
+
+```
+presentation/
+
+domain/
+
+data/
+```
+
+This structure keeps responsibilities clearly separated.
+
+---
+
+# Naming Conventions
+
+Modules should follow consistent naming.
+
+Examples
+
+```
+core:crypto
+
+core:ui
+
+feature:contacts
+
+feature:identity
+
+data:database
+```
+
+Avoid abbreviations.
+
+Module names should describe their primary responsibility.
+
+---
+
+# Dependencies
+
+Every module declares only the dependencies it actually requires.
+
+Convention plugins configure infrastructure.
+
+Runtime libraries remain explicit.
+
+Example
+
+```
+plugins
+
+↓
+
+configuration
+
+dependencies
+
+↓
+
+runtime
+```
+
+This makes dependencies easy to understand during code reviews.
+
+---
+
+# Generated Files
+
+Generated files are located in
+
+```
+build/
+```
+
+or
+
+```
+docs/generated/
+```
+
+Developers should not manually edit generated documentation.
+
+Instead regenerate it using
 
 ```bash
 ./gradlew architectureReport
-./gradlew verifyArchitectureReport
 ```
 
-## Placement checklist
+---
 
-Before adding a class:
+# Build Infrastructure
 
-1. Which module owns the business decision?
-2. Is the class a domain rule, application workflow, data adapter, or presentation element?
-3. Can the dependency point toward a stable port instead of another implementation?
-4. Is the code platform-independent enough for `commonMain`?
-5. Does an existing shared component or core contract already cover it?
-6. Will the new dependency appear correctly in the generated architecture report?
+The repository contains an extensive build infrastructure.
+
+Major components include
+
+- Convention Plugins
+- Version Catalog
+- Quality Plugin
+- Architecture Plugin
+- Git Hooks
+- Generated Documentation
+
+These systems automate repetitive tasks and keep module build files concise.
+
+---
+
+# Summary
+
+SecureChat's directory structure reflects its architecture.
+
+Each directory has a clearly defined purpose and should only contain code related to that responsibility.
+
+Maintaining these boundaries keeps the project scalable as new features and modules are added.

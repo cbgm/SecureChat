@@ -34,7 +34,7 @@ data class Contact(
      */
     val secureChatIdentity: SecureChatIdentity?,
     val createdAtEpochMilliseconds: Long,
-    val updatedAtEpochMilliseconds: Long
+    val updatedAtEpochMilliseconds: Long,
 ) {
     val preferredPhoneNumber: ContactPhoneNumber?
         get() {

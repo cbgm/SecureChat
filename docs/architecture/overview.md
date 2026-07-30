@@ -1,137 +1,459 @@
 # Architecture Overview
 
-SecureChat is a modular Kotlin Multiplatform application. Gradle modules define the coarse
-boundaries; packages inside a feature separate presentation, domain rules, data adapters, and
-application orchestration.
+## Introduction
 
-This page explains the intended responsibilities. The generated
-[module architecture](../generated/architecture.md) is the source of truth for actual Gradle
-dependencies.
+SecureChat is designed as a modular Kotlin Multiplatform application following the principles of Clean Architecture.
 
-For the production call chain from conversation UI through protocol, persistent outbox, transport,
-receipts, and group activation, read
-[Conversation, Messaging, and Delivery Flow](../features/message-transport-flow.md).
+The primary goals of the architecture are:
 
-## Architectural shape
+- separation of responsibilities
+- long-term maintainability
+- high testability
+- scalability
+- platform independence
+- explicit dependencies
 
-```mermaid
-flowchart TD
-    Android[":androidApp"] --> Shell[":shared / :navigation / :startup"]
-    Android --> Features["Feature modules"]
-    Features --> Data[":data:database"]
-    Features --> Core["Core modules"]
-    Android --> RelayClient[":feature:transport"]
-    RelayClient -. WebSocket .-> Relay[":relay server"]
+The project intentionally avoids monolithic modules by separating reusable infrastructure from application features.
+
+---
+
+# High-Level Architecture
+
+The project is organized into several architectural layers.
+
+```
+                 Android App
+                      │
+                      ▼
+                  Shared Modules
+                      │
+                      ▼
+                  Navigation
+                      │
+                      ▼
+                 Feature Modules
+                      │
+                      ▼
+                  Data Modules
+                      │
+                      ▼
+                  Core Modules
 ```
 
-The arrows show compile-time dependencies, except for the dashed network connection. Feature
-modules may depend on lower-level contracts and infrastructure, but core modules do not depend on
-features.
+Dependencies generally point downward.
 
-## Module ownership
+Lower layers never depend on higher layers.
 
-| Module | Primary responsibility |
-|---|---|
-| `:androidApp` | Android entry point, Koin assembly, and process-lifetime runtime startup |
-| `:shared` | Shared Compose application shell |
-| `:navigation` | App destinations, navigation graph, app shell, and `MainRoute` |
-| `:startup` | Startup initialization result and startup UI |
-| `:core` | Small cross-cutting utilities such as IDs, time, and the project-owned logging facade |
-| `:core:crypto` | Transport encryption, decryption, key operations, and payload codec |
-| `:core:protocol` | Transport-independent packet model, packet codec, handler and outbox contracts |
-| `:core:ui` | Reusable Compose design components |
-| `:data:database` | Room entities, DAOs, database wiring, and `DefaultProtocolOutbox` |
-| `:feature:identity` | Local identity lifecycle, persistence ports, sharing, and setup UI |
-| `:feature:contacts` | Contact domain, import/merge behavior, remote identity exchange, and contacts UI |
-| `:feature:chats` | Conversations, messages, receipts, delivery state, packet handlers, and chat UI |
-| `:feature:messaging` | Application-level send/receive orchestration connecting chats, contacts, crypto, and transport |
-| `:feature:transport` | Relay IDs, connection lifecycle, WebSocket frames, and `OutgoingWireSender` |
-| `:feature:contactimport` | Platform device-contact integration |
-| `:feature:onboarding` | Onboarding flow |
-| `:feature:settings` | Settings domain and UI |
-| `:relay` | Standalone Ktor WebSocket relay; it routes opaque payloads and logs through SLF4J/Logback |
-| `:quality:detekt-rules` | Project-specific static-analysis rules |
+---
 
-Empty grouping projects such as `:feature` and `:data` appear in the generated report but do not own
-application behavior.
+# Project Modules
 
-## Feature-internal layers
+The project consists of several top-level module groups.
 
-Features use only the layers they need:
+```
+androidApp
 
-| Package | Contains | May know about |
-|---|---|---|
-| `presentation` | Routes, screens, ViewModels, UI state, mappers, components | Domain use cases and UI models |
-| `domain` | Models, repository/port interfaces, use cases, state machines | Kotlin and stable lower-level contracts |
-| `data` | Repository implementations, mappers, protocol handlers, infrastructure adapters | Domain interfaces, database and core infrastructure |
-| `application` | Long-running or multi-feature orchestration without UI | Ports from participating modules |
-| `di` | Koin composition for that module | Concrete implementations and contracts being wired |
+build-logic
 
-Not every feature needs every package. For example, `:feature:messaging` has no presentation layer,
-while `:feature:transport` is an infrastructure feature and does not expose use cases or screens.
+core
 
-## Key runtime boundaries
+data
 
-### UI to domain
+feature
 
-Screens send events to ViewModels. ViewModels call use cases such as `SendMessage`,
-`CreateGroupConversation`, or `VerifyContact`. UI components do not call DAOs, WebSocket clients,
-or crypto implementations.
+navigation
 
-### Domain to persistence
+shared
 
-Feature repositories expose domain operations. Room types remain under `:data:database` and in the
-data implementations that use them. Domain models do not contain Room annotations.
+startup
 
-### Protocol to transport
+relay
 
-`:core:protocol` defines `SecureChatPacket`, `PacketCodec`, `ProtocolOutbox`,
-`ProtocolPacketHandler`, and `OutgoingWireSender`. It does not know about Ktor, Room, contacts, or
-Compose.
+quality
+```
 
-`:feature:messaging` turns queued protocol packets into transport payloads and turns incoming relay
-envelopes back into protocol-handler calls. `:feature:transport` only moves relay messages.
-See [Messaging Boundary](messaging-boundary.md).
+Each group has a single responsibility.
 
-### Client to relay
+---
 
-The client sends a `RelayEnvelope` whose `payload` is opaque to `:relay`. The relay may read the
-routing fields (`envelopeId`, `senderId`, `recipientId`, and timestamp), but it does not decode the
-SecureChat transport payload or protocol packet.
+# Android Application
 
-## Runtime composition
+The Android application is intentionally small.
 
-Koin modules are assembled in `SecureChatApplication`. Runtime services start only after a local
-identity and phone number exist:
+Responsibilities include
 
-1. `IncomingRelayRunner.start()` begins collecting incoming envelopes.
-2. `RelayConnectionManager.start()` starts the reconnect loop.
-3. `SecureChatApplication` observes `TransportConnectionState`.
-4. On `Connected`, it calls `OutboxRunner.start()` to recover and drain the persistent outbox.
+- Application startup
+- Activity
+- Android Manifest
+- Dependency Injection bootstrap
 
-This process-lifetime coordination is an Android application concern. The implementation of each
-runtime service remains in its owning feature.
+Business logic must never be implemented here.
 
-## Logging boundary
+---
 
-Shared and application code logs through `SecureChatLogger` in `:core`. Its Kermit-backed
-implementation selects the platform output without exposing Kermit to feature code. The standalone
-relay keeps its JVM-native SLF4J/Logback pipeline.
+# Core
 
-See [Logging](../development/logging.md) for levels, privacy rules, and the extension policy.
+Core modules provide reusable libraries.
 
-## Source-of-truth rule
+Examples include
 
-The repository contains two kinds of architecture documentation:
+- cryptography
+- protocol
+- identifiers
+- shared UI
+- utility classes
 
-- `docs/generated/` is produced by `./gradlew architectureReport` from the current Gradle project.
-- Hand-written pages explain responsibility, rationale, and runtime behavior.
+Core modules are completely reusable.
 
-After changing modules or dependencies, run:
+They must never depend on application features.
+
+---
+
+# Data
+
+The data layer provides infrastructure required by the application.
+
+Examples
+
+- Room
+- repositories
+- persistence
+- remote communication
+- local storage
+
+Business rules remain outside this layer.
+
+---
+
+# Feature Modules
+
+Every user-visible feature is implemented as its own Gradle module.
+
+Examples
+
+```
+contacts
+
+identity
+
+chats
+
+transport
+
+onboarding
+```
+
+Each feature owns its presentation, domain and feature-specific data code.
+
+---
+
+# Navigation
+
+Navigation is isolated from features.
+
+Responsibilities include
+
+- routes
+- navigation graph
+- navigation helpers
+
+Navigation should coordinate features rather than contain feature logic.
+
+---
+
+# Shared
+
+Shared modules contain functionality used by multiple features.
+
+Examples
+
+- reusable Compose components
+- application-wide services
+- shared ViewModels
+- common utilities
+
+Shared code should avoid feature-specific behaviour.
+
+---
+
+# Startup
+
+Startup is responsible for application initialization.
+
+Typical responsibilities
+
+- dependency initialization
+- startup verification
+- application boot sequence
+
+Separating startup logic keeps the Android application module lightweight.
+
+---
+
+# Relay
+
+The relay is an independent server project.
+
+Responsibilities
+
+- WebSocket connections
+- client registration
+- message forwarding
+- transport infrastructure
+
+The relay is intentionally separated from the Android application.
+
+---
+
+# Quality
+
+The quality module contains project-specific static analysis.
+
+Examples
+
+- SecureChat Detekt rules
+- rule providers
+- rule tests
+
+General application code should never be placed here.
+
+---
+
+# Build Logic
+
+The build infrastructure is implemented as an included Gradle build.
+
+```
+build-logic/
+```
+
+Responsibilities
+
+- convention plugins
+- architecture validation
+- documentation generation
+- quality automation
+- Gradle utilities
+
+This infrastructure configures every project module automatically.
+
+---
+
+# Clean Architecture
+
+Within each feature the project follows Clean Architecture.
+
+```
+Presentation
+
+↓
+
+Domain
+
+↓
+
+Data
+```
+
+Presentation depends on Domain.
+
+Data depends on Domain.
+
+Presentation never depends directly on Data implementations.
+
+---
+
+# Dependency Direction
+
+Dependencies should always point toward more stable layers.
+
+Good
+
+```
+Feature
+
+↓
+
+Core
+```
+
+Good
+
+```
+Feature
+
+↓
+
+Data
+
+↓
+
+Core
+```
+
+Bad
+
+```
+Core
+
+↓
+
+Feature
+```
+
+Bad
+
+```
+Data
+
+↓
+
+Presentation
+```
+
+The architecture validators and custom Detekt rules enforce these boundaries.
+
+---
+
+# Kotlin Multiplatform
+
+Business logic is implemented inside
+
+```
+commonMain
+```
+
+Platform-specific implementations belong inside
+
+```
+androidMain
+```
+
+Future platforms can therefore reuse the same domain and business logic.
+
+---
+
+# Dependency Injection
+
+Dependency Injection is handled through Koin.
+
+Responsibilities are split into
+
+- feature modules
+- core modules
+- shared modules
+- Android bootstrap
+
+Each module contributes only the definitions it owns.
+
+---
+
+# Build Automation
+
+The build infrastructure automatically provides
+
+- convention plugins
+- Version Catalog
+- formatting
+- static analysis
+- architecture validation
+- documentation generation
+
+Developers should rarely need custom Gradle configuration.
+
+---
+
+# Generated Documentation
+
+The architecture plugin automatically generates
+
+- architecture overview
+- module documentation
+- dependency matrix
+- project statistics
+- Mermaid diagrams
+
+These files are committed and should never be edited manually.
+
+Instead execute
 
 ```bash
 ./gradlew architectureReport
-./gradlew verifyArchitectureReport
 ```
 
-Do not manually edit files under `docs/generated/`.
+to regenerate them.
+
+---
+
+# Architectural Principles
+
+SecureChat follows several core principles.
+
+## Explicit Dependencies
+
+Dependencies should always be visible.
+
+Modules declare the libraries they require.
+
+Convention plugins configure infrastructure rather than hiding runtime dependencies.
+
+---
+
+## Single Responsibility
+
+Every module should have one primary responsibility.
+
+Examples
+
+```
+core:crypto
+
+feature:contacts
+
+data:database
+```
+
+Module names should describe exactly what they provide.
+
+---
+
+## Composition
+
+Large reusable modules are preferred over duplicated implementations.
+
+Shared functionality belongs inside Core or Shared modules.
+
+---
+
+## Platform Independence
+
+Whenever possible business logic belongs inside
+
+```
+commonMain
+```
+
+Only platform-specific code should use Android APIs.
+
+---
+
+## Automation
+
+The build infrastructure automates
+
+- formatting
+- static analysis
+- documentation
+- architecture validation
+
+Developers should focus on implementing SecureChat rather than maintaining the build.
+
+---
+
+# Summary
+
+SecureChat is organized around modularity, explicit dependencies and Clean Architecture.
+
+Each layer has a clearly defined responsibility.
+
+The architecture plugin continuously validates these boundaries and generates documentation directly from the Gradle project, ensuring that the documented architecture always reflects the actual codebase.

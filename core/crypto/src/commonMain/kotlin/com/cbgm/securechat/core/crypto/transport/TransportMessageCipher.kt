@@ -8,7 +8,7 @@ interface TransportMessageCipher {
      */
     suspend fun encryptForRecipient(
         plaintext: ByteArray,
-        recipientPublicKey: ByteArray
+        recipientPublicKey: ByteArray,
     ): Result<EncryptedTransportPayload>
 
     /**
@@ -17,6 +17,6 @@ interface TransportMessageCipher {
     suspend fun decryptFromSender(
         encryptedPayload: EncryptedTransportPayload,
         localPublicKey: ByteArray,
-        localPrivateKey: ByteArray
+        localPrivateKey: ByteArray,
     ): Result<ByteArray>
 }

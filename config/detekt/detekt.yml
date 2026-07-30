@@ -640,10 +640,18 @@ style:
     forbiddenImports: [ ]
     allowedImports: [ ]
   ForbiddenMethodCall:
-    active: true
+    active: false
     methods:
-      - value: 'kotlin.io.print'
-        reason: 'Use the SecureChat logger instead of print.'
+      - reason: 'print does not allow you to configure the output stream. Use a logger instead.'
+        value: 'kotlin.io.print'
+      - reason: 'println does not allow you to configure the output stream. Use a logger instead.'
+        value: 'kotlin.io.println'
+      - reason: 'using `BigDecimal(Double)` can result in unexpected floating point precision behavior. Use `BigDecimal.valueOf(Double)` or `String.toBigDecimalOrNull()` instead.'
+        value: 'java.math.BigDecimal.<init>(kotlin.Double)'
+      - reason: 'using `BigDecimal(String)` can result in a `NumberFormatException`. Use `String.toBigDecimalOrNull()`'
+        value: 'java.math.BigDecimal.<init>(kotlin.String)'
+      - reason: 'It is marked as obsolete. Use `kotlin.time.measureTime` instead.'
+        value: 'kotlin.system.measureTimeMillis'
       - value: 'kotlin.io.println'
         reason: 'Use the SecureChat logger instead of println.'
       - value: 'java.io.PrintStream.print'

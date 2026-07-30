@@ -2,5 +2,5 @@ package com.cbgm.securechat.core.crypto.transport
 
 enum class TransportEncryptionMode {
     PLAINTEXT,
-    SEALED_BOX
+    SEALED_BOX,
 }

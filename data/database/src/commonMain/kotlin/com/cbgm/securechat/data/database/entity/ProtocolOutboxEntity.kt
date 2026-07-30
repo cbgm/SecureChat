@@ -12,24 +12,24 @@ import androidx.room.PrimaryKey
             entity = ContactEntity::class,
             parentColumns = ["id"],
             childColumns = ["contactId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["contactId"]),
 
         Index(
             value = ["packetId"],
-            unique = true
+            unique = true,
         ),
 
         Index(
             value = [
                 "status",
-                "createdAtEpochMilliseconds"
-            ]
-        )
-    ]
+                "createdAtEpochMilliseconds",
+            ],
+        ),
+    ],
 )
 data class ProtocolOutboxEntity(
     @PrimaryKey
@@ -52,7 +52,7 @@ data class ProtocolOutboxEntity(
     val attemptCount: Int,
     val lastError: String?,
     val createdAtEpochMilliseconds: Long,
-    val updatedAtEpochMilliseconds: Long
+    val updatedAtEpochMilliseconds: Long,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

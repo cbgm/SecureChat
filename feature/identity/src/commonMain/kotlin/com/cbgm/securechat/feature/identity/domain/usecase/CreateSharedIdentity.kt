@@ -1,10 +1,10 @@
 package com.cbgm.securechat.feature.identity.domain.usecase
 
 import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
+import com.cbgm.securechat.feature.identity.core.IdentityShareCodec
+import com.cbgm.securechat.feature.identity.core.LocalPhoneNameStorage
 import com.cbgm.securechat.feature.identity.domain.model.SharedContactDetails
 import com.cbgm.securechat.feature.identity.domain.model.SharedIdentityPayload
-import com.cbgm.securechat.feature.identity.domain.repository.storage.LocalPhoneNameStorage
-import com.cbgm.securechat.feature.identity.domain.service.IdentityShareCodec
 
 /**
  * Creates the portable representation of the local SecureChat identity.
@@ -16,7 +16,7 @@ class CreateSharedIdentity(
     private val getPublicIdentity: GetPublicIdentity,
     private val localPhoneNameStorage: LocalPhoneNameStorage,
     private val phoneNumberNormalizer: PhoneNumberNormalizer,
-    private val identityShareCodec: IdentityShareCodec
+    private val identityShareCodec: IdentityShareCodec,
 ) {
     suspend operator fun invoke(): Result<String> =
         runCatching {
@@ -42,9 +42,9 @@ class CreateSharedIdentity(
                             contactDetails =
                                 SharedContactDetails(
                                     displayName = normalizedDisplayName,
-                                    phoneNumber = normalizedPhoneNumber
-                                )
-                        )
+                                    phoneNumber = normalizedPhoneNumber,
+                                ),
+                        ),
                 ).getOrThrow()
         }
 }

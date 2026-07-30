@@ -12,7 +12,7 @@ class InMemoryRelayConnectionRegistry : RelayConnectionRegistry {
         mutex.withLock {
             connections.put(
                 connection.relayId,
-                connection
+                connection,
             )
         }
 
@@ -23,7 +23,7 @@ class InMemoryRelayConnectionRegistry : RelayConnectionRegistry {
 
     override suspend fun unregister(
         relayId: String,
-        connection: RelayClientConnection
+        connection: RelayClientConnection,
     ) {
         mutex.withLock {
             val currentlyRegistered = connections[relayId]

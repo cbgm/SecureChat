@@ -18,6 +18,7 @@ kotlin {
             implementation(projects.core.protocol)
             implementation(projects.core.ui)
             implementation(projects.data.database)
+            implementation(projects.feature.identity)
 
             implementation(libs.bundles.compose)
             implementation(libs.bundles.coroutines)

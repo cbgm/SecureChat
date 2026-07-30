@@ -13,13 +13,13 @@ import com.cbgm.securechat.core.ui.theme.Alpha
 @Stable
 data class BarsState(
     val topBarAlpha: Float,
-    val bottomBarAlpha: Float
+    val bottomBarAlpha: Float,
 )
 
 @Composable
 fun rememberBarsState(
     state: LazyListState,
-    fadedAlpha: Float = Alpha.OpaqueBar
+    fadedAlpha: Float = Alpha.OpaqueBar,
 ): BarsState =
     rememberBarsState(
         canScrollBackward = {
@@ -28,13 +28,13 @@ fun rememberBarsState(
         canScrollForward = {
             state.canScrollForward
         },
-        fadedAlpha = fadedAlpha
+        fadedAlpha = fadedAlpha,
     )
 
 @Composable
 fun rememberBarsState(
     state: ScrollState,
-    fadedAlpha: Float = Alpha.OpaqueBar
+    fadedAlpha: Float = Alpha.OpaqueBar,
 ): BarsState =
     rememberBarsState(
         canScrollBackward = {
@@ -43,14 +43,14 @@ fun rememberBarsState(
         canScrollForward = {
             state.canScrollForward
         },
-        fadedAlpha = fadedAlpha
+        fadedAlpha = fadedAlpha,
     )
 
 @Composable
 private fun rememberBarsState(
     canScrollForward: () -> Boolean,
     canScrollBackward: () -> Boolean,
-    fadedAlpha: Float
+    fadedAlpha: Float,
 ): BarsState {
     val contentIsScrollable by remember {
         derivedStateOf {
@@ -65,11 +65,11 @@ private fun rememberBarsState(
             } else {
                 1f
             },
-        label = "BarsAlpha"
+        label = "BarsAlpha",
     )
 
     return BarsState(
         topBarAlpha = barAlpha,
-        bottomBarAlpha = barAlpha
+        bottomBarAlpha = barAlpha,
     )
 }

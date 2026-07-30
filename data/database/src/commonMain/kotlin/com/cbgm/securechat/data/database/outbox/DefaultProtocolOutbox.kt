@@ -1,9 +1,6 @@
 package com.cbgm.securechat.data.database.outbox
 
-import com.cbgm.securechat.core.id.IdGenerator
 import com.cbgm.securechat.core.protocol.codec.PacketCodec
-import com.cbgm.securechat.core.protocol.outbox.OutboxEvent
-import com.cbgm.securechat.core.protocol.outbox.OutboxStateMachine
 import com.cbgm.securechat.core.protocol.outbox.OutboxStatus
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutboxItem
@@ -13,14 +10,15 @@ import com.cbgm.securechat.data.database.dao.ProtocolOutboxDao
 import com.cbgm.securechat.data.database.entity.ProtocolOutboxEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlin.random.Random
 
 class DefaultProtocolOutbox(
     private val outboxDao: ProtocolOutboxDao,
-    private val packetCodec: PacketCodec
+    private val packetCodec: PacketCodec,
 ) : ProtocolOutbox {
     override suspend fun enqueue(
         contactId: String,
-        packet: SecureChatPacket
+        packet: SecureChatPacket,
     ): Result<ProtocolOutboxItem> {
         return runCatching {
             require(contactId.isNotBlank()) {
@@ -43,7 +41,7 @@ class DefaultProtocolOutbox(
 
             val entity =
                 ProtocolOutboxEntity(
-                    id = IdGenerator.generate(prefix = "outbox"),
+                    id = createId(prefix = "outbox"),
                     contactId = contactId,
                     packetId = packet.packetId,
                     encodedPacket = encodedPacket,
@@ -51,7 +49,7 @@ class DefaultProtocolOutbox(
                     attemptCount = 0,
                     lastError = null,
                     createdAtEpochMilliseconds = now,
-                    updatedAtEpochMilliseconds = now
+                    updatedAtEpochMilliseconds = now,
                 )
 
             outboxDao.upsert(entity = entity)
@@ -89,28 +87,30 @@ class DefaultProtocolOutbox(
 
             val existing = outboxDao.findById(itemId = itemId) ?: error("Outbox item was not found")
 
-            OutboxStateMachine.requireTransition(
-                current = existing.status.toOutboxStatus(),
-                event = OutboxEvent.PROCESSING_STARTED
-            )
+            check(
+                existing.status == OutboxStatus.PENDING.name ||
+                    existing.status == OutboxStatus.FAILED.name,
+            ) {
+                "Only pending or failed items can start processing"
+            }
 
             outboxDao.markProcessing(
                 itemId = itemId,
-                updatedAt = SystemClock.nowEpochMilliseconds()
+                updatedAt = SystemClock.nowEpochMilliseconds(),
             )
         }
 
     override suspend fun requeueInterrupted(): Result<Unit> =
         runCatching {
             outboxDao.requeueInterrupted(
-                updatedAt = SystemClock.nowEpochMilliseconds()
+                updatedAt = SystemClock.nowEpochMilliseconds(),
             )
         }
 
     override suspend fun retryFailed(): Result<Unit> =
         runCatching {
             outboxDao.retryFailed(
-                updatedAt = SystemClock.nowEpochMilliseconds()
+                updatedAt = SystemClock.nowEpochMilliseconds(),
             )
         }
 
@@ -129,22 +129,15 @@ class DefaultProtocolOutbox(
                 "Outbox item ID must not be blank"
             }
 
-            val existing = outboxDao.findById(itemId = itemId) ?: error("Outbox item was not found")
-
-            OutboxStateMachine.requireTransition(
-                current = existing.status.toOutboxStatus(),
-                event = OutboxEvent.SEND_SUCCEEDED
-            )
-
             outboxDao.markSent(
                 itemId = itemId,
-                updatedAt = SystemClock.nowEpochMilliseconds()
+                updatedAt = SystemClock.nowEpochMilliseconds(),
             )
         }
 
     override suspend fun markFailed(
         itemId: String,
-        errorMessage: String
+        errorMessage: String,
     ): Result<Unit> =
         runCatching {
             require(itemId.isNotBlank()) {
@@ -155,17 +148,10 @@ class DefaultProtocolOutbox(
                 "Error message must not be blank"
             }
 
-            val existing = outboxDao.findById(itemId = itemId) ?: error("Outbox item was not found")
-
-            OutboxStateMachine.requireTransition(
-                current = existing.status.toOutboxStatus(),
-                event = OutboxEvent.SEND_FAILED
-            )
-
             outboxDao.markFailed(
                 itemId = itemId,
                 errorMessage = errorMessage.take(MAX_ERROR_LENGTH),
-                updatedAt = SystemClock.nowEpochMilliseconds()
+                updatedAt = SystemClock.nowEpochMilliseconds(),
             )
         }
 
@@ -175,16 +161,9 @@ class DefaultProtocolOutbox(
                 "Outbox item ID must not be blank"
             }
 
-            val existing = outboxDao.findById(itemId = itemId) ?: error("Outbox item was not found")
-
-            OutboxStateMachine.requireTransition(
-                current = existing.status.toOutboxStatus(),
-                event = OutboxEvent.RETRY_REQUESTED
-            )
-
             outboxDao.retry(
                 itemId = itemId,
-                updatedAt = SystemClock.nowEpochMilliseconds()
+                updatedAt = SystemClock.nowEpochMilliseconds(),
             )
         }
 
@@ -198,7 +177,7 @@ class DefaultProtocolOutbox(
             attemptCount = attemptCount,
             lastError = lastError,
             createdAtEpochMilliseconds = createdAtEpochMilliseconds,
-            updatedAtEpochMilliseconds = updatedAtEpochMilliseconds
+            updatedAtEpochMilliseconds = updatedAtEpochMilliseconds,
         )
 
     private fun String.toOutboxStatus(): OutboxStatus =
@@ -213,6 +192,14 @@ class DefaultProtocolOutbox(
 
             else -> error("Unknown outbox status: $this")
         }
+
+    private fun createId(prefix: String): String {
+        val timestamp = SystemClock.nowEpochMilliseconds()
+
+        val random = Random.nextLong().toString().replace(oldValue = "-", newValue = "")
+
+        return "$prefix-$timestamp-$random"
+    }
 
     private companion object {
         const val MAX_ERROR_LENGTH = 1_000

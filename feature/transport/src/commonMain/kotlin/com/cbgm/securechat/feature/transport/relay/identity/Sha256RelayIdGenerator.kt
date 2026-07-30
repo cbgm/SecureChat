@@ -4,7 +4,7 @@ import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import okio.ByteString.Companion.toByteString
 
 class Sha256RelayIdGenerator(
-    private val phoneNumberNormalizer: PhoneNumberNormalizer
+    private val phoneNumberNormalizer: PhoneNumberNormalizer,
 ) : RelayIdGenerator {
     override fun deriveFromPhoneNumber(phoneNumber: String): Result<String> =
         runCatching {

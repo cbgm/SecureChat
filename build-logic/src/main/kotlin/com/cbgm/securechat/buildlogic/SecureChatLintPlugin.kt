@@ -1,13 +1,13 @@
 package com.cbgm.securechat.buildlogic
 
-import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.extensions.DetektExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
-import org.gradle.kotlin.dsl.withType
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
+import dev.detekt.gradle.Detekt
+import org.gradle.kotlin.dsl.withType
 
 class SecureChatLintPlugin : Plugin<Project> {
 

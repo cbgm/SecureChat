@@ -7,7 +7,7 @@ interface RelayConnectionRegistry {
 
     suspend fun unregister(
         relayId: String,
-        connection: RelayClientConnection
+        connection: RelayClientConnection,
     )
 
     suspend fun connectedCount(): Int

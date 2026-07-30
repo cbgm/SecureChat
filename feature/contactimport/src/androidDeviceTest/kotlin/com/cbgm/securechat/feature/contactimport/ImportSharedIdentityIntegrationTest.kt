@@ -10,9 +10,9 @@ import com.cbgm.securechat.feature.contactimport.domain.usecase.ImportSharedIden
 import com.cbgm.securechat.feature.contacts.data.merge.DefaultContactMergeService
 import com.cbgm.securechat.feature.contacts.data.repository.DefaultContactKeyExchangeStore
 import com.cbgm.securechat.feature.contacts.data.repository.DefaultContactRepository
-import com.cbgm.securechat.feature.contacts.domain.device.AddDeviceContactRequest
-import com.cbgm.securechat.feature.contacts.domain.device.AddDeviceContactResult
-import com.cbgm.securechat.feature.contacts.domain.device.DeviceContactWriter
+import com.cbgm.securechat.feature.contacts.devicecontacts.AddDeviceContactRequest
+import com.cbgm.securechat.feature.contacts.devicecontacts.AddDeviceContactResult
+import com.cbgm.securechat.feature.contacts.devicecontacts.DeviceContactWriter
 import com.cbgm.securechat.feature.contacts.domain.identity.IdentityExchangeStarter
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
 import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
@@ -59,18 +59,18 @@ class ImportSharedIdentityIntegrationTest {
                 mergeService =
                     DefaultContactMergeService(
                         contactDao = contactDao,
-                        phoneNumberNormalizer = phoneNumberNormalizer
+                        phoneNumberNormalizer = phoneNumberNormalizer,
                     ),
                 contactKeyExchangeStore = DefaultContactKeyExchangeStore(contactDao),
                 identityExchangeStarter = TestIdentityExchangeStarter,
                 phoneNumberNormalizer = phoneNumberNormalizer,
-                deviceContactWriter = TestDeviceContactWriter
+                deviceContactWriter = TestDeviceContactWriter,
             )
 
         importSharedIdentity =
             ImportSharedIdentity(
                 identityShareCodec = identityShareCodec,
-                importContact = ImportContact(contactRepository)
+                importContact = ImportContact(contactRepository),
             )
     }
 
@@ -89,7 +89,7 @@ class ImportSharedIdentityIntegrationTest {
                     encryptionPublicKey = encryptionPublicKey,
                     signingPublicKey = signingPublicKey,
                     displayName = "Alice",
-                    phoneNumber = "+491701234567"
+                    phoneNumber = "+491701234567",
                 )
 
             val importedContact = importSharedIdentity(encodedIdentity).getOrThrow()
@@ -111,7 +111,7 @@ class ImportSharedIdentityIntegrationTest {
                     encryptionPublicKey = testKey(seed = 2),
                     signingPublicKey = testKey(seed = 102),
                     displayName = "Alice",
-                    phoneNumber = "+491701234568"
+                    phoneNumber = "+491701234568",
                 )
 
             val first = importSharedIdentity(encodedIdentity).getOrThrow()
@@ -137,10 +137,10 @@ class ImportSharedIdentityIntegrationTest {
                                     ImportDevicePhoneNumber(
                                         value = "+49 170 123 4569",
                                         type = ContactPhoneNumberType.MOBILE,
-                                        label = null
-                                    )
-                                )
-                        )
+                                        label = null,
+                                    ),
+                                ),
+                        ),
                     ).getOrThrow()
 
             val importedContact =
@@ -149,8 +149,8 @@ class ImportSharedIdentityIntegrationTest {
                         encryptionPublicKey = testKey(seed = 3),
                         signingPublicKey = testKey(seed = 103),
                         displayName = "Alice SecureChat",
-                        phoneNumber = "+491701234569"
-                    )
+                        phoneNumber = "+491701234569",
+                    ),
                 ).getOrThrow()
 
             assertEquals(deviceContact.id, importedContact.id)
@@ -171,7 +171,7 @@ class ImportSharedIdentityIntegrationTest {
         encryptionPublicKey: ByteArray,
         signingPublicKey: ByteArray,
         displayName: String?,
-        phoneNumber: String
+        phoneNumber: String,
     ): String =
         identityShareCodec
             .encode(
@@ -182,9 +182,9 @@ class ImportSharedIdentityIntegrationTest {
                     contactDetails =
                         SharedContactDetails(
                             displayName = displayName,
-                            phoneNumber = phoneNumber
-                        )
-                )
+                            phoneNumber = phoneNumber,
+                        ),
+                ),
             ).getOrThrow()
 
     private fun testKey(seed: Int): ByteArray =
@@ -195,12 +195,10 @@ class ImportSharedIdentityIntegrationTest {
 
 private object TestIdentityExchangeStarter : IdentityExchangeStarter {
     override suspend fun ensureStarted(contactId: String): Result<Unit> = Result.success(Unit)
-
-    override suspend fun startManualExchange(contactId: String): Result<Unit> = Result.success(Unit)
 }
 
 private object TestDeviceContactWriter : DeviceContactWriter {
     override suspend fun addIfNotExists(
-        request: AddDeviceContactRequest
+        request: AddDeviceContactRequest,
     ): AddDeviceContactResult = AddDeviceContactResult.AlreadyExists
 }

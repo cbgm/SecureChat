@@ -11,10 +11,8 @@ data class SecureChatIdentity(
     val encryptionPublicKey: ByteArray,
     val signingPublicKey: ByteArray,
     val verificationStatus: ContactVerificationStatus,
-    val verifiedByContact: Boolean = false,
-    val locallyImported: Boolean = false,
     val keyExchangeStatus: KeyExchangeStatus,
-    val updatedAtEpochMilliseconds: Long
+    val updatedAtEpochMilliseconds: Long,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) {
@@ -26,15 +24,13 @@ data class SecureChatIdentity(
         }
 
         return encryptionPublicKey.contentEquals(
-            other.encryptionPublicKey
+            other.encryptionPublicKey,
         ) &&
             signingPublicKey.contentEquals(
-                other.signingPublicKey
+                other.signingPublicKey,
             ) &&
             verificationStatus ==
             other.verificationStatus &&
-            verifiedByContact == other.verifiedByContact &&
-            locallyImported == other.locallyImported &&
             keyExchangeStatus ==
             other.keyExchangeStatus &&
             updatedAtEpochMilliseconds ==
@@ -47,10 +43,6 @@ data class SecureChatIdentity(
         result = 31 * result + signingPublicKey.contentHashCode()
 
         result = 31 * result + verificationStatus.hashCode()
-
-        result = 31 * result + verifiedByContact.hashCode()
-
-        result = 31 * result + locallyImported.hashCode()
 
         result = 31 * result + keyExchangeStatus.hashCode()
 

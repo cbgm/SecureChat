@@ -16,7 +16,6 @@ data class ImportContactRequest(
     val phoneNumber: String?,
     val encryptionPublicKey: ByteArray,
     val signingPublicKey: ByteArray,
-    val identityImportTrust: IdentityImportTrust = IdentityImportTrust.UNVERIFIED
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) {
@@ -30,12 +29,11 @@ data class ImportContactRequest(
         return contactId == other.contactId &&
             displayName == other.displayName &&
             phoneNumber == other.phoneNumber &&
-            identityImportTrust == other.identityImportTrust &&
             encryptionPublicKey.contentEquals(
-                other.encryptionPublicKey
+                other.encryptionPublicKey,
             ) &&
             signingPublicKey.contentEquals(
-                other.signingPublicKey
+                other.signingPublicKey,
             )
     }
 
@@ -45,8 +43,6 @@ data class ImportContactRequest(
         result = 31 * result + (displayName?.hashCode() ?: 0)
 
         result = 31 * result + (phoneNumber?.hashCode() ?: 0)
-
-        result = 31 * result + identityImportTrust.hashCode()
 
         result = 31 * result + encryptionPublicKey.contentHashCode()
 

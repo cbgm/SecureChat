@@ -9,6 +9,6 @@ expect object LocalAppLocale {
 
     @Composable
     infix fun provides(
-        value: String?
+        value: String?,
     ): ProvidedValue<*>
 }

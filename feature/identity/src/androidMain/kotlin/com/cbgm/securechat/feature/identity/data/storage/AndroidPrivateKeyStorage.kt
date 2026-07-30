@@ -4,7 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
-import com.cbgm.securechat.feature.identity.domain.repository.storage.PrivateKeyStorage
+import com.cbgm.securechat.feature.identity.core.PrivateKeyStorage
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -47,7 +47,7 @@ import javax.crypto.spec.GCMParameterSpec
  * stored directly in Android Keystore on every supported device.
  */
 class AndroidPrivateKeyStorage(
-    context: Context
+    context: Context,
 ) : PrivateKeyStorage {
     /**
      * App-private SharedPreferences storage.
@@ -62,7 +62,7 @@ class AndroidPrivateKeyStorage(
     private val preferences =
         context.getSharedPreferences(
             PREFERENCES_NAME,
-            Context.MODE_PRIVATE
+            Context.MODE_PRIVATE,
         )
 
     /**
@@ -94,7 +94,7 @@ class AndroidPrivateKeyStorage(
     @OptIn(ExperimentalUnsignedTypes::class)
     override suspend fun saveIdentityPrivateKeys(
         encryptionPrivateKey: UByteArray,
-        signingPrivateKey: UByteArray
+        signingPrivateKey: UByteArray,
     ): Result<Unit> =
         runCatching {
             /**
@@ -113,7 +113,7 @@ class AndroidPrivateKeyStorage(
             val encryptedEncryptionKey =
                 encrypt(
                     plainData = encryptionPrivateKey.toByteArray(),
-                    wrappingKey = wrappingKey
+                    wrappingKey = wrappingKey,
                 )
 
             /**
@@ -125,7 +125,7 @@ class AndroidPrivateKeyStorage(
             val encryptedSigningKey =
                 encrypt(
                     plainData = signingPrivateKey.toByteArray(),
-                    wrappingKey = wrappingKey
+                    wrappingKey = wrappingKey,
                 )
 
             /**
@@ -147,16 +147,16 @@ class AndroidPrivateKeyStorage(
                     .edit()
                     .putString(
                         ENCRYPTION_PRIVATE_KEY_CIPHERTEXT,
-                        encryptedEncryptionKey.cipherText.toBase64()
+                        encryptedEncryptionKey.cipherText.toBase64(),
                     ).putString(
                         ENCRYPTION_PRIVATE_KEY_IV,
-                        encryptedEncryptionKey.iv.toBase64()
+                        encryptedEncryptionKey.iv.toBase64(),
                     ).putString(
                         SIGNING_PRIVATE_KEY_CIPHERTEXT,
-                        encryptedSigningKey.cipherText.toBase64()
+                        encryptedSigningKey.cipherText.toBase64(),
                     ).putString(
                         SIGNING_PRIVATE_KEY_IV,
-                        encryptedSigningKey.iv.toBase64()
+                        encryptedSigningKey.iv.toBase64(),
                     )
                     /**
                      * commit() is synchronous.
@@ -230,7 +230,7 @@ class AndroidPrivateKeyStorage(
             val cipherTextBase64 =
                 preferences.getString(
                     ENCRYPTION_PRIVATE_KEY_CIPHERTEXT,
-                    null
+                    null,
                 ) ?: return@runCatching null
 
             /**
@@ -240,7 +240,7 @@ class AndroidPrivateKeyStorage(
             val ivBase64 =
                 preferences.getString(
                     ENCRYPTION_PRIVATE_KEY_IV,
-                    null
+                    null,
                 ) ?: return@runCatching null
 
             /**
@@ -263,7 +263,7 @@ class AndroidPrivateKeyStorage(
             decrypt(
                 cipherText = cipherTextBase64.fromBase64(),
                 iv = ivBase64.fromBase64(),
-                wrappingKey = wrappingKey
+                wrappingKey = wrappingKey,
             )
                 /**
                  * Convert back to UByteArray because our
@@ -286,14 +286,14 @@ class AndroidPrivateKeyStorage(
             val cipherTextBase64 =
                 preferences.getString(
                     SIGNING_PRIVATE_KEY_CIPHERTEXT,
-                    null
+                    null,
                 ) ?: return@runCatching null
 
             // Load the IV used during Ed25519 key encryption.
             val ivBase64 =
                 preferences.getString(
                     SIGNING_PRIVATE_KEY_IV,
-                    null
+                    null,
                 ) ?: return@runCatching null
 
             /**
@@ -309,7 +309,7 @@ class AndroidPrivateKeyStorage(
             decrypt(
                 cipherText = cipherTextBase64.fromBase64(),
                 iv = ivBase64.fromBase64(),
-                wrappingKey = wrappingKey
+                wrappingKey = wrappingKey,
             ).toUByteArray()
         }
     }
@@ -338,7 +338,7 @@ class AndroidPrivateKeyStorage(
         val keyGenerator =
             KeyGenerator.getInstance(
                 KeyProperties.KEY_ALGORITHM_AES,
-                ANDROID_KEYSTORE
+                ANDROID_KEYSTORE,
             )
 
         /**
@@ -356,7 +356,7 @@ class AndroidPrivateKeyStorage(
                      * - decrypt
                      */
                     KeyProperties.PURPOSE_ENCRYPT or
-                        KeyProperties.PURPOSE_DECRYPT
+                        KeyProperties.PURPOSE_DECRYPT,
                 )
                 /**
                  * Use GCM mode.
@@ -364,13 +364,13 @@ class AndroidPrivateKeyStorage(
                  * GCM provides authenticated encryption.
                  */
                 .setBlockModes(
-                    KeyProperties.BLOCK_MODE_GCM
+                    KeyProperties.BLOCK_MODE_GCM,
                 )
                 /**
                  * GCM does not use traditional block padding.
                  */
                 .setEncryptionPaddings(
-                    KeyProperties.ENCRYPTION_PADDING_NONE
+                    KeyProperties.ENCRYPTION_PADDING_NONE,
                 )
                 /**
                  * Request a 256-bit AES key.
@@ -398,7 +398,7 @@ class AndroidPrivateKeyStorage(
         val key =
             keyStore.getKey(
                 WRAPPING_KEY_ALIAS,
-                null
+                null,
             )
 
         return key as? SecretKey
@@ -411,7 +411,7 @@ class AndroidPrivateKeyStorage(
      */
     private fun encrypt(
         plainData: ByteArray,
-        wrappingKey: SecretKey
+        wrappingKey: SecretKey,
     ): EncryptedBlob {
         /**
          * Request AES encryption using:
@@ -424,7 +424,7 @@ class AndroidPrivateKeyStorage(
          */
         val cipher =
             Cipher.getInstance(
-                AES_GCM_TRANSFORMATION
+                AES_GCM_TRANSFORMATION,
             )
 
         /**
@@ -434,7 +434,7 @@ class AndroidPrivateKeyStorage(
          */
         cipher.init(
             Cipher.ENCRYPT_MODE,
-            wrappingKey
+            wrappingKey,
         )
 
         /**
@@ -445,7 +445,7 @@ class AndroidPrivateKeyStorage(
          */
         val cipherText =
             cipher.doFinal(
-                plainData
+                plainData,
             )
 
         /**
@@ -456,7 +456,7 @@ class AndroidPrivateKeyStorage(
          */
         return EncryptedBlob(
             cipherText = cipherText,
-            iv = cipher.iv
+            iv = cipher.iv,
         )
     }
 
@@ -466,11 +466,11 @@ class AndroidPrivateKeyStorage(
     private fun decrypt(
         cipherText: ByteArray,
         iv: ByteArray,
-        wrappingKey: SecretKey
+        wrappingKey: SecretKey,
     ): ByteArray {
         val cipher =
             Cipher.getInstance(
-                AES_GCM_TRANSFORMATION
+                AES_GCM_TRANSFORMATION,
             )
 
         /**
@@ -481,7 +481,7 @@ class AndroidPrivateKeyStorage(
         val parameterSpec =
             GCMParameterSpec(
                 GCM_TAG_LENGTH_BITS,
-                iv
+                iv,
             )
 
         /**
@@ -493,7 +493,7 @@ class AndroidPrivateKeyStorage(
         cipher.init(
             Cipher.DECRYPT_MODE,
             wrappingKey,
-            parameterSpec
+            parameterSpec,
         )
 
         /**
@@ -504,7 +504,7 @@ class AndroidPrivateKeyStorage(
          * silently corrupted plaintext.
          */
         return cipher.doFinal(
-            cipherText
+            cipherText,
         )
     }
 
@@ -518,7 +518,7 @@ class AndroidPrivateKeyStorage(
     private fun ByteArray.toBase64(): String =
         Base64.encodeToString(
             this,
-            Base64.NO_WRAP
+            Base64.NO_WRAP,
         )
 
     /**
@@ -527,7 +527,7 @@ class AndroidPrivateKeyStorage(
     private fun String.fromBase64(): ByteArray =
         Base64.decode(
             this,
-            Base64.NO_WRAP
+            Base64.NO_WRAP,
         )
 
     /**
@@ -543,7 +543,7 @@ class AndroidPrivateKeyStorage(
      */
     private data class EncryptedBlob(
         val cipherText: ByteArray,
-        val iv: ByteArray
+        val iv: ByteArray,
     ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

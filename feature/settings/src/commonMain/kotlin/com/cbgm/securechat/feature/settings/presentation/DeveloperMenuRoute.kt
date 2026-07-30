@@ -12,7 +12,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun DeveloperMenuRoute(
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
-    viewModel: DeveloperMenuViewModel = koinViewModel()
+    viewModel: DeveloperMenuViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -25,6 +25,6 @@ fun DeveloperMenuRoute(
             viewModel.onDisableDeveloperMode()
             onBack()
         },
-        modifier = modifier
+        modifier = modifier,
     )
 }

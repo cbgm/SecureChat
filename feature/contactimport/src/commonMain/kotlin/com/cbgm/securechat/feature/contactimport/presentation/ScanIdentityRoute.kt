@@ -27,7 +27,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun ScanIdentityRoute(
     onQrCodeScanned: (String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     var cameraPermissionGranted by remember { mutableStateOf(false) }
 
@@ -42,7 +42,7 @@ fun ScanIdentityRoute(
             },
             onPermissionDenied = {
                 cameraPermissionDenied = true
-            }
+            },
         )
 
     LaunchedEffect(Unit) {
@@ -53,7 +53,7 @@ fun ScanIdentityRoute(
         cameraPermissionGranted -> {
             ScanIdentityScreen(
                 onQrCodeScanned = onQrCodeScanned,
-                onBack = onBack
+                onBack = onBack,
             )
         }
 
@@ -61,14 +61,14 @@ fun ScanIdentityRoute(
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
             ) {
                 Text(text = stringResource(Res.string.feature_contactimport_camera_permission_required))
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
-                    onClick = requestCameraPermission
+                    onClick = requestCameraPermission,
                 ) {
                     Text(stringResource(Res.string.feature_contactimport_grant_camera_permission))
                 }
@@ -76,7 +76,7 @@ fun ScanIdentityRoute(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Button(
-                    onClick = onBack
+                    onClick = onBack,
                 ) {
                     Text(stringResource(Res.string.base_back))
                 }

@@ -6,30 +6,30 @@ data class PermissionRequestResult(
     val contactsGranted: Boolean,
     val cameraGranted: Boolean,
     val notificationsGranted: Boolean,
-    val phoneNumberGranted: Boolean
+    val phoneNumberGranted: Boolean,
 )
 
 sealed interface AutomaticPhoneNumberResult {
     data class Found(
-        val phoneNumber: String
+        val phoneNumber: String,
     ) : AutomaticPhoneNumberResult
 
     data object Unavailable : AutomaticPhoneNumberResult
 
     data class Failed(
-        val message: String
+        val message: String,
     ) : AutomaticPhoneNumberResult
 }
 
 @Composable
 expect fun OnboardingPermissionRequester(
     requestId: Int,
-    onResult: (PermissionRequestResult) -> Unit
+    onResult: (PermissionRequestResult) -> Unit,
 )
 
 @Composable
 expect fun AutomaticPhoneNumberReader(
     requestId: Int,
     enabled: Boolean,
-    onResult: (AutomaticPhoneNumberResult) -> Unit
+    onResult: (AutomaticPhoneNumberResult) -> Unit,
 )

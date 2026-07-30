@@ -18,7 +18,7 @@ import androidx.core.content.ContextCompat
 @Composable
 actual fun OnboardingPermissionRequester(
     requestId: Int,
-    onResult: (PermissionRequestResult) -> Unit
+    onResult: (PermissionRequestResult) -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -51,7 +51,7 @@ actual fun OnboardingPermissionRequester(
 
     val launcher =
         rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestMultiplePermissions()
+            contract = ActivityResultContracts.RequestMultiplePermissions(),
         ) { result ->
 
             val contactsReadGranted =
@@ -74,37 +74,37 @@ actual fun OnboardingPermissionRequester(
                     cameraGranted =
                         result[Manifest.permission.CAMERA] == true ||
                             context.isGranted(
-                                Manifest.permission.CAMERA
+                                Manifest.permission.CAMERA,
                             ),
                     notificationsGranted =
                         Build.VERSION.SDK_INT <
                             Build.VERSION_CODES.TIRAMISU ||
                             result[
-                                Manifest.permission.POST_NOTIFICATIONS
+                                Manifest.permission.POST_NOTIFICATIONS,
                             ] == true ||
                             context.isGranted(
-                                Manifest.permission.POST_NOTIFICATIONS
+                                Manifest.permission.POST_NOTIFICATIONS,
                             ),
                     phoneNumberGranted =
                         Build.VERSION.SDK_INT >=
                             Build.VERSION_CODES.O &&
                             (
                                 result[
-                                    Manifest.permission.READ_PHONE_NUMBERS
+                                    Manifest.permission.READ_PHONE_NUMBERS,
                                 ] == true ||
                                     context.isGranted(
-                                        Manifest.permission.READ_PHONE_NUMBERS
+                                        Manifest.permission.READ_PHONE_NUMBERS,
                                     )
                             ) &&
                             (
                                 result[
-                                    Manifest.permission.READ_PHONE_STATE
+                                    Manifest.permission.READ_PHONE_STATE,
                                 ] == true ||
                                     context.isGranted(
-                                        Manifest.permission.READ_PHONE_STATE
+                                        Manifest.permission.READ_PHONE_STATE,
                                     )
-                            )
-                )
+                            ),
+                ),
             )
         }
 
@@ -117,19 +117,19 @@ actual fun OnboardingPermissionRequester(
 
 @SuppressLint(
     "MissingPermission",
-    "HardwareIds"
+    "HardwareIds",
 )
 @Composable
 actual fun AutomaticPhoneNumberReader(
     requestId: Int,
     enabled: Boolean,
-    onResult: (AutomaticPhoneNumberResult) -> Unit
+    onResult: (AutomaticPhoneNumberResult) -> Unit,
 ) {
     val context = LocalContext.current
 
     LaunchedEffect(
         requestId,
-        enabled
+        enabled,
     ) {
         if (!enabled || requestId <= 0) {
             return@LaunchedEffect
@@ -139,14 +139,14 @@ actual fun AutomaticPhoneNumberReader(
             Build.VERSION.SDK_INT <
             Build.VERSION_CODES.O ||
             !context.isGranted(
-                Manifest.permission.READ_PHONE_NUMBERS
+                Manifest.permission.READ_PHONE_NUMBERS,
             ) ||
             !context.isGranted(
-                Manifest.permission.READ_PHONE_STATE
+                Manifest.permission.READ_PHONE_STATE,
             )
         ) {
             onResult(
-                AutomaticPhoneNumberResult.Unavailable
+                AutomaticPhoneNumberResult.Unavailable,
             )
             return@LaunchedEffect
         }
@@ -155,7 +155,7 @@ actual fun AutomaticPhoneNumberReader(
             runCatching {
                 val manager =
                     context.getSystemService(
-                        Context.TELEPHONY_SUBSCRIPTION_SERVICE
+                        Context.TELEPHONY_SUBSCRIPTION_SERVICE,
                     ) as SubscriptionManager
 
                 val subscriptions =
@@ -168,16 +168,16 @@ actual fun AutomaticPhoneNumberReader(
                             Build.VERSION_CODES.TIRAMISU
                         ) {
                             manager.getPhoneNumber(
-                                info.subscriptionId
+                                info.subscriptionId,
                             )
                         } else {
                             @Suppress("DEPRECATION")
                             (
                                 context.getSystemService(
-                                    Context.TELEPHONY_SERVICE
+                                    Context.TELEPHONY_SERVICE,
                                 ) as TelephonyManager
                             ).createForSubscriptionId(
-                                info.subscriptionId
+                                info.subscriptionId,
                             ).line1Number
                         }
 
@@ -189,21 +189,21 @@ actual fun AutomaticPhoneNumberReader(
                 onResult(
                     AutomaticPhoneNumberResult.Failed(
                         throwable.message
-                            ?: "SIM phone number could not be read"
-                    )
+                            ?: "SIM phone number could not be read",
+                    ),
                 )
                 return@LaunchedEffect
             }
 
         if (number == null) {
             onResult(
-                AutomaticPhoneNumberResult.Unavailable
+                AutomaticPhoneNumberResult.Unavailable,
             )
         } else {
             onResult(
                 AutomaticPhoneNumberResult.Found(
-                    number
-                )
+                    number,
+                ),
             )
         }
     }
@@ -212,5 +212,5 @@ actual fun AutomaticPhoneNumberReader(
 private fun Context.isGranted(permission: String): Boolean =
     ContextCompat.checkSelfPermission(
         this,
-        permission
+        permission,
     ) == PackageManager.PERMISSION_GRANTED

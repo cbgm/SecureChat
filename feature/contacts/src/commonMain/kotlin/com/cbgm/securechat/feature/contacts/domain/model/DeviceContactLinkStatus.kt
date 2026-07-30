@@ -23,5 +23,5 @@ enum class DeviceContactLinkStatus {
      * SecureChat keeps the contact, keys, verification state,
      * conversations, and message history.
      */
-    MISSING
+    MISSING,
 }

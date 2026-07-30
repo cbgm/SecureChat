@@ -43,7 +43,7 @@ class DefaultTransportPayloadCodec : TransportPayloadCodec {
             EncryptedTransportPayload(
                 version = version,
                 mode = mode,
-                payload = payload
+                payload = payload,
             )
         }
 

@@ -10,7 +10,7 @@ data class PublicIdentity(
      * Public key used for signatures.
      * Ed25519
      */
-    val signingPublicKey: ByteArray
+    val signingPublicKey: ByteArray,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
