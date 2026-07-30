@@ -25,16 +25,16 @@ internal fun GroupMembershipRemovedHint(modifier: Modifier = Modifier) {
         contentColor = MaterialTheme.colorScheme.onErrorContainer
     ) {
         Column(
-            modifier = Modifier.padding(MaterialTheme.spacing.medium)
+            modifier = Modifier.padding(horizontal = MaterialTheme.spacing.screenPadding, vertical = MaterialTheme.spacing.small)
         ) {
             Text(
                 text = stringResource(Res.string.feature_chats_group_removed_hint_title),
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = stringResource(Res.string.feature_chats_group_removed_hint_description),
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.labelMedium
             )
         }
     }

@@ -25,16 +25,16 @@ internal fun GroupMembershipLeavingHint(modifier: Modifier = Modifier) {
         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
     ) {
         Column(
-            modifier = Modifier.padding(MaterialTheme.spacing.medium)
+            modifier = Modifier.padding(horizontal = MaterialTheme.spacing.screenPadding, vertical = MaterialTheme.spacing.small)
         ) {
             Text(
                 text = stringResource(Res.string.feature_chats_group_leaving_hint_title),
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = stringResource(Res.string.feature_chats_group_leaving_hint_description),
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.labelMedium
             )
         }
     }

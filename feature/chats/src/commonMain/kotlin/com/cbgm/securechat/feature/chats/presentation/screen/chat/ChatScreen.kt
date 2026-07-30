@@ -76,6 +76,7 @@ import com.cbgm.securechat.feature.chats.domain.model.MessageSecurity
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.DeliveryLabel
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.GroupConversationDeletedHint
+import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.GroupInvitationHint
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.GroupMembershipLeavingHint
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.GroupMembershipRemovedHint
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.component.GroupMembershipSystemMessage
@@ -314,7 +315,7 @@ private fun ChatTopBar(
         }
 
         if (uiState.showGroupInvitationActions) {
-            GroupInvitationBanner(
+            GroupInvitationHint(
                 onAccept = onAcceptGroupInvitation,
                 onDecline = onDeclineGroupInvitation
             )
@@ -391,45 +392,6 @@ private fun groupStateSubtitle(uiState: ChatUiState): String =
         GroupConversationState.FAILED ->
             stringResource(Res.string.feature_chats_group_status_failed)
     }
-
-@Composable
-private fun GroupInvitationBanner(
-    onAccept: () -> Unit,
-    onDecline: () -> Unit
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.medium)
-        ) {
-            Text(
-                text = stringResource(Res.string.feature_chats_group_invitation_title),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = stringResource(Res.string.feature_chats_group_invitation_description),
-                style = MaterialTheme.typography.bodySmall
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = onDecline) {
-                    Text(stringResource(Res.string.feature_chats_group_decline))
-                }
-                TextButton(onClick = onAccept) {
-                    Text(stringResource(Res.string.feature_chats_group_accept))
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun PendingGroupMessageHint(uiState: ChatUiState) {
@@ -979,7 +941,7 @@ private fun MessageBubble(
                     )
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.base),
                     verticalAlignment = Alignment.Top
                 ) {
                     if (bubbleState.isContentFailed) {

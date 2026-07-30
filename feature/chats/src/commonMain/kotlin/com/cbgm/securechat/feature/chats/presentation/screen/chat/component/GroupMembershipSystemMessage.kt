@@ -33,37 +33,7 @@ internal fun GroupMembershipSystemMessage(
     memberName: String?,
     modifier: Modifier = Modifier
 ) {
-    val text =
-        when (type) {
-            ChatMessageType.GROUP_MEMBER_ADDED ->
-                stringResource(
-                    Res.string.feature_chats_group_member_added_message,
-                    memberName?.takeIf(String::isNotBlank)
-                        ?: stringResource(Res.string.feature_chats_group_unknown_member)
-                )
-
-            ChatMessageType.GROUP_MEMBER_REMOVED ->
-                stringResource(
-                    Res.string.feature_chats_group_member_removed_message,
-                    memberName?.takeIf(String::isNotBlank)
-                        ?: stringResource(Res.string.feature_chats_group_unknown_member)
-                )
-
-            ChatMessageType.LOCAL_GROUP_MEMBERSHIP_REMOVED ->
-                stringResource(Res.string.feature_chats_group_you_were_removed_message)
-
-            ChatMessageType.GROUP_MEMBER_LEFT ->
-                stringResource(
-                    Res.string.feature_chats_group_member_left_message,
-                    memberName?.takeIf(String::isNotBlank)
-                        ?: stringResource(Res.string.feature_chats_group_unknown_member)
-                )
-
-            ChatMessageType.LOCAL_GROUP_MEMBERSHIP_LEFT ->
-                stringResource(Res.string.feature_chats_group_you_left_message)
-
-            ChatMessageType.USER -> return
-        }
+    val text = getSystemMessage(type, memberName)
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -77,8 +47,8 @@ internal fun GroupMembershipSystemMessage(
             Row(
                 modifier =
                     Modifier.padding(
-                        horizontal = MaterialTheme.spacing.medium,
-                        vertical = MaterialTheme.spacing.small
+                        horizontal = MaterialTheme.spacing.small,
+                        vertical = MaterialTheme.spacing.base
                     ),
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
                 verticalAlignment = Alignment.CenterVertically
@@ -99,6 +69,41 @@ internal fun GroupMembershipSystemMessage(
             }
         }
     }
+}
+
+@Composable
+private fun getSystemMessage(
+    type: ChatMessageType,
+    memberName: String?
+) = when (type) {
+    ChatMessageType.GROUP_MEMBER_ADDED ->
+        stringResource(
+            Res.string.feature_chats_group_member_added_message,
+            memberName?.takeIf(String::isNotBlank)
+                ?: stringResource(Res.string.feature_chats_group_unknown_member)
+        )
+
+    ChatMessageType.GROUP_MEMBER_REMOVED ->
+        stringResource(
+            Res.string.feature_chats_group_member_removed_message,
+            memberName?.takeIf(String::isNotBlank)
+                ?: stringResource(Res.string.feature_chats_group_unknown_member)
+        )
+
+    ChatMessageType.LOCAL_GROUP_MEMBERSHIP_REMOVED ->
+        stringResource(Res.string.feature_chats_group_you_were_removed_message)
+
+    ChatMessageType.GROUP_MEMBER_LEFT ->
+        stringResource(
+            Res.string.feature_chats_group_member_left_message,
+            memberName?.takeIf(String::isNotBlank)
+                ?: stringResource(Res.string.feature_chats_group_unknown_member)
+        )
+
+    ChatMessageType.LOCAL_GROUP_MEMBERSHIP_LEFT ->
+        stringResource(Res.string.feature_chats_group_you_left_message)
+
+    ChatMessageType.USER -> ""
 }
 
 @Preview

@@ -40,16 +40,18 @@ fun MemberSelectionContactsTopBar(
 ) {
     Column {
         CenterAlignedTopAppBar(
-            windowInsets = WindowInsets(0.dp),
             colors =
                 TopAppBarDefaults.topAppBarColors(
                     containerColor = containerColor,
-                    scrolledContainerColor = containerColor
+                    scrolledContainerColor = containerColor,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
                 ),
             title = {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold
                 )
             },

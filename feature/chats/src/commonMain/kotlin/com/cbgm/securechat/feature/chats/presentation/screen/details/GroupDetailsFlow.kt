@@ -8,22 +8,24 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cbgm.securechat.core.ui.component.IdentityVerificationScreen
 import com.cbgm.securechat.feature.chats.presentation.model.GroupDetailsUiState
+import com.cbgm.securechat.feature.chats.presentation.screen.details.component.LeaveGroupDialog
+import com.cbgm.securechat.feature.chats.presentation.screen.details.component.RemoveMemberDialog
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 private enum class DetailsContent {
     Overview,
     VerifyIdentity,
-    AddMembers,
-    RemoveMember,
-    LeaveGroup
+    AddMembers
 }
 
 @Composable
@@ -42,8 +44,10 @@ fun GroupDetailsFlow(
         mutableStateOf(DetailsContent.Overview)
     }
     var observedMembershipRevision by rememberSaveable {
-        mutableStateOf(uiState.memberManagement.completedRevision)
+        mutableIntStateOf(uiState.memberManagement.completedRevision)
     }
+
+    var showLeaveDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.memberManagement.completedRevision) {
         val revision = uiState.memberManagement.completedRevision
@@ -55,6 +59,7 @@ fun GroupDetailsFlow(
 
     LaunchedEffect(uiState.leave.isLeaveRequested) {
         if (uiState.leave.isLeaveRequested) {
+            showLeaveDialog = false
             onClose()
         }
     }
@@ -62,12 +67,6 @@ fun GroupDetailsFlow(
     val visibleContent =
         when {
             content == DetailsContent.VerifyIdentity && uiState.selectedMember == null ->
-                DetailsContent.Overview
-            content == DetailsContent.RemoveMember &&
-                uiState.memberManagement.removalCandidate == null ->
-                DetailsContent.Overview
-            content == DetailsContent.LeaveGroup &&
-                !uiState.summary.canLeaveGroup ->
                 DetailsContent.Overview
             else -> content
         }
@@ -107,10 +106,9 @@ fun GroupDetailsFlow(
                     },
                     onRemoveMember = { contactId ->
                         verificationViewModel.requestMemberRemoval(contactId)
-                        content = DetailsContent.RemoveMember
                     },
                     onLeaveGroup = {
-                        content = DetailsContent.LeaveGroup
+                        showLeaveDialog = true
                     },
                     onVerifyMember = {
                         verificationViewModel.selectMember(it)
@@ -151,33 +149,27 @@ fun GroupDetailsFlow(
                     }
                 )
             }
-
-            DetailsContent.RemoveMember -> {
-                uiState.memberManagement.removalCandidate?.let { member ->
-                    RemoveGroupMemberScreen(
-                        member = member,
-                        isRemoving = uiState.memberManagement.isUpdating,
-                        errorMessage = uiState.memberManagement.errorMessage,
-                        onConfirm = verificationViewModel::confirmMemberRemoval,
-                        onBack = {
-                            verificationViewModel.dismissMemberRemoval()
-                            content = DetailsContent.Overview
-                        }
-                    )
-                }
-            }
-
-            DetailsContent.LeaveGroup -> {
-                LeaveGroupScreen(
-                    isLeaving = uiState.leave.isLeaving,
-                    errorMessage = uiState.leave.errorMessage,
-                    onConfirm = verificationViewModel::leaveGroup,
-                    onBack = {
-                        verificationViewModel.dismissLeaveError()
-                        content = DetailsContent.Overview
-                    }
-                )
-            }
         }
+    }
+    uiState.memberManagement.removalCandidate?.let { member ->
+        RemoveMemberDialog(
+            member = member,
+            isRemoving = uiState.memberManagement.isUpdating,
+            errorMessage = uiState.memberManagement.errorMessage,
+            onApprove = verificationViewModel::confirmMemberRemoval,
+            onDismiss = verificationViewModel::dismissMemberRemoval
+        )
+    }
+
+    if (showLeaveDialog) {
+        LeaveGroupDialog(
+            isRemoving = uiState.memberManagement.isUpdating,
+            errorMessage = uiState.memberManagement.errorMessage,
+            onApprove = verificationViewModel::leaveGroup,
+            onDismiss = {
+                verificationViewModel.dismissLeaveError()
+                showLeaveDialog = false
+            }
+        )
     }
 }
