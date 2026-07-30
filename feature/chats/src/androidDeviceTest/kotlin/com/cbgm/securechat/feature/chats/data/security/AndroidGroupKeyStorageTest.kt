@@ -28,5 +28,9 @@ class AndroidGroupKeyStorageTest {
 
             assertNull(storage.load(groupId, 1).getOrThrow())
             assertContentEquals(secondKey, storage.load(groupId, 2).getOrThrow())
+
+            storage.deleteGroup(groupId).getOrThrow()
+
+            assertNull(storage.load(groupId, 2).getOrThrow())
         }
 }

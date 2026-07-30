@@ -8,8 +8,11 @@ enum class GroupInvitationStatus {
     JOIN_SENT,
     WELCOME_SENT,
     WAITING_FOR_ACTIVATION,
+    LEAVE_SENT,
     DECLINED,
     EXPIRED,
     FAILED,
+    REMOVED,
+    GROUP_DELETED,
     ACTIVE
 }

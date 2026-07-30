@@ -78,7 +78,7 @@ val Typography @Composable get() =
                 fontFamily = SecureChatFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 15.sp,
-                lineHeight = 24.sp,
+                lineHeight = 20.sp,
                 letterSpacing = 0.5.sp
             ),
         labelMedium =
@@ -86,7 +86,7 @@ val Typography @Composable get() =
                 fontFamily = SecureChatFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 12.sp,
-                lineHeight = 24.sp,
+                lineHeight = 15.sp,
                 letterSpacing = 0.5.sp
             ),
         labelSmall =
@@ -94,7 +94,7 @@ val Typography @Composable get() =
                 fontFamily = SecureChatFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 10.sp,
-                lineHeight = 24.sp,
+                lineHeight = 12.sp,
                 letterSpacing = 0.5.sp
             ),
         headlineLarge =

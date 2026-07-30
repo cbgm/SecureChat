@@ -20,6 +20,9 @@ import com.cbgm.securechat.feature.chats.presentation.model.GroupDetailsUiState
 fun GroupDetailsScreen(
     uiState: GroupDetailsUiState,
     onVerifyMember: (String) -> Unit,
+    onAddMembers: () -> Unit,
+    onRemoveMember: (String) -> Unit,
+    onLeaveGroup: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -47,7 +50,10 @@ fun GroupDetailsScreen(
                     summary = uiState.summary,
                     innerPadding = innerPadding,
                     listState = listState,
-                    onVerifyMember = onVerifyMember
+                    onVerifyMember = onVerifyMember,
+                    onAddMembers = onAddMembers,
+                    onRemoveMember = onRemoveMember,
+                    onLeaveGroup = onLeaveGroup
                 )
 
             is GroupDetailsUiState.Error ->
@@ -70,6 +76,9 @@ private fun GroupDetailsScreenPreview() {
         GroupDetailsScreen(
             uiState = GroupDetailsUiState.Content(GroupDetailsPreviewData.summary),
             onVerifyMember = {},
+            onAddMembers = {},
+            onRemoveMember = {},
+            onLeaveGroup = {},
             onBack = {}
         )
     }

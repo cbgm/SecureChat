@@ -35,6 +35,7 @@ kotlin {
 
         androidDeviceTest.dependencies {
             implementation(libs.bundles.android.device.testing)
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
 }

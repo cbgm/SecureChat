@@ -145,6 +145,12 @@ class ChatViewModel(
                     identityHandshakeState = screenContent.chatContent.identityHandshakeState,
                     directIdentitySetupMode = screenContent.chatContent.directIdentitySetupMode,
                     isLoadingContact = contact == null,
+                    isMessageInputEnabled =
+                        isDirectChatAuthorized(
+                            contact = contact,
+                            identityHandshakeState = screenContent.chatContent.identityHandshakeState,
+                            directIdentitySetupMode = screenContent.chatContent.directIdentitySetupMode
+                        ),
                     errorMessage = composer.errorMessage
                 )
             }.stateIn(
@@ -153,7 +159,8 @@ class ChatViewModel(
                 initialValue =
                     ChatUiState(
                         contactId = contactId,
-                        contactName = fallbackContactName
+                        contactName = fallbackContactName,
+                        isMessageInputEnabled = false
                     )
             )
 
@@ -178,6 +185,10 @@ class ChatViewModel(
     }
 
     fun onMessageTextChanged(value: String) {
+        if (!uiState.value.isMessageInputEnabled) {
+            return
+        }
+
         messageText.value = value
         errorMessage.value = null
 
@@ -214,6 +225,10 @@ class ChatViewModel(
     }
 
     fun sendMessage() {
+        if (!uiState.value.isMessageInputEnabled) {
+            return
+        }
+
         val normalizedText = messageText.value.trim()
 
         if (normalizedText.isEmpty()) {
@@ -340,6 +355,19 @@ class ChatViewModel(
             else -> ContactSecurityState.MUTUAL_KEYS_UNVERIFIED
         }
     }
+
+    private fun isDirectChatAuthorized(
+        contact: Contact?,
+        identityHandshakeState: IdentityHandshakeState?,
+        directIdentitySetupMode: DirectIdentitySetupMode
+    ): Boolean =
+        when (directIdentitySetupMode) {
+            DirectIdentitySetupMode.AUTOMATIC_INVITATION ->
+                identityHandshakeState == IdentityHandshakeState.MUTUAL_UNVERIFIED
+
+            DirectIdentitySetupMode.MANUAL_IDENTITY_SHARING ->
+                contact?.secureChatIdentity?.keyExchangeStatus == KeyExchangeStatus.MUTUAL
+        }
 
     private data class ChatContentState(
         val conversation: Conversation?,

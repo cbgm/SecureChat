@@ -1,10 +1,13 @@
 package com.cbgm.securechat.feature.chats.data.security
 
+import com.cbgm.securechat.core.protocol.packet.GroupConversationDeletedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInvitePacket
 import com.cbgm.securechat.core.protocol.packet.GroupJoinRequestPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
+import com.cbgm.securechat.core.protocol.packet.GroupMemberRemovedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMembershipChangePayload
 import com.cbgm.securechat.core.protocol.packet.GroupReadyAcknowledgementPacket
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -64,6 +67,34 @@ class GroupProtocolPayloadEncoderTest {
     }
 
     @Test
+    fun deletionEncodingIgnoresSignatureAndBindsDeletionMetadata() {
+        val deletion =
+            GroupConversationDeletedPacket(
+                packetId = "group-conversation-deleted-invite-1",
+                invitationId = "invite-1",
+                groupId = "group-1",
+                epoch = 2,
+                challenge = byteArrayOf(1),
+                deletedAtEpochMilliseconds = 300L,
+                ownerSignature = byteArrayOf(2)
+            )
+
+        assertContentEquals(
+            encoder.encodeConversationDeleted(deletion),
+            encoder.encodeConversationDeleted(deletion.copy(ownerSignature = byteArrayOf(99)))
+        )
+        assertFalse(
+            encoder
+                .encodeConversationDeleted(deletion)
+                .contentEquals(
+                    encoder.encodeConversationDeleted(
+                        deletion.copy(deletedAtEpochMilliseconds = 301L)
+                    )
+                )
+        )
+    }
+
+    @Test
     fun welcomeEncodingIsDeterministicAndBindsMembership() {
         val packet = createWelcomePacket()
 
@@ -81,6 +112,21 @@ class GroupProtocolPayloadEncoderTest {
                                 packet.members.mapIndexed { index, member ->
                                     if (index == 1) member.copy(role = "OWNER") else member
                                 }
+                        )
+                    )
+                )
+        )
+        assertFalse(
+            encoder
+                .encodeWelcome(packet)
+                .contentEquals(
+                    encoder.encodeWelcome(
+                        packet.copy(
+                            membershipChange =
+                                GroupMembershipChangePayload(
+                                    reason = GroupMemberRemovedPacket.REASON_MEMBER_LEFT,
+                                    memberSigningPublicKey = byteArrayOf(4)
+                                )
                         )
                     )
                 )

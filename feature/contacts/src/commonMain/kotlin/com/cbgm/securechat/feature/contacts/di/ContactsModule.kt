@@ -18,6 +18,7 @@ import com.cbgm.securechat.feature.contacts.data.protocol.ContactInviteDeclinedP
 import com.cbgm.securechat.feature.contacts.data.protocol.ContactInvitePacketHandler
 import com.cbgm.securechat.feature.contacts.data.protocol.ContactReadyPacketHandler
 import com.cbgm.securechat.feature.contacts.data.protocol.ContactVerificationReceiptPacketHandler
+import com.cbgm.securechat.feature.contacts.data.protocol.DirectChatAuthorizationRevokedPacketHandler
 import com.cbgm.securechat.feature.contacts.data.protocol.IdentityAcknowledgementPacketHandler
 import com.cbgm.securechat.feature.contacts.data.protocol.IdentityPacketHandler
 import com.cbgm.securechat.feature.contacts.data.repository.DefaultContactKeyExchangeStore
@@ -125,6 +126,10 @@ val contactsModule =
         }
 
         singleOf(::ContactInviteDeclinedPacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
+        singleOf(::DirectChatAuthorizationRevokedPacketHandler) {
             bind<TypedProtocolPacketHandler>()
         }
 

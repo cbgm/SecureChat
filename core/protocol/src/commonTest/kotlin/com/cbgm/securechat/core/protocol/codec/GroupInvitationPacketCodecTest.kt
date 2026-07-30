@@ -1,8 +1,11 @@
 package com.cbgm.securechat.core.protocol.codec
 
+import com.cbgm.securechat.core.protocol.packet.GroupConversationDeletedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInvitePacket
 import com.cbgm.securechat.core.protocol.packet.GroupJoinRequestPacket
+import com.cbgm.securechat.core.protocol.packet.GroupLeaveRequestPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMemberRemovedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupReadyAcknowledgementPacket
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -38,6 +41,27 @@ class GroupInvitationPacketCodecTest {
         assertContentEquals(original.ownerEncryptionPublicKey, packet.ownerEncryptionPublicKey)
         assertContentEquals(original.ownerSigningPublicKey, packet.ownerSigningPublicKey)
         assertContentEquals(original.ownerSignature, packet.ownerSignature)
+    }
+
+    @Test
+    fun groupConversationDeletedRoundTrip() {
+        val original =
+            GroupConversationDeletedPacket(
+                packetId = "group-conversation-deleted-invite-1",
+                invitationId = "invite-1",
+                groupId = "group-1",
+                epoch = 2,
+                challenge = byteArrayOf(1, 2),
+                deletedAtEpochMilliseconds = 300L,
+                ownerSignature = byteArrayOf(3, 4)
+            )
+
+        val packet =
+            assertIs<GroupConversationDeletedPacket>(
+                codec.decode(codec.encode(original).getOrThrow()).getOrThrow()
+            )
+
+        assertEquals(original, packet)
     }
 
     @Test
@@ -113,5 +137,50 @@ class GroupInvitationPacketCodecTest {
         assertEquals(original.welcomePacketId, packet.welcomePacketId)
         assertContentEquals(original.keyConfirmation, packet.keyConfirmation)
         assertContentEquals(original.memberSignature, packet.memberSignature)
+    }
+
+    @Test
+    fun groupMemberRemovedRoundTrip() {
+        val original =
+            GroupMemberRemovedPacket(
+                packetId = "group-member-removed-invite-1-2",
+                invitationId = "invite-1",
+                groupId = "group-1",
+                epoch = 2,
+                challenge = byteArrayOf(1, 2),
+                removedMemberSigningPublicKey = byteArrayOf(3, 4),
+                removedAtEpochMilliseconds = 300L,
+                ownerSignature = byteArrayOf(5, 6)
+            )
+
+        val packet =
+            assertIs<GroupMemberRemovedPacket>(
+                codec.decode(codec.encode(original).getOrThrow()).getOrThrow()
+            )
+
+        assertEquals(original, packet)
+    }
+
+    @Test
+    fun groupLeaveRequestRoundTrip() {
+        val original =
+            GroupLeaveRequestPacket(
+                packetId = "group-leave-invite-1-2",
+                invitationId = "invite-1",
+                groupId = "group-1",
+                epoch = 2,
+                reason = GroupMemberRemovedPacket.REASON_MEMBER_LEFT,
+                challenge = byteArrayOf(1, 2),
+                memberSigningPublicKey = byteArrayOf(3, 4),
+                requestedAtEpochMilliseconds = 300L,
+                memberSignature = byteArrayOf(5, 6)
+            )
+
+        val packet =
+            assertIs<GroupLeaveRequestPacket>(
+                codec.decode(codec.encode(original).getOrThrow()).getOrThrow()
+            )
+
+        assertEquals(original, packet)
     }
 }

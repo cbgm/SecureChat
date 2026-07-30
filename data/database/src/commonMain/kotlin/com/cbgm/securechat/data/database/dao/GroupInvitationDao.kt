@@ -2,6 +2,7 @@ package com.cbgm.securechat.data.database.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import com.cbgm.securechat.data.database.entity.GroupInvitationEntity
 import kotlinx.coroutines.flow.Flow
@@ -40,6 +41,30 @@ interface GroupInvitationDao {
         """
     )
     suspend fun findByGroupId(groupId: String): List<GroupInvitationEntity>
+
+    @Query(
+        """
+        DELETE FROM group_invitations
+        WHERE groupId = :groupId
+          AND contactId = :contactId
+        """
+    )
+    suspend fun deleteByGroupAndContact(
+        groupId: String,
+        contactId: String
+    )
+
+    @Query("DELETE FROM group_invitations WHERE groupId = :groupId")
+    suspend fun deleteByGroupId(groupId: String)
+
+    @Transaction
+    suspend fun replaceForGroupAndContact(invitation: GroupInvitationEntity) {
+        deleteByGroupAndContact(
+            groupId = invitation.groupId,
+            contactId = invitation.contactId
+        )
+        upsert(invitation)
+    }
 
     @Query(
         """

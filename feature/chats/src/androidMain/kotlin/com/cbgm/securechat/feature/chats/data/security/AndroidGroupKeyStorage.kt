@@ -107,6 +107,21 @@ class AndroidGroupKeyStorage(
             check(editor.commit()) { "Old group keys could not be removed" }
         }
 
+    override suspend fun deleteGroup(groupId: String): Result<Unit> =
+        runCatching {
+            require(groupId.isNotBlank()) { "Group ID must not be blank" }
+
+            val editor = preferences.edit()
+            preferences.all.keys
+                .filter { preferenceKey ->
+                    preferenceKey.startsWith("$ENTRY_PREFIX$groupId:")
+                }.forEach { preferenceKey ->
+                    editor.remove(preferenceKey)
+                }
+
+            check(editor.commit()) { "Group keys could not be removed" }
+        }
+
     private fun getOrCreateWrappingKey(): SecretKey =
         getExistingWrappingKey()
             ?: KeyGenerator

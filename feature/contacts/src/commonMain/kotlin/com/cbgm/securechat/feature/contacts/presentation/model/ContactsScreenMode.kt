@@ -20,4 +20,13 @@ sealed interface ContactsScreenMode {
         val onContactSelected: (String) -> Unit,
         val onConfirmed: () -> Unit
     ) : ContactsScreenMode
+
+    data class MemberSelection(
+        val title: String,
+        val selectedContactIds: Set<String>,
+        val confirmEnabled: Boolean,
+        val confirming: Boolean,
+        val onContactSelected: (String) -> Unit,
+        val onConfirmed: () -> Unit
+    ) : ContactsScreenMode
 }

@@ -102,40 +102,6 @@ internal fun SecureChatIdentitySection(
     Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
     if (safetyNumber != null) {
-        Text(
-            text = stringResource(Res.string.feature_contacts_safety_number),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
-        OutlinedTextField(
-            value = safetyNumber.formatted,
-            enabled = false,
-            onValueChange = {},
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.small,
-            supportingText = {
-                Text(
-                    text = stringResource(Res.string.feature_contacts_compare_entire_number),
-                    style = MaterialTheme.typography.labelMedium
-                )
-            },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-            textStyle =
-                MaterialTheme.typography.bodySmall.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center
-                ),
-            colors =
-                OutlinedTextFieldDefaults.colors(
-                    disabledContainerColor = MaterialTheme.colorScheme.background,
-                    disabledBorderColor = MaterialTheme.colorScheme.background,
-                    disabledSupportingTextColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                )
-        )
-
         if (identity.verificationStatus == ContactVerificationStatus.UNVERIFIED) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
             SecureChatApprovalButton(

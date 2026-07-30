@@ -2,13 +2,21 @@ package com.cbgm.securechat.feature.chats.presentation.screen.details
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cbgm.securechat.feature.chats.domain.usecase.AddGroupMembers
+import com.cbgm.securechat.feature.chats.domain.usecase.LeaveGroup
 import com.cbgm.securechat.feature.chats.domain.usecase.ObserveGroupVerification
+import com.cbgm.securechat.feature.chats.domain.usecase.RemoveGroupMember
 import com.cbgm.securechat.feature.chats.domain.usecase.SynchronizeGroupVerification
 import com.cbgm.securechat.feature.chats.domain.usecase.VerifyGroupMember
+import com.cbgm.securechat.feature.chats.presentation.model.GroupLeaveUiState
+import com.cbgm.securechat.feature.chats.presentation.model.GroupMemberManagementUiState
 import com.cbgm.securechat.feature.chats.presentation.model.GroupMemberVerificationUiState
 import com.cbgm.securechat.feature.chats.presentation.model.GroupVerificationSummaryUiState
 import com.cbgm.securechat.feature.chats.presentation.model.buildGroupVerificationSummary
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContactSafetyNumber
+import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContacts
+import com.cbgm.securechat.feature.contacts.presentation.mapper.filterContacts
+import com.cbgm.securechat.feature.contacts.presentation.mapper.groupContactsByInitial
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +32,9 @@ data class GroupVerificationUiState(
     val safetyNumber: String = "",
     val isLoadingSafetyNumber: Boolean = false,
     val isVerifying: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val memberManagement: GroupMemberManagementUiState = GroupMemberManagementUiState(),
+    val leave: GroupLeaveUiState = GroupLeaveUiState()
 )
 
 class GroupVerificationViewModel(
@@ -32,9 +42,16 @@ class GroupVerificationViewModel(
     observeGroupVerification: ObserveGroupVerification,
     private val synchronizeGroupVerification: SynchronizeGroupVerification,
     private val verifyGroupMember: VerifyGroupMember,
-    private val getContactSafetyNumber: GetContactSafetyNumber
+    private val getContactSafetyNumber: GetContactSafetyNumber,
+    observeContacts: ObserveContacts,
+    private val addGroupMembers: AddGroupMembers,
+    private val removeGroupMember: RemoveGroupMember,
+    private val leaveGroup: LeaveGroup
 ) : ViewModel() {
     private val verificationState = MutableStateFlow(GroupVerificationSelectionState())
+    private val memberManagementState = MutableStateFlow(GroupMemberManagementState())
+    private val leaveState = MutableStateFlow(GroupLeaveUiState())
+    private val contactsFlow = observeContacts()
     private val summaryFlow =
         observeGroupVerification(conversationId).map { groupState ->
             buildGroupVerificationSummary(
@@ -42,6 +59,7 @@ class GroupVerificationViewModel(
                 ownerContactId = groupState.context.ownerContactId,
                 ownerDisplayName = groupState.ownerDisplayName,
                 ownInvitationId = groupState.context.ownInvitationId,
+                isLeavePending = groupState.context.isLeavePending,
                 rows = groupState.pairs
             )
         }
@@ -49,8 +67,15 @@ class GroupVerificationViewModel(
     val uiState: StateFlow<GroupVerificationUiState> =
         combine(
             summaryFlow,
-            verificationState
-        ) { summary, verification ->
+            verificationState,
+            contactsFlow,
+            memberManagementState,
+            leaveState
+        ) { summary, verification, contacts, memberManagement, leave ->
+            val currentContactIds =
+                summary.members.mapNotNullTo(mutableSetOf(), GroupMemberVerificationUiState::contactId)
+            val availableContacts =
+                contacts.filterNot { contact -> contact.id in currentContactIds }
             GroupVerificationUiState(
                 summary = summary,
                 selectedMember =
@@ -63,7 +88,29 @@ class GroupVerificationViewModel(
                 safetyNumber = verification.safetyNumber,
                 isLoadingSafetyNumber = verification.isLoadingSafetyNumber,
                 isVerifying = verification.isVerifying,
-                errorMessage = verification.errorMessage
+                errorMessage = verification.errorMessage,
+                memberManagement =
+                    GroupMemberManagementUiState(
+                        availableContactGroups =
+                            availableContacts
+                                .filterContacts(memberManagement.searchQuery)
+                                .groupContactsByInitial(),
+                        selectedContactIds =
+                            memberManagement.selectedContactIds.filterTo(mutableSetOf()) { contactId ->
+                                availableContacts.any { contact -> contact.id == contactId }
+                            },
+                        searchQuery = memberManagement.searchQuery,
+                        removalCandidate =
+                            memberManagement.removalCandidateContactId?.let { contactId ->
+                                summary.members.firstOrNull { member ->
+                                    !member.isGroupAdmin && member.contactId == contactId
+                                }
+                            },
+                        isUpdating = memberManagement.isUpdating,
+                        errorMessage = memberManagement.errorMessage,
+                        completedRevision = memberManagement.completedRevision
+                    ),
+                leave = leave
             )
         }.stateIn(
             scope = viewModelScope,
@@ -182,11 +229,157 @@ class GroupVerificationViewModel(
         }
     }
 
+    fun updateMemberSearchQuery(query: String) {
+        memberManagementState.update { state ->
+            state.copy(searchQuery = query, errorMessage = null)
+        }
+    }
+
+    fun toggleMemberSelection(contactId: String) {
+        if (memberManagementState.value.isUpdating) {
+            return
+        }
+        memberManagementState.update { state ->
+            val selected =
+                state.selectedContactIds.toMutableSet().apply {
+                    if (!add(contactId)) {
+                        remove(contactId)
+                    }
+                }
+            state.copy(
+                selectedContactIds = selected,
+                errorMessage = null
+            )
+        }
+    }
+
+    fun addSelectedMembers() {
+        val selectedContactIds = memberManagementState.value.selectedContactIds
+        if (selectedContactIds.isEmpty() || memberManagementState.value.isUpdating) {
+            return
+        }
+
+        memberManagementState.update { state ->
+            state.copy(isUpdating = true, errorMessage = null)
+        }
+        viewModelScope.launch {
+            addGroupMembers(conversationId, selectedContactIds)
+                .onSuccess {
+                    memberManagementState.update { state ->
+                        state.copy(
+                            selectedContactIds = emptySet(),
+                            searchQuery = "",
+                            isUpdating = false,
+                            completedRevision = state.completedRevision + 1
+                        )
+                    }
+                }.onFailure { error ->
+                    memberManagementState.update { state ->
+                        state.copy(
+                            isUpdating = false,
+                            errorMessage = error.message ?: "Group members could not be added"
+                        )
+                    }
+                }
+        }
+    }
+
+    fun requestMemberRemoval(contactId: String) {
+        if (!uiState.value.summary.isLocalAdmin || memberManagementState.value.isUpdating) {
+            return
+        }
+        memberManagementState.update { state ->
+            state.copy(
+                removalCandidateContactId = contactId,
+                errorMessage = null
+            )
+        }
+    }
+
+    fun dismissMemberRemoval() {
+        if (!memberManagementState.value.isUpdating) {
+            memberManagementState.update { state ->
+                state.copy(
+                    removalCandidateContactId = null,
+                    errorMessage = null
+                )
+            }
+        }
+    }
+
+    fun confirmMemberRemoval() {
+        val contactId = memberManagementState.value.removalCandidateContactId ?: return
+        if (memberManagementState.value.isUpdating) {
+            return
+        }
+
+        memberManagementState.update { state ->
+            state.copy(isUpdating = true, errorMessage = null)
+        }
+        viewModelScope.launch {
+            removeGroupMember(conversationId, contactId)
+                .onSuccess {
+                    memberManagementState.update { state ->
+                        state.copy(
+                            removalCandidateContactId = null,
+                            isUpdating = false,
+                            completedRevision = state.completedRevision + 1
+                        )
+                    }
+                }.onFailure { error ->
+                    memberManagementState.update { state ->
+                        state.copy(
+                            isUpdating = false,
+                            errorMessage = error.message ?: "Group member could not be removed"
+                        )
+                    }
+                }
+        }
+    }
+
+    fun leaveGroup() {
+        if (
+            uiState.value.summary.isLocalAdmin ||
+            leaveState.value.isLeaving ||
+            leaveState.value.isLeaveRequested
+        ) {
+            return
+        }
+
+        leaveState.value = GroupLeaveUiState(isLeaving = true)
+        viewModelScope.launch {
+            leaveGroup(conversationId)
+                .onSuccess {
+                    leaveState.value = GroupLeaveUiState(isLeaveRequested = true)
+                }.onFailure { error ->
+                    leaveState.value =
+                        GroupLeaveUiState(
+                            errorMessage = error.message ?: "The group could not be left"
+                        )
+                }
+        }
+    }
+
+    fun dismissLeaveError() {
+        if (!leaveState.value.isLeaving) {
+            leaveState.update { state -> state.copy(errorMessage = null) }
+        }
+    }
+
     private data class GroupVerificationSelectionState(
         val selectedContactId: String? = null,
         val safetyNumber: String = "",
         val isLoadingSafetyNumber: Boolean = false,
         val isVerifying: Boolean = false,
         val errorMessage: String? = null
+    )
+
+    private data class GroupMemberManagementState(
+        val selectedContactIds: Set<String> = emptySet(),
+        val searchQuery: String = "",
+        val removalCandidateContactId: String? = null,
+        val isUpdating: Boolean = false,
+        val errorMessage: String? = null,
+        val completedRevision: Int = 0
     )
 }

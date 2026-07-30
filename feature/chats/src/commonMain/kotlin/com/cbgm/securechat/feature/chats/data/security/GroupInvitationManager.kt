@@ -3,18 +3,60 @@ package com.cbgm.securechat.feature.chats.data.security
 import com.cbgm.securechat.core.crypto.group.GroupCrypto
 import com.cbgm.securechat.core.protocol.identity.LocalPublicIdentity
 import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPair
+import com.cbgm.securechat.core.protocol.packet.GroupConversationDeletedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInvitePacket
 import com.cbgm.securechat.core.protocol.packet.GroupJoinRequestPacket
+import com.cbgm.securechat.core.protocol.packet.GroupLeaveRequestPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberActivatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberActivationAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
+import com.cbgm.securechat.core.protocol.packet.GroupMemberRemovedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupReadyAcknowledgementPacket
 
 class GroupInvitationManager(
     private val groupCrypto: GroupCrypto,
     private val payloadEncoder: GroupProtocolPayloadEncoder
 ) {
+    suspend fun createConversationDeleted(
+        invitationId: String,
+        groupId: String,
+        epoch: Int,
+        challenge: ByteArray,
+        deletedAtEpochMilliseconds: Long,
+        ownerSigningKeyPair: LocalSigningKeyPair
+    ): Result<GroupConversationDeletedPacket> =
+        runCatching {
+            val unsignedPacket =
+                GroupConversationDeletedPacket(
+                    packetId = "group-conversation-deleted-$invitationId",
+                    invitationId = invitationId,
+                    groupId = groupId,
+                    epoch = epoch,
+                    challenge = challenge.copyOf(),
+                    deletedAtEpochMilliseconds = deletedAtEpochMilliseconds,
+                    ownerSignature = UNSIGNED_PACKET_MARKER
+                )
+            val signature =
+                groupCrypto
+                    .sign(
+                        payload = payloadEncoder.encodeConversationDeleted(unsignedPacket),
+                        signingPrivateKey = ownerSigningKeyPair.privateKey
+                    ).getOrThrow()
+
+            unsignedPacket.copy(ownerSignature = signature)
+        }
+
+    suspend fun verifyConversationDeleted(
+        packet: GroupConversationDeletedPacket,
+        expectedOwnerSigningPublicKey: ByteArray
+    ): Result<Unit> =
+        groupCrypto.verify(
+            payload = payloadEncoder.encodeConversationDeleted(packet),
+            signature = packet.ownerSignature,
+            signingPublicKey = expectedOwnerSigningPublicKey
+        )
+
     suspend fun createInvite(
         invitationId: String,
         groupId: String,
@@ -144,6 +186,46 @@ class GroupInvitationManager(
             signingPublicKey = packet.memberSigningPublicKey
         )
 
+    suspend fun createLeaveRequest(
+        invitationId: String,
+        groupId: String,
+        epoch: Int,
+        challenge: ByteArray,
+        requestedAtEpochMilliseconds: Long,
+        memberSigningKeyPair: LocalSigningKeyPair
+    ): Result<GroupLeaveRequestPacket> =
+        runCatching {
+            val unsignedPacket =
+                GroupLeaveRequestPacket(
+                    packetId = leaveRequestPacketId(invitationId, epoch),
+                    invitationId = invitationId,
+                    groupId = groupId,
+                    epoch = epoch,
+                    challenge = challenge.copyOf(),
+                    memberSigningPublicKey = memberSigningKeyPair.publicKey.copyOf(),
+                    requestedAtEpochMilliseconds = requestedAtEpochMilliseconds,
+                    memberSignature = UNSIGNED_PACKET_MARKER
+                )
+            val signature =
+                groupCrypto
+                    .sign(
+                        payload = payloadEncoder.encodeLeaveRequest(unsignedPacket),
+                        signingPrivateKey = memberSigningKeyPair.privateKey
+                    ).getOrThrow()
+
+            unsignedPacket.copy(memberSignature = signature)
+        }
+
+    suspend fun verifyLeaveRequest(
+        packet: GroupLeaveRequestPacket,
+        expectedMemberSigningPublicKey: ByteArray
+    ): Result<Unit> =
+        groupCrypto.verify(
+            payload = payloadEncoder.encodeLeaveRequest(packet),
+            signature = packet.memberSignature,
+            signingPublicKey = expectedMemberSigningPublicKey
+        )
+
     suspend fun createReadyAcknowledgement(
         groupId: String,
         epoch: Int,
@@ -271,6 +353,49 @@ class GroupInvitationManager(
             signingPublicKey = expectedMemberSigningPublicKey
         )
 
+    suspend fun createMemberRemoved(
+        invitationId: String,
+        groupId: String,
+        epoch: Int,
+        reason: String = GroupMemberRemovedPacket.REASON_REMOVED_BY_OWNER,
+        challenge: ByteArray,
+        removedMemberSigningPublicKey: ByteArray,
+        removedAtEpochMilliseconds: Long,
+        ownerSigningKeyPair: LocalSigningKeyPair
+    ): Result<GroupMemberRemovedPacket> =
+        runCatching {
+            val unsignedPacket =
+                GroupMemberRemovedPacket(
+                    packetId = memberRemovedPacketId(invitationId, epoch),
+                    invitationId = invitationId,
+                    groupId = groupId,
+                    epoch = epoch,
+                    reason = reason,
+                    challenge = challenge.copyOf(),
+                    removedMemberSigningPublicKey = removedMemberSigningPublicKey.copyOf(),
+                    removedAtEpochMilliseconds = removedAtEpochMilliseconds,
+                    ownerSignature = UNSIGNED_PACKET_MARKER
+                )
+            val signature =
+                groupCrypto
+                    .sign(
+                        payload = payloadEncoder.encodeMemberRemoved(unsignedPacket),
+                        signingPrivateKey = ownerSigningKeyPair.privateKey
+                    ).getOrThrow()
+
+            unsignedPacket.copy(ownerSignature = signature)
+        }
+
+    suspend fun verifyMemberRemoved(
+        packet: GroupMemberRemovedPacket,
+        expectedOwnerSigningPublicKey: ByteArray
+    ): Result<Unit> =
+        groupCrypto.verify(
+            payload = payloadEncoder.encodeMemberRemoved(packet),
+            signature = packet.ownerSignature,
+            signingPublicKey = expectedOwnerSigningPublicKey
+        )
+
     fun memberActivatedPacketId(
         groupId: String,
         epoch: Int,
@@ -282,11 +407,21 @@ class GroupInvitationManager(
 
     private fun memberActivationAcknowledgementPacketId(activationPacketId: String): String = "group-member-activation-acknowledgement-$activationPacketId"
 
+    private fun memberRemovedPacketId(
+        invitationId: String,
+        epoch: Int
+    ): String = "group-member-removed-$invitationId-$epoch"
+
     private fun invitePacketId(invitationId: String): String = "group-invite-$invitationId"
 
     private fun joinRequestPacketId(invitationId: String): String = "group-join-$invitationId"
 
     private fun declinePacketId(invitationId: String): String = "group-decline-$invitationId"
+
+    private fun leaveRequestPacketId(
+        invitationId: String,
+        epoch: Int
+    ): String = "group-leave-$invitationId-$epoch"
 
     private fun readyAcknowledgementPacketId(
         groupId: String,

@@ -11,8 +11,8 @@ The detailed direct and group runtime trace is in
 
 | Concern | Owner | Main classes |
 |---|---|---|
-| Conversation and message behavior | `:feature:chats` | `DefaultChatsRepository`, `DirectConversationStore` |
-| Group invitation consent and activation | `:feature:chats` | `GroupInvitationCoordinator`, `GroupInvitationManager`, `GroupInvitationDao`, `GroupMessageSender` |
+| Conversation and message behavior | `:feature:chats` | `DefaultChatsRepository`, `DirectConversationStore`, `GroupMembershipMessageFactory` |
+| Group invitation consent, add/remove/leave membership changes, activation, and membership timeline events | `:feature:chats` | `GroupInvitationCoordinator`, `GroupCreatedPacketHandler`, `GroupInvitationManager`, `GroupLeaveRequestPacketHandler`, `GroupMembershipMessageFactory` |
 | Group epoch security | `:feature:chats` | `GroupSecurityManager`, `GroupProtocolPayloadEncoder`, `AndroidGroupKeyStorage` |
 | User-visible delivery state | `:feature:chats` | `MessageDeliveryStateMachine`, `MessageDeliveryStateCoordinator` |
 | Incoming packet behavior | Feature that understands the packet | `ChatMessagePacketHandler`, group invite/join/decline/welcome/ready handlers, `IdentityPacketHandler` |

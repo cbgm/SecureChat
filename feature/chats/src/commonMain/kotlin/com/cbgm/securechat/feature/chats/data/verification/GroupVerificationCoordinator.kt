@@ -17,7 +17,6 @@ import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.GroupInvitationDao
 import com.cbgm.securechat.data.database.dao.GroupSecurityDao
 import com.cbgm.securechat.data.database.dao.GroupVerificationDao
-import com.cbgm.securechat.data.database.entity.GroupInvitationEntity
 import com.cbgm.securechat.data.database.entity.GroupVerificationPairEntity
 import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationStatus
 import com.cbgm.securechat.feature.chats.domain.repository.GroupVerificationGateway
@@ -703,7 +702,9 @@ class GroupVerificationCoordinator(
     private fun String.isTerminalStatus(): Boolean =
         this == GroupInvitationStatus.DECLINED.name ||
             this == GroupInvitationStatus.EXPIRED.name ||
-            this == GroupInvitationStatus.FAILED.name
+            this == GroupInvitationStatus.FAILED.name ||
+            this == GroupInvitationStatus.REMOVED.name ||
+            this == GroupInvitationStatus.GROUP_DELETED.name
 
     private companion object {
         val EMPTY_SIGNATURE = ByteArray(64)

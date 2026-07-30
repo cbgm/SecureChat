@@ -198,10 +198,13 @@ Protection
 
 - `GroupInvitationEntity` persists readiness for each selected contact
 - the invitee must explicitly accept before sending `GroupJoinRequestPacket`
-- `GroupInvitationCoordinator` distributes epoch 1 only when every invitation is `IDENTITY_READY`
+- `GroupInvitationCoordinator` distributes a key only to contacts that explicitly accepted
 - the creator treats a member as active only after a signed `GroupReadyAcknowledgementPacket`
 - epoch 1 is not generated before activation
-- creator messages remain local queued rows until every member confirms key installation
+- creator messages remain local queued rows until at least one member confirms key installation
+- adding or removing an active member rotates to a fresh epoch and complete member-key snapshot
+- removed members receive no wrapped next-epoch key
+- `GroupMemberRemovedPacket` is owner-signed and bound to the original invitation challenge
 
 Previously processed messages should not be accepted again.
 

@@ -46,6 +46,30 @@ class GroupMessageSender(
                 check(invitations.none { it.status.isIncomingPendingStatus() }) {
                     "Accept the group invitation before sending messages"
                 }
+                check(invitations.none { it.status == GroupInvitationStatus.LEAVE_SENT.name }) {
+                    "Messages are disabled while the group is being left"
+                }
+                check(invitations.none { it.status == GroupInvitationStatus.GROUP_DELETED.name }) {
+                    "This group conversation was deleted"
+                }
+                check(
+                    invitations.any { invitation ->
+                        invitation.status != GroupInvitationStatus.REMOVED.name &&
+                            invitation.status != GroupInvitationStatus.GROUP_DELETED.name
+                    } ||
+                        (
+                            !chatDao.hasMessageWithTransportMode(
+                                conversationId = conversationId,
+                                transportMode = GroupMembershipMessageFactory.LOCAL_MEMBERSHIP_REMOVED_TRANSPORT_MODE
+                            ) &&
+                                !chatDao.hasMessageWithTransportMode(
+                                    conversationId = conversationId,
+                                    transportMode = GroupMembershipMessageFactory.LOCAL_MEMBERSHIP_LEFT_TRANSPORT_MODE
+                                )
+                        )
+                ) {
+                    "You are no longer a member of this group"
+                }
 
                 val message =
                     MessageEntity(

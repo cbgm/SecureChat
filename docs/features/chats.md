@@ -5,6 +5,9 @@ presentation, and the typed protocol handlers whose packets affect chats.
 
 It does not own WebSocket lifecycle or relay routing.
 
+See [Conversation, Messaging, and Delivery Flow](message-transport-flow.md) for the exact outgoing,
+incoming, group-membership, and conversation-deletion call chains.
+
 ## Package structure
 
 ```text
@@ -51,6 +54,10 @@ feature/chats/.../feature/chats/
 | `RetryMessage` | Retry failed direct or recipient-specific outbox rows |
 | `MarkConversationRead` | Queue read receipts |
 | `CreateGroupConversation` | Create a pending group and send signed invitations |
+| `AddGroupMembers` | Send owner-signed invitations from group details |
+| `RemoveGroupMember` | Remove a pending member or rotate the epoch after removing an active member |
+| `LeaveGroup` | Queue a signed member leave request and make the local group read-only while the owner rotates the epoch |
+| `DeleteConversation` | Revoke direct-chat authorization before local deletion, leave/decline a joined group before hiding it locally, or propagate owner deletion |
 | `AcceptGroupInvitation` / `DeclineGroupInvitation` | Apply the invitee's explicit decision |
 | `ObserveGroupConversation` | Group metadata and participants |
 | `ObserveTypingIndicator` / `SetTypingIndicator` | Ephemeral typing through a gateway |
@@ -69,6 +76,13 @@ Outgoing messages are persisted before their packets are enqueued. This gives th
 
 `DirectConversationStore` centralizes reuse/creation of direct conversations so outgoing and
 incoming paths do not invent separate IDs.
+
+Direct-message permission is separate from stored identity keys. In automatic mode,
+`IdentityInvitationService.requireDirectChatAuthorization()` requires the contact's latest
+invitation state to be `MUTUAL_UNVERIFIED`. `DefaultChatsRepository.sendMessage()` checks it before
+persisting an outgoing message, and `ChatMessagePacketHandler` checks it before accepting an
+incoming message. A decline or signed direct-conversation deletion therefore makes the composer
+read-only until a fresh invitation is accepted.
 
 ## Direct and group messages
 
@@ -98,9 +112,12 @@ Chat-owned typed handlers:
 | `ChatMessagePacketHandler` | Upsert direct message and queue delivery receipt |
 | `GroupInvitePacketHandler` | Verify the owner, persist the pending group, and wait for user consent |
 | `GroupJoinRequestPacketHandler` | Verify the invited contact, store its identity, and attempt activation |
+| `GroupLeaveRequestPacketHandler` | Verify an active member's signed leave request and run the owner removal/rotation path |
 | `GroupInviteDeclinedPacketHandler` | Verify and persist a member's declined decision |
 | `GroupCreatedPacketHandler` | Verify owner, unwrap the epoch key, persist membership, and acknowledge readiness |
 | `GroupReadyAcknowledgementPacketHandler` | Verify that a member installed the welcome key |
+| `GroupMemberRemovedPacketHandler` | Verify an owner removal, clear local group security, retain history, and make the chat read-only |
+| `GroupConversationDeletedPacketHandler` | Verify an owner deletion, retain member history, clear group security, and mark the chat read-only |
 | `GroupChatMessagePacketHandler` | Verify membership/signature, decrypt, persist, queue receipt |
 | `DeliveryReceiptPacketHandler` | Apply `DELIVERY_CONFIRMED` |
 | `ReadReceiptPacketHandler` | Apply `READ_CONFIRMED` |
@@ -132,13 +149,13 @@ retry, relay ACKs, encryption selection, and class-by-class direct and group flo
 Group content uses one random 256-bit key per group epoch. Epoch 1 is created with the group.
 Every selected contact has an independent invitation and activation state. As soon as one accepted
 member reaches `ACTIVE`, the owner can send encrypted group messages to that member while other
-invitations remain pending. Membership-change UI is not implemented yet, but the state and key
-tables include `epoch` so a future add/remove operation can rotate the key rather than reusing it.
+invitations remain pending. Adding or removing an active member advances the epoch and distributes
+a fresh key to the resulting membership.
 
 | Class | Responsibility |
 |---|---|
-| `GroupInvitationCoordinator` | Create/receive per-member invitations, apply decisions, distribute epoch 1 independently, propagate active membership, and flush queued content |
-| `GroupInvitationManager` | Create and verify signed invite, join, decline, and ready-acknowledgement packets |
+| `GroupInvitationCoordinator` | Create/receive per-member invitations, add/remove members, distribute or rotate epochs, propagate active membership, and flush queued content |
+| `GroupInvitationManager` | Create and verify signed invite, join, decline, leave, removal, deletion, and ready-acknowledgement packets |
 | `GroupInvitationDao` / `GroupInvitationEntity` | Persist every per-contact invitation transition |
 | `GroupMessageSender` | Persist pre-activation messages and fan them out after every member is ready |
 | `GroupSecurityManager` | Orchestrate welcome creation/opening and group-message protection |
@@ -187,7 +204,13 @@ The complete state flow is:
 Declining follows a separate signed path:
 `DeclineGroupInvitation` → `GroupInvitationCoordinator.declineInvitation()` →
 `GroupInviteDeclinedPacket` → `GroupInviteDeclinedPacketHandler` → creator status `DECLINED`.
-The recipient removes its pending conversation only after the decline packet is queued.
+After the packet is queued, the recipient changes its own invitation from `AWAITING_ACCEPTANCE` to
+`DECLINED`. `GroupInvitationCoordinator.declineInvitation()` never deletes the conversation:
+existing messages and a newly created invitation chat both remain visible and read-only. Only an
+explicit user-initiated conversation deletion may remove the conversation and its cascaded data.
+When the retained conversation has messages, `ChatScreen` continues to render
+`GroupMembershipRemovedHint`; the accept/decline actions disappear, but the user still sees that
+they are no longer part of the group and can only read the existing history.
 
 The creator may type while members are pending. If no participant is active,
 `GroupMessageSender.queueOrSend()` stores a visible `MessageEntity` with `QUEUED`, but creates no
@@ -199,34 +222,75 @@ sends. An invitee cannot send until its own welcome and final activation have be
 Activation is retry-safe: `GroupSecurityManager.createOwnedGroup()` reuses an already stored owner
 key and deterministic welcome packet IDs after an interrupted attempt. Ready acknowledgement and
 queued-message packet IDs are deterministic as well, and `DefaultProtocolOutbox` deduplicates them.
+Welcome packet IDs include the exact invitation ID. A newly added or re-added member can install
+the current group epoch even when it has no earlier local group state, while a stale welcome from
+an earlier invitation cannot activate the new invitation.
 
 This handshake proves possession and establishes encryption keys, but a previously unknown identity
 is still unverified. Safety-number verification remains the defense against a malicious relay
 performing first-contact key substitution.
 
-### Adding membership changes
+### Owner membership management
 
-A future owner-only membership command should:
+`GroupDetailsFlow` owns `AddGroupMembersScreen`, `RemoveGroupMemberScreen`, and
+`LeaveGroupScreen`; none is exposed as an app navigation route. `GroupVerificationViewModel` calls
+`AddGroupMembers`, `RemoveGroupMember`, or `LeaveGroup`, which delegate through `ChatsRepository`
+to `GroupInvitationCoordinator`.
 
-1. create `nextEpoch = currentEpoch + 1`;
-2. generate a new group key;
-3. snapshot the complete new membership in `GroupMemberKeyEntity`;
-4. send a signed, individually wrapped rekey packet to every remaining/new member;
-5. commit `GroupSecurityStateEntity.currentEpoch` only when local packet creation succeeds;
-6. reject messages from removed members because no key snapshot exists for the new epoch.
+Adding a contact sends the normal signed invitation and requires explicit acceptance. Activation
+of that contact advances the epoch, creates a fresh key, snapshots the full membership in
+`GroupMemberKeyEntity`, and sends a signed, individually wrapped `GroupCreatedPacket` to each
+member in the new epoch. If a chat already contains messages,
+`GroupInvitationCoordinator.receiveReadyAcknowledgement()` records
+`GroupMembershipMessageFactory.memberAdded()` for the owner, while
+`GroupCreatedPacketHandler` derives the same event for existing members from the previous and new
+signed snapshots. A first local snapshot has no previous participants, so a newly joining or
+rejoining device does not receive a list of false “was added” events.
 
-Do not mutate an old epoch's membership or reuse its key.
+Removing a contact whose key was never distributed sends an owner-signed
+`GroupMemberRemovedPacket` and records `REMOVED`. Removing an active contact—or one whose welcome
+key is already queued—first rotates to
+`currentEpoch + 1`, omits that contact from both the key snapshot and transport recipients, and
+then sends the removed member its signed removal packet. The removed device validates the original
+invitation challenge, deletes its group keys and Room security snapshot, retains its existing
+conversation history, clears its obsolete verification snapshot, persists a local removal system
+message, and exposes the chat as read-only
+with `GroupConversationState.REMOVED`. The owner persists the same membership event locally;
+remaining members derive it by comparing their old participants with the next signed welcome
+snapshot. Old-epoch messages are rejected by the remaining members.
+
+An active non-owner may leave through `LeaveGroup`. The member signs a
+`GroupLeaveRequestPacket`, moves its invitation to `LEAVE_SENT`, and becomes read-only while the
+request is queued. `GroupLeaveRequestPacketHandler` verifies the member, invitation challenge, and
+epoch on the owner, then calls the same locked removal and epoch-rotation implementation used by
+`RemoveGroupMember`. The owner records `GroupMembershipMessageFactory.memberLeft()` and returns an
+owner-signed `GroupMemberRemovedPacket` whose `reason` is `MEMBER_LEFT`; the departing device
+records `localMembershipLeft()`, deletes current group security, retains history, and finishes in
+`REMOVED`. The next `GroupCreatedPacket` also carries an owner-signed
+`GroupMembershipChangePayload(reason = MEMBER_LEFT, memberSigningPublicKey)`. Remaining members match that
+key to their previous `GroupMemberKeyEntity` and record `memberLeft()` for the exact departing
+contact instead of treating the snapshot difference as an admin removal.
+
+A terminal invitation row is atomically replaced through
+`GroupInvitationDao.replaceForGroupAndContact()` when
+`GroupInvitationCoordinator.receiveInvite()` receives a new invitation for the same group and
+owner. This makes remove-then-add a normal fresh consent flow instead of conflicting with the
+unique `(groupId, contactId)` invitation index.
 
 ## Presentation
 
 `ChatsViewModel` owns the overview state. `ChatViewModel` owns a direct conversation.
-`GroupChatViewModel` owns a group conversation. `GroupVerificationViewModel` owns group details and
-verification selection. `GroupMemberQrVerificationViewModel` owns group QR verification state.
+`GroupChatViewModel` owns a group conversation. `GroupVerificationViewModel` owns group details,
+membership management, and verification selection. `GroupMemberQrVerificationViewModel` owns
+group QR verification state.
 `CreateGroupViewModel` owns group title, selection, and creation.
 
 `CreateGroupScreen` reuses `ContactsScreen` from `:feature:contacts` with
 `ContactsScreenMode.GroupSelection`; the normal contacts route uses the same screen with
 `ContactsScreenMode.Overview`.
+
+`AddGroupMembersScreen` reuses it with `ContactsScreenMode.MemberSelection` inside
+`GroupDetailsFlow`.
 
 Screen-specific components live in `presentation/component/<screen-name>`, one component per file,
 with a preview next to the component. Screens render state; flows collect state and coordinate

@@ -15,11 +15,13 @@ import com.cbgm.securechat.data.database.entity.ConversationType
 import com.cbgm.securechat.data.database.entity.MessageEntity
 import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
+import com.cbgm.securechat.feature.contacts.domain.identity.IdentityInvitationService
 
 class ChatMessagePacketHandler(
     private val chatDao: ChatDao,
     private val contactDao: ContactDao,
-    private val protocolOutbox: ProtocolOutbox
+    private val protocolOutbox: ProtocolOutbox,
+    private val identityInvitationService: IdentityInvitationService
 ) : TypedProtocolPacketHandler {
     private val logger = SecureChatLog.withTag("ChatMessagePacketHandler")
 
@@ -37,6 +39,9 @@ class ChatMessagePacketHandler(
             require(chatPacket.text.isNotBlank()) {
                 "Incoming chat message must not be blank"
             }
+            identityInvitationService
+                .requireDirectChatAuthorization(context.contactId)
+                .getOrThrow()
 
             chatPacket.senderPhoneNumber
                 ?.trim()

@@ -34,6 +34,55 @@ interface ChatDao {
     @Upsert
     suspend fun upsertConversationParticipants(participants: List<ConversationParticipantEntity>)
 
+    @Query("DELETE FROM conversation_participants WHERE conversationId = :conversationId")
+    suspend fun deleteConversationParticipants(conversationId: String)
+
+    @Query(
+        """
+        DELETE FROM conversation_participants
+        WHERE conversationId = :conversationId
+          AND contactId = :contactId
+        """
+    )
+    suspend fun deleteConversationParticipant(
+        conversationId: String,
+        contactId: String
+    )
+
+    @Transaction
+    suspend fun replaceConversationParticipants(
+        conversationId: String,
+        participants: List<ConversationParticipantEntity>
+    ) {
+        deleteConversationParticipants(conversationId)
+        if (participants.isNotEmpty()) {
+            upsertConversationParticipants(participants)
+        }
+    }
+
+    @Transaction
+    suspend fun replaceConversationParticipantsWithMessages(
+        conversationId: String,
+        participants: List<ConversationParticipantEntity>,
+        messages: List<MessageEntity>
+    ) {
+        deleteConversationParticipants(conversationId)
+        if (participants.isNotEmpty()) {
+            upsertConversationParticipants(participants)
+        }
+        messages.forEach { message -> upsertMessage(message) }
+    }
+
+    @Transaction
+    suspend fun applyLocalGroupRemoval(message: MessageEntity) {
+        upsertMessage(message)
+        deleteConversationParticipants(message.conversationId)
+        updateConversationTimestamp(
+            conversationId = message.conversationId,
+            timestamp = message.createdAtEpochMilliseconds
+        )
+    }
+
     @Transaction
     suspend fun createGroupConversation(
         conversation: ConversationEntity,
@@ -58,6 +107,46 @@ interface ChatDao {
 
     @Query("SELECT * FROM conversations WHERE id = :conversationId LIMIT 1")
     suspend fun findConversationById(conversationId: String): ConversationEntity?
+
+    @Query(
+        """
+        SELECT EXISTS(
+            SELECT 1
+            FROM messages
+            WHERE conversationId = :conversationId
+              AND transportMode = :transportMode
+        )
+        """
+    )
+    suspend fun hasMessageWithTransportMode(
+        conversationId: String,
+        transportMode: String
+    ): Boolean
+
+    @Query(
+        """
+        SELECT createdAtEpochMilliseconds
+        FROM messages
+        WHERE conversationId = :conversationId
+          AND transportMode = :transportMode
+        LIMIT 1
+        """
+    )
+    suspend fun findMessageTimestampByTransportMode(
+        conversationId: String,
+        transportMode: String
+    ): Long?
+
+    @Query(
+        """
+        SELECT EXISTS(
+            SELECT 1
+            FROM messages
+            WHERE conversationId = :conversationId
+        )
+        """
+    )
+    suspend fun hasMessages(conversationId: String): Boolean
 
     @Upsert
     suspend fun upsertMessage(message: MessageEntity)
@@ -165,16 +254,38 @@ interface ChatDao {
         conversations.updatedAtEpochMilliseconds AS updatedAtEpochMilliseconds
     FROM conversations
     LEFT JOIN contacts ON contacts.id = conversations.contactId
-    WHERE conversations.type = 'GROUP'
-       OR EXISTS (
+    WHERE (
+        conversations.type = 'GROUP'
+        OR EXISTS (
+            SELECT 1
+            FROM messages
+            WHERE messages.conversationId = conversations.id
+        )
+    )
+      AND NOT EXISTS (
         SELECT 1
         FROM messages
         WHERE messages.conversationId = conversations.id
+          AND messages.transportMode = :localDeletionTransportMode
     )
     ORDER BY conversations.updatedAtEpochMilliseconds DESC
     """
     )
-    fun observeConversationSummaries(): Flow<List<ConversationSummary>>
+    fun observeConversationSummaries(localDeletionTransportMode: String): Flow<List<ConversationSummary>>
+
+    @Query("DELETE FROM messages WHERE conversationId = :conversationId")
+    suspend fun deleteConversationMessages(conversationId: String)
+
+    @Transaction
+    suspend fun hideGroupConversation(marker: MessageEntity) {
+        deleteConversationMessages(marker.conversationId)
+        deleteConversationParticipants(marker.conversationId)
+        upsertMessage(marker)
+        updateConversationTimestamp(
+            conversationId = marker.conversationId,
+            timestamp = marker.createdAtEpochMilliseconds
+        )
+    }
 
     @Query(
         """

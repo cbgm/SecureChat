@@ -6,32 +6,52 @@ import com.cbgm.securechat.feature.chats.domain.model.GroupMemberInvitationState
 import com.cbgm.securechat.feature.chats.domain.model.GroupMemberInvitationStatus
 
 internal object GroupInvitationStateMapper {
-    fun conversationState(invitations: List<GroupInvitationEntity>): GroupConversationState {
-        if (invitations.isEmpty() || invitations.allWithStatus(GroupInvitationStatus.ACTIVE)) {
+    fun conversationState(
+        invitations: List<GroupInvitationEntity>,
+        hasLocalMembershipRemoval: Boolean = false
+    ): GroupConversationState {
+        if (invitations.anyWithStatus(GroupInvitationStatus.GROUP_DELETED)) {
+            return GroupConversationState.DELETED
+        }
+        val currentInvitations =
+            invitations.filterNot { invitation ->
+                invitation.status == GroupInvitationStatus.REMOVED.name
+            }
+        if (
+            hasLocalMembershipRemoval &&
+            currentInvitations.isEmpty() &&
+            invitations.anyWithStatus(GroupInvitationStatus.REMOVED)
+        ) {
+            return GroupConversationState.REMOVED
+        }
+        if (currentInvitations.isEmpty() || currentInvitations.allWithStatus(GroupInvitationStatus.ACTIVE)) {
             return GroupConversationState.READY
         }
-        if (invitations.anyWithStatus(GroupInvitationStatus.AWAITING_ACCEPTANCE)) {
+        if (currentInvitations.anyWithStatus(GroupInvitationStatus.AWAITING_ACCEPTANCE)) {
             return GroupConversationState.INVITED
         }
+        if (currentInvitations.anyWithStatus(GroupInvitationStatus.LEAVE_SENT)) {
+            return GroupConversationState.LEAVING
+        }
         if (
-            invitations.anyWithStatus(GroupInvitationStatus.JOIN_SENT) ||
-            invitations.anyWithStatus(GroupInvitationStatus.WAITING_FOR_ACTIVATION)
+            currentInvitations.anyWithStatus(GroupInvitationStatus.JOIN_SENT) ||
+            currentInvitations.anyWithStatus(GroupInvitationStatus.WAITING_FOR_ACTIVATION)
         ) {
             return GroupConversationState.JOINING
         }
-        if (invitations.anyWithStatus(GroupInvitationStatus.ACTIVE)) {
+        if (currentInvitations.anyWithStatus(GroupInvitationStatus.ACTIVE)) {
             return GroupConversationState.READY
         }
-        if (invitations.anyWithStatus(GroupInvitationStatus.WELCOME_SENT)) {
+        if (currentInvitations.anyWithStatus(GroupInvitationStatus.WELCOME_SENT)) {
             return GroupConversationState.DISTRIBUTING_KEYS
         }
-        if (invitations.anyWithStatus(GroupInvitationStatus.DECLINED)) {
+        if (currentInvitations.anyWithStatus(GroupInvitationStatus.DECLINED)) {
             return GroupConversationState.DECLINED
         }
-        if (invitations.anyWithStatus(GroupInvitationStatus.EXPIRED)) {
+        if (currentInvitations.anyWithStatus(GroupInvitationStatus.EXPIRED)) {
             return GroupConversationState.EXPIRED
         }
-        if (invitations.anyWithStatus(GroupInvitationStatus.FAILED)) {
+        if (currentInvitations.anyWithStatus(GroupInvitationStatus.FAILED)) {
             return GroupConversationState.FAILED
         }
         return GroupConversationState.WAITING_FOR_MEMBERS
@@ -40,15 +60,20 @@ internal object GroupInvitationStateMapper {
     fun isIncoming(invitations: List<GroupInvitationEntity>): Boolean =
         invitations.anyWithStatus(GroupInvitationStatus.AWAITING_ACCEPTANCE) ||
             invitations.anyWithStatus(GroupInvitationStatus.JOIN_SENT) ||
-            invitations.anyWithStatus(GroupInvitationStatus.WAITING_FOR_ACTIVATION)
+            invitations.anyWithStatus(GroupInvitationStatus.WAITING_FOR_ACTIVATION) ||
+            invitations.anyWithStatus(GroupInvitationStatus.LEAVE_SENT)
 
     fun memberStates(invitations: List<GroupInvitationEntity>): List<GroupMemberInvitationState> =
-        invitations.map { invitation ->
-            GroupMemberInvitationState(
-                contactId = invitation.contactId,
-                status = invitation.status.toMemberStatus()
-            )
-        }
+        invitations
+            .filterNot { invitation ->
+                invitation.status == GroupInvitationStatus.REMOVED.name ||
+                    invitation.status == GroupInvitationStatus.GROUP_DELETED.name
+            }.map { invitation ->
+                GroupMemberInvitationState(
+                    contactId = invitation.contactId,
+                    status = invitation.status.toMemberStatus()
+                )
+            }
 
     private fun List<GroupInvitationEntity>.anyWithStatus(status: GroupInvitationStatus): Boolean = any { invitation -> invitation.status == status.name }
 

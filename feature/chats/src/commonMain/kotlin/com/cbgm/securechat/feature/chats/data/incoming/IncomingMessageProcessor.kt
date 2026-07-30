@@ -10,12 +10,15 @@ import com.cbgm.securechat.core.protocol.handler.IncomingPacketContext
 import com.cbgm.securechat.core.protocol.handler.ProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.packet.ChatMessagePacket
 import com.cbgm.securechat.core.protocol.packet.GroupChatMessagePacket
+import com.cbgm.securechat.core.protocol.packet.GroupConversationDeletedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupInvitePacket
 import com.cbgm.securechat.core.protocol.packet.GroupJoinRequestPacket
+import com.cbgm.securechat.core.protocol.packet.GroupLeaveRequestPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberActivatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberActivationAcknowledgementPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMemberRemovedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupReadyAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.GroupVerificationReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.GroupVerificationSnapshotPacket
@@ -23,13 +26,18 @@ import com.cbgm.securechat.core.protocol.packet.GroupVerificationSnapshotRequest
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
+import com.cbgm.securechat.data.database.dao.GroupInvitationDao
 import com.cbgm.securechat.data.database.entity.MessageEntity
 import com.cbgm.securechat.feature.chats.data.conversation.DirectConversationStore
+import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationStatus
+import com.cbgm.securechat.feature.chats.data.message.GroupMembershipMessageFactory
 import com.cbgm.securechat.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.securechat.feature.chats.domain.model.MessageDeliveryStatus
+import com.cbgm.securechat.feature.contacts.domain.identity.DirectChatAuthorizationRequiredException
 
 class IncomingMessageProcessor(
     private val chatDao: ChatDao,
+    private val groupInvitationDao: GroupInvitationDao,
     private val directConversationStore: DirectConversationStore,
     private val transportMessageDecoder: IncomingTransportMessageDecoder,
     private val packetCodec: PacketCodec,
@@ -106,6 +114,9 @@ class IncomingMessageProcessor(
                 .getOrElse { error ->
                     throw IllegalArgumentException("Invalid protocol packet", error)
                 }
+        if (shouldIgnoreDeletedGroupPacket(packet)) {
+            return
+        }
         val context =
             IncomingPacketContext(
                 contactId = contactId,
@@ -123,6 +134,10 @@ class IncomingMessageProcessor(
 
         if (handlingResult.isFailure) {
             val error = handlingResult.exceptionOrNull()
+
+            if (error is DirectChatAuthorizationRequiredException) {
+                return
+            }
 
             if (packet !is ChatMessagePacket) {
                 throw error ?: IllegalStateException("Protocol packet could not be handled")
@@ -146,17 +161,60 @@ class IncomingMessageProcessor(
         when (packet) {
             is ChatMessagePacket -> directConversationStore.getOrCreate(contactId).id
             is GroupCreatedPacket -> packet.groupId
+            is GroupConversationDeletedPacket -> packet.groupId
             is GroupMemberActivatedPacket -> packet.groupId
+            is GroupMemberRemovedPacket -> packet.groupId
             is GroupMemberActivationAcknowledgementPacket -> packet.groupId
             is GroupChatMessagePacket -> packet.groupId
             is GroupInvitePacket -> packet.groupId
             is GroupJoinRequestPacket -> packet.groupId
+            is GroupLeaveRequestPacket -> packet.groupId
             is GroupInviteDeclinedPacket -> packet.groupId
             is GroupReadyAcknowledgementPacket -> packet.groupId
             is GroupVerificationReceiptPacket -> packet.groupId
             is GroupVerificationSnapshotRequestPacket -> packet.groupId
             is GroupVerificationSnapshotPacket -> packet.groupId
             else -> chatDao.findConversationByContactId(contactId)?.id ?: "control-${packet.packetId}"
+        }
+
+    private suspend fun shouldIgnoreDeletedGroupPacket(packet: SecureChatPacket): Boolean {
+        val groupId = packet.groupIdOrNull() ?: return false
+        if (packet is GroupInvitePacket) {
+            return false
+        }
+        val locallyDeleted =
+            chatDao.hasMessageWithTransportMode(
+                conversationId = groupId,
+                transportMode = GroupMembershipMessageFactory.LOCAL_CONVERSATION_DELETED_TRANSPORT_MODE
+            )
+        if (locallyDeleted) {
+            return true
+        }
+        if (packet is GroupConversationDeletedPacket) {
+            return false
+        }
+        return groupInvitationDao
+            .findByGroupId(groupId)
+            .any { invitation -> invitation.status == GroupInvitationStatus.GROUP_DELETED.name }
+    }
+
+    private fun SecureChatPacket.groupIdOrNull(): String? =
+        when (this) {
+            is GroupCreatedPacket -> groupId
+            is GroupConversationDeletedPacket -> groupId
+            is GroupMemberActivatedPacket -> groupId
+            is GroupMemberRemovedPacket -> groupId
+            is GroupMemberActivationAcknowledgementPacket -> groupId
+            is GroupChatMessagePacket -> groupId
+            is GroupInvitePacket -> groupId
+            is GroupJoinRequestPacket -> groupId
+            is GroupLeaveRequestPacket -> groupId
+            is GroupInviteDeclinedPacket -> groupId
+            is GroupReadyAcknowledgementPacket -> groupId
+            is GroupVerificationReceiptPacket -> groupId
+            is GroupVerificationSnapshotRequestPacket -> groupId
+            is GroupVerificationSnapshotPacket -> groupId
+            else -> null
         }
 
     private suspend fun storeUnreadableMessage(

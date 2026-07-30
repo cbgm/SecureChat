@@ -2,6 +2,8 @@ package com.cbgm.securechat.core.protocol.codec
 
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
+import com.cbgm.securechat.core.protocol.packet.GroupMemberRemovedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMembershipChangePayload
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -37,7 +39,12 @@ class GroupCreatedPacketCodecTest {
                         )
                     ),
                 wrappedGroupKey = byteArrayOf(13, 14, 15),
-                ownerSignature = byteArrayOf(16, 17, 18)
+                ownerSignature = byteArrayOf(16, 17, 18),
+                membershipChange =
+                    GroupMembershipChangePayload(
+                        reason = GroupMemberRemovedPacket.REASON_MEMBER_LEFT,
+                        memberSigningPublicKey = byteArrayOf(10, 11, 12)
+                    )
             )
 
         val decoded = codec.decode(codec.encode(original).getOrThrow()).getOrThrow()
@@ -53,5 +60,13 @@ class GroupCreatedPacketCodecTest {
         assertEquals("+15550000002", packet.members[1].phoneNumber)
         assertContentEquals(byteArrayOf(13, 14, 15), packet.wrappedGroupKey)
         assertContentEquals(byteArrayOf(16, 17, 18), packet.ownerSignature)
+        assertEquals(
+            GroupMemberRemovedPacket.REASON_MEMBER_LEFT,
+            packet.membershipChange?.reason
+        )
+        assertContentEquals(
+            byteArrayOf(10, 11, 12),
+            requireNotNull(packet.membershipChange).memberSigningPublicKey
+        )
     }
 }

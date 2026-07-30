@@ -3,6 +3,7 @@ package com.cbgm.securechat.feature.messaging.application.outbox
 import com.cbgm.securechat.core.protocol.packet.ContactReadyPacket
 import com.cbgm.securechat.core.protocol.packet.ContactVerificationReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupLeaveRequestPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberActivatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberActivationAcknowledgementPacket
 import com.cbgm.securechat.core.protocol.packet.GroupVerificationReceiptPacket
@@ -51,6 +52,7 @@ class DefaultOutgoingPacketTransportPolicy : OutgoingPacketTransportPolicy {
                 }
 
                 is GroupCreatedPacket,
+                is GroupLeaveRequestPacket,
                 is GroupMemberActivatedPacket,
                 is GroupMemberActivationAcknowledgementPacket,
                 is GroupVerificationReceiptPacket,

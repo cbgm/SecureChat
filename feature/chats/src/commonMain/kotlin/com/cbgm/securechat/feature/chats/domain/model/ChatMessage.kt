@@ -9,6 +9,7 @@ data class ChatMessage(
     val security: MessageSecurity,
     val contentStatus: MessageContentStatus,
     val deliveryStatus: MessageDeliveryStatus,
+    val type: ChatMessageType = ChatMessageType.USER,
     val senderContactId: String? = null,
     val senderName: String? = null,
     val senderIsInContacts: Boolean = true,

@@ -9,6 +9,8 @@ import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPair
 import com.cbgm.securechat.core.protocol.packet.GroupChatMessagePacket
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
+import com.cbgm.securechat.core.protocol.packet.GroupMemberRemovedPacket
+import com.cbgm.securechat.core.protocol.packet.GroupMembershipChangePayload
 import com.cbgm.securechat.core.protocol.version.ProtocolVersion
 import com.cbgm.securechat.data.database.dao.GroupSecurityDao
 import com.cbgm.securechat.data.database.entity.GroupMemberKeyEntity
@@ -22,6 +24,73 @@ class GroupSecurityManager(
     private val groupSecurityDao: GroupSecurityDao,
     private val groupKeyStorage: GroupKeyStorage
 ) {
+    suspend fun findOwnedGroupEpoch(groupId: String): Result<Int?> =
+        runCatching {
+            groupSecurityDao.findState(groupId)?.let { state ->
+                check(state.ownerContactId == null) {
+                    "Only the group owner may change group membership"
+                }
+                state.currentEpoch
+            }
+        }
+
+    suspend fun findJoinedGroupEpoch(
+        groupId: String,
+        ownerContactId: String
+    ): Result<Int?> =
+        runCatching {
+            groupSecurityDao.findState(groupId)?.let { state ->
+                check(state.ownerContactId == ownerContactId) {
+                    "Group security state does not belong to this group owner"
+                }
+                state.currentEpoch
+            }
+        }
+
+    suspend fun isOwnedGroup(groupId: String): Result<Boolean?> =
+        runCatching {
+            groupSecurityDao.findState(groupId)?.let { state -> state.ownerContactId == null }
+        }
+
+    suspend fun deleteLocalGroup(groupId: String): Result<Unit> =
+        runCatching {
+            require(groupId.isNotBlank()) { "Group ID must not be blank" }
+            groupKeyStorage.deleteGroup(groupId).getOrThrow()
+            groupSecurityDao.deleteGroup(groupId)
+        }
+
+    suspend fun removeLocalMembership(
+        packet: GroupMemberRemovedPacket,
+        ownerContactId: String,
+        localSigningPublicKey: ByteArray
+    ): Result<Unit> =
+        runCatching {
+            val state = groupSecurityDao.findState(packet.groupId)
+            if (packet.epoch > GroupMemberRemovedPacket.PENDING_INVITATION_EPOCH) {
+                state?.let { activeState ->
+                    check(activeState.ownerContactId == ownerContactId) {
+                        "Group removal came from a contact that is not the group owner"
+                    }
+                    check(packet.epoch > activeState.currentEpoch) {
+                        "Group removal must reference a later epoch"
+                    }
+                    check(activeState.localSigningPublicKey.contentEquals(localSigningPublicKey)) {
+                        "Local group identity does not match the current security state"
+                    }
+                }
+                check(packet.removedMemberSigningPublicKey.contentEquals(localSigningPublicKey)) {
+                    "Group removal targets a different member"
+                }
+            } else {
+                check(state == null || state.ownerContactId == ownerContactId) {
+                    "Pending group removal came from a contact that is not the group owner"
+                }
+            }
+
+            groupKeyStorage.deleteGroup(packet.groupId).getOrThrow()
+            groupSecurityDao.deleteGroup(packet.groupId)
+        }
+
     suspend fun createOwnedGroup(
         groupId: String,
         title: String,
@@ -89,7 +158,7 @@ class GroupSecurityManager(
                             ).getOrThrow()
                     val unsignedPacket =
                         GroupCreatedPacket(
-                            packetId = welcomePacketId(groupId, INITIAL_EPOCH, recipient.contactId),
+                            packetId = welcomePacketId(groupId, recipient.invitationId, INITIAL_EPOCH),
                             groupId = groupId,
                             title = title,
                             createdAtEpochMilliseconds = createdAtEpochMilliseconds,
@@ -111,11 +180,95 @@ class GroupSecurityManager(
             CreatedGroupSecurity(welcomePacketsByContactId = packets)
         }
 
+    suspend fun rotateOwnedGroup(
+        groupId: String,
+        title: String,
+        createdAtEpochMilliseconds: Long,
+        updatedAtEpochMilliseconds: Long,
+        memberPayloads: List<GroupMemberPayload>,
+        memberKeys: List<GroupMemberKeyEntity>,
+        recipients: List<GroupWelcomeRecipient>,
+        localSigningKeyPair: LocalSigningKeyPair,
+        membershipChange: GroupMembershipChangePayload? = null
+    ): Result<CreatedGroupSecurity> =
+        runCatching {
+            val existingState =
+                groupSecurityDao.findState(groupId)
+                    ?: error("Group security state was not found")
+            check(existingState.ownerContactId == null) {
+                "Only the group owner may rotate the group epoch"
+            }
+            check(existingState.ownerSigningPublicKey.contentEquals(localSigningKeyPair.publicKey)) {
+                "Group owner signing key does not match the current security state"
+            }
+
+            val nextEpoch = existingState.currentEpoch + 1
+            check(memberKeys.all { memberKey -> memberKey.epoch == nextEpoch }) {
+                "Every member key must belong to the next group epoch"
+            }
+            val groupKey = groupCrypto.generateGroupKey().getOrThrow()
+            groupKeyStorage
+                .save(
+                    groupId = groupId,
+                    epoch = nextEpoch,
+                    groupKey = groupKey
+                ).getOrThrow()
+
+            val nextState =
+                existingState.copy(
+                    currentEpoch = nextEpoch,
+                    welcomePacketId = null,
+                    updatedAtEpochMilliseconds = updatedAtEpochMilliseconds
+                )
+            groupSecurityDao.replaceCurrentEpoch(
+                state = nextState,
+                memberKeys = memberKeys
+            )
+
+            val packets =
+                recipients.associate { recipient ->
+                    val wrappedGroupKey =
+                        groupCrypto
+                            .wrapGroupKey(
+                                groupKey = groupKey,
+                                recipientEncryptionPublicKey = recipient.encryptionPublicKey
+                            ).getOrThrow()
+                    val unsignedPacket =
+                        GroupCreatedPacket(
+                            packetId = welcomePacketId(groupId, recipient.invitationId, nextEpoch),
+                            groupId = groupId,
+                            title = title,
+                            createdAtEpochMilliseconds = createdAtEpochMilliseconds,
+                            epoch = nextEpoch,
+                            members = memberPayloads,
+                            wrappedGroupKey = wrappedGroupKey,
+                            ownerSignature = UNSIGNED_PACKET_MARKER,
+                            membershipChange = membershipChange
+                        )
+                    val signature =
+                        groupCrypto
+                            .sign(
+                                payload = payloadEncoder.encodeWelcome(unsignedPacket),
+                                signingPrivateKey = localSigningKeyPair.privateKey
+                            ).getOrThrow()
+
+                    recipient.contactId to unsignedPacket.copy(ownerSignature = signature)
+                }
+
+            groupKeyStorage
+                .deleteBefore(
+                    groupId = groupId,
+                    epoch = nextEpoch
+                ).getOrThrow()
+
+            CreatedGroupSecurity(welcomePacketsByContactId = packets)
+        }
+
     fun welcomePacketId(
         groupId: String,
-        epoch: Int,
-        contactId: String
-    ): String = "group-welcome-$groupId-$epoch-$contactId"
+        invitationId: String,
+        epoch: Int
+    ): String = "group-welcome-$groupId-$invitationId-$epoch"
 
     fun createKeyConfirmation(
         groupId: String,
@@ -160,8 +313,25 @@ class GroupSecurityManager(
         localSigningPublicKey: ByteArray
     ): Result<OpenedGroupWelcome> =
         runCatching {
-            check(packet.epoch == INITIAL_EPOCH) { "Initial group welcome must use epoch $INITIAL_EPOCH" }
             val existingState = groupSecurityDao.findState(packet.groupId)
+            if (existingState == null) {
+                check(packet.epoch >= INITIAL_EPOCH) {
+                    "Group welcome epoch must be at least $INITIAL_EPOCH"
+                }
+            } else {
+                check(
+                    packet.epoch == existingState.currentEpoch ||
+                        packet.epoch == existingState.currentEpoch + 1
+                ) {
+                    "Group welcome epoch must repeat the current epoch or advance it by one"
+                }
+                check(existingState.ownerSigningPublicKey.contentEquals(expectedOwnerSigningPublicKey)) {
+                    "Group owner signing key changed during the epoch update"
+                }
+                check(existingState.localSigningPublicKey.contentEquals(localSigningPublicKey)) {
+                    "Local signing identity changed during the epoch update"
+                }
+            }
             check(
                 packet.members.all { member ->
                     member.encryptionPublicKey.isNotEmpty() && member.signingPublicKey.isNotEmpty()
@@ -187,7 +357,7 @@ class GroupSecurityManager(
                     signingPublicKey = expectedOwnerSigningPublicKey
                 ).getOrThrow()
 
-            if (existingState != null) {
+            if (existingState != null && packet.epoch == existingState.currentEpoch) {
                 check(
                     existingState.currentEpoch == packet.epoch &&
                         existingState.welcomePacketId == packet.packetId &&
@@ -208,7 +378,7 @@ class GroupSecurityManager(
             }
 
             val groupKey =
-                if (existingState == null) {
+                if (existingState == null || packet.epoch > existingState.currentEpoch) {
                     groupCrypto
                         .unwrapGroupKey(
                             wrappedGroupKey = packet.wrappedGroupKey,
@@ -258,7 +428,7 @@ class GroupSecurityManager(
                     localSigningPublicKey = localSigningPublicKey.copyOf(),
                     updatedAtEpochMilliseconds = receivedAtEpochMilliseconds
                 )
-            if (existingState == null) {
+            if (existingState == null || packet.epoch > existingState.currentEpoch) {
                 groupSecurityDao.replaceCurrentEpoch(
                     state = joinedState,
                     memberKeys = memberKeys

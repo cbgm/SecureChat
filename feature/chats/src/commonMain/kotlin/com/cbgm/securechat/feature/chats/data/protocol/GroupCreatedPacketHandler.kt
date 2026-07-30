@@ -9,6 +9,7 @@ import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPairProvider
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.packet.GroupCreatedPacket
 import com.cbgm.securechat.core.protocol.packet.GroupMemberPayload
+import com.cbgm.securechat.core.protocol.packet.GroupMemberRemovedPacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.core.protocol.phone.LocalPhoneNumberProvider
 import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
@@ -16,12 +17,14 @@ import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ChatDao
 import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.data.database.dao.GroupInvitationDao
+import com.cbgm.securechat.data.database.dao.GroupSecurityDao
 import com.cbgm.securechat.data.database.entity.ContactEntity
 import com.cbgm.securechat.data.database.entity.ContactPhoneNumberEntity
 import com.cbgm.securechat.data.database.entity.ConversationEntity
 import com.cbgm.securechat.data.database.entity.ConversationParticipantEntity
 import com.cbgm.securechat.data.database.entity.GroupMemberKeyEntity
 import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationStatus
+import com.cbgm.securechat.feature.chats.data.message.GroupMembershipMessageFactory
 import com.cbgm.securechat.feature.chats.data.security.GroupInvitationManager
 import com.cbgm.securechat.feature.chats.data.security.GroupSecurityManager
 import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
@@ -37,6 +40,7 @@ class GroupCreatedPacketHandler(
     private val localPhoneNumberProvider: LocalPhoneNumberProvider,
     private val phoneNumberNormalizer: PhoneNumberNormalizer,
     private val groupSecurityManager: GroupSecurityManager,
+    private val groupSecurityDao: GroupSecurityDao,
     private val groupInvitationDao: GroupInvitationDao,
     private val groupInvitationManager: GroupInvitationManager,
     private val protocolOutbox: ProtocolOutbox,
@@ -58,9 +62,20 @@ class GroupCreatedPacketHandler(
             check(
                 invitation.status == GroupInvitationStatus.JOIN_SENT.name ||
                     invitation.status == GroupInvitationStatus.WAITING_FOR_ACTIVATION.name ||
-                    invitation.status == GroupInvitationStatus.ACTIVE.name
+                    invitation.status == GroupInvitationStatus.ACTIVE.name ||
+                    invitation.status == GroupInvitationStatus.LEAVE_SENT.name
             ) {
                 "Group welcome arrived before the invitation was accepted"
+            }
+            check(
+                groupPacket.packetId ==
+                    groupSecurityManager.welcomePacketId(
+                        groupId = groupPacket.groupId,
+                        invitationId = invitation.invitationId,
+                        epoch = groupPacket.epoch
+                    )
+            ) {
+                "Group welcome does not belong to the current invitation"
             }
             val persistedAtEpochMilliseconds =
                 maxOf(
@@ -90,6 +105,24 @@ class GroupCreatedPacketHandler(
                     expectedRemoteSigningPublicKey = ownerIdentity.signingPublicKey
                 ).getOrThrow()
 
+            val previousParticipants =
+                chatDao.findConversationParticipants(groupPacket.groupId)
+            val previousEpoch = groupSecurityDao.findState(groupPacket.groupId)?.currentEpoch
+            val previousSigningKeysByContactId =
+                if (previousEpoch == null) {
+                    emptyMap()
+                } else {
+                    previousParticipants.associate { participant ->
+                        participant.contactId to
+                            groupSecurityDao
+                                .findMemberKey(
+                                    groupId = groupPacket.groupId,
+                                    epoch = previousEpoch,
+                                    contactId = participant.contactId
+                                )?.signingPublicKey
+                    }
+                }
+
             chatDao.upsertConversation(
                 ConversationEntity(
                     id = groupPacket.groupId,
@@ -108,6 +141,7 @@ class GroupCreatedPacketHandler(
                     ?.let { phoneNumber -> phoneNumberNormalizer.normalize(phoneNumber).getOrNull() }
 
             val memberKeys = mutableListOf<GroupMemberKeyEntity>()
+            val participants = mutableListOf<ConversationParticipantEntity>()
 
             groupPacket.members.forEach { member ->
                 if (member.isLocalMember(localIdentity.signingPublicKey, normalizedLocalPhoneNumber)) {
@@ -116,14 +150,13 @@ class GroupCreatedPacketHandler(
 
                 val contactId = resolveMemberContact(member, context.contactId)
 
-                chatDao.upsertConversationParticipant(
+                participants +=
                     ConversationParticipantEntity(
                         conversationId = groupPacket.groupId,
                         contactId = contactId,
                         role = member.role,
                         joinedAtEpochMilliseconds = groupPacket.createdAtEpochMilliseconds
                     )
-                )
                 memberKeys +=
                     GroupMemberKeyEntity(
                         groupId = groupPacket.groupId,
@@ -147,6 +180,61 @@ class GroupCreatedPacketHandler(
                     memberKeys = memberKeys,
                     receivedAtEpochMilliseconds = persistedAtEpochMilliseconds
                 ).getOrThrow()
+
+            val currentParticipantIds =
+                participants.mapTo(mutableSetOf(), ConversationParticipantEntity::contactId)
+            val previousParticipantIds =
+                previousParticipants.mapTo(mutableSetOf(), ConversationParticipantEntity::contactId)
+            val removedMembershipMessages =
+                previousParticipants
+                    .filterNot { participant -> participant.contactId in currentParticipantIds }
+                    .map { removedParticipant ->
+                        val memberLeft =
+                            groupPacket.membershipChange
+                                ?.takeIf { change ->
+                                    change.reason == GroupMemberRemovedPacket.REASON_MEMBER_LEFT &&
+                                        previousSigningKeysByContactId[removedParticipant.contactId]
+                                            ?.contentEquals(change.memberSigningPublicKey) == true
+                                } != null
+                        if (memberLeft) {
+                            GroupMembershipMessageFactory.memberLeft(
+                                conversationId = groupPacket.groupId,
+                                epoch = groupPacket.epoch,
+                                contactId = removedParticipant.contactId,
+                                contactName = membershipDisplayName(removedParticipant.contactId),
+                                createdAtEpochMilliseconds = persistedAtEpochMilliseconds
+                            )
+                        } else {
+                            GroupMembershipMessageFactory.memberRemoved(
+                                conversationId = groupPacket.groupId,
+                                epoch = groupPacket.epoch,
+                                contactId = removedParticipant.contactId,
+                                contactName = membershipDisplayName(removedParticipant.contactId),
+                                createdAtEpochMilliseconds = persistedAtEpochMilliseconds
+                            )
+                        }
+                    }
+            val addedMembershipMessages =
+                if (previousParticipants.isNotEmpty() && chatDao.hasMessages(groupPacket.groupId)) {
+                    participants
+                        .filterNot { participant -> participant.contactId in previousParticipantIds }
+                        .map { addedParticipant ->
+                            GroupMembershipMessageFactory.memberAdded(
+                                conversationId = groupPacket.groupId,
+                                epoch = groupPacket.epoch,
+                                contactId = addedParticipant.contactId,
+                                contactName = membershipDisplayName(addedParticipant.contactId),
+                                createdAtEpochMilliseconds = persistedAtEpochMilliseconds
+                            )
+                        }
+                } else {
+                    emptyList()
+                }
+            chatDao.replaceConversationParticipantsWithMessages(
+                conversationId = groupPacket.groupId,
+                participants = participants,
+                messages = removedMembershipMessages + addedMembershipMessages
+            )
 
             val readyAcknowledgement =
                 groupInvitationManager
@@ -178,10 +266,20 @@ class GroupCreatedPacketHandler(
                 }
 
                 GroupInvitationStatus.WAITING_FOR_ACTIVATION.name,
-                GroupInvitationStatus.ACTIVE.name -> Unit
+                GroupInvitationStatus.ACTIVE.name,
+                GroupInvitationStatus.LEAVE_SENT.name -> Unit
                 else -> error("Group welcome arrived before the invitation was accepted")
             }
         }
+
+    private suspend fun membershipDisplayName(contactId: String): String =
+        contactDao
+            .findById(contactId)
+            ?.contact
+            ?.displayName
+            ?.trim()
+            ?.takeIf(String::isNotEmpty)
+            ?: "Member"
 
     private suspend fun resolveMemberContact(
         member: GroupMemberPayload,

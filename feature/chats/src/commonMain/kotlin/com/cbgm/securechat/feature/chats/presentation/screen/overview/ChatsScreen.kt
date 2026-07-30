@@ -38,6 +38,7 @@ import com.cbgm.securechat.core.ui.theme.SecureChatTheme
 import com.cbgm.securechat.core.ui.theme.spacing
 import com.cbgm.securechat.feature.chats.presentation.model.ChatListItem
 import com.cbgm.securechat.feature.chats.presentation.model.ChatsUiState
+import com.cbgm.securechat.feature.chats.presentation.screen.overview.component.SwipeRevealDeleteContainer
 import com.cbgm.securechat.resources.Res
 import com.cbgm.securechat.resources.feature_chats_no_conversations_hint
 import com.cbgm.securechat.resources.feature_chats_no_conversations_yet
@@ -48,6 +49,7 @@ import org.jetbrains.compose.resources.stringResource
 fun ChatsScreen(
     uiState: ChatsUiState,
     onChatClick: (ChatListItem) -> Unit,
+    onDeleteConversation: (String) -> Unit,
     listState: LazyListState,
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier
@@ -86,12 +88,23 @@ fun ChatsScreen(
                     items = uiState.conversations,
                     key = { chat -> chat.conversationId }
                 ) { chat ->
-                    ChatItem(
-                        chat = chat,
-                        onClick = {
-                            onChatClick(chat)
-                        }
-                    )
+                    SwipeRevealDeleteContainer(
+                        onDelete = { onDeleteConversation(chat.conversationId) }
+                    ) {
+                        ChatItem(
+                            chat = chat,
+                            onClick = {
+                                onChatClick(chat)
+                            }
+                        )
+                        HorizontalDivider(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 80.dp),
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .05f)
+                        )
+                    }
                 }
             }
         }
@@ -184,14 +197,6 @@ private fun ChatItem(
                     containerColor = MaterialTheme.colorScheme.background
                 )
         )
-
-        HorizontalDivider(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(start = 80.dp),
-            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .05f)
-        )
     }
 }
 
@@ -264,6 +269,7 @@ private fun ChatsScreenPreview() {
                         )
                 ),
             onChatClick = {},
+            onDeleteConversation = {},
             listState = LazyListState(),
             innerPadding = PaddingValues()
         )
