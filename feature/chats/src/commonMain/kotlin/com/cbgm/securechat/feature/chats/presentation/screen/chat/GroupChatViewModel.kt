@@ -15,11 +15,13 @@ import com.cbgm.securechat.feature.chats.domain.usecase.RetryMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SendGroupMessage
 import com.cbgm.securechat.feature.chats.domain.usecase.SetTypingIndicator
 import com.cbgm.securechat.feature.chats.presentation.model.ChatUiState
+import com.cbgm.securechat.feature.chats.presentation.model.GroupChatEffect
 import com.cbgm.securechat.feature.chats.presentation.model.GroupMemberProgressUi
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContacts
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +32,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -53,6 +56,9 @@ class GroupChatViewModel(
     private val errorMessage = MutableStateFlow<String?>(null)
     private val typingContactIds = MutableStateFlow<Set<String>>(emptySet())
     private val participantContactIds = MutableStateFlow<Set<String>>(emptySet())
+
+    private val _effects = Channel<GroupChatEffect>(capacity = Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
 
     private var localTypingStopJob: Job? = null
     private var isLocalTyping = false
@@ -242,9 +248,12 @@ class GroupChatViewModel(
 
     fun declineInvitation() {
         viewModelScope.launch {
-            declineGroupInvitation(conversationId).onFailure { error ->
-                errorMessage.value = error.message ?: "Group invitation could not be declined"
-            }
+            declineGroupInvitation(conversationId)
+                .onSuccess {
+                    _effects.send(GroupChatEffect.ConversationRemoved)
+                }.onFailure { error ->
+                    errorMessage.value = error.message ?: "Group invitation could not be declined"
+                }
         }
     }
 

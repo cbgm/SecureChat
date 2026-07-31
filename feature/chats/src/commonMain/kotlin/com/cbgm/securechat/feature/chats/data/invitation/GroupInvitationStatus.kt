@@ -16,3 +16,8 @@ enum class GroupInvitationStatus {
     GROUP_DELETED,
     ACTIVE
 }
+
+enum class GroupInvitationDirection {
+    OUTGOING,
+    INCOMING
+}

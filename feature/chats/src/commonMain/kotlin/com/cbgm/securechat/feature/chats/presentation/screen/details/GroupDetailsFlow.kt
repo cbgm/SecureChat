@@ -32,6 +32,7 @@ private enum class DetailsContent {
 fun GroupDetailsFlow(
     conversationId: String,
     onScanMemberQr: (String) -> Unit,
+    onGroupLeft: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -60,7 +61,7 @@ fun GroupDetailsFlow(
     LaunchedEffect(uiState.leave.isLeaveRequested) {
         if (uiState.leave.isLeaveRequested) {
             showLeaveDialog = false
-            onClose()
+            onGroupLeft()
         }
     }
 

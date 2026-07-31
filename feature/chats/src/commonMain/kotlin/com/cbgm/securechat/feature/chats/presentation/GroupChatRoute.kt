@@ -6,6 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.cbgm.securechat.feature.chats.presentation.model.GroupChatEffect
 import com.cbgm.securechat.feature.chats.presentation.screen.ChatScreen
 import com.cbgm.securechat.feature.chats.presentation.screen.chat.GroupChatViewModel
 import com.cbgm.securechat.feature.chats.presentation.screen.details.GroupVerificationViewModel
@@ -29,6 +30,14 @@ fun GroupChatRoute(
     LaunchedEffect(conversationId) {
         viewModel.markConversationRead()
         verificationViewModel.synchronize()
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                GroupChatEffect.ConversationRemoved -> onBack()
+            }
+        }
     }
 
     DisposableEffect(conversationId) {

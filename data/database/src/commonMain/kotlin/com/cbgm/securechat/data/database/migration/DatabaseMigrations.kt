@@ -349,4 +349,49 @@ object DatabaseMigrations {
                 )
             }
         }
+
+    val Migration19To20 =
+        object : Migration(19, 20) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    "ALTER TABLE group_invitations " +
+                        "ADD COLUMN direction TEXT NOT NULL DEFAULT 'INCOMING'"
+                )
+                connection.execSQL(
+                    """
+                    UPDATE group_invitations
+                    SET direction = 'OUTGOING'
+                    WHERE status IN (
+                        'INVITE_SENT',
+                        'WAITING_FOR_IDENTITY',
+                        'IDENTITY_READY',
+                        'WELCOME_SENT'
+                    )
+                       OR EXISTS (
+                            SELECT 1
+                            FROM group_security_states
+                            WHERE group_security_states.groupId = group_invitations.groupId
+                              AND group_security_states.ownerContactId IS NULL
+                       )
+                       OR EXISTS (
+                            SELECT 1
+                            FROM group_verification_pairs
+                            WHERE group_verification_pairs.groupId = group_invitations.groupId
+                              AND group_verification_pairs.contactId IS NOT NULL
+                       )
+                       OR (
+                            SELECT COUNT(*)
+                            FROM group_invitations AS group_rows
+                            WHERE group_rows.groupId = group_invitations.groupId
+                       ) > 1
+                       OR EXISTS (
+                            SELECT 1
+                            FROM protocol_outbox
+                            WHERE protocol_outbox.packetId =
+                                'group-invite-' || group_invitations.invitationId
+                       )
+                    """.trimIndent()
+                )
+            }
+        }
 }

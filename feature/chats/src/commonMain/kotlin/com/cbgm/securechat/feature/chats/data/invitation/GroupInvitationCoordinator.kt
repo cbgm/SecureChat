@@ -106,6 +106,7 @@ class GroupInvitationCoordinator(
                             invitationId = invitationId,
                             groupId = groupId,
                             contactId = contact.id,
+                            direction = GroupInvitationDirection.OUTGOING.name,
                             status = GroupInvitationStatus.INVITE_SENT.name,
                             challenge = packet.challenge.copyOf(),
                             createdAtEpochMilliseconds = now,
@@ -143,7 +144,11 @@ class GroupInvitationCoordinator(
                     "Conversation is not a group"
                 }
                 val currentInvitations = groupInvitationDao.findByGroupId(groupId)
-                check(currentInvitations.none { invitation -> invitation.status.isIncomingStatus() }) {
+                check(
+                    currentInvitations.none { invitation ->
+                        invitation.direction == GroupInvitationDirection.INCOMING.name
+                    }
+                ) {
                     "Only the group owner may add members"
                 }
                 groupSecurityManager.findOwnedGroupEpoch(groupId).getOrThrow()
@@ -184,6 +189,7 @@ class GroupInvitationCoordinator(
                             invitationId = invitationId,
                             groupId = groupId,
                             contactId = contact.id,
+                            direction = GroupInvitationDirection.OUTGOING.name,
                             status = GroupInvitationStatus.INVITE_SENT.name,
                             challenge = packet.challenge.copyOf(),
                             createdAtEpochMilliseconds = now,
@@ -234,6 +240,7 @@ class GroupInvitationCoordinator(
                             ownerContactId = invitation.contactId
                         ).getOrThrow()
                         ?: error("Active group security state was not found")
+                val hasHistory = chatDao.hasMessages(groupId)
                 val requestedAt =
                     maxOf(
                         invitation.createdAtEpochMilliseconds,
@@ -269,6 +276,12 @@ class GroupInvitationCoordinator(
                             updatedAt = requestedAt
                         )
                     }.getOrThrow()
+                if (!hasHistory) {
+                    hideEmptyJoinedGroupConversation(
+                        groupId = groupId,
+                        hiddenAtEpochMilliseconds = requestedAt
+                    )
+                }
             }
         }
 
@@ -278,7 +291,9 @@ class GroupInvitationCoordinator(
             val invitations = groupInvitationDao.findByGroupId(groupId)
             val isOwner =
                 groupSecurityManager.isOwnedGroup(groupId).getOrThrow()
-                    ?: invitations.none { invitation -> invitation.status.isIncomingStatus() }
+                    ?: invitations.any { invitation ->
+                        invitation.direction == GroupInvitationDirection.OUTGOING.name
+                    }
 
             if (isOwner) {
                 deleteOwnedGroupConversation(groupId, invitations)
@@ -417,6 +432,7 @@ class GroupInvitationCoordinator(
                     invitationId = packet.invitationId,
                     groupId = packet.groupId,
                     contactId = ownerContactId,
+                    direction = GroupInvitationDirection.INCOMING.name,
                     status = GroupInvitationStatus.AWAITING_ACCEPTANCE.name,
                     challenge = packet.challenge.copyOf(),
                     createdAtEpochMilliseconds = packet.createdAtEpochMilliseconds,
@@ -508,6 +524,7 @@ class GroupInvitationCoordinator(
             check(invitation.status == GroupInvitationStatus.AWAITING_ACCEPTANCE.name) {
                 "Group invitation cannot be declined from status ${invitation.status}"
             }
+            val hasHistory = chatDao.hasMessages(groupId)
             val signingKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
             val packet =
                 groupInvitationManager
@@ -531,6 +548,16 @@ class GroupInvitationCoordinator(
                         )
                 )
             check(updated == 1) { "Group invitation changed while it was declined" }
+            if (!hasHistory) {
+                hideEmptyJoinedGroupConversation(
+                    groupId = groupId,
+                    hiddenAtEpochMilliseconds =
+                        resolveInvitationUpdatedAt(
+                            createdAtEpochMilliseconds = invitation.createdAtEpochMilliseconds,
+                            candidateAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
+                        )
+                )
+            }
         }
 
     suspend fun receiveJoinRequest(
@@ -1031,8 +1058,10 @@ class GroupInvitationCoordinator(
 
     private suspend fun requireIncomingInvitation(groupId: String): GroupInvitationEntity {
         val invitations = groupInvitationDao.findByGroupId(groupId)
-        return invitations.singleOrNull()
-            ?: error("Incoming group invitation was not found")
+        return invitations
+            .singleOrNull { invitation ->
+                invitation.direction == GroupInvitationDirection.INCOMING.name
+            } ?: error("Incoming group invitation was not found")
     }
 
     private suspend fun flushQueuedIfGroupHasActiveMembers(groupId: String) {
@@ -1102,7 +1131,7 @@ class GroupInvitationCoordinator(
         val invitation =
             groupInvitationDao.findByGroupAndContact(groupId, contactId)
                 ?: error("Group member was not found")
-        check(!invitation.status.isIncomingStatus()) {
+        check(invitation.direction == GroupInvitationDirection.OUTGOING.name) {
             "Only the group owner may remove members"
         }
         groupSecurityManager.findOwnedGroupEpoch(groupId).getOrThrow()
@@ -1299,8 +1328,11 @@ class GroupInvitationCoordinator(
         val invitation =
             invitations
                 .filter { candidate ->
-                    candidate.status.isIncomingStatus() ||
-                        candidate.status == GroupInvitationStatus.ACTIVE.name
+                    candidate.direction == GroupInvitationDirection.INCOMING.name &&
+                        (
+                            candidate.status.isIncomingStatus() ||
+                                candidate.status == GroupInvitationStatus.ACTIVE.name
+                        )
                 }.maxByOrNull(GroupInvitationEntity::updatedAtEpochMilliseconds)
         if (invitation != null) {
             when (invitation.status) {
@@ -1329,6 +1361,18 @@ class GroupInvitationCoordinator(
                     SystemClock.nowEpochMilliseconds(),
                     invitations.maxOfOrNull(GroupInvitationEntity::createdAtEpochMilliseconds) ?: 0L
                 )
+        )
+    }
+
+    private suspend fun hideEmptyJoinedGroupConversation(
+        groupId: String,
+        hiddenAtEpochMilliseconds: Long
+    ) {
+        chatDao.hideGroupConversation(
+            GroupMembershipMessageFactory.localConversationDeletedMarker(
+                conversationId = groupId,
+                createdAtEpochMilliseconds = hiddenAtEpochMilliseconds
+            )
         )
     }
 

@@ -15,11 +15,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -52,6 +54,10 @@ import com.cbgm.securechat.resources.feature_settings_about
 import com.cbgm.securechat.resources.feature_settings_automatic_secure_setup
 import com.cbgm.securechat.resources.feature_settings_automatic_secure_setup_disabled_subtitle
 import com.cbgm.securechat.resources.feature_settings_automatic_secure_setup_enabled_subtitle
+import com.cbgm.securechat.resources.feature_settings_block_unknown_invites
+import com.cbgm.securechat.resources.feature_settings_block_unknown_invites_subtitle
+import com.cbgm.securechat.resources.feature_settings_blocked_contacts
+import com.cbgm.securechat.resources.feature_settings_blocked_contacts_count
 import com.cbgm.securechat.resources.feature_settings_data_disclaimer
 import com.cbgm.securechat.resources.feature_settings_data_disclaimer_subtitle
 import com.cbgm.securechat.resources.feature_settings_developer_menu
@@ -75,10 +81,12 @@ fun SettingsScreen(
     onOpenDataDisclaimer: () -> Unit,
     onOpenLicenses: () -> Unit,
     onOpenDeveloperMenu: () -> Unit,
+    onOpenBlockedContacts: () -> Unit,
     onOpenLanguagePicker: () -> Unit,
     onDismissLanguagePicker: () -> Unit,
     onLanguageSelected: (AppLanguage) -> Unit,
     onDirectIdentitySetupModeChanged: (DirectIdentitySetupMode) -> Unit,
+    onBlockUnknownContactInvitesChanged: (Boolean) -> Unit,
     onVersionRowTapped: () -> Unit,
     scrollState: ScrollState,
     innerPadding: PaddingValues,
@@ -125,6 +133,29 @@ fun SettingsScreen(
                         }
                     )
                 }
+            )
+
+            SettingsDivider()
+
+            SettingsSwitchRow(
+                icon = Icons.Default.PersonOff,
+                title = stringResource(Res.string.feature_settings_block_unknown_invites),
+                subtitle = stringResource(Res.string.feature_settings_block_unknown_invites_subtitle),
+                checked = uiState.blockUnknownContactInvites,
+                onCheckedChange = onBlockUnknownContactInvitesChanged
+            )
+
+            SettingsDivider()
+
+            SettingsRow(
+                icon = Icons.Default.Block,
+                title = stringResource(Res.string.feature_settings_blocked_contacts),
+                subtitle =
+                    stringResource(
+                        Res.string.feature_settings_blocked_contacts_count,
+                        uiState.blockedContactCount
+                    ),
+                onClick = onOpenBlockedContacts
             )
         }
 
@@ -352,10 +383,12 @@ fun SettingsScreenPreview() {
             onOpenDataDisclaimer = {},
             onOpenLicenses = {},
             onOpenDeveloperMenu = {},
+            onOpenBlockedContacts = {},
             onOpenLanguagePicker = {},
             onDismissLanguagePicker = {},
             onLanguageSelected = {},
             onDirectIdentitySetupModeChanged = {},
+            onBlockUnknownContactInvitesChanged = {},
             onVersionRowTapped = {},
             snackbarHostState = SnackbarHostState(),
             scrollState = ScrollState(0),

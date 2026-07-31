@@ -136,7 +136,9 @@ fun AppNavigation() {
                             )
                         )
                     },
-                    onBack = { navController.popBackStack() }
+                    onBack = {
+                        navController.popBackStack(AppDestination.Main, false)
+                    }
                 )
             }
 
@@ -214,6 +216,9 @@ fun AppNavigation() {
                     },
                     onImportContact = {
                         navController.navigate(AppDestination.ImportContact())
+                    },
+                    onNavigateToBlockedContacts = {
+                        navController.navigate(AppDestination.BlockedContacts)
                     }
                 )
             }
@@ -339,6 +344,9 @@ fun AppNavigation() {
                     verificationRevision = verificationRevision,
                     onBack = {
                         navController.popBackStack()
+                    },
+                    onGroupLeft = {
+                        navController.popBackStack(AppDestination.Main, false)
                     },
                     onScanContactQr = { contactId ->
                         navController.navigate(

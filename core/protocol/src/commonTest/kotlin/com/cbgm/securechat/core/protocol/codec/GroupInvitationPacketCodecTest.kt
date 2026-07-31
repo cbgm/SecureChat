@@ -169,7 +169,6 @@ class GroupInvitationPacketCodecTest {
                 invitationId = "invite-1",
                 groupId = "group-1",
                 epoch = 2,
-                reason = GroupMemberRemovedPacket.REASON_MEMBER_LEFT,
                 challenge = byteArrayOf(1, 2),
                 memberSigningPublicKey = byteArrayOf(3, 4),
                 requestedAtEpochMilliseconds = 300L,

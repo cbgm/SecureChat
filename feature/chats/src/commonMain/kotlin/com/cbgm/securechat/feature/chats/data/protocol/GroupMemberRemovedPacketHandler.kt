@@ -74,6 +74,11 @@ class GroupMemberRemovedPacketHandler(
                     "Group membership cannot be removed from status ${invitation.status}"
                 }
             }
+            val isLocallyHidden =
+                chatDao.hasMessageWithTransportMode(
+                    conversationId = removal.groupId,
+                    transportMode = GroupMembershipMessageFactory.LOCAL_CONVERSATION_DELETED_TRANSPORT_MODE
+                )
             val localIdentity = localPublicIdentityProvider.getLocalPublicIdentity().getOrThrow()
             groupSecurityManager
                 .removeLocalMembership(
@@ -82,23 +87,25 @@ class GroupMemberRemovedPacketHandler(
                     localSigningPublicKey = localIdentity.signingPublicKey
                 ).getOrThrow()
 
-            chatDao.applyLocalGroupRemoval(
-                if (removal.reason == GroupMemberRemovedPacket.REASON_MEMBER_LEFT) {
-                    GroupMembershipMessageFactory.localMembershipLeft(
-                        conversationId = removal.groupId,
-                        invitationId = removal.invitationId,
-                        epoch = removal.epoch,
-                        createdAtEpochMilliseconds = removal.removedAtEpochMilliseconds
-                    )
-                } else {
-                    GroupMembershipMessageFactory.localMembershipRemoved(
-                        conversationId = removal.groupId,
-                        invitationId = removal.invitationId,
-                        epoch = removal.epoch,
-                        createdAtEpochMilliseconds = removal.removedAtEpochMilliseconds
-                    )
-                }
-            )
+            if (!isLocallyHidden) {
+                chatDao.applyLocalGroupRemoval(
+                    if (removal.reason == GroupMemberRemovedPacket.REASON_MEMBER_LEFT) {
+                        GroupMembershipMessageFactory.localMembershipLeft(
+                            conversationId = removal.groupId,
+                            invitationId = removal.invitationId,
+                            epoch = removal.epoch,
+                            createdAtEpochMilliseconds = removal.removedAtEpochMilliseconds
+                        )
+                    } else {
+                        GroupMembershipMessageFactory.localMembershipRemoved(
+                            conversationId = removal.groupId,
+                            invitationId = removal.invitationId,
+                            epoch = removal.epoch,
+                            createdAtEpochMilliseconds = removal.removedAtEpochMilliseconds
+                        )
+                    }
+                )
+            }
             if (!isAlreadyRemoved) {
                 val updated =
                     groupInvitationDao.updateStatus(

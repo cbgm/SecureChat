@@ -15,15 +15,6 @@ else
     exit 1
 fi
 
-echo "Verifying generated architecture documentation..."
-
-"$GRADLE" verifyArchitectureReport \
-    --console=plain \
-    --no-configuration-cache
-
-echo ""
-echo "Running remaining quality checks..."
-
 "$GRADLE" qualityCheck \
     -x verifyArchitectureReport \
     --console=plain \

@@ -198,6 +198,8 @@ class DefaultContactRelayIdResolverTest {
 
         override suspend fun findBySigningPublicKey(signingPublicKey: ByteArray): Result<Contact?> = Result.success(null)
 
+        override suspend fun findOrCreateByPhoneNumber(phoneNumber: String): Result<Contact> = Result.failure(UnsupportedOperationException())
+
         override fun observeContacts(): Flow<List<Contact>> = flowOf(listOfNotNull(contact))
 
         override suspend fun updateContactDetails(

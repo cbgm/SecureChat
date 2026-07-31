@@ -10,6 +10,7 @@ fun MainRoute(
     onNavigateToDataDisclaimer: () -> Unit,
     onNavigateToLicenses: () -> Unit,
     onNavigateToDeveloperMenu: () -> Unit,
+    onNavigateToBlockedContacts: () -> Unit,
     onOpenChat: (String, String, String, Boolean) -> Unit,
     onShareIdentity: () -> Unit
 ) {
@@ -19,6 +20,7 @@ fun MainRoute(
         onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,
         onNavigateToLicenses = onNavigateToLicenses,
         onNavigateToDeveloperMenu = onNavigateToDeveloperMenu,
+        onNavigateToBlockedContacts = onNavigateToBlockedContacts,
         onOpenChat = onOpenChat,
         onShareIdentity = onShareIdentity
     )

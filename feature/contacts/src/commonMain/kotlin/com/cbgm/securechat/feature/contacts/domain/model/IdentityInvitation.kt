@@ -21,5 +21,6 @@ data class PendingContactInvitation(
     val invitationId: String,
     val contactId: String,
     val contactName: String?,
+    val contactPhoneNumber: String?,
     val expiresAtEpochMilliseconds: Long
 )

@@ -34,6 +34,7 @@ fun DetailsRoute(
     openVerification: Boolean,
     verificationRevision: Int,
     onBack: () -> Unit,
+    onGroupLeft: () -> Unit,
     onScanContactQr: (String) -> Unit,
     onScanGroupMemberQr: (String, String) -> Unit
 ) {
@@ -82,6 +83,7 @@ fun DetailsRoute(
                 onScanMemberQr = { memberContactId ->
                     onScanGroupMemberQr(target.conversationId, memberContactId)
                 },
+                onGroupLeft = onGroupLeft,
                 onClose = onBack
             )
         }

@@ -18,6 +18,7 @@ import com.cbgm.securechat.data.database.dao.GroupInvitationDao
 import com.cbgm.securechat.data.database.dao.GroupSecurityDao
 import com.cbgm.securechat.data.database.dao.GroupVerificationDao
 import com.cbgm.securechat.data.database.entity.GroupVerificationPairEntity
+import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationDirection
 import com.cbgm.securechat.feature.chats.data.invitation.GroupInvitationStatus
 import com.cbgm.securechat.feature.chats.domain.repository.GroupVerificationGateway
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
@@ -56,11 +57,16 @@ class GroupVerificationCoordinator(
                 val securityState =
                     groupSecurityDao.findState(groupId)
                 if (securityState == null) {
-                    val ownedRows =
+                    val ownsGroup =
                         groupVerificationDao
                             .findByGroupId(groupId)
-                            .any { row -> row.contactId != null }
-                    if (ownedRows) {
+                            .any { row -> row.contactId != null } ||
+                            groupInvitationDao
+                                .findByGroupId(groupId)
+                                .any { invitation ->
+                                    invitation.direction == GroupInvitationDirection.OUTGOING.name
+                                }
+                    if (ownsGroup) {
                         refreshOwnedStateLocked(groupId)
                     }
                     return@withLock
@@ -87,11 +93,16 @@ class GroupVerificationCoordinator(
                         "Only the group owner may publish membership verification state"
                     }
                 } else {
-                    val ownsVerificationRows =
+                    val ownsGroup =
                         groupVerificationDao
                             .findByGroupId(groupId)
-                            .any { row -> row.contactId != null }
-                    check(ownsVerificationRows) {
+                            .any { row -> row.contactId != null } ||
+                            groupInvitationDao
+                                .findByGroupId(groupId)
+                                .any { invitation ->
+                                    invitation.direction == GroupInvitationDirection.OUTGOING.name
+                                }
+                    check(ownsGroup) {
                         "Only the group owner may update membership verification state"
                     }
                 }
