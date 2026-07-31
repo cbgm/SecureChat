@@ -301,6 +301,60 @@ class DefaultContactRepository(
                 )?.toDomain()
         }
 
+    override suspend fun findOrCreateByPhoneNumber(phoneNumber: String): Result<Contact> =
+        runCatching {
+            val value =
+                phoneNumber
+                    .trim()
+                    .takeIf { it.isNotEmpty() }
+                    ?: error("Phone number must not be blank")
+            val normalizedValue =
+                phoneNumberNormalizer
+                    .normalize(value)
+                    .getOrThrow()
+
+            contactDao
+                .findByNormalizedPhoneNumber(normalizedPhoneNumber = normalizedValue)
+                ?.toDomain()
+                ?.let { contact -> return@runCatching contact }
+
+            val now = SystemClock.nowEpochMilliseconds()
+            val contactId = IdGenerator.generate()
+            val phoneNumberId = IdGenerator.generate()
+
+            contactDao.upsertContact(
+                contact =
+                    ContactEntity(
+                        id = contactId,
+                        displayName = null,
+                        deviceContactId = null,
+                        deviceContactLinkStatus = DeviceContactLinkStatus.NOT_LINKED.name,
+                        preferredPhoneNumberId = phoneNumberId,
+                        createdAtEpochMilliseconds = now,
+                        updatedAtEpochMilliseconds = now
+                    )
+            )
+            contactDao.upsertPhoneNumbers(
+                phoneNumbers =
+                    listOf(
+                        ContactPhoneNumberEntity(
+                            id = phoneNumberId,
+                            contactId = contactId,
+                            value = value,
+                            normalizedValue = normalizedValue,
+                            type = ContactPhoneNumberType.MOBILE.name,
+                            label = null,
+                            updatedAtEpochMilliseconds = now
+                        )
+                    )
+            )
+
+            loadContactOrThrow(
+                contactId = contactId,
+                message = "Blocked phone number contact could not be loaded"
+            )
+        }
+
     override fun observeContacts(): Flow<List<Contact>> =
         contactDao.observeAll().map { contacts ->
             contacts.map { contact ->

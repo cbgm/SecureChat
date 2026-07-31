@@ -13,5 +13,13 @@ interface SettingsStorage {
 
     suspend fun setDirectIdentitySetupMode(mode: String)
 
+    suspend fun getBlockUnknownContactInvites(): Boolean
+
+    suspend fun setBlockUnknownContactInvites(enabled: Boolean)
+
+    suspend fun getBlockedContactIds(): String?
+
+    suspend fun setBlockedContactIds(contactIds: String)
+
     suspend fun clear()
 }

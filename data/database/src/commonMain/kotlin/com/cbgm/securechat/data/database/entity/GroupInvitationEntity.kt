@@ -1,5 +1,6 @@
 package com.cbgm.securechat.data.database.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -32,6 +33,8 @@ data class GroupInvitationEntity(
     val invitationId: String,
     val groupId: String,
     val contactId: String,
+    @ColumnInfo(defaultValue = "'INCOMING'")
+    val direction: String,
     val status: String,
     val challenge: ByteArray,
     val createdAtEpochMilliseconds: Long,
@@ -42,6 +45,7 @@ data class GroupInvitationEntity(
         require(invitationId.isNotBlank()) { "Invitation ID must not be blank" }
         require(groupId.isNotBlank()) { "Group ID must not be blank" }
         require(contactId.isNotBlank()) { "Contact ID must not be blank" }
+        require(direction.isNotBlank()) { "Invitation direction must not be blank" }
         require(status.isNotBlank()) { "Invitation status must not be blank" }
         require(challenge.isNotEmpty()) { "Invitation challenge must not be empty" }
         require(createdAtEpochMilliseconds >= 0L) { "Invitation timestamp must not be negative" }
@@ -60,6 +64,7 @@ data class GroupInvitationEntity(
         return invitationId == other.invitationId &&
             groupId == other.groupId &&
             contactId == other.contactId &&
+            direction == other.direction &&
             status == other.status &&
             challenge.contentEquals(other.challenge) &&
             createdAtEpochMilliseconds == other.createdAtEpochMilliseconds &&
@@ -71,6 +76,7 @@ data class GroupInvitationEntity(
         var result = invitationId.hashCode()
         result = 31 * result + groupId.hashCode()
         result = 31 * result + contactId.hashCode()
+        result = 31 * result + direction.hashCode()
         result = 31 * result + status.hashCode()
         result = 31 * result + challenge.contentHashCode()
         result = 31 * result + createdAtEpochMilliseconds.hashCode()

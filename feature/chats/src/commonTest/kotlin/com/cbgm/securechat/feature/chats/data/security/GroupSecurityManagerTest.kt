@@ -14,6 +14,9 @@ import com.cbgm.securechat.data.database.dao.GroupSecurityDao
 import com.cbgm.securechat.data.database.entity.GroupMemberKeyEntity
 import com.cbgm.securechat.data.database.entity.GroupSecurityStateEntity
 import com.cbgm.securechat.feature.chats.domain.repository.GroupKeyStorage
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -519,11 +522,11 @@ class GroupSecurityManagerTest {
     }
 
     private class InMemoryGroupSecurityDao : GroupSecurityDao {
-        private var state: GroupSecurityStateEntity? = null
+        private val state = MutableStateFlow<GroupSecurityStateEntity?>(null)
         private val memberKeys = mutableListOf<GroupMemberKeyEntity>()
 
         override suspend fun upsertState(state: GroupSecurityStateEntity) {
-            this.state = state
+            this.state.value = state
         }
 
         override suspend fun upsertMemberKeys(memberKeys: List<GroupMemberKeyEntity>) {
@@ -537,11 +540,16 @@ class GroupSecurityManagerTest {
             }
         }
 
-        override suspend fun findState(groupId: String): GroupSecurityStateEntity? = state?.takeIf { it.groupId == groupId }
+        override suspend fun findState(groupId: String): GroupSecurityStateEntity? = state.value?.takeIf { storedState -> storedState.groupId == groupId }
+
+        override fun observeState(groupId: String): Flow<GroupSecurityStateEntity?> =
+            state.map { storedState ->
+                storedState?.takeIf { it.groupId == groupId }
+            }
 
         override suspend fun deleteState(groupId: String) {
-            if (state?.groupId == groupId) {
-                state = null
+            if (state.value?.groupId == groupId) {
+                state.value = null
             }
         }
 

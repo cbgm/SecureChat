@@ -21,27 +21,28 @@ class GroupInvitationStateMapperTest {
     }
 
     @Test
-    fun creatorWaitsForEveryReadyAcknowledgement() {
-        val distributing =
+    fun creatorIsReadyWhenAtLeastOneMemberIsActive() {
+        val partiallyActive =
             listOf(
                 invitation(GroupInvitationStatus.ACTIVE, contactId = "contact-1"),
                 invitation(GroupInvitationStatus.WELCOME_SENT, contactId = "contact-2")
             )
-        val active =
-            distributing.map { invitation ->
-                invitation.copy(status = GroupInvitationStatus.ACTIVE.name)
-            }
+
+        val fullyActive =
+            listOf(
+                invitation(GroupInvitationStatus.ACTIVE, contactId = "contact-1"),
+                invitation(GroupInvitationStatus.ACTIVE, contactId = "contact-2")
+            )
 
         assertEquals(
-            GroupConversationState.DISTRIBUTING_KEYS,
-            GroupInvitationStateMapper.conversationState(distributing)
+            GroupConversationState.READY,
+            GroupInvitationStateMapper.conversationState(partiallyActive)
         )
+
         assertEquals(
-            listOf(GroupMemberInvitationStatus.ACTIVE, GroupMemberInvitationStatus.KEY_SENT),
-            GroupInvitationStateMapper.memberStates(distributing).map { member -> member.status }
+            GroupConversationState.READY,
+            GroupInvitationStateMapper.conversationState(fullyActive)
         )
-        assertFalse(GroupInvitationStateMapper.isIncoming(distributing))
-        assertEquals(GroupConversationState.READY, GroupInvitationStateMapper.conversationState(active))
     }
 
     @Test
@@ -137,6 +138,7 @@ class GroupInvitationStateMapperTest {
             invitationId = "invitation-$contactId",
             groupId = "group-1",
             contactId = contactId,
+            direction = GroupInvitationDirection.OUTGOING.name,
             status = status.name,
             challenge = byteArrayOf(1),
             createdAtEpochMilliseconds = 100L,

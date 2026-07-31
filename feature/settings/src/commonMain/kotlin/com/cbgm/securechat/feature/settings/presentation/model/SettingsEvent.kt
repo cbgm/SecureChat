@@ -16,5 +16,9 @@ sealed interface SettingsEvent {
         val mode: DirectIdentitySetupMode
     ) : SettingsEvent
 
+    data class BlockUnknownContactInvitesChanged(
+        val enabled: Boolean
+    ) : SettingsEvent
+
     data object VersionRowTapped : SettingsEvent
 }

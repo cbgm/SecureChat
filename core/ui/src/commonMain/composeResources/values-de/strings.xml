@@ -370,4 +370,22 @@
     <string name="feature_chats_contact_invitation_declined_description">Nachrichten sind deaktiviert. Eine neue Einladung muss angenommen werden, bevor dieser Chat fortgesetzt werden kann.</string>
     <string name="feature_chats_direct_chat_reinvite_required_title">Neue Einladung erforderlich</string>
     <string name="feature_chats_direct_chat_reinvite_required_description">Eine neue Einladung muss angenommen werden, bevor eine der beiden Personen Nachrichten senden kann.</string>
+
+    <!-- Kontaktblockierung -->
+    <string name="feature_settings_block_unknown_invites">Unbekannte Einladungen blockieren</string>
+    <string name="feature_settings_block_unknown_invites_subtitle">Direkte Einladungen von Personen, die nicht in deinen Kontakten gespeichert sind, automatisch ablehnen.</string>
+    <string name="feature_settings_blocked_contacts">Blockierte Kontakte</string>
+    <string name="feature_settings_blocked_contacts_count">%1$d blockiert</string>
+    <string name="feature_contacts_blocked_contacts_title">Blockierte Kontakte</string>
+    <string name="feature_contacts_blocked_contacts_empty">Es sind keine Kontakte blockiert.</string>
+    <string name="feature_contacts_block_contact">Kontakt blockieren</string>
+    <string name="feature_contacts_add_blocked_contact">Blockierten Kontakt hinzufügen</string>
+    <string name="feature_contacts_add_blocked_contact_description">Gib eine Telefonnummer ein oder wähle einen bestehenden Kontakt aus. Eine bestehende Direktchat-Berechtigung wird entzogen.</string>
+    <string name="feature_contacts_phone_number">Telefonnummer</string>
+    <string name="feature_contacts_block_phone_number">Nummer blockieren</string>
+    <string name="feature_contacts_choose_existing_contact">Oder bestehenden Kontakt auswählen</string>
+    <string name="feature_contacts_invitation_phone_number">Telefonnummer: %1$s</string>
+    <string name="feature_contacts_no_contacts_to_block">Es gibt keine weiteren Kontakte zum Blockieren.</string>
+    <string name="feature_contacts_unblock_contact">Entsperren</string>
+    <string name="feature_contacts_decline_and_block">Ablehnen &amp; blockieren</string>
 </resources>

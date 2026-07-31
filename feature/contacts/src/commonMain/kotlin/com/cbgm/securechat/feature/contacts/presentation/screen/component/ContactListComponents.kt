@@ -234,7 +234,7 @@ private fun ContactGroup(
                 ),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.secondary
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
         )
 
         Surface(
