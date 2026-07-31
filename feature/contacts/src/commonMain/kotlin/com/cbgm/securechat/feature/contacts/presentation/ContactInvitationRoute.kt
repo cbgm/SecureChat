@@ -39,6 +39,9 @@ fun ContactInvitationRoute(
             },
             onDecline = {
                 viewModel.decline(invitation.invitationId)
+            },
+            onDeclineAndBlock = {
+                viewModel.declineAndBlock(invitation.invitationId)
             }
         )
     }

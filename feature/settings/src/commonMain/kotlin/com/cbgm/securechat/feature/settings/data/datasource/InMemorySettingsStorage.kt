@@ -7,6 +7,10 @@ class InMemorySettingsStorage : SettingsStorage {
 
     private var directIdentitySetupMode: String? = null
 
+    private var blockUnknownContactInvites: Boolean = false
+
+    private var blockedContactIds: String? = null
+
     override suspend fun getLanguageTag(): String? = languageTag
 
     override suspend fun setLanguageTag(
@@ -31,9 +35,27 @@ class InMemorySettingsStorage : SettingsStorage {
         directIdentitySetupMode = mode
     }
 
+    override suspend fun getBlockUnknownContactInvites(): Boolean = blockUnknownContactInvites
+
+    override suspend fun setBlockUnknownContactInvites(
+        enabled: Boolean
+    ) {
+        blockUnknownContactInvites = enabled
+    }
+
+    override suspend fun getBlockedContactIds(): String? = blockedContactIds
+
+    override suspend fun setBlockedContactIds(
+        contactIds: String
+    ) {
+        blockedContactIds = contactIds
+    }
+
     override suspend fun clear() {
         languageTag = null
         developerModeEnabled = false
         directIdentitySetupMode = null
+        blockUnknownContactInvites = false
+        blockedContactIds = null
     }
 }

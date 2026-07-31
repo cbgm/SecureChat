@@ -6,8 +6,11 @@ import com.cbgm.securechat.core.security.DirectIdentitySetupMode
 import com.cbgm.securechat.feature.settings.domain.usecase.GetAppLanguageUseCase
 import com.cbgm.securechat.feature.settings.domain.usecase.GetBuildInfoUseCase
 import com.cbgm.securechat.feature.settings.domain.usecase.GetDeveloperEnabledUseCase
+import com.cbgm.securechat.feature.settings.domain.usecase.ObserveBlockUnknownContactInvites
+import com.cbgm.securechat.feature.settings.domain.usecase.ObserveBlockedContactIds
 import com.cbgm.securechat.feature.settings.domain.usecase.ObserveDirectIdentitySetupMode
 import com.cbgm.securechat.feature.settings.domain.usecase.SetAppLanguageUseCase
+import com.cbgm.securechat.feature.settings.domain.usecase.SetBlockUnknownContactInvites
 import com.cbgm.securechat.feature.settings.domain.usecase.SetDeveloperEnabledUseCase
 import com.cbgm.securechat.feature.settings.domain.usecase.SetDirectIdentitySetupMode
 import com.cbgm.securechat.feature.settings.presentation.model.DEVELOPER_MODE_TAP_THRESHOLD
@@ -29,7 +32,10 @@ class SettingsViewModel(
     private val getBuildInfoUseCase: GetBuildInfoUseCase,
     private val setDeveloperModeEnabledUseCase: SetDeveloperEnabledUseCase,
     private val observeDirectIdentitySetupMode: ObserveDirectIdentitySetupMode,
-    private val setDirectIdentitySetupMode: SetDirectIdentitySetupMode
+    private val setDirectIdentitySetupMode: SetDirectIdentitySetupMode,
+    private val observeBlockUnknownContactInvites: ObserveBlockUnknownContactInvites,
+    private val setBlockUnknownContactInvites: SetBlockUnknownContactInvites,
+    private val observeBlockedContactIds: ObserveBlockedContactIds
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -40,6 +46,7 @@ class SettingsViewModel(
     init {
         loadSettings()
         observeIdentitySetupMode()
+        observeContactBlockingSettings()
     }
 
     fun onEvent(event: SettingsEvent) {
@@ -50,6 +57,7 @@ class SettingsViewModel(
                 _uiState.update { it.copy(showLanguagePicker = false) }
             is SettingsEvent.LanguageSelected -> selectLanguage(event.language)
             is SettingsEvent.DirectIdentitySetupModeChanged -> changeDirectIdentitySetupMode(event.mode)
+            is SettingsEvent.BlockUnknownContactInvitesChanged -> changeBlockUnknownContactInvites(event.enabled)
             SettingsEvent.VersionRowTapped -> handleVersionTap()
         }
     }
@@ -73,6 +81,30 @@ class SettingsViewModel(
                     it.copy(directIdentitySetupMode = mode)
                 }
             }
+        }
+    }
+
+    private fun observeContactBlockingSettings() {
+        viewModelScope.launch {
+            observeBlockUnknownContactInvites().collect { enabled ->
+                _uiState.update {
+                    it.copy(blockUnknownContactInvites = enabled)
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            observeBlockedContactIds().collect { contactIds ->
+                _uiState.update {
+                    it.copy(blockedContactCount = contactIds.size)
+                }
+            }
+        }
+    }
+
+    private fun changeBlockUnknownContactInvites(enabled: Boolean) {
+        viewModelScope.launch {
+            setBlockUnknownContactInvites(enabled)
         }
     }
 

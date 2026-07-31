@@ -15,6 +15,8 @@ interface ContactRepository {
 
     suspend fun findBySigningPublicKey(signingPublicKey: ByteArray): Result<Contact?>
 
+    suspend fun findOrCreateByPhoneNumber(phoneNumber: String): Result<Contact>
+
     fun observeContacts(): Flow<List<Contact>>
 
     suspend fun updateContactDetails(

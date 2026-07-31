@@ -39,6 +39,9 @@ sealed interface AppDestination {
     data object DeveloperMenu : AppDestination
 
     @Serializable
+    data object BlockedContacts : AppDestination
+
+    @Serializable
     data object Main : AppDestination
 
     @Serializable

@@ -54,6 +54,12 @@ class ContactInvitationViewModel(
         }
     }
 
+    fun declineAndBlock(invitationId: String) {
+        updateInvitation(invitationId) {
+            identityInvitationService.declineAndBlock(invitationId)
+        }
+    }
+
     private fun updateInvitation(
         invitationId: String,
         operation: suspend () -> Result<Unit>

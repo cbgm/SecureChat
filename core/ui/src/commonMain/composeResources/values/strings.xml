@@ -369,4 +369,22 @@
     <string name="feature_chats_contact_invitation_declined_description">Messages are disabled. A new invitation must be accepted before this chat can continue.</string>
     <string name="feature_chats_direct_chat_reinvite_required_title">New invitation required</string>
     <string name="feature_chats_direct_chat_reinvite_required_description">A new invitation must be accepted before either person can send messages.</string>
+
+    <!-- Contact blocking -->
+    <string name="feature_settings_block_unknown_invites">Block unknown invitations</string>
+    <string name="feature_settings_block_unknown_invites_subtitle">Automatically decline direct invitations from people who are not saved in your contacts.</string>
+    <string name="feature_settings_blocked_contacts">Blocked contacts</string>
+    <string name="feature_settings_blocked_contacts_count">%1$d blocked</string>
+    <string name="feature_contacts_blocked_contacts_title">Blocked contacts</string>
+    <string name="feature_contacts_blocked_contacts_empty">No contacts are blocked.</string>
+    <string name="feature_contacts_block_contact">Block contact</string>
+    <string name="feature_contacts_add_blocked_contact">Add blocked contact</string>
+    <string name="feature_contacts_add_blocked_contact_description">Enter a phone number or choose an existing contact. Existing direct-chat authorization will be revoked.</string>
+    <string name="feature_contacts_phone_number">Phone number</string>
+    <string name="feature_contacts_block_phone_number">Block number</string>
+    <string name="feature_contacts_choose_existing_contact">Or choose an existing contact</string>
+    <string name="feature_contacts_invitation_phone_number">Phone number: %1$s</string>
+    <string name="feature_contacts_no_contacts_to_block">There are no additional contacts to block.</string>
+    <string name="feature_contacts_unblock_contact">Unblock</string>
+    <string name="feature_contacts_decline_and_block">Decline &amp; block</string>
 </resources>

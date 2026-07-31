@@ -24,6 +24,7 @@ import com.cbgm.securechat.feature.chats.presentation.details.DetailsRoute
 import com.cbgm.securechat.feature.chats.presentation.details.DetailsTarget
 import com.cbgm.securechat.feature.contactimport.presentation.ImportIdentityRoute
 import com.cbgm.securechat.feature.contactimport.presentation.ScanIdentityRoute
+import com.cbgm.securechat.feature.contacts.presentation.BlockedContactsRoute
 import com.cbgm.securechat.feature.contacts.presentation.ContactInvitationRoute
 import com.cbgm.securechat.feature.identity.presentation.ShareIdentityRoute
 import com.cbgm.securechat.feature.settings.presentation.DeveloperMenuRoute
@@ -93,6 +94,23 @@ fun AppNavigation() {
                 }
             ) {
                 DeveloperMenuRoute(onBack = { navController.popBackStack() })
+            }
+
+            composable<AppDestination.BlockedContacts>(
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                    )
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                    )
+                }
+            ) {
+                BlockedContactsRoute(onBack = { navController.popBackStack() })
             }
 
             composable<AppDestination.Disclaimer>(
@@ -211,6 +229,9 @@ fun AppNavigation() {
                     },
                     onNavigateToDeveloperMenu = {
                         navController.navigate(AppDestination.DeveloperMenu)
+                    },
+                    onNavigateToBlockedContacts = {
+                        navController.navigate(AppDestination.BlockedContacts)
                     },
                     onImportContact = {
                         navController.navigate(AppDestination.ImportContact())

@@ -24,6 +24,7 @@ fun SettingsRoute(
     onNavigateToDataDisclaimer: () -> Unit,
     onNavigateToLicenses: () -> Unit,
     onNavigateToDeveloperMenu: () -> Unit,
+    onNavigateToBlockedContacts: () -> Unit,
     viewModel: SettingsViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -44,11 +45,15 @@ fun SettingsRoute(
         onOpenDataDisclaimer = onNavigateToDataDisclaimer,
         onOpenLicenses = onNavigateToLicenses,
         onOpenDeveloperMenu = onNavigateToDeveloperMenu,
+        onOpenBlockedContacts = onNavigateToBlockedContacts,
         onOpenLanguagePicker = { viewModel.onEvent(SettingsEvent.LanguagePickerOpened) },
         onDismissLanguagePicker = { viewModel.onEvent(SettingsEvent.LanguagePickerDismissed) },
         onLanguageSelected = { viewModel.onEvent(SettingsEvent.LanguageSelected(it)) },
         onDirectIdentitySetupModeChanged = {
             viewModel.onEvent(SettingsEvent.DirectIdentitySetupModeChanged(it))
+        },
+        onBlockUnknownContactInvitesChanged = {
+            viewModel.onEvent(SettingsEvent.BlockUnknownContactInvitesChanged(it))
         },
         onVersionRowTapped = { viewModel.onEvent(SettingsEvent.VersionRowTapped) },
         scrollState = scrollState,

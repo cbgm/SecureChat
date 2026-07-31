@@ -51,6 +51,7 @@ fun MainScreen(
     onNavigateToDataDisclaimer: () -> Unit,
     onNavigateToLicenses: () -> Unit,
     onNavigateToDeveloperMenu: () -> Unit,
+    onNavigateToBlockedContacts: () -> Unit,
     onOpenChat: (
         conversationId: String,
         contactId: String,
@@ -113,7 +114,8 @@ fun MainScreen(
                 onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
                 onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,
                 onNavigateToLicenses = onNavigateToLicenses,
-                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu
+                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu,
+                onNavigateToBlockedContacts = onNavigateToBlockedContacts
             )
         }
 
@@ -248,7 +250,8 @@ private fun MainContent(
     onNavigateToPrivacyPolicy: () -> Unit,
     onNavigateToDataDisclaimer: () -> Unit,
     onNavigateToLicenses: () -> Unit,
-    onNavigateToDeveloperMenu: () -> Unit
+    onNavigateToDeveloperMenu: () -> Unit,
+    onNavigateToBlockedContacts: () -> Unit
 ) {
     when (selectedTab) {
         MainTab.Chats -> {
@@ -285,7 +288,8 @@ private fun MainContent(
                 onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy,
                 onNavigateToDataDisclaimer = onNavigateToDataDisclaimer,
                 onNavigateToLicenses = onNavigateToLicenses,
-                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu
+                onNavigateToDeveloperMenu = onNavigateToDeveloperMenu,
+                onNavigateToBlockedContacts = onNavigateToBlockedContacts
             )
         }
     }
@@ -303,6 +307,7 @@ private fun MainScreenPreview() {
             onNavigateToDataDisclaimer = {},
             onNavigateToLicenses = {},
             onNavigateToDeveloperMenu = {},
+            onNavigateToBlockedContacts = {},
             modifier = Modifier.fillMaxSize()
         )
     }

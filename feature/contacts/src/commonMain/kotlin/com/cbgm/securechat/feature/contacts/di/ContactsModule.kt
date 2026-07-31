@@ -28,15 +28,19 @@ import com.cbgm.securechat.feature.contacts.domain.identity.IdentityExchangeStar
 import com.cbgm.securechat.feature.contacts.domain.identity.IdentityInvitationService
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactKeyExchangeStore
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
+import com.cbgm.securechat.feature.contacts.domain.usecase.BlockContact
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContactSafetyNumber
 import com.cbgm.securechat.feature.contacts.domain.usecase.ImportContact
 import com.cbgm.securechat.feature.contacts.domain.usecase.ImportDeviceContacts
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContact
+import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContactBlocklist
 import com.cbgm.securechat.feature.contacts.domain.usecase.ObserveContacts
+import com.cbgm.securechat.feature.contacts.domain.usecase.UnblockContact
 import com.cbgm.securechat.feature.contacts.domain.usecase.VerifyContact
 import com.cbgm.securechat.feature.contacts.presentation.screen.ContactInvitationViewModel
 import com.cbgm.securechat.feature.contacts.presentation.screen.ContactsViewModel
+import com.cbgm.securechat.feature.contacts.presentation.screen.blocklist.BlockedContactsViewModel
 import com.cbgm.securechat.feature.contacts.presentation.screen.details.ContactDetailsViewModel
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
@@ -95,8 +99,11 @@ val contactsModule =
                 secureRandomGenerator = get(),
                 payloadEncoder = get(),
                 protocolOutbox = get(),
+                localPhoneNumberProvider = get(),
+                phoneNumberNormalizer = get(),
                 contactVerificationService = get(),
-                modeRepository = get()
+                modeRepository = get(),
+                contactBlocklistRepository = get()
             )
         }
 
@@ -196,6 +203,25 @@ val contactsModule =
         }
 
         factory {
+            ObserveContactBlocklist(
+                observeContacts = get(),
+                repository = get()
+            )
+        }
+
+        factory {
+            BlockContact(
+                blocklistRepository = get(),
+                contactRepository = get(),
+                identityInvitationService = get()
+            )
+        }
+
+        factory {
+            UnblockContact(repository = get())
+        }
+
+        factory {
             VerifyContact(
                 repository = get(),
                 contactVerificationService = get()
@@ -206,6 +232,14 @@ val contactsModule =
             ContactInvitationViewModel(
                 identityInvitationService = get(),
                 modeRepository = get()
+            )
+        }
+
+        viewModel {
+            BlockedContactsViewModel(
+                observeContactBlocklist = get(),
+                blockContact = get(),
+                unblockContact = get()
             )
         }
 
