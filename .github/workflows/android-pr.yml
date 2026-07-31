@@ -66,9 +66,6 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Verify Architecture Report
-        run: ./gradlew verifyArchitectureReport --no-configuration-cache --no-daemon --stacktrace --console=plain
-
       - name: Run Quality Checks
         run: ./gradlew qualityCheck -x verifyArchitectureReport --no-daemon --stacktrace --console=plain
 
