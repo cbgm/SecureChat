@@ -137,6 +137,7 @@ class GroupInvitationStateMapperTest {
             invitationId = "invitation-$contactId",
             groupId = "group-1",
             contactId = contactId,
+            direction = GroupInvitationDirection.OUTGOING.name,
             status = status.name,
             challenge = byteArrayOf(1),
             createdAtEpochMilliseconds = 100L,
