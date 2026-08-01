@@ -28,6 +28,7 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
@@ -40,30 +41,53 @@ import kotlin.time.Duration.Companion.seconds
 
 private const val MAX_FRAME_SIZE = 1_048_576L
 
-fun Application.relayModule() {
-    install(CallLogging)
+private val WEB_SOCKET_PING_PERIOD = 20.seconds
+private val WEB_SOCKET_TIMEOUT = 60.seconds
 
-    val json: Json = createRelayJson()
+fun Application.relayModule() {
+    val json = createRelayJson()
+    val dependencies = createRelayDependencies(json)
+
+    installRelayPlugins(json)
+    configureRelayRouting(dependencies)
+}
+
+private fun Application.installRelayPlugins(
+    json: Json
+) {
+    install(CallLogging)
 
     install(ContentNegotiation) {
         json(json)
     }
 
     install(WebSockets) {
-        pingPeriod = 20.seconds
-        timeout = 60.seconds
+        pingPeriod = WEB_SOCKET_PING_PERIOD
+        timeout = WEB_SOCKET_TIMEOUT
         maxFrameSize = MAX_FRAME_SIZE
         masking = false
     }
+}
 
-    val connectionRegistry: RelayConnectionRegistry = InMemoryRelayConnectionRegistry()
-    val pendingEnvelopeStore: PendingEnvelopeStore = InMemoryPendingEnvelopeStore()
-    val pushDeviceStore: PushDeviceStore = InMemoryPushDeviceStore()
-    val pushWakeUpStore: PushWakeUpStore = InMemoryPushWakeUpStore()
+private fun createRelayDependencies(
+    json: Json
+): RelayDependencies {
+    val connectionRegistry: RelayConnectionRegistry =
+        InMemoryRelayConnectionRegistry()
+
+    val pendingEnvelopeStore: PendingEnvelopeStore =
+        InMemoryPendingEnvelopeStore()
+
+    val pushDeviceStore: PushDeviceStore =
+        InMemoryPushDeviceStore()
+
+    val pushWakeUpStore: PushWakeUpStore =
+        InMemoryPushWakeUpStore()
 
     val pushNotificationSender: PushNotificationSender =
         FirebasePushNotificationSender(
-            firebaseMessaging = FirebaseAdminFactory.createMessagingOrNull(),
+            firebaseMessaging =
+                FirebaseAdminFactory.createMessagingOrNull(),
             pushDeviceStore = pushDeviceStore,
             pushWakeUpStore = pushWakeUpStore
         )
@@ -81,7 +105,7 @@ fun Application.relayModule() {
             json = json
         )
 
-    val handler =
+    val webSocketHandler =
         RelayWebSocketHandler(
             connectionRegistry = connectionRegistry,
             envelopeRouter = envelopeRouter,
@@ -90,93 +114,190 @@ fun Application.relayModule() {
             json = json
         )
 
+    return RelayDependencies(
+        connectionRegistry = connectionRegistry,
+        pendingEnvelopeStore = pendingEnvelopeStore,
+        pushDeviceStore = pushDeviceStore,
+        pushWakeUpStore = pushWakeUpStore,
+        webSocketHandler = webSocketHandler
+    )
+}
+
+private fun Application.configureRelayRouting(
+    dependencies: RelayDependencies
+) {
     routing {
-        get("/") {
-            call.respondText(
-                "SecureChat relay is running"
-            )
-        }
+        registerStatusRoutes(
+            connectionRegistry =
+                dependencies.connectionRegistry,
+            pendingEnvelopeStore =
+                dependencies.pendingEnvelopeStore,
+            pushDeviceStore =
+                dependencies.pushDeviceStore
+        )
 
-        get("/health") {
-            val connectedClients = connectionRegistry.connectedCount()
-            val pendingEnvelopes = pendingEnvelopeStore.pendingCount()
-            val pushDevices = pushDeviceStore.count()
+        registerPushDeviceRoutes(
+            pushDeviceStore =
+                dependencies.pushDeviceStore
+        )
 
-            call.respondText(
-                "ok connectedClients=$connectedClients " +
-                    "pendingEnvelopes=$pendingEnvelopes " +
-                    "pushDevices=$pushDevices"
-            )
-        }
+        registerPushWakeUpRoutes(
+            pushWakeUpStore =
+                dependencies.pushWakeUpStore,
+            pendingEnvelopeStore =
+                dependencies.pendingEnvelopeStore
+        )
 
-        post("/push/devices") {
-            val request = call.receive<PushDeviceRegistrationRequest>()
-
-            if (
-                request.relayId.isBlank() ||
-                request.token.isBlank() ||
-                request.platform.isBlank()
-            ) {
-                call.respond(HttpStatusCode.BadRequest)
-                return@post
-            }
-
-            pushDeviceStore.register(
-                PushDevice(
-                    relayId = request.relayId,
-                    token = request.token,
-                    platform = request.platform
-                )
-            )
-
-            call.respond(HttpStatusCode.NoContent)
-        }
-
-        get("/push/wake/{wakeUpId}/inbox") {
-            val wakeUpId = call.parameters["wakeUpId"]
-            val recipientId =
-                wakeUpId
-                    ?.takeIf(String::isNotBlank)
-                    ?.let { pushWakeUpStore.resolve(it) }
-
-            if (recipientId == null) {
-                call.respond(HttpStatusCode.NotFound)
-                return@get
-            }
-
-            call.respond(
-                PendingRelayEnvelopesResponse(
-                    envelopes =
-                        pendingEnvelopeStore.getPendingForRecipient(
-                            recipientId = recipientId
-                        )
-                )
-            )
-        }
-
-        post("/push/wake/{wakeUpId}/inbox/{envelopeId}/ack") {
-            val wakeUpId = call.parameters["wakeUpId"]
-            val envelopeId = call.parameters["envelopeId"]
-            val recipientId =
-                wakeUpId
-                    ?.takeIf(String::isNotBlank)
-                    ?.let { pushWakeUpStore.resolve(it) }
-
-            if (recipientId == null || envelopeId.isNullOrBlank()) {
-                call.respond(HttpStatusCode.NotFound)
-                return@post
-            }
-
-            pendingEnvelopeStore.remove(
-                recipientId = recipientId,
-                envelopeId = envelopeId
-            )
-
-            call.respond(HttpStatusCode.NoContent)
-        }
-
-        webSocket("/relay") {
-            handler.handle(session = this)
-        }
+        registerRelayWebSocket(
+            handler =
+                dependencies.webSocketHandler
+        )
     }
 }
+
+private fun Route.registerStatusRoutes(
+    connectionRegistry: RelayConnectionRegistry,
+    pendingEnvelopeStore: PendingEnvelopeStore,
+    pushDeviceStore: PushDeviceStore
+) {
+    get("/") {
+        call.respondText(
+            "SecureChat relay is running"
+        )
+    }
+
+    get("/health") {
+        val connectedClients =
+            connectionRegistry.connectedCount()
+
+        val pendingEnvelopes =
+            pendingEnvelopeStore.pendingCount()
+
+        val pushDevices =
+            pushDeviceStore.count()
+
+        call.respondText(
+            buildString {
+                append("ok")
+                append(" connectedClients=")
+                append(connectedClients)
+                append(" pendingEnvelopes=")
+                append(pendingEnvelopes)
+                append(" pushDevices=")
+                append(pushDevices)
+            }
+        )
+    }
+}
+
+private fun Route.registerPushDeviceRoutes(
+    pushDeviceStore: PushDeviceStore
+) {
+    post("/push/devices") {
+        val request =
+            call.receive<PushDeviceRegistrationRequest>()
+
+        if (!request.isValid()) {
+            call.respond(HttpStatusCode.BadRequest)
+            return@post
+        }
+
+        pushDeviceStore.register(
+            request.toPushDevice()
+        )
+
+        call.respond(HttpStatusCode.NoContent)
+    }
+}
+
+private fun Route.registerPushWakeUpRoutes(
+    pushWakeUpStore: PushWakeUpStore,
+    pendingEnvelopeStore: PendingEnvelopeStore
+) {
+    get("/push/wake/{wakeUpId}/inbox") {
+        val recipientId =
+            pushWakeUpStore.resolveRecipientId(
+                wakeUpId =
+                    call.parameters["wakeUpId"]
+            )
+
+        if (recipientId == null) {
+            call.respond(HttpStatusCode.NotFound)
+            return@get
+        }
+
+        val pendingEnvelopes =
+            pendingEnvelopeStore.getPendingForRecipient(
+                recipientId = recipientId
+            )
+
+        call.respond(
+            PendingRelayEnvelopesResponse(
+                envelopes = pendingEnvelopes
+            )
+        )
+    }
+
+    post("/push/wake/{wakeUpId}/inbox/{envelopeId}/ack") {
+        val recipientId =
+            pushWakeUpStore.resolveRecipientId(
+                wakeUpId =
+                    call.parameters["wakeUpId"]
+            )
+
+        val envelopeId =
+            call.parameters["envelopeId"]
+                ?.takeIf(String::isNotBlank)
+
+        if (recipientId == null || envelopeId == null) {
+            call.respond(HttpStatusCode.NotFound)
+            return@post
+        }
+
+        pendingEnvelopeStore.remove(
+            recipientId = recipientId,
+            envelopeId = envelopeId
+        )
+
+        call.respond(HttpStatusCode.NoContent)
+    }
+}
+
+private fun Route.registerRelayWebSocket(
+    handler: RelayWebSocketHandler
+) {
+    webSocket("/relay") {
+        handler.handle(
+            session = this
+        )
+    }
+}
+
+private fun PushDeviceRegistrationRequest.isValid(): Boolean =
+    relayId.isNotBlank() &&
+        token.isNotBlank() &&
+        platform.isNotBlank()
+
+private fun PushDeviceRegistrationRequest.toPushDevice(): PushDevice =
+    PushDevice(
+        relayId = relayId,
+        token = token,
+        platform = platform
+    )
+
+private suspend fun PushWakeUpStore.resolveRecipientId(
+    wakeUpId: String?
+): String? =
+    wakeUpId
+        ?.takeIf(String::isNotBlank)
+        ?.let { validWakeUpId ->
+            resolve(validWakeUpId)
+        }
+
+private data class RelayDependencies(
+    val connectionRegistry: RelayConnectionRegistry,
+    val pendingEnvelopeStore: PendingEnvelopeStore,
+    val pushDeviceStore: PushDeviceStore,
+    val pushWakeUpStore: PushWakeUpStore,
+    val webSocketHandler: RelayWebSocketHandler
+)
