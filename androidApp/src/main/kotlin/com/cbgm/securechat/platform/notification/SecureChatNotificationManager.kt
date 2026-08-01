@@ -9,9 +9,9 @@ import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import com.cbgm.securechat.R
 import com.cbgm.securechat.notification.model.ConversationNotification
 import com.cbgm.securechat.notification.presentation.ConversationNotificationPresenter
+import com.cbgm.securechat.resources.R as ResourcesR
 
 class SecureChatNotificationManager(
     private val context: Context
@@ -22,10 +22,10 @@ class SecureChatNotificationManager(
         notificationManager.createNotificationChannel(
             NotificationChannel(
                 MESSAGE_CHANNEL_ID,
-                context.getString(R.string.notification_channel_messages),
+                context.getString(ResourcesR.string.notification_channel_messages),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = context.getString(R.string.notification_channel_messages_description)
+                description = context.getString(ResourcesR.string.notification_channel_messages_description)
             }
         )
     }
@@ -37,14 +37,14 @@ class SecureChatNotificationManager(
         }
 
         val title =
-            notification.title.takeIf(String::isNotBlank) ?: context.getString(R.string.app_name)
+            notification.title.takeIf(String::isNotBlank) ?: context.getString(ResourcesR.string.app_name)
         val preview =
-            notification.messagePreview ?: context.getString(R.string.notification_new_message)
+            notification.messagePreview ?: context.getString(ResourcesR.string.notification_new_message)
 
         val androidNotification =
             NotificationCompat
                 .Builder(context, MESSAGE_CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_securechat_notification)
+                .setSmallIcon(ResourcesR.drawable.ic_securechat_notification)
                 .setContentTitle(title)
                 .setContentText(preview)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(preview))

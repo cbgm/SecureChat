@@ -1,5 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">SecureChat</string>
+    <!-- Push-Nachricht -->
     <string name="notification_channel_messages">Messages</string>
     <string name="notification_channel_messages_description">Benachrichtigung für neue SecureChat Nachricht</string>
     <string name="notification_new_message">Neue Nachricht</string>

@@ -95,6 +95,8 @@ dependencies {
     implementation(projects.feature.transport)
     implementation(projects.notification)
 
+    implementation(projects.resources)
+
     implementation(libs.bundles.compose)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.splashscreen)

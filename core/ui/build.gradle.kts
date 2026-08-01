@@ -5,14 +5,11 @@ plugins {
 kotlin {
     android {
         namespace = "com.cbgm.securechat.core.ui"
-
-        androidResources {
-            enable = true
-        }
     }
 
     sourceSets {
         commonMain.dependencies {
+            api(projects.resources)
             implementation(libs.bundles.compose)
             implementation(libs.bundles.coroutines)
 
@@ -25,10 +22,4 @@ kotlin {
             implementation(libs.androidx.core.ktx)
         }
     }
-}
-
-compose.resources {
-    publicResClass = true
-    generateResClass = always
-    packageOfResClass = "com.cbgm.securechat.resources"
 }
