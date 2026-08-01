@@ -6,12 +6,12 @@ Generated automatically by `./gradlew architectureReport`.
 
 | Metric | Count |
 |---|---:|
-| Modules | 22 |
-| Module groups | 9 |
-| Project dependencies | 67 |
-| Kotlin files | 629 |
-| Test Kotlin files | 42 |
-| Resource files | 54 |
+| Modules | 23 |
+| Module groups | 10 |
+| Project dependencies | 73 |
+| Kotlin files | 684 |
+| Test Kotlin files | 43 |
+| Resource files | 57 |
 
 ## Module groups
 
@@ -46,6 +46,10 @@ Generated automatically by `./gradlew architectureReport`.
 ### navigation
 
 - [**navigation** (`:navigation`)](modules/navigation.md)
+
+### notification
+
+- [**notification** (`:notification`)](modules/notification.md)
 
 ### quality
 
@@ -101,6 +105,10 @@ graph TD
         module_navigation[":navigation"]
     end
 
+    subgraph group_notification["notification"]
+        module_notification[":notification"]
+    end
+
     subgraph group_quality["quality"]
         module_quality[":quality"]
         module_quality_detekt_rules[":quality:detekt-rules"]
@@ -130,6 +138,7 @@ graph TD
     module_androidApp --> module_feature_onboarding
     module_androidApp --> module_feature_settings
     module_androidApp --> module_feature_transport
+    module_androidApp --> module_notification
     module_androidApp --> module_shared
     module_androidApp --> module_startup
     module_core_protocol --> module_core
@@ -177,7 +186,12 @@ graph TD
     module_navigation --> module_feature_identity
     module_navigation --> module_feature_onboarding
     module_navigation --> module_feature_settings
+    module_navigation --> module_notification
     module_navigation --> module_startup
+    module_notification --> module_core
+    module_notification --> module_feature_chats
+    module_notification --> module_feature_messaging
+    module_notification --> module_feature_transport
     module_shared --> module_core
     module_shared --> module_core_ui
     module_shared --> module_feature_settings

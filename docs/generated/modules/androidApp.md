@@ -10,11 +10,11 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `androidApp` |
 | Directory | `androidApp` |
 | Build file | `androidApp/build.gradle.kts` |
-| Kotlin files | 4 |
-| Production Kotlin files | 4 |
+| Kotlin files | 9 |
+| Production Kotlin files | 9 |
 | Test Kotlin files | 0 |
-| Resource files | 21 |
-| Direct dependencies | 14 |
+| Resource files | 23 |
+| Direct dependencies | 15 |
 | Direct dependents | 0 |
 
 ## Source sets
@@ -35,6 +35,7 @@ Generated automatically by `./gradlew architectureReport`.
 - [`:feature:onboarding`](../modules/feature-onboarding.md)
 - [`:feature:settings`](../modules/feature-settings.md)
 - [`:feature:transport`](../modules/feature-transport.md)
+- [`:notification`](../modules/notification.md)
 - [`:shared`](../modules/shared.md)
 - [`:startup`](../modules/startup.md)
 

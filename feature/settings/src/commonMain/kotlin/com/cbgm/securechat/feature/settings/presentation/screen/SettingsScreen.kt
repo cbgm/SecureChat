@@ -96,11 +96,13 @@ fun SettingsScreen(
         modifier =
             modifier
                 .fillMaxSize()
+                .verticalScroll(scrollState)
                 .padding(
                     top = innerPadding.calculateTopPadding(),
-                    bottom = innerPadding.calculateBottomPadding()
-                ).verticalScroll(scrollState)
-                .padding(MaterialTheme.spacing.screenPadding),
+                    bottom = innerPadding.calculateBottomPadding(),
+                    start = MaterialTheme.spacing.screenPadding,
+                    end = MaterialTheme.spacing.screenPadding
+                ),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
     ) {
         SettingsSection(title = stringResource(Res.string.feature_settings_general)) {

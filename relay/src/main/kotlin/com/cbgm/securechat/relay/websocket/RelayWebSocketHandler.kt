@@ -3,6 +3,7 @@ package com.cbgm.securechat.relay.websocket
 import com.cbgm.securechat.relay.model.RelayClientMessage
 import com.cbgm.securechat.relay.model.RelayEnvelope
 import com.cbgm.securechat.relay.model.RelayServerMessage
+import com.cbgm.securechat.relay.push.PushFallbackScheduler
 import com.cbgm.securechat.relay.routing.RelayEnvelopeRouter
 import com.cbgm.securechat.relay.routing.RelayRoutingResult
 import com.cbgm.securechat.relay.session.RelayClientConnection
@@ -19,6 +20,7 @@ class RelayWebSocketHandler(
     private val connectionRegistry: RelayConnectionRegistry,
     private val envelopeRouter: RelayEnvelopeRouter,
     private val pendingEnvelopeStore: PendingEnvelopeStore,
+    private val pushFallbackScheduler: PushFallbackScheduler,
     private val json: Json
 ) {
     private val logger = LoggerFactory.getLogger(RelayWebSocketHandler::class.java)
@@ -266,6 +268,8 @@ class RelayWebSocketHandler(
                         error
                     )
                 }
+
+                pushFallbackScheduler.schedule(envelope = envelope)
             }
 
             is RelayRoutingResult.Failed -> {

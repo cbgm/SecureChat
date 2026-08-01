@@ -5,10 +5,10 @@
     "group": "androidApp",
     "directory": "androidApp",
     "buildFile": "androidApp/build.gradle.kts",
-    "kotlinSourceFileCount": 4,
-    "productionKotlinFileCount": 4,
+    "kotlinSourceFileCount": 9,
+    "productionKotlinFileCount": 9,
     "testKotlinFileCount": 0,
-    "resourceFileCount": 21,
+    "resourceFileCount": 23,
     "sourceSets": [
       "main"
     ],
@@ -25,6 +25,7 @@
       ":feature:onboarding",
       ":feature:settings",
       ":feature:transport",
+      ":notification",
       ":shared",
       ":startup"
     ],
@@ -37,8 +38,8 @@
     "group": "core",
     "directory": "core",
     "buildFile": "core/build.gradle.kts",
-    "kotlinSourceFileCount": 9,
-    "productionKotlinFileCount": 9,
+    "kotlinSourceFileCount": 10,
+    "productionKotlinFileCount": 10,
     "testKotlinFileCount": 0,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -62,6 +63,7 @@
       ":feature:settings",
       ":feature:transport",
       ":navigation",
+      ":notification",
       ":shared"
     ]
   },
@@ -223,8 +225,8 @@
     "group": "feature",
     "directory": "feature/chats",
     "buildFile": "feature/chats/build.gradle.kts",
-    "kotlinSourceFileCount": 145,
-    "productionKotlinFileCount": 134,
+    "kotlinSourceFileCount": 146,
+    "productionKotlinFileCount": 135,
     "testKotlinFileCount": 11,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -248,7 +250,8 @@
     "dependents": [
       ":androidApp",
       ":feature:messaging",
-      ":navigation"
+      ":navigation",
+      ":notification"
     ]
   },
   {
@@ -286,8 +289,8 @@
     "group": "feature",
     "directory": "feature/contacts",
     "buildFile": "feature/contacts/build.gradle.kts",
-    "kotlinSourceFileCount": 95,
-    "productionKotlinFileCount": 92,
+    "kotlinSourceFileCount": 102,
+    "productionKotlinFileCount": 99,
     "testKotlinFileCount": 3,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -351,8 +354,8 @@
     "group": "feature",
     "directory": "feature/messaging",
     "buildFile": "feature/messaging/build.gradle.kts",
-    "kotlinSourceFileCount": 19,
-    "productionKotlinFileCount": 14,
+    "kotlinSourceFileCount": 21,
+    "productionKotlinFileCount": 16,
     "testKotlinFileCount": 5,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -370,7 +373,8 @@
       ":feature:transport"
     ],
     "dependents": [
-      ":androidApp"
+      ":androidApp",
+      ":notification"
     ]
   },
   {
@@ -406,8 +410,8 @@
     "group": "feature",
     "directory": "feature/settings",
     "buildFile": "feature/settings/build.gradle.kts",
-    "kotlinSourceFileCount": 42,
-    "productionKotlinFileCount": 42,
+    "kotlinSourceFileCount": 46,
+    "productionKotlinFileCount": 46,
     "testKotlinFileCount": 0,
     "resourceFileCount": 2,
     "sourceSets": [
@@ -433,8 +437,8 @@
     "group": "feature",
     "directory": "feature/transport",
     "buildFile": "feature/transport/build.gradle.kts",
-    "kotlinSourceFileCount": 23,
-    "productionKotlinFileCount": 21,
+    "kotlinSourceFileCount": 28,
+    "productionKotlinFileCount": 26,
     "testKotlinFileCount": 2,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -451,7 +455,8 @@
     ],
     "dependents": [
       ":androidApp",
-      ":feature:messaging"
+      ":feature:messaging",
+      ":notification"
     ]
   },
   {
@@ -480,10 +485,37 @@
       ":feature:identity",
       ":feature:onboarding",
       ":feature:settings",
+      ":notification",
       ":startup"
     ],
     "dependents": [
       ":shared"
+    ]
+  },
+  {
+    "name": "notification",
+    "path": ":notification",
+    "group": "notification",
+    "directory": "notification",
+    "buildFile": "notification/build.gradle.kts",
+    "kotlinSourceFileCount": 21,
+    "productionKotlinFileCount": 20,
+    "testKotlinFileCount": 1,
+    "resourceFileCount": 1,
+    "sourceSets": [
+      "androidMain",
+      "commonMain",
+      "commonTest"
+    ],
+    "dependencies": [
+      ":core",
+      ":feature:chats",
+      ":feature:messaging",
+      ":feature:transport"
+    ],
+    "dependents": [
+      ":androidApp",
+      ":navigation"
     ]
   },
   {
@@ -527,8 +559,8 @@
     "group": "relay",
     "directory": "relay",
     "buildFile": "relay/build.gradle.kts",
-    "kotlinSourceFileCount": 15,
-    "productionKotlinFileCount": 14,
+    "kotlinSourceFileCount": 24,
+    "productionKotlinFileCount": 23,
     "testKotlinFileCount": 1,
     "resourceFileCount": 2,
     "sourceSets": [

@@ -32,6 +32,10 @@ graph TD
         module_navigation[":navigation"]
     end
 
+    subgraph group_notification["notification"]
+        module_notification[":notification"]
+    end
+
     subgraph group_quality["quality"]
         module_quality[":quality"]
         module_quality_detekt_rules[":quality:detekt-rules"]
@@ -61,6 +65,7 @@ graph TD
     module_androidApp --> module_feature_onboarding
     module_androidApp --> module_feature_settings
     module_androidApp --> module_feature_transport
+    module_androidApp --> module_notification
     module_androidApp --> module_shared
     module_androidApp --> module_startup
     module_core_protocol --> module_core
@@ -108,7 +113,12 @@ graph TD
     module_navigation --> module_feature_identity
     module_navigation --> module_feature_onboarding
     module_navigation --> module_feature_settings
+    module_navigation --> module_notification
     module_navigation --> module_startup
+    module_notification --> module_core
+    module_notification --> module_feature_chats
+    module_notification --> module_feature_messaging
+    module_notification --> module_feature_transport
     module_shared --> module_core
     module_shared --> module_core_ui
     module_shared --> module_feature_settings
