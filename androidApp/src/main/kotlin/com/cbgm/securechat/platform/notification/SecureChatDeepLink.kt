@@ -20,19 +20,13 @@ object SecureChatDeepLink {
             .build()
     }
 
-    fun conversationId(intent: Intent?): String? {
-        if (intent?.action != Intent.ACTION_VIEW) {
-            return null
-        }
-
-        val uri = intent.data ?: return null
-
-        if (uri.scheme != SCHEME || uri.host != CHAT_HOST) {
-            return null
-        }
-
-        return uri.pathSegments
-            .singleOrNull()
+    fun conversationId(intent: Intent?): String? =
+        intent
+            ?.takeIf { it.action == Intent.ACTION_VIEW }
+            ?.data
+            ?.takeIf { uri ->
+                uri.scheme == SCHEME && uri.host == CHAT_HOST
+            }?.pathSegments
+            ?.singleOrNull()
             ?.takeIf(String::isNotBlank)
-    }
 }
