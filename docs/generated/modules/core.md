@@ -10,12 +10,12 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `core` |
 | Directory | `core` |
 | Build file | `core/build.gradle.kts` |
-| Kotlin files | 9 |
-| Production Kotlin files | 9 |
+| Kotlin files | 10 |
+| Production Kotlin files | 10 |
 | Test Kotlin files | 0 |
 | Resource files | 1 |
 | Direct dependencies | 0 |
-| Direct dependents | 12 |
+| Direct dependents | 13 |
 
 ## Source sets
 
@@ -42,4 +42,5 @@ None.
 - [`:feature:settings`](../modules/feature-settings.md)
 - [`:feature:transport`](../modules/feature-transport.md)
 - [`:navigation`](../modules/navigation.md)
+- [`:notification`](../modules/notification.md)
 - [`:shared`](../modules/shared.md)

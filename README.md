@@ -59,6 +59,7 @@ docs/                MkDocs engineering handbook
 - 🧩 [Messaging Boundary](docs/architecture/messaging-boundary.md)
 - ✉️ [Conversation, Messaging, and Delivery Flow](docs/features/message-transport-flow.md)
 - 🪵 [Logging](docs/development/logging.md)
+- ✉️ [Push notifications](docs/push-notifications.md)
 
 ## Generated Documentation
 

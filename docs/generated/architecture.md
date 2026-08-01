@@ -6,12 +6,12 @@ Generated automatically by `./gradlew architectureReport`.
 
 | Metric | Count |
 |---|---:|
-| Modules | 22 |
-| Module groups | 9 |
-| Project dependencies | 67 |
-| Kotlin files | 629 |
-| Test Kotlin files | 42 |
-| Resource files | 54 |
+| Modules | 24 |
+| Module groups | 11 |
+| Project dependencies | 75 |
+| Kotlin files | 684 |
+| Test Kotlin files | 43 |
+| Resource files | 57 |
 
 ## Module groups
 
@@ -47,6 +47,10 @@ Generated automatically by `./gradlew architectureReport`.
 
 - [**navigation** (`:navigation`)](modules/navigation.md)
 
+### notification
+
+- [**notification** (`:notification`)](modules/notification.md)
+
 ### quality
 
 - [**quality** (`:quality`)](modules/quality.md)
@@ -55,6 +59,10 @@ Generated automatically by `./gradlew architectureReport`.
 ### relay
 
 - [**relay** (`:relay`)](modules/relay.md)
+
+### resources
+
+- [**resources** (`:resources`)](modules/resources.md)
 
 ### shared
 
@@ -101,6 +109,10 @@ graph TD
         module_navigation[":navigation"]
     end
 
+    subgraph group_notification["notification"]
+        module_notification[":notification"]
+    end
+
     subgraph group_quality["quality"]
         module_quality[":quality"]
         module_quality_detekt_rules[":quality:detekt-rules"]
@@ -108,6 +120,10 @@ graph TD
 
     subgraph group_relay["relay"]
         module_relay[":relay"]
+    end
+
+    subgraph group_resources["resources"]
+        module_resources[":resources"]
     end
 
     subgraph group_shared["shared"]
@@ -130,9 +146,12 @@ graph TD
     module_androidApp --> module_feature_onboarding
     module_androidApp --> module_feature_settings
     module_androidApp --> module_feature_transport
+    module_androidApp --> module_notification
+    module_androidApp --> module_resources
     module_androidApp --> module_shared
     module_androidApp --> module_startup
     module_core_protocol --> module_core
+    module_core_ui --> module_resources
     module_data_database --> module_core
     module_data_database --> module_core_protocol
     module_feature_chats --> module_core
@@ -177,7 +196,12 @@ graph TD
     module_navigation --> module_feature_identity
     module_navigation --> module_feature_onboarding
     module_navigation --> module_feature_settings
+    module_navigation --> module_notification
     module_navigation --> module_startup
+    module_notification --> module_core
+    module_notification --> module_feature_chats
+    module_notification --> module_feature_messaging
+    module_notification --> module_feature_transport
     module_shared --> module_core
     module_shared --> module_core_ui
     module_shared --> module_feature_settings

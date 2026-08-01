@@ -7,9 +7,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -30,13 +32,76 @@ import com.cbgm.securechat.feature.settings.presentation.DeveloperMenuRoute
 import com.cbgm.securechat.feature.settings.presentation.DisclaimerRoute
 import com.cbgm.securechat.feature.settings.presentation.LicensesRoute
 import com.cbgm.securechat.feature.settings.presentation.model.DisclaimerType
+import com.cbgm.securechat.notification.application.ResolveNotificationConversation
+import com.cbgm.securechat.notification.model.NotificationConversationTarget
+import com.cbgm.securechat.notification.navigation.NotificationNavigationController
+import com.cbgm.securechat.notification.navigation.NotificationNavigationTarget
 import com.cbgm.securechat.presentation.MainRoute
 import com.cbgm.securechat.startup.presentation.StartupRoute
 import com.cbgm.securechat.startup.presentation.screen.component.SecureChatAppBackground
+import org.koin.compose.koinInject
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    notificationNavigationController: NotificationNavigationController = koinInject(),
+    resolveNotificationConversation: ResolveNotificationConversation = koinInject()
+) {
     val navController = rememberNavController()
+    val pendingNotificationTarget by notificationNavigationController.pendingTarget.collectAsStateWithLifecycle()
+    var startupComplete by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(pendingNotificationTarget, startupComplete) {
+        val target = pendingNotificationTarget ?: return@LaunchedEffect
+
+        if (!startupComplete) {
+            return@LaunchedEffect
+        }
+
+        when (target) {
+            is NotificationNavigationTarget.Conversation -> {
+                when (
+                    val conversation =
+                        resolveNotificationConversation(
+                            conversationId = target.conversationId
+                        )
+                ) {
+                    is NotificationConversationTarget.Direct -> {
+                        navController.navigate(
+                            AppDestination.Chat(
+                                conversationId = conversation.conversationId,
+                                contactId = conversation.contactId,
+                                contactName = conversation.contactName
+                            )
+                        ) {
+                            popUpTo(AppDestination.Main) {
+                                inclusive = false
+                            }
+
+                            launchSingleTop = true
+                        }
+                    }
+
+                    is NotificationConversationTarget.Group -> {
+                        navController.navigate(
+                            AppDestination.GroupConversation(
+                                conversationId = conversation.conversationId
+                            )
+                        ) {
+                            popUpTo(AppDestination.Main) {
+                                inclusive = false
+                            }
+
+                            launchSingleTop = true
+                        }
+                    }
+
+                    null -> Unit
+                }
+            }
+        }
+
+        notificationNavigationController.consume(target)
+    }
 
     SecureChatAppBackground {
         NavHost(
@@ -418,6 +483,8 @@ fun AppNavigation() {
             composable<AppDestination.Startup> {
                 StartupRoute(
                     onStartupComplete = {
+                        startupComplete = true
+
                         navController.navigate(AppDestination.Main) {
                             popUpTo(AppDestination.Startup) {
                                 inclusive = true

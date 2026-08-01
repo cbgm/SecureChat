@@ -28,7 +28,8 @@ class WebSocketOutgoingWireSenderTest {
                     relayTransportConfig =
                         RelayTransportConfig(
                             serverUrl = "ws://localhost:8080/relay",
-                            acknowledgementTimeoutMilliseconds = 2_500L
+                            acknowledgementTimeoutMilliseconds = 2_500L,
+                            httpBaseUrl = "http://10.0.2.2:8080"
                         )
                 )
 
@@ -62,7 +63,8 @@ class WebSocketOutgoingWireSenderTest {
                     localRelayIdProvider = SuccessfulLocalRelayIdProvider(),
                     relayTransportConfig =
                         RelayTransportConfig(
-                            serverUrl = "ws://localhost:8080/relay"
+                            serverUrl = "ws://localhost:8080/relay",
+                            httpBaseUrl = "http://10.0.2.2:8080"
                         )
                 )
 
@@ -90,7 +92,8 @@ class WebSocketOutgoingWireSenderTest {
                         },
                     relayTransportConfig =
                         RelayTransportConfig(
-                            serverUrl = "ws://localhost:8080/relay"
+                            serverUrl = "ws://localhost:8080/relay",
+                            httpBaseUrl = "http://10.0.2.2:8080"
                         )
                 )
 

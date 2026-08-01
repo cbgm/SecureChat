@@ -16,6 +16,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.time.Duration.Companion.milliseconds
 
 class DefaultIncomingRelayRunnerTest {
     @Test
@@ -37,14 +38,24 @@ class DefaultIncomingRelayRunnerTest {
                 runner.start()
                 relayGateway.emitEnvelope(createEnvelope())
 
-                val acknowledgedEnvelopeId = relayGateway.acknowledgedEnvelopeIds.receive()
+                val acknowledgedEnvelopeId =
+                    relayGateway.acknowledgedEnvelopeIds.receive()
 
                 assertEquals("envelope-1", acknowledgedEnvelopeId)
                 assertEquals(listOf("handle", "acknowledge"), events)
                 assertEquals("contact-1", incomingHandler.contactId)
-                assertEquals("encoded-payload", incomingHandler.encodedTransportPayload)
-                assertContentEquals(PUBLIC_KEY, incomingHandler.localEncryptionPublicKey)
-                assertContentEquals(PRIVATE_KEY, incomingHandler.localEncryptionPrivateKey)
+                assertEquals(
+                    "encoded-payload",
+                    incomingHandler.encodedTransportPayload
+                )
+                assertContentEquals(
+                    PUBLIC_KEY,
+                    incomingHandler.localEncryptionPublicKey
+                )
+                assertContentEquals(
+                    PRIVATE_KEY,
+                    incomingHandler.localEncryptionPrivateKey
+                )
             } finally {
                 runner.stop()
             }
@@ -59,7 +70,9 @@ class DefaultIncomingRelayRunnerTest {
                 RecordingIncomingMessageHandler(
                     result = {
                         handlerCalled.complete(Unit)
-                        throw IllegalStateException("message handling failed")
+                        throw IllegalStateException(
+                            "message handling failed"
+                        )
                     }
                 )
             val runner =
@@ -74,7 +87,7 @@ class DefaultIncomingRelayRunnerTest {
                 handlerCalled.await()
 
                 val acknowledgement =
-                    withTimeoutOrNull(SHORT_TIMEOUT_MILLISECONDS) {
+                    withTimeoutOrNull(SHORT_TIMEOUT_MILLISECONDS.milliseconds) {
                         relayGateway.acknowledgedEnvelopeIds.receive()
                     }
 
@@ -97,8 +110,11 @@ class DefaultIncomingRelayRunnerTest {
                     relayGateway = relayGateway,
                     contactResolver =
                         object : ContactByRelayIdResolver {
-                            override suspend fun resolveContactId(relayId: String): Result<String?> {
+                            override suspend fun resolveContactId(
+                                relayId: String
+                            ): Result<String?> {
                                 resolverCalled.complete(Unit)
+
                                 return Result.success(null)
                             }
                         },
@@ -112,7 +128,7 @@ class DefaultIncomingRelayRunnerTest {
                 resolverCalled.await()
 
                 val acknowledgement =
-                    withTimeoutOrNull(SHORT_TIMEOUT_MILLISECONDS) {
+                    withTimeoutOrNull(SHORT_TIMEOUT_MILLISECONDS.milliseconds) {
                         relayGateway.acknowledgedEnvelopeIds.receive()
                     }
 
@@ -128,18 +144,26 @@ class DefaultIncomingRelayRunnerTest {
         relayGateway: FakeIncomingRelayGateway,
         contactResolver: ContactByRelayIdResolver =
             object : ContactByRelayIdResolver {
-                override suspend fun resolveContactId(relayId: String): Result<String?> = Result.success("contact-1")
+                override suspend fun resolveContactId(
+                    relayId: String
+                ): Result<String?> = Result.success("contact-1")
             },
         keyPairProvider: LocalEncryptionKeyPairProvider =
             RecordingKeyPairProvider(),
         incomingHandler: IncomingMessageHandler
-    ): DefaultIncomingRelayRunner =
-        DefaultIncomingRelayRunner(
+    ): DefaultIncomingRelayRunner {
+        val incomingEnvelopeProcessor =
+            DefaultIncomingEnvelopeProcessor(
+                contactByRelayIdResolver = contactResolver,
+                localEncryptionKeyPairProvider = keyPairProvider,
+                incomingMessageHandler = incomingHandler
+            )
+
+        return DefaultIncomingRelayRunner(
             incomingRelayGateway = relayGateway,
-            contactByRelayIdResolver = contactResolver,
-            localEncryptionKeyPairProvider = keyPairProvider,
-            incomingMessageHandler = incomingHandler
+            incomingEnvelopeProcessor = incomingEnvelopeProcessor
         )
+    }
 
     private fun createEnvelope(): IncomingRelayEnvelope =
         IncomingRelayEnvelope(
@@ -167,8 +191,11 @@ class DefaultIncomingRelayRunnerTest {
             callCount += 1
             this.contactId = contactId
             this.encodedTransportPayload = encodedTransportPayload
-            this.localEncryptionPublicKey = localEncryptionPublicKey.copyOf()
-            this.localEncryptionPrivateKey = localEncryptionPrivateKey.copyOf()
+            this.localEncryptionPublicKey =
+                localEncryptionPublicKey.copyOf()
+            this.localEncryptionPrivateKey =
+                localEncryptionPrivateKey.copyOf()
+
             events += "handle"
             result()
         }
@@ -192,19 +219,29 @@ class DefaultIncomingRelayRunnerTest {
     private class FakeIncomingRelayGateway(
         private val events: MutableList<String> = mutableListOf()
     ) : IncomingRelayGateway {
-        private val mutableIncomingEnvelopes = MutableSharedFlow<IncomingRelayEnvelope>()
+        private val mutableIncomingEnvelopes =
+            MutableSharedFlow<IncomingRelayEnvelope>()
+
         override val incomingEnvelopes = mutableIncomingEnvelopes
 
-        val acknowledgedEnvelopeIds = Channel<String>(capacity = Channel.UNLIMITED)
+        val acknowledgedEnvelopeIds =
+            Channel<String>(
+                capacity = Channel.UNLIMITED
+            )
 
-        suspend fun emitEnvelope(envelope: IncomingRelayEnvelope) {
+        suspend fun emitEnvelope(
+            envelope: IncomingRelayEnvelope
+        ) {
             mutableIncomingEnvelopes.subscriptionCount.first { subscriberCount ->
                 subscriberCount > 0
             }
+
             mutableIncomingEnvelopes.emit(envelope)
         }
 
-        override suspend fun acknowledge(envelopeId: String): Result<Unit> {
+        override suspend fun acknowledge(
+            envelopeId: String
+        ): Result<Unit> {
             events += "acknowledge"
             acknowledgedEnvelopeIds.send(envelopeId)
 

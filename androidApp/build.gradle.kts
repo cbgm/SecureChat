@@ -1,16 +1,15 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.securechat.lint)
+    alias(libs.plugins.securechat.properties)
 }
 
-kotlin {
-    compilerOptions {
-        jvmTarget = JvmTarget.JVM_17
-    }
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }
 
 android {
@@ -32,6 +31,26 @@ android {
                 .toInt()
         versionCode = 1
         versionName = "1.0"
+
+        buildConfigField(
+            type = "String",
+            name = "RELAY_WEBSOCKET_URL",
+            value =
+                localProperties.buildConfigString(
+                    key = "securechat.relay.websocketUrl",
+                    defaultValue = "ws://10.0.2.2:8080/relay"
+                )
+        )
+
+        buildConfigField(
+            type = "String",
+            name = "RELAY_HTTP_BASE_URL",
+            value =
+                localProperties.buildConfigString(
+                    key = "securechat.relay.httpBaseUrl",
+                    defaultValue = "http://10.0.2.2:8080"
+                )
+        )
     }
 
     compileOptions {
@@ -74,11 +93,15 @@ dependencies {
     implementation(projects.feature.onboarding)
     implementation(projects.feature.settings)
     implementation(projects.feature.transport)
+    implementation(projects.notification)
+
+    implementation(projects.resources)
 
     implementation(libs.bundles.compose)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.koin.android)
+    implementation(libs.koin.androidx.workmanager)
 
     debugImplementation(libs.compose.uiTooling)
 }
