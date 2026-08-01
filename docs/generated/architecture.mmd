@@ -45,6 +45,10 @@ graph TD
         module_relay[":relay"]
     end
 
+    subgraph group_resources["resources"]
+        module_resources[":resources"]
+    end
+
     subgraph group_shared["shared"]
         module_shared[":shared"]
     end
@@ -66,9 +70,11 @@ graph TD
     module_androidApp --> module_feature_settings
     module_androidApp --> module_feature_transport
     module_androidApp --> module_notification
+    module_androidApp --> module_resources
     module_androidApp --> module_shared
     module_androidApp --> module_startup
     module_core_protocol --> module_core
+    module_core_ui --> module_resources
     module_data_database --> module_core
     module_data_database --> module_core_protocol
     module_feature_chats --> module_core

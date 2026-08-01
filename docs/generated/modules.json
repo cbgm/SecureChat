@@ -8,7 +8,7 @@
     "kotlinSourceFileCount": 9,
     "productionKotlinFileCount": 9,
     "testKotlinFileCount": 0,
-    "resourceFileCount": 23,
+    "resourceFileCount": 19,
     "sourceSets": [
       "main"
     ],
@@ -26,6 +26,7 @@
       ":feature:settings",
       ":feature:transport",
       ":notification",
+      ":resources",
       ":shared",
       ":startup"
     ],
@@ -135,7 +136,7 @@
     "kotlinSourceFileCount": 27,
     "productionKotlinFileCount": 27,
     "testKotlinFileCount": 0,
-    "resourceFileCount": 16,
+    "resourceFileCount": 1,
     "sourceSets": [
       "androidDeviceTest",
       "androidHostTest",
@@ -144,6 +145,7 @@
       "iosMain"
     ],
     "dependencies": [
+      ":resources"
     ],
     "dependents": [
       ":feature:chats",
@@ -575,6 +577,27 @@
     "dependencies": [
     ],
     "dependents": [
+    ]
+  },
+  {
+    "name": "resources",
+    "path": ":resources",
+    "group": "resources",
+    "directory": "resources",
+    "buildFile": "resources/build.gradle.kts",
+    "kotlinSourceFileCount": 0,
+    "productionKotlinFileCount": 0,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 19,
+    "sourceSets": [
+      "androidMain",
+      "commonMain"
+    ],
+    "dependencies": [
+    ],
+    "dependents": [
+      ":androidApp",
+      ":core:ui"
     ]
   },
   {

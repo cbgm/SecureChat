@@ -6,9 +6,9 @@ Generated automatically by `./gradlew architectureReport`.
 
 | Metric | Count |
 |---|---:|
-| Modules | 23 |
-| Module groups | 10 |
-| Project dependencies | 73 |
+| Modules | 24 |
+| Module groups | 11 |
+| Project dependencies | 75 |
 | Kotlin files | 684 |
 | Test Kotlin files | 43 |
 | Resource files | 57 |
@@ -59,6 +59,10 @@ Generated automatically by `./gradlew architectureReport`.
 ### relay
 
 - [**relay** (`:relay`)](modules/relay.md)
+
+### resources
+
+- [**resources** (`:resources`)](modules/resources.md)
 
 ### shared
 
@@ -118,6 +122,10 @@ graph TD
         module_relay[":relay"]
     end
 
+    subgraph group_resources["resources"]
+        module_resources[":resources"]
+    end
+
     subgraph group_shared["shared"]
         module_shared[":shared"]
     end
@@ -139,9 +147,11 @@ graph TD
     module_androidApp --> module_feature_settings
     module_androidApp --> module_feature_transport
     module_androidApp --> module_notification
+    module_androidApp --> module_resources
     module_androidApp --> module_shared
     module_androidApp --> module_startup
     module_core_protocol --> module_core
+    module_core_ui --> module_resources
     module_data_database --> module_core
     module_data_database --> module_core_protocol
     module_feature_chats --> module_core
