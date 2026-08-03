@@ -28,7 +28,8 @@ data class LocalMailboxCredentialEntity(
     val retrievalCapability: String,
     val sequence: Long,
     val expiresAtEpochMilliseconds: Long,
-    val identitySignature: ByteArray
+    val identitySignature: ByteArray,
+    val revocationPending: Boolean = false
 )
 
 @Entity(

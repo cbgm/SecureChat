@@ -21,6 +21,8 @@ interface MailboxGateway {
         credential: LocalMailboxCredential,
         envelopeId: String
     ): Result<Unit>
+
+    suspend fun revoke(credential: LocalMailboxCredential): Result<Unit>
 }
 
 @Serializable

@@ -34,4 +34,16 @@ interface MailboxRouteDao {
 
     @Upsert
     suspend fun upsertRemote(entity: RemoteMailboxRouteEntity)
+
+    @Query("UPDATE local_mailbox_credentials SET revocationPending = 1 WHERE contactId = :contactId")
+    suspend fun markLocalRevocationPending(contactId: String)
+
+    @Query("DELETE FROM local_mailbox_credentials WHERE contactId = :contactId")
+    suspend fun deleteLocal(contactId: String)
+
+    @Query("DELETE FROM remote_mailbox_routes WHERE contactId = :contactId")
+    suspend fun deleteRemote(contactId: String)
+
+    @Query("DELETE FROM remote_mailbox_routes")
+    suspend fun deleteAllRemote()
 }

@@ -1,6 +1,7 @@
 package com.cbgm.securechat.feature.messaging.di
 
 import com.cbgm.securechat.core.protocol.handler.TypedProtocolPacketHandler
+import com.cbgm.securechat.core.protocol.mailbox.MailboxCapabilityLifecycle
 import com.cbgm.securechat.core.protocol.outbox.OutboxProcessor
 import com.cbgm.securechat.core.protocol.outbox.OutboxRunner
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
@@ -13,6 +14,7 @@ import com.cbgm.securechat.feature.messaging.application.incoming.DefaultIncomin
 import com.cbgm.securechat.feature.messaging.application.incoming.DefaultIncomingRelayRunner
 import com.cbgm.securechat.feature.messaging.application.incoming.IncomingEnvelopeProcessor
 import com.cbgm.securechat.feature.messaging.application.incoming.IncomingRelayRunner
+import com.cbgm.securechat.feature.messaging.application.mailbox.DefaultMailboxCapabilityLifecycle
 import com.cbgm.securechat.feature.messaging.application.mailbox.DefaultMailboxCoordinator
 import com.cbgm.securechat.feature.messaging.application.mailbox.MailboxCoordinator
 import com.cbgm.securechat.feature.messaging.application.mailbox.MailboxRoutePacketHandler
@@ -116,6 +118,13 @@ val messagingModule =
 
         singleOf(::MailboxRoutePayloadEncoder)
 
+        single<MailboxCapabilityLifecycle> {
+            DefaultMailboxCapabilityLifecycle(
+                repository = get(),
+                gateway = get()
+            )
+        }
+
         singleOf(::MailboxRoutePacketHandler) {
             bind<TypedProtocolPacketHandler>()
         }
@@ -128,6 +137,8 @@ val messagingModule =
                 nodeEndpointResolver = get(),
                 mailboxGateway = get(),
                 mailboxRouteRepository = get(),
+                mailboxCapabilityLifecycle = get(),
+                contactBlocklistRepository = get(),
                 signingKeyPairProvider = get(),
                 signatureCrypto = get(),
                 payloadEncoder = get(),

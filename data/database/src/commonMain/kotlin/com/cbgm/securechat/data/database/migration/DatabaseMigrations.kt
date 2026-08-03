@@ -442,4 +442,14 @@ object DatabaseMigrations {
                 )
             }
         }
+
+    val Migration21To22 =
+        object : Migration(21, 22) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    "ALTER TABLE local_mailbox_credentials " +
+                        "ADD COLUMN revocationPending INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
 }

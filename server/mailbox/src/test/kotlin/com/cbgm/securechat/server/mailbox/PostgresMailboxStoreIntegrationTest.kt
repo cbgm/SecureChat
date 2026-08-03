@@ -7,6 +7,7 @@ import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class PostgresMailboxStoreIntegrationTest {
@@ -67,6 +68,19 @@ class PostgresMailboxStoreIntegrationTest {
                 assertEquals(
                     emptyList(),
                     store.pending(created.deliveryRoute.mailboxId, created.retrievalCapability)
+                )
+                assertEquals(
+                    MailboxRevocationResult.Revoked,
+                    store.revoke(
+                        created.deliveryRoute.mailboxId,
+                        created.retrievalCapability
+                    )
+                )
+                assertNull(
+                    store.pending(
+                        created.deliveryRoute.mailboxId,
+                        created.retrievalCapability
+                    )
                 )
             }
         }

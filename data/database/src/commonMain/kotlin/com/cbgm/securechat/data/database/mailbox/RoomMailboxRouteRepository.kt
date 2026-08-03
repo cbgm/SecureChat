@@ -30,9 +30,24 @@ class RoomMailboxRouteRepository(
                 dao.upsertRemote(route.toEntity(contactId))
             }
         }
+
+    override suspend fun markLocalRevocationPending(contactId: String): Result<Unit> = runCatching { dao.markLocalRevocationPending(contactId) }
+
+    override suspend fun deleteLocal(contactId: String): Result<Unit> = runCatching { dao.deleteLocal(contactId) }
+
+    override suspend fun deleteRemote(contactId: String): Result<Unit> = runCatching { dao.deleteRemote(contactId) }
+
+    override suspend fun deleteAllRemote(): Result<Unit> = runCatching { dao.deleteAllRemote() }
 }
 
-private fun LocalMailboxCredentialEntity.toDomain() = LocalMailboxCredential(contactId, toRoute(), accessEndpoint, retrievalCapability)
+private fun LocalMailboxCredentialEntity.toDomain() =
+    LocalMailboxCredential(
+        contactId,
+        toRoute(),
+        accessEndpoint,
+        retrievalCapability,
+        revocationPending
+    )
 
 private fun LocalMailboxCredentialEntity.toRoute() =
     MailboxDeliveryRoute(
@@ -70,7 +85,8 @@ private fun LocalMailboxCredential.toEntity() =
         retrievalCapability,
         deliveryRoute.sequence,
         deliveryRoute.expiresAtEpochMilliseconds,
-        deliveryRoute.identitySignature
+        deliveryRoute.identitySignature,
+        revocationPending
     )
 
 private fun MailboxDeliveryRoute.toEntity(contactId: String) =

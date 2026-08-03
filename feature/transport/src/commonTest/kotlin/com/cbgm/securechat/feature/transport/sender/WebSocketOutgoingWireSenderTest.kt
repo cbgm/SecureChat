@@ -214,5 +214,13 @@ class WebSocketOutgoingWireSenderTest {
             contactId: String,
             route: MailboxDeliveryRoute
         ) = Result.success(Unit)
+
+        override suspend fun markLocalRevocationPending(contactId: String) = Result.success(Unit)
+
+        override suspend fun deleteLocal(contactId: String) = Result.success(Unit)
+
+        override suspend fun deleteRemote(contactId: String) = Result.success(Unit)
+
+        override suspend fun deleteAllRemote() = Result.success(Unit)
     }
 }

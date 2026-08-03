@@ -67,4 +67,16 @@ class HttpMailboxGateway(
                 "Mailbox acknowledgement failed with ${response.status}"
             }
         }
+
+    override suspend fun revoke(credential: LocalMailboxCredential): Result<Unit> =
+        runCatching {
+            val route = credential.deliveryRoute
+            val response =
+                httpClient.delete(
+                    "${credential.accessEndpoint.trimEnd('/')}/v1/mailboxes/${route.mailboxId}"
+                ) { bearerAuth(credential.retrievalCapability) }
+            check(response.status == HttpStatusCode.NoContent) {
+                "Mailbox revocation failed with ${response.status}"
+            }
+        }
 }

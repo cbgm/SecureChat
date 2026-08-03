@@ -166,6 +166,30 @@ docker compose `
     Select-String -Pattern "v1/mailboxes|internal/v1/wake-ups|FCM wake-up|/stored"
 ```
 
+Mailbox capabilities are revoked when a contact is blocked, a direct conversation is deleted, or a
+local or accepted remote identity changes. The client authenticates
+`DELETE /v1/mailboxes/{mailboxId}` with the retrieval capability, removes the peer's cached delivery
+route, and records an offline revocation for retry on the next foreground connection. Routes last 30
+days and are replaced during the final three days; the old mailbox is revoked before the replacement
+is committed and shared.
+
+To verify revocation, note the mailbox counts, block a mutual contact, and inspect the mailbox logs:
+
+```powershell
+docker compose `
+    -f server/docker-compose.yml `
+    -f server/docker-compose.multinode.yml `
+    logs --since=2m mailbox mailbox-b |
+    Select-String -SimpleMatch "DELETE - /v1/mailboxes/"
+
+curl.exe http://localhost:8092/health
+curl.exe http://localhost:8192/health
+```
+
+At least the blocking device's mailbox count must decrease. Once the peer processes the signed
+direct-chat authorization revocation, its own per-contact mailbox is revoked as well. A repeated
+authenticated delete is idempotent and returns `204 No Content`.
+
 To test failover of node B's gateway and federation processes, keep the apps open and stop them:
 
 ```powershell
@@ -220,6 +244,8 @@ Legacy pending envelopes addressed to `scphone1_` IDs are not rewritten.
 - Presence routes are accepted only with a valid client signature and non-stale generation.
 - A presence routing ID must match the SHA-256-derived ID of the signing public key in its proof.
 - Mailbox IDs and capabilities are random. Only capability hashes are retained.
+- Retrieval capabilities can revoke their mailbox; revocation deletes every queued envelope.
+- Failed client revocations remain locally marked as pending and are retried after reconnect.
 - Encrypted envelope IDs are deduplicated and expired entries are removed.
 - Firebase Admin credentials are mounted only into the push container.
 
@@ -356,6 +382,10 @@ Docker Compose configures it through `mailbox-database` and retains the database
 `mailbox-database-data` volume. Capability hashes, mailbox expiry, and queued encrypted envelopes
 survive mailbox-container and complete Compose restarts. Raw send and retrieval capabilities are
 never stored.
+
+`DELETE /v1/mailboxes/{mailboxId}` requires the retrieval capability and atomically removes the
+mailbox plus its queued envelopes. Deleting an already absent mailbox returns `204`; a wrong
+capability returns `401`.
 
 The health endpoint reports both the active adapter and mailbox count:
 

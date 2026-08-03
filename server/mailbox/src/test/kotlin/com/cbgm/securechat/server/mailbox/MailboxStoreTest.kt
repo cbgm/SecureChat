@@ -6,9 +6,51 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class MailboxStoreTest {
+    @Test
+    fun retrievalCapabilityRevokesMailboxAndPendingEnvelopes() =
+        runTest {
+            val store = MailboxStore(now = { 1_000L })
+            val mailbox =
+                store.create(
+                    CreateMailboxRequest(
+                        nodeId = "node-a",
+                        nodeEndpoint = "http://mailbox",
+                        expiresAtEpochMilliseconds = 10_000L
+                    )
+                )
+
+            assertEquals(
+                MailboxRevocationResult.Unauthorized,
+                store.revoke(mailbox.deliveryRoute.mailboxId, "wrong-capability")
+            )
+            assertEquals(1, store.mailboxCount())
+            assertEquals(
+                MailboxRevocationResult.Revoked,
+                store.revoke(
+                    mailbox.deliveryRoute.mailboxId,
+                    mailbox.retrievalCapability
+                )
+            )
+            assertEquals(0, store.mailboxCount())
+            assertNull(
+                store.pending(
+                    mailbox.deliveryRoute.mailboxId,
+                    mailbox.retrievalCapability
+                )
+            )
+            assertEquals(
+                MailboxRevocationResult.NotFound,
+                store.revoke(
+                    mailbox.deliveryRoute.mailboxId,
+                    mailbox.retrievalCapability
+                )
+            )
+        }
+
     @Test
     fun envelopeIsStoredIdempotentlyUntilProcessedAcknowledgement() =
         runTest {

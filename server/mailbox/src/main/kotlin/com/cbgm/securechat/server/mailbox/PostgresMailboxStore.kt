@@ -197,6 +197,26 @@ internal class PostgresMailboxStore(
             }
         }
 
+    override suspend fun revoke(
+        mailboxId: String,
+        retrievalCapability: String
+    ): MailboxRevocationResult =
+        database.withConnection { connection ->
+            connection.inMailboxTransaction {
+                val mailbox =
+                    activeMailboxForUpdate(connection, mailboxId)
+                        ?: return@inMailboxTransaction MailboxRevocationResult.NotFound
+                if (!matches(retrievalCapability, mailbox.retrievalCapabilityHash)) {
+                    return@inMailboxTransaction MailboxRevocationResult.Unauthorized
+                }
+                connection.prepareStatement("DELETE FROM mailboxes WHERE mailbox_id = ?").use { statement ->
+                    statement.setString(1, mailboxId)
+                    statement.executeUpdate()
+                }
+                MailboxRevocationResult.Revoked
+            }
+        }
+
     override suspend fun mailboxCount(): Int =
         database.withConnection { connection ->
             purgeExpiredMailboxes(connection)

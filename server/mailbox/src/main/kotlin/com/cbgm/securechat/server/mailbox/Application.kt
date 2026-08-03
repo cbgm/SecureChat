@@ -104,6 +104,21 @@ fun Application.mailboxModule(
                 call.respond(HttpStatusCode.Unauthorized)
             }
         }
+
+        delete("/v1/mailboxes/{mailboxId}") {
+            val mailboxId =
+                call.parameters["mailboxId"]
+                    ?: return@delete call.respond(HttpStatusCode.BadRequest)
+            val capability =
+                call.bearerCapability()
+                    ?: return@delete call.respond(HttpStatusCode.Unauthorized)
+            when (store.revoke(mailboxId, capability)) {
+                MailboxRevocationResult.Revoked,
+                MailboxRevocationResult.NotFound -> call.respond(HttpStatusCode.NoContent)
+
+                MailboxRevocationResult.Unauthorized -> call.respond(HttpStatusCode.Unauthorized)
+            }
+        }
     }
 }
 

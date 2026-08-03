@@ -227,6 +227,11 @@ the selected mailbox, while FCM carries only a wake-up identifier; the receiver 
 and acknowledges the mailbox envelope after waking. The legacy push inbox remains as a compatibility
 fallback until both contacts have exchanged mailbox routes.
 
+Per-contact mailbox capabilities now rotate automatically before expiry and are revoked when a
+contact is blocked, a direct chat is deleted, or either identity changes. Offline revocation attempts
+are persisted and retried after reconnect, while obsolete remote delivery routes are removed
+immediately.
+
 See the server README for module boundaries, ports, security behavior, and migration limitations.
 
 ---

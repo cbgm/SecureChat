@@ -3,9 +3,11 @@ package com.cbgm.securechat.feature.messaging.application.mailbox
 import com.cbgm.securechat.core.crypto.signature.DetachedSignatureCrypto
 import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPairProvider
 import com.cbgm.securechat.core.protocol.mailbox.LocalMailboxCredential
+import com.cbgm.securechat.core.protocol.mailbox.MailboxCapabilityLifecycle
 import com.cbgm.securechat.core.protocol.mailbox.MailboxRouteRepository
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.packet.MailboxRoutePacket
+import com.cbgm.securechat.core.security.ContactBlocklistRepository
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.data.database.dao.ContactRelayIdDao
@@ -24,6 +26,8 @@ class DefaultMailboxCoordinator(
     private val nodeEndpointResolver: NodeEndpointResolver,
     private val mailboxGateway: MailboxGateway,
     private val mailboxRouteRepository: MailboxRouteRepository,
+    private val mailboxCapabilityLifecycle: MailboxCapabilityLifecycle,
+    private val contactBlocklistRepository: ContactBlocklistRepository,
     private val signingKeyPairProvider: LocalSigningKeyPairProvider,
     private val signatureCrypto: DetachedSignatureCrypto,
     private val payloadEncoder: MailboxRoutePayloadEncoder,
@@ -41,14 +45,21 @@ class DefaultMailboxCoordinator(
                     .firstOrNull { it.mailboxRouteEndpoint != null && it.mailboxAccessEndpoint != null }
                     ?: error("No mailbox-capable node is available")
             var provisioned = 0
+            mailboxCapabilityLifecycle.retryPendingRevocations().getOrNull()
+            val blockedContactIds = contactBlocklistRepository.getBlockedContactIds()
 
             contactDao.observeAll().first().forEach { contact ->
                 val contactId = contact.contact.id
+                if (contactId in blockedContactIds) {
+                    mailboxCapabilityLifecycle.revokeForContact(contactId).getOrNull()
+                    return@forEach
+                }
                 val identity = contact.publicIdentity ?: return@forEach
                 if (identity.keyExchangeStatus != "MUTUAL") return@forEach
                 if (contactRelayIdDao.findRelayIdByContactId(contactId).isNullOrBlank()) return@forEach
 
                 val current = mailboxRouteRepository.localForContact(contactId).getOrThrow()
+                if (current?.revocationPending == true) return@forEach
                 val credential =
                     if (
                         current != null &&
@@ -61,10 +72,25 @@ class DefaultMailboxCoordinator(
                             nodeId = node.nodeId,
                             routeEndpoint = checkNotNull(node.mailboxRouteEndpoint),
                             accessEndpoint = checkNotNull(node.mailboxAccessEndpoint),
-                            sequence = (current?.deliveryRoute?.sequence ?: -1L) + 1L,
+                            sequence =
+                                maxOf(
+                                    (current?.deliveryRoute?.sequence ?: -1L) + 1L,
+                                    now
+                                ),
                             expiresAt = now + ROUTE_LIFETIME_MILLISECONDS
-                        ).also {
-                            mailboxRouteRepository.saveLocal(it).getOrThrow()
+                        ).also { replacement ->
+                            if (current != null) {
+                                mailboxRouteRepository.markLocalRevocationPending(contactId).getOrThrow()
+                                mailboxGateway.revoke(current).getOrElse { revocationError ->
+                                    mailboxGateway.revoke(replacement).getOrNull()
+                                    throw revocationError
+                                }
+                                mailboxRouteRepository.deleteLocal(contactId).getOrThrow()
+                            }
+                            mailboxRouteRepository.saveLocal(replacement).getOrElse { persistenceError ->
+                                mailboxGateway.revoke(replacement).getOrNull()
+                                throw persistenceError
+                            }
                             provisioned += 1
                         }
                     }
@@ -85,24 +111,28 @@ class DefaultMailboxCoordinator(
     override suspend fun synchronizePending(): Result<Int> =
         runCatching {
             var processed = 0
-            mailboxRouteRepository.allLocal().getOrThrow().forEach { credential ->
-                mailboxGateway.pending(credential).getOrThrow().forEach { envelope ->
-                    when (
-                        incomingEnvelopeProcessor
-                            .process(
-                                envelopeId = envelope.envelopeId,
-                                senderRelayId = envelope.senderRoutingId,
-                                encodedTransportPayload = envelope.encryptedPayload
-                            ).getOrThrow()
-                    ) {
-                        IncomingEnvelopeProcessingResult.Processed -> {
-                            mailboxGateway.acknowledge(credential, envelope.envelopeId).getOrThrow()
-                            processed += 1
+            mailboxRouteRepository
+                .allLocal()
+                .getOrThrow()
+                .filterNot(LocalMailboxCredential::revocationPending)
+                .forEach { credential ->
+                    mailboxGateway.pending(credential).getOrThrow().forEach { envelope ->
+                        when (
+                            incomingEnvelopeProcessor
+                                .process(
+                                    envelopeId = envelope.envelopeId,
+                                    senderRelayId = envelope.senderRoutingId,
+                                    encodedTransportPayload = envelope.encryptedPayload
+                                ).getOrThrow()
+                        ) {
+                            IncomingEnvelopeProcessingResult.Processed -> {
+                                mailboxGateway.acknowledge(credential, envelope.envelopeId).getOrThrow()
+                                processed += 1
+                            }
+                            IncomingEnvelopeProcessingResult.UnknownSender -> Unit
                         }
-                        IncomingEnvelopeProcessingResult.UnknownSender -> Unit
                     }
                 }
-            }
             processed
         }
 

@@ -31,6 +31,11 @@ interface MailboxStorage : AutoCloseable {
         envelopeId: String
     ): Boolean
 
+    suspend fun revoke(
+        mailboxId: String,
+        retrievalCapability: String
+    ): MailboxRevocationResult
+
     suspend fun mailboxCount(): Int
 }
 
@@ -139,6 +144,18 @@ class MailboxStore(
         return true
     }
 
+    override suspend fun revoke(
+        mailboxId: String,
+        retrievalCapability: String
+    ): MailboxRevocationResult {
+        val mailbox = activeMailbox(mailboxId) ?: return MailboxRevocationResult.NotFound
+        if (!matches(retrievalCapability, mailbox.retrievalCapabilityHash)) {
+            return MailboxRevocationResult.Unauthorized
+        }
+        mailboxes.remove(mailboxId, mailbox)
+        return MailboxRevocationResult.Revoked
+    }
+
     override suspend fun mailboxCount(): Int {
         purgeExpiredMailboxes()
         return mailboxes.size
@@ -187,4 +204,12 @@ sealed interface MailboxResult {
     data class Rejected(
         val code: String
     ) : MailboxResult
+}
+
+sealed interface MailboxRevocationResult {
+    data object Revoked : MailboxRevocationResult
+
+    data object NotFound : MailboxRevocationResult
+
+    data object Unauthorized : MailboxRevocationResult
 }
