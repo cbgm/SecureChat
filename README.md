@@ -211,6 +211,10 @@ compatibility server. A complete local network can be started with:
 docker compose -f server/docker-compose.yml up --build
 ```
 
+The app automatically signs and refreshes its presence route after connecting to the federated
+gateway, enabling the federation service to locate active clients across nodes. Device routing IDs
+are derived from random signing identities and do not contain or hash phone numbers.
+
 See the server README for module boundaries, ports, security behavior, and migration limitations.
 
 ---

@@ -1,63 +1,58 @@
 package com.cbgm.securechat.feature.transport.relay.identity
 
-import com.cbgm.securechat.core.protocol.phone.DefaultPhoneNumberNormalizer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class Sha256RelayIdGeneratorTest {
-    private val generator =
-        Sha256RelayIdGenerator(
-            phoneNumberNormalizer = DefaultPhoneNumberNormalizer()
-        )
+    private val generator = Sha256RelayIdGenerator()
 
     @Test
-    fun equivalentPhoneNumberFormatsProduceSameRelayId() {
-        val international =
-            generator
-                .deriveFromPhoneNumber("+49 170 1234567")
-                .getOrThrow()
-        val internationalPrefix =
-            generator
-                .deriveFromPhoneNumber("0049-170-1234567")
-                .getOrThrow()
-
-        assertEquals(international, internationalPrefix)
-    }
-
-    @Test
-    fun relayIdIsDeterministicAndUsesExpectedPrefix() {
+    fun sameSigningIdentityProducesSameRoutingId() {
         val first =
             generator
-                .deriveFromPhoneNumber("+491701234567")
+                .deriveFromSigningPublicKey(byteArrayOf(1, 2, 3))
                 .getOrThrow()
         val second =
             generator
-                .deriveFromPhoneNumber("+491701234567")
+                .deriveFromSigningPublicKey(byteArrayOf(1, 2, 3))
                 .getOrThrow()
 
         assertEquals(first, second)
-        assertTrue(first.startsWith("scphone1_"))
-        assertTrue(first.length > "scphone1_".length)
     }
 
     @Test
-    fun differentPhoneNumbersProduceDifferentRelayIds() {
+    fun routingIdUsesTheNonPhoneDevicePrefix() {
+        val routingId =
+            generator
+                .deriveFromSigningPublicKey(byteArrayOf(1, 2, 3))
+                .getOrThrow()
+
+        assertEquals(
+            "scrouting1_A5BYxvLAy0ksUzsKTRTvd8wPeKvMztUofYShogEc-4E",
+            routingId
+        )
+        assertTrue(routingId.startsWith("scrouting1_"))
+        assertTrue(routingId.length > "scrouting1_".length)
+    }
+
+    @Test
+    fun differentSigningIdentitiesProduceDifferentRoutingIds() {
         val first =
             generator
-                .deriveFromPhoneNumber("+491701234567")
+                .deriveFromSigningPublicKey(byteArrayOf(1, 2, 3))
                 .getOrThrow()
         val second =
             generator
-                .deriveFromPhoneNumber("+491701234568")
+                .deriveFromSigningPublicKey(byteArrayOf(1, 2, 4))
                 .getOrThrow()
 
         assertNotEquals(first, second)
     }
 
     @Test
-    fun invalidPhoneNumberReturnsFailure() {
-        assertTrue(generator.deriveFromPhoneNumber("not-a-number").isFailure)
+    fun emptySigningKeyReturnsFailure() {
+        assertTrue(generator.deriveFromSigningPublicKey(byteArrayOf()).isFailure)
     }
 }

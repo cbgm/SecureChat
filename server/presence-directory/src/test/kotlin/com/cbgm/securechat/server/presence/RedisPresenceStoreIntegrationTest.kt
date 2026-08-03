@@ -4,10 +4,10 @@ import com.cbgm.securechat.server.protocol.ClientRoute
 import com.cbgm.securechat.server.protocol.ClientRouteRegistration
 import com.cbgm.securechat.server.protocol.serverJson
 import com.cbgm.securechat.server.protocol.unsigned
+import com.cbgm.securechat.server.security.ClientRoutingIds
 import com.cbgm.securechat.server.security.NodeIdentity
 import com.cbgm.securechat.server.security.Signatures
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.encodeToString
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,9 +23,9 @@ class RedisPresenceStoreIntegrationTest {
                     ?.takeIf(String::isNotBlank)
                     ?: return@runTest
             val suffix = UUID.randomUUID().toString().replace("-", "")
-            val routingId = "scrouting1_$suffix"
             val keyPrefix = "securechat:test:presence:$suffix"
             val identity = NodeIdentity.generate()
+            val routingId = ClientRoutingIds.fromSigningPublicKey(identity.encodedPublicKey)
             val now = System.currentTimeMillis()
             val registration = registration(identity, routingId, generation = 2L, now = now)
 

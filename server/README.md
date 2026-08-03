@@ -53,10 +53,15 @@ http://10.0.2.2:8095
 Use the gateway URL as `serverUrl` and the push URL as `httpBaseUrl` in
 `RelayTransportConfig`. The push health response must contain `fcmEnabled=true`.
 
-The gateway accepts the existing relay WebSocket frames. Existing clients work locally without a
-signed presence route. Cross-node routing becomes available when the client sends the optional route
-proof fields in its `register` frame and includes the recipient-selected `mailboxRoute` in outgoing
-envelopes.
+The gateway accepts the existing relay WebSocket frames. Current clients fetch `/v1/gateway`, create
+a connection ID, and attach a signed, expiring presence route to the initial `register` frame. They
+refresh that route every 30 seconds while the WebSocket remains connected. Older clients still work
+locally through the compatibility registration, but they do not publish a cross-node presence route.
+Current routing IDs begin with `scrouting1_` and are derived from the device signing public key, not
+from its phone number. The presence service verifies that key-to-ID binding before accepting a route.
+This is an addressing migration: update and open every test client once so each FCM token is moved to
+its new routing ID. Cached contact mappings are replaced automatically from exchanged signing keys.
+Legacy pending envelopes addressed to `scphone1_` IDs are not rewritten.
 
 ## Security behavior
 
@@ -67,6 +72,7 @@ envelopes.
 - Request nonces are retained for a bounded window to reject replays.
 - Gateway, federation, and push internal endpoints use separate credentials and constant-time checks.
 - Presence routes are accepted only with a valid client signature and non-stale generation.
+- A presence routing ID must match the SHA-256-derived ID of the signing public key in its proof.
 - Mailbox IDs and capabilities are random. Only capability hashes are retained.
 - Encrypted envelope IDs are deduplicated and expired entries are removed.
 - Firebase Admin credentials are mounted only into the push container.
@@ -128,6 +134,7 @@ the merged production configuration. Public traffic is restricted to these proto
 | Public route | Service |
 |---|---|
 | `/relay` | Gateway WebSocket |
+| `/v1/gateway` | Gateway node information used for signed client routes |
 | `/push/*` | Push registration and opaque wake-up retrieval |
 | `/v1/federation/*` | Signed node-to-node envelope delivery |
 | `/v1/mailboxes/*` | Capability-protected mailbox operations |
@@ -240,6 +247,18 @@ curl.exe http://localhost:8091/health
 
 Both responses must contain `persistence=redis`. Routes expire after at most two minutes by default;
 configure this with `PRESENCE_MAXIMUM_TTL_MILLISECONDS`.
+
+The Compose gateway advertises a 90-second route lifetime and refreshes at 30 seconds. After
+rebuilding and reconnecting all Android clients, active routes should match active WebSockets:
+
+```powershell
+curl.exe http://localhost:8091/health
+curl.exe http://localhost:8094/health
+```
+
+For example, three connected clients should report `routes=3` and `connections=3`. A route can lag a
+new WebSocket by a few seconds only when local identity keys are not yet available; the client retries
+signed registration every five seconds.
 
 The optional Redis integration test can be enabled against the Compose instance:
 

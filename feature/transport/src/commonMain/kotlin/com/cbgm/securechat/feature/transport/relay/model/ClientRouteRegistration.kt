@@ -1,4 +1,4 @@
-package com.cbgm.securechat.server.protocol
+package com.cbgm.securechat.feature.transport.relay.model
 
 import kotlinx.serialization.Serializable
 
@@ -9,9 +9,15 @@ data class GatewayNodeInformation(
     val routeRefreshIntervalMilliseconds: Long
 ) {
     init {
-        require(nodeId.isNotBlank())
-        require(routeLifetimeMilliseconds > 0L)
-        require(routeRefreshIntervalMilliseconds in 1 until routeLifetimeMilliseconds)
+        require(nodeId.isNotBlank()) {
+            "Gateway node ID must not be blank"
+        }
+        require(routeLifetimeMilliseconds > 0L) {
+            "Route lifetime must be positive"
+        }
+        require(routeRefreshIntervalMilliseconds in 1 until routeLifetimeMilliseconds) {
+            "Route refresh interval must be positive and shorter than the route lifetime"
+        }
     }
 }
 
@@ -23,15 +29,7 @@ data class ClientRoute(
     val generation: Long,
     val expiresAtEpochMilliseconds: Long,
     val clientSignature: ByteArray
-) {
-    init {
-        require(routingId.isNotBlank())
-        require(nodeId.isNotBlank())
-        require(connectionId.isNotBlank())
-        require(generation >= 0L)
-        require(expiresAtEpochMilliseconds > 0L)
-    }
-}
+)
 
 @Serializable
 data class UnsignedClientRoute(
@@ -55,10 +53,4 @@ fun ClientRoute.unsigned(): UnsignedClientRoute =
 data class ClientRouteRegistration(
     val route: ClientRoute,
     val clientSigningPublicKey: ByteArray
-)
-
-@Serializable
-data class ClientRoutingResult(
-    val routingId: String,
-    val routes: List<ClientRoute>
 )

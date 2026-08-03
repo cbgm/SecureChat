@@ -12,7 +12,6 @@ import io.ktor.server.websocket.DefaultWebSocketServerSession
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.channels.consumeEach
-import kotlinx.serialization.encodeToString
 import java.util.UUID
 
 class GatewayWebSocketHandler(
@@ -196,7 +195,7 @@ class GatewayWebSocketHandler(
     private suspend fun register(
         session: DefaultWebSocketServerSession,
         message: GatewayClientMessage.Register
-    ): GatewayConnection {
+    ): GatewayConnection? {
         val connection =
             GatewayConnection(
                 routingId = message.relayId,
@@ -205,14 +204,6 @@ class GatewayWebSocketHandler(
                         ?: UUID.randomUUID().toString(),
                 session = session
             )
-
-        connections.register(connection)
-
-        connection.send(
-            GatewayServerMessage.Registered(
-                relayId = message.relayId
-            )
-        )
 
         val generation = message.generation
         val expiresAt = message.expiresAtEpochMilliseconds
@@ -225,21 +216,39 @@ class GatewayWebSocketHandler(
             publicKey != null &&
             signature != null
         ) {
-            presence.register(
-                ClientRouteRegistration(
-                    route =
-                        ClientRoute(
-                            routingId = message.relayId,
-                            nodeId = nodeId,
-                            connectionId = connection.connectionId,
-                            generation = generation,
-                            expiresAtEpochMilliseconds = expiresAt,
-                            clientSignature = signature
-                        ),
-                    clientSigningPublicKey = publicKey
+            val routeAccepted =
+                presence.register(
+                    ClientRouteRegistration(
+                        route =
+                            ClientRoute(
+                                routingId = message.relayId,
+                                nodeId = nodeId,
+                                connectionId = connection.connectionId,
+                                generation = generation,
+                                expiresAtEpochMilliseconds = expiresAt,
+                                clientSignature = signature
+                            ),
+                        clientSigningPublicKey = publicKey
+                    )
                 )
-            )
+            if (!routeAccepted) {
+                connection.send(
+                    GatewayServerMessage.Error(
+                        code = "ROUTE_REJECTED",
+                        message = "Presence route rejected"
+                    )
+                )
+                return null
+            }
         }
+
+        connections.register(connection)
+
+        connection.send(
+            GatewayServerMessage.Registered(
+                relayId = message.relayId
+            )
+        )
 
         runCatching {
             legacyPush.pending(

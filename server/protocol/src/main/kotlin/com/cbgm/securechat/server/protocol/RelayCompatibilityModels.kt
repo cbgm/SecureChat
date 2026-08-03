@@ -36,7 +36,26 @@ sealed interface GatewayClientMessage {
         val expiresAtEpochMilliseconds: Long? = null,
         val clientSigningPublicKey: ByteArray? = null,
         val clientSignature: ByteArray? = null
-    ) : GatewayClientMessage
+    ) : GatewayClientMessage {
+        init {
+            require(relayId.isNotBlank())
+            require(connectionId == null || connectionId.isNotBlank())
+
+            val proofFields =
+                listOf(
+                    generation,
+                    expiresAtEpochMilliseconds,
+                    clientSigningPublicKey,
+                    clientSignature
+                )
+            require(proofFields.all { it == null } || proofFields.all { it != null }) {
+                "Route proof fields must either all be present or all be absent"
+            }
+            require(generation == null || connectionId != null) {
+                "A signed route requires a connection ID"
+            }
+        }
+    }
 
     @Serializable
     @SerialName("send_envelope")

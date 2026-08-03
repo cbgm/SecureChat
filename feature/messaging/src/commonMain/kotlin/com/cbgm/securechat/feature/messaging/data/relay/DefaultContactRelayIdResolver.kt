@@ -17,23 +17,18 @@ class DefaultContactRelayIdResolver(
                 "Contact ID must not be blank"
             }
 
-            contactRelayIdDao.findRelayIdByContactId(contactId)?.let { relayId ->
+            val contact = getContact(contactId).getOrThrow() ?: error("Contact was not found")
+            val signingPublicKey =
+                contact.secureChatIdentity?.signingPublicKey
+                    ?: error("Contact has no SecureChat signing identity")
+            val relayId =
+                relayIdGenerator
+                    .deriveFromSigningPublicKey(signingPublicKey)
+                    .getOrThrow()
+
+            if (contactRelayIdDao.findRelayIdByContactId(contactId) == relayId) {
                 return@runCatching relayId
             }
-
-            val contact = getContact(contactId).getOrThrow() ?: error("Contact was not found")
-            val phoneNumber =
-                contact.preferredPhoneNumber
-                    ?.value
-                    ?.trim()
-                    ?.takeIf { it.isNotEmpty() }
-                    ?: contact.phoneNumbers
-                        .firstOrNull()
-                        ?.value
-                        ?.trim()
-                        ?.takeIf { it.isNotEmpty() }
-                    ?: error("Contact has no phone number or relay mapping")
-            val relayId = relayIdGenerator.deriveFromPhoneNumber(phoneNumber).getOrThrow()
 
             contactRelayIdDao.upsert(ContactRelayIdEntity(contactId, relayId))
             relayId

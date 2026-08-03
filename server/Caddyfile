@@ -15,6 +15,11 @@
         }
     }
 
+    @gateway_info path /v1/gateway
+    handle @gateway_info {
+        reverse_proxy gateway:8094
+    }
+
     @push path /push /push/*
     handle @push {
         reverse_proxy push:8095

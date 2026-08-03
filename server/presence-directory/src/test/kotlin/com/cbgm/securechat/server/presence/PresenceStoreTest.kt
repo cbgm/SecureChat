@@ -4,10 +4,10 @@ import com.cbgm.securechat.server.protocol.ClientRoute
 import com.cbgm.securechat.server.protocol.ClientRouteRegistration
 import com.cbgm.securechat.server.protocol.serverJson
 import com.cbgm.securechat.server.protocol.unsigned
+import com.cbgm.securechat.server.security.ClientRoutingIds
 import com.cbgm.securechat.server.security.NodeIdentity
 import com.cbgm.securechat.server.security.Signatures
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.encodeToString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -21,14 +21,31 @@ class PresenceStoreTest {
 
             assertIs<PresenceResult.Accepted>(store.register(registration(identity, generation = 2L)))
             assertIs<PresenceResult.Rejected>(store.register(registration(identity, generation = 1L)))
+            val routingId = ClientRoutingIds.fromSigningPublicKey(identity.encodedPublicKey)
             assertEquals(
                 2L,
                 store
-                    .resolve(ROUTING_ID)
+                    .resolve(routingId)
                     .routes
                     .single()
                     .generation
             )
+        }
+
+    @Test
+    fun signingKeyCannotClaimAnotherDeviceRoutingId() =
+        runTest {
+            val identity = NodeIdentity.generate()
+            val registration = registration(identity, generation = 1L)
+            val claimedRoutingId = ClientRoutingIds.fromSigningPublicKey(ByteArray(32) { 7 })
+            val result =
+                PresenceStore(now = { 1_000L }).register(
+                    registration.copy(
+                        route = registration.route.copy(routingId = claimedRoutingId)
+                    )
+                )
+
+            assertEquals(PresenceResult.Rejected("INVALID_ROUTING_ID"), result)
         }
 
     private fun registration(
@@ -37,7 +54,7 @@ class PresenceStoreTest {
     ): ClientRouteRegistration {
         val unsigned =
             ClientRoute(
-                routingId = ROUTING_ID,
+                routingId = ClientRoutingIds.fromSigningPublicKey(identity.encodedPublicKey),
                 nodeId = "node-a",
                 connectionId = "connection-$generation",
                 generation = generation,
@@ -50,9 +67,5 @@ class PresenceStoreTest {
                 identity.privateKey
             )
         return ClientRouteRegistration(unsigned.copy(clientSignature = signature), identity.encodedPublicKey)
-    }
-
-    private companion object {
-        const val ROUTING_ID = "scrouting1_abcdefghijklmnopqrstuvwxyz123456"
     }
 }

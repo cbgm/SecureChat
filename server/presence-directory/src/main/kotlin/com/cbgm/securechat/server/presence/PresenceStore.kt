@@ -3,6 +3,7 @@ package com.cbgm.securechat.server.presence
 import com.cbgm.securechat.server.protocol.ClientRoute
 import com.cbgm.securechat.server.protocol.ClientRouteRegistration
 import com.cbgm.securechat.server.protocol.ClientRoutingResult
+import com.cbgm.securechat.server.security.ClientRoutingIds
 import com.cbgm.securechat.server.security.ProtocolSignatures
 import java.util.concurrent.ConcurrentHashMap
 
@@ -90,7 +91,7 @@ internal fun validatePresenceRegistration(
     currentTime: Long
 ): PresenceResult.Rejected? {
     val route = registration.route
-    if (!route.routingId.startsWith(ROUTING_ID_PREFIX) || route.routingId.length < MINIMUM_ROUTING_ID_LENGTH) {
+    if (!ClientRoutingIds.matchesSigningPublicKey(route.routingId, registration.clientSigningPublicKey)) {
         return PresenceResult.Rejected("INVALID_ROUTING_ID")
     }
     if (route.expiresAtEpochMilliseconds <= currentTime) {
@@ -104,9 +105,6 @@ internal fun validatePresenceRegistration(
     }
     return null
 }
-
-private const val ROUTING_ID_PREFIX = "scrouting1_"
-private const val MINIMUM_ROUTING_ID_LENGTH = 32
 
 sealed interface PresenceResult {
     data object Accepted : PresenceResult

@@ -136,9 +136,12 @@ class DefaultIncomingRelayRunnerTest {
     ): DefaultIncomingRelayRunner =
         DefaultIncomingRelayRunner(
             incomingRelayGateway = relayGateway,
-            contactByRelayIdResolver = contactResolver,
-            localEncryptionKeyPairProvider = keyPairProvider,
-            incomingMessageHandler = incomingHandler
+            incomingEnvelopeProcessor =
+                DefaultIncomingEnvelopeProcessor(
+                    contactByRelayIdResolver = contactResolver,
+                    localEncryptionKeyPairProvider = keyPairProvider,
+                    incomingMessageHandler = incomingHandler
+                )
         )
 
     private fun createEnvelope(): IncomingRelayEnvelope =

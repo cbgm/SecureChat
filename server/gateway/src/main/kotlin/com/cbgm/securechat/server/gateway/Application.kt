@@ -4,6 +4,7 @@ import com.cbgm.securechat.server.persistence.ServiceEnvironment
 import com.cbgm.securechat.server.protocol.EnvelopeAcceptanceState
 import com.cbgm.securechat.server.protocol.FederatedEnvelope
 import com.cbgm.securechat.server.protocol.FederationAcknowledgement
+import com.cbgm.securechat.server.protocol.GatewayNodeInformation
 import com.cbgm.securechat.server.protocol.serverJson
 import com.cbgm.securechat.server.security.InternalApiAuthentication
 import com.cbgm.securechat.server.security.NodeIdentity
@@ -110,6 +111,16 @@ fun Application.gatewayModule(
             )
         }
 
+        get("/v1/gateway") {
+            call.respond(
+                GatewayNodeInformation(
+                    nodeId = identity.nodeId,
+                    routeLifetimeMilliseconds = config.routeLifetimeMilliseconds,
+                    routeRefreshIntervalMilliseconds = config.routeRefreshIntervalMilliseconds
+                )
+            )
+        }
+
         webSocket("/relay") {
             handler.handle(this)
         }
@@ -159,8 +170,19 @@ data class GatewayConfig(
     val federationInternalApiToken: String?,
     val pushInternalApiToken: String?,
     val gatewayInternalApiToken: String?,
-    val maximumFrameBytes: Long
+    val maximumFrameBytes: Long,
+    val routeLifetimeMilliseconds: Long,
+    val routeRefreshIntervalMilliseconds: Long
 ) {
+    init {
+        require(routeLifetimeMilliseconds > 0L) {
+            "Route lifetime must be positive"
+        }
+        require(routeRefreshIntervalMilliseconds in 1 until routeLifetimeMilliseconds) {
+            "Route refresh interval must be positive and shorter than the route lifetime"
+        }
+    }
+
     companion object {
         fun fromEnvironment(): GatewayConfig {
             val legacyToken = ServiceEnvironment.secret("INTERNAL_API_TOKEN")
@@ -192,7 +214,17 @@ data class GatewayConfig(
                     System
                         .getenv("MAX_FRAME_BYTES")
                         ?.toLongOrNull()
-                        ?: 1_048_576L
+                        ?: 1_048_576L,
+                routeLifetimeMilliseconds =
+                    System
+                        .getenv("ROUTE_LIFETIME_MILLISECONDS")
+                        ?.toLongOrNull()
+                        ?: 90_000L,
+                routeRefreshIntervalMilliseconds =
+                    System
+                        .getenv("ROUTE_REFRESH_INTERVAL_MILLISECONDS")
+                        ?.toLongOrNull()
+                        ?: 30_000L
             )
         }
     }
