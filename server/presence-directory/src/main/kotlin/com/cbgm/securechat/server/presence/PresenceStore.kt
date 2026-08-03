@@ -6,27 +6,33 @@ import com.cbgm.securechat.server.protocol.ClientRoutingResult
 import com.cbgm.securechat.server.security.ProtocolSignatures
 import java.util.concurrent.ConcurrentHashMap
 
+interface PresenceStorage : AutoCloseable {
+    val persistenceMode: String
+
+    suspend fun register(registration: ClientRouteRegistration): PresenceResult
+
+    suspend fun remove(
+        routingId: String,
+        connectionId: String
+    )
+
+    suspend fun resolve(routingId: String): ClientRoutingResult
+
+    suspend fun routeCount(): Int
+}
+
 class PresenceStore(
     private val maximumTtlMilliseconds: Long = 120_000L,
     private val now: () -> Long = System::currentTimeMillis
-) {
+) : PresenceStorage {
     private val routes = ConcurrentHashMap<String, ConcurrentHashMap<String, ClientRoute>>()
 
-    fun register(registration: ClientRouteRegistration): PresenceResult {
+    override val persistenceMode: String = "memory"
+
+    override suspend fun register(registration: ClientRouteRegistration): PresenceResult {
         val route = registration.route
         val currentTime = now()
-        if (!route.routingId.startsWith(ROUTING_ID_PREFIX) || route.routingId.length < MINIMUM_ROUTING_ID_LENGTH) {
-            return PresenceResult.Rejected("INVALID_ROUTING_ID")
-        }
-        if (route.expiresAtEpochMilliseconds <= currentTime) {
-            return PresenceResult.Rejected("ROUTE_EXPIRED")
-        }
-        if (route.expiresAtEpochMilliseconds - currentTime > maximumTtlMilliseconds) {
-            return PresenceResult.Rejected("TTL_TOO_LONG")
-        }
-        if (!ProtocolSignatures.verifyClientRoute(route, registration.clientSigningPublicKey)) {
-            return PresenceResult.Rejected("INVALID_SIGNATURE")
-        }
+        validatePresenceRegistration(registration, maximumTtlMilliseconds, currentTime)?.let { return it }
 
         val deviceRoutes = routes.computeIfAbsent(route.routingId) { ConcurrentHashMap() }
         val newestGeneration = deviceRoutes.values.maxOfOrNull(ClientRoute::generation) ?: -1L
@@ -40,7 +46,7 @@ class PresenceStore(
         return PresenceResult.Accepted
     }
 
-    fun remove(
+    override suspend fun remove(
         routingId: String,
         connectionId: String
     ) {
@@ -52,7 +58,7 @@ class PresenceStore(
         }
     }
 
-    fun resolve(routingId: String): ClientRoutingResult {
+    override suspend fun resolve(routingId: String): ClientRoutingResult {
         purgeExpired()
         return ClientRoutingResult(
             routingId = routingId,
@@ -60,7 +66,7 @@ class PresenceStore(
         )
     }
 
-    fun routeCount(): Int {
+    override suspend fun routeCount(): Int {
         purgeExpired()
         return routes.values.sumOf { it.size }
     }
@@ -75,11 +81,32 @@ class PresenceStore(
         }
     }
 
-    private companion object {
-        const val ROUTING_ID_PREFIX = "scrouting1_"
-        const val MINIMUM_ROUTING_ID_LENGTH = 32
-    }
+    override fun close() = Unit
 }
+
+internal fun validatePresenceRegistration(
+    registration: ClientRouteRegistration,
+    maximumTtlMilliseconds: Long,
+    currentTime: Long
+): PresenceResult.Rejected? {
+    val route = registration.route
+    if (!route.routingId.startsWith(ROUTING_ID_PREFIX) || route.routingId.length < MINIMUM_ROUTING_ID_LENGTH) {
+        return PresenceResult.Rejected("INVALID_ROUTING_ID")
+    }
+    if (route.expiresAtEpochMilliseconds <= currentTime) {
+        return PresenceResult.Rejected("ROUTE_EXPIRED")
+    }
+    if (route.expiresAtEpochMilliseconds - currentTime > maximumTtlMilliseconds) {
+        return PresenceResult.Rejected("TTL_TOO_LONG")
+    }
+    if (!ProtocolSignatures.verifyClientRoute(route, registration.clientSigningPublicKey)) {
+        return PresenceResult.Rejected("INVALID_SIGNATURE")
+    }
+    return null
+}
+
+private const val ROUTING_ID_PREFIX = "scrouting1_"
+private const val MINIMUM_ROUTING_ID_LENGTH = 32
 
 sealed interface PresenceResult {
     data object Accepted : PresenceResult

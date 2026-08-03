@@ -22,6 +22,29 @@ services:
     volumes:
       - registry-identity:/data
 
+  presence-redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --requirepass
+      - ${PRESENCE_REDIS_PASSWORD:-local-development-password}
+    environment:
+      REDISCLI_AUTH: ${PRESENCE_REDIS_PASSWORD:-local-development-password}
+    ports:
+      - "127.0.0.1:${PRESENCE_REDIS_PORT:-6380}:6379"
+    volumes:
+      - presence-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
   presence-directory:
     <<: *securechat-service
     build:
@@ -32,8 +55,14 @@ services:
     environment:
       PORT: 8091
       NODE_REGISTRY_URL: http://node-registry:8090
+      PRESENCE_REDIS_URL: redis://:${PRESENCE_REDIS_PASSWORD:-local-development-password}@presence-redis:6379
     ports:
       - "8091:8091"
+    depends_on:
+      node-registry:
+        condition: service_started
+      presence-redis:
+        condition: service_healthy
 
   mailbox-database:
     image: postgres:17-alpine
@@ -165,5 +194,6 @@ services:
 volumes:
   registry-identity:
   node-identity:
+  presence-redis-data:
   mailbox-database-data:
   push-database-data:

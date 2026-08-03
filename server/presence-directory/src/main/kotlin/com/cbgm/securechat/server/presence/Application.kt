@@ -39,12 +39,17 @@ fun main() {
     ).start(wait = true)
 }
 
-fun Application.presenceDirectoryModule(store: PresenceStore = PresenceStore()) {
+fun Application.presenceDirectoryModule(
+    store: PresenceStorage = createPresenceStorage(PresenceConfig.fromEnvironment())
+) {
     val httpClient =
         HttpClient(CIO) {
             install(ClientContentNegotiation) { json(serverJson) }
         }
-    monitor.subscribe(ApplicationStopped) { httpClient.close() }
+    monitor.subscribe(ApplicationStopped) {
+        httpClient.close()
+        store.close()
+    }
     val registryUrl = System.getenv("NODE_REGISTRY_URL") ?: "http://localhost:8090"
     val requestVerifier = NodeRequestVerifier()
 
@@ -53,7 +58,9 @@ fun Application.presenceDirectoryModule(store: PresenceStore = PresenceStore()) 
 
     routing {
         get("/health") {
-            call.respondText("ok routes=${store.routeCount()}")
+            call.respondText(
+                "ok persistence=${store.persistenceMode} routes=${store.routeCount()}"
+            )
         }
 
         put("/v1/routes/{routingId}") {
@@ -116,6 +123,50 @@ fun Application.presenceDirectoryModule(store: PresenceStore = PresenceStore()) 
                 call.respond(store.resolve(routingId))
             }
         }
+    }
+}
+
+data class PresenceConfig(
+    val redisUrl: String?,
+    val redisKeyPrefix: String,
+    val maximumTtlMilliseconds: Long
+) {
+    init {
+        require(redisKeyPrefix.isNotBlank()) {
+            "Presence Redis key prefix must not be blank"
+        }
+        require(maximumTtlMilliseconds > 0L) {
+            "Maximum route TTL must be positive"
+        }
+    }
+
+    companion object {
+        fun fromEnvironment(): PresenceConfig =
+            PresenceConfig(
+                redisUrl = System.getenv("PRESENCE_REDIS_URL")?.takeIf(String::isNotBlank),
+                redisKeyPrefix =
+                    System.getenv("PRESENCE_REDIS_KEY_PREFIX")?.takeIf(String::isNotBlank)
+                        ?: DEFAULT_REDIS_KEY_PREFIX,
+                maximumTtlMilliseconds =
+                    System.getenv("PRESENCE_MAXIMUM_TTL_MILLISECONDS")?.toLongOrNull()
+                        ?: DEFAULT_MAXIMUM_TTL_MILLISECONDS
+            )
+
+        private const val DEFAULT_REDIS_KEY_PREFIX = "securechat:presence"
+        private const val DEFAULT_MAXIMUM_TTL_MILLISECONDS = 120_000L
+    }
+}
+
+internal fun createPresenceStorage(config: PresenceConfig): PresenceStorage {
+    val redisUrl = config.redisUrl
+    return if (redisUrl == null) {
+        PresenceStore(maximumTtlMilliseconds = config.maximumTtlMilliseconds)
+    } else {
+        RedisPresenceStore(
+            redisUrl = redisUrl,
+            maximumTtlMilliseconds = config.maximumTtlMilliseconds,
+            keyPrefix = config.redisKeyPrefix
+        )
     }
 }
 

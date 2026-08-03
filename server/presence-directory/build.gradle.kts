@@ -18,8 +18,11 @@ dependencies {
     implementation(projects.server.security)
     implementation(libs.bundles.ktor.server)
     implementation(libs.bundles.ktor.client)
+    implementation(libs.bundles.coroutines)
     implementation(libs.ktor.client.cio)
+    implementation(libs.jedis)
     implementation(libs.logback.classic)
     testImplementation(kotlin("test"))
+    testImplementation(libs.bundles.coroutines.test)
     testImplementation(libs.ktor.server.test.host)
 }

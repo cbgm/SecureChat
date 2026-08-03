@@ -10,9 +10,9 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `server` |
 | Directory | `server/mailbox` |
 | Build file | `server/mailbox/build.gradle.kts` |
-| Kotlin files | 6 |
-| Production Kotlin files | 4 |
-| Test Kotlin files | 2 |
+| Kotlin files | 3 |
+| Production Kotlin files | 2 |
+| Test Kotlin files | 1 |
 | Resource files | 0 |
 | Direct dependencies | 3 |
 | Direct dependents | 0 |

@@ -47,6 +47,7 @@ firebase-analytics = "23.2.0"
 google-services = "4.5.0"
 hikari = "7.1.0"
 postgresql = "42.7.13"
+jedis = "5.2.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -134,6 +135,7 @@ firebase-admin = { module = "com.google.firebase:firebase-admin", version.ref = 
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 hikari = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+jedis = { module = "redis.clients:jedis", version.ref = "jedis" }
 
 compose-rules-detekt = { module = "io.nlopez.compose.rules:detekt", version.ref = "compose-rules" }
 compose-rules-ktlint = { module = "io.nlopez.compose.rules:ktlint", version.ref = "compose-rules" }

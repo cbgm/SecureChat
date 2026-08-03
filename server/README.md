@@ -28,6 +28,7 @@ Create `server/.env` once. This file is ignored by Git:
 FIREBASE_ADMIN_CREDENTIALS=C:/secure/chat-project-firebase-adminsdk.json
 PUSH_DATABASE_PASSWORD=replace-for-non-local-deployments
 MAILBOX_DATABASE_PASSWORD=replace-for-non-local-deployments
+PRESENCE_REDIS_PASSWORD=replace-for-non-local-deployments
 COMPOSE_PARALLEL_LIMIT=1
 ```
 
@@ -132,15 +133,43 @@ $env:MAILBOX_TEST_DATABASE_PASSWORD = "local-development-password"
 .\gradlew.bat :server:mailbox:test
 ```
 
+## Presence persistence
+
+The presence directory uses Redis when `PRESENCE_REDIS_URL` is configured. Docker Compose starts a
+private `presence-redis` service with append-only persistence and retains its data in the
+`presence-redis-data` volume. Active signed routes therefore survive a presence-service or short
+Compose restart while their original expiration time is still valid.
+
+Registration generation checks, replacement of older generations, and TTL cleanup are executed
+atomically inside Redis. The health endpoint reports the active adapter and unexpired route count:
+
+```powershell
+curl.exe http://localhost:8091/health
+docker compose -f server/docker-compose.yml restart presence-directory
+curl.exe http://localhost:8091/health
+```
+
+Both responses must contain `persistence=redis`. Routes expire after at most two minutes by default;
+configure this with `PRESENCE_MAXIMUM_TTL_MILLISECONDS`.
+
+The optional Redis integration test can be enabled against the Compose instance:
+
+```powershell
+docker compose -f server/docker-compose.yml up -d presence-redis
+$env:PRESENCE_TEST_REDIS_URL = "redis://:local-development-password@localhost:6380"
+.\gradlew.bat :server:presence-directory:test
+```
+
 ## Remaining persistence work
 
 The remaining services use bounded in-memory adapters behind service-owned stores. This keeps the
 complete topology executable and testable without allowing one service to access another service's
 tables. Their production adapters remain intentionally local to their owning service. Node registry
-and the federation outbound queue still need PostgreSQL; presence directory still needs Redis.
+and the federation outbound queue still need PostgreSQL.
 
-The push and mailbox services deliberately fall back to bounded in-memory stores when their
-database URLs are absent, which keeps isolated tests and development outside Docker Compose simple.
+The push, mailbox, and presence services deliberately fall back to bounded in-memory stores when
+their persistence URLs are absent, which keeps isolated tests and development outside Docker
+Compose simple.
 
 Replacing an adapter does not change `:server:protocol` or create service-to-service implementation
 dependencies.
