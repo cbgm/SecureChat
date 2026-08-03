@@ -1,5 +1,6 @@
 package com.cbgm.securechat.server.push
 
+import com.cbgm.securechat.server.observability.installServerObservability
 import com.cbgm.securechat.server.persistence.ServiceEnvironment
 import com.cbgm.securechat.server.protocol.PendingRelayEnvelopesResponse
 import com.cbgm.securechat.server.protocol.PushDeviceRegistrationRequest
@@ -16,7 +17,6 @@ import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import io.ktor.server.request.receive
@@ -66,7 +66,11 @@ fun Application.pushModule(
         stores.close()
     }
 
-    install(CallLogging)
+    installServerObservability("push") {
+        devices.count()
+        pendingEnvelopes.count()
+        true
+    }
     install(ContentNegotiation) { json(serverJson) }
     if (config.trustProxyHeaders) {
         install(XForwardedHeaders)

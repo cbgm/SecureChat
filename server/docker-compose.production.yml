@@ -27,15 +27,15 @@ services:
       - edge
     depends_on:
       node-registry:
-        condition: service_started
+        condition: service_healthy
       mailbox:
-        condition: service_started
+        condition: service_healthy
       federation:
-        condition: service_started
+        condition: service_healthy
       gateway:
-        condition: service_started
+        condition: service_healthy
       push:
-        condition: service_started
+        condition: service_healthy
 
   node-registry-database:
     ports: !reset []

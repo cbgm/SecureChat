@@ -10,6 +10,7 @@ The existing `:relay` service remains available during migration.
 | `:server:protocol` | Shared serialized API models only | - |
 | `:server:security` | Node signing, replay protection, and constant-time internal authentication | - |
 | `:server:persistence` | Bounded idempotency and environment infrastructure | - |
+| `:server:observability` | Shared request IDs, Prometheus metrics, and health probes | - |
 | `:server:node-registry` | Signed descriptors, heartbeats, compatible node directory | 8090 |
 | `:server:presence-directory` | Signed, expiring device routes with generation checks | 8091 |
 | `:server:mailbox` | Capability-protected, expiring encrypted envelopes | 8092 |
@@ -319,6 +320,45 @@ Remove-Item Env:MAILBOX_CREATION_RATE_LIMIT_REQUESTS
 Remove-Item Env:MAILBOX_CREATION_RATE_LIMIT_WINDOW_MILLISECONDS
 docker compose -f server/docker-compose.yml up -d --force-recreate mailbox
 ```
+
+## Observability
+
+Every Kotlin service exposes the same operational endpoints in addition to its existing detailed
+`/health` response:
+
+| Endpoint | Meaning |
+|---|---|
+| `/health/live` | The process is running and can serve HTTP requests. |
+| `/health/ready` | The service can reach its primary PostgreSQL or Redis storage, where applicable. |
+| `/metrics` | Prometheus text-format Ktor/JVM metrics tagged with the service name. |
+
+Compose uses `/health/ready` for application health checks and waits for healthy dependencies before
+starting downstream services. The probe runs with the Java runtime already in each image, so the
+runtime image does not need `curl` or another package.
+
+Clients may send `X-Request-ID` using 1-128 ASCII letters, digits, dots, underscores, or hyphens.
+The server echoes a valid value or generates a UUID when it is missing or invalid. Logs include the
+same value as `request_id=...`, which lets an operator follow one request across service logs.
+
+Verify the contract from PowerShell after starting Compose:
+
+```powershell
+curl.exe -i -H "X-Request-ID: local-check-1" http://localhost:8094/health/live
+curl.exe -i http://localhost:8094/health/ready
+curl.exe http://localhost:8094/metrics |
+    Select-String -Pattern 'ktor_http_server_requests|service="gateway"'
+
+docker compose -f server/docker-compose.yml logs --since=2m gateway |
+    Select-String -SimpleMatch "request_id=local-check-1"
+
+docker compose -f server/docker-compose.yml ps
+```
+
+Repeat the readiness request on ports `8090` through `8095` to inspect each local service. In the
+two-node topology, node B also exposes mailbox, federation, and gateway readiness on ports `8192`,
+`8193`, and `8294`. Prometheus and health endpoints are bound to loopback in development and are not
+proxied by Caddy in production; attach a trusted collector to the backend Docker network instead of
+publishing `/metrics` to the internet.
 
 ## Production deployment
 

@@ -23,6 +23,7 @@ dependencies {
     implementation(projects.server.protocol)
     implementation(projects.server.persistence)
     implementation(projects.server.security)
+    implementation(projects.server.observability)
     implementation(libs.bundles.ktor.server)
     implementation(libs.bundles.coroutines)
     implementation(libs.firebase.admin)

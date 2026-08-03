@@ -5,6 +5,12 @@ x-service: &securechat-service
   build:
     context: ..
     dockerfile: server/Dockerfile
+  healthcheck:
+    test: ["CMD-SHELL", "java -cp '/app/lib/*' com.cbgm.securechat.server.observability.ReadinessProbe http://127.0.0.1:$${PORT}/health/ready"]
+    interval: 10s
+    timeout: 5s
+    retries: 6
+    start_period: 20s
 
 services:
   node-registry-database:
@@ -90,7 +96,7 @@ services:
       - "127.0.0.1:8091:8091"
     depends_on:
       node-registry:
-        condition: service_started
+        condition: service_healthy
       presence-redis:
         condition: service_healthy
 
@@ -136,7 +142,7 @@ services:
       mailbox-database:
         condition: service_healthy
       push:
-        condition: service_started
+        condition: service_healthy
 
   push-database:
     image: postgres:17-alpine
@@ -232,11 +238,11 @@ services:
       - node-identity:/data
     depends_on:
       node-registry:
-        condition: service_started
+        condition: service_healthy
       presence-directory:
-        condition: service_started
+        condition: service_healthy
       mailbox:
-        condition: service_started
+        condition: service_healthy
       federation-database:
         condition: service_healthy
 
@@ -263,8 +269,10 @@ services:
     volumes:
       - node-identity:/data
     depends_on:
-      - federation
-      - push
+      federation:
+        condition: service_healthy
+      push:
+        condition: service_healthy
 
 volumes:
   registry-identity:

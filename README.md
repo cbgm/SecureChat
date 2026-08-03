@@ -236,6 +236,10 @@ Public server write endpoints now apply bounded per-client rate limits. Mailbox 
 uses atomic global and per-client quotas, with only a hash of the client address stored in
 PostgreSQL. Production trusts forwarded client addresses only behind the Caddy-only public edge.
 
+All six Kotlin services now share Prometheus-compatible metrics, liveness and storage-aware
+readiness endpoints, and validated `X-Request-ID` correlation in HTTP responses and structured
+console logs. Docker Compose uses the readiness contract to order application startup.
+
 See the server README for module boundaries, ports, security behavior, and migration limitations.
 
 ---

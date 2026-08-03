@@ -1,5 +1,6 @@
 package com.cbgm.securechat.server.gateway
 
+import com.cbgm.securechat.server.observability.installServerObservability
 import com.cbgm.securechat.server.persistence.ServiceEnvironment
 import com.cbgm.securechat.server.protocol.EnvelopeAcceptanceState
 import com.cbgm.securechat.server.protocol.FederatedEnvelope
@@ -20,7 +21,6 @@ import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -92,7 +92,10 @@ fun Application.gatewayModule(
                 )
         )
 
-    install(CallLogging)
+    installServerObservability("gateway") {
+        registry.count()
+        true
+    }
 
     install(ContentNegotiation) {
         json(serverJson)

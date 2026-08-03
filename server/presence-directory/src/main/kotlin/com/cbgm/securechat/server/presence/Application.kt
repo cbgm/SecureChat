@@ -1,5 +1,6 @@
 package com.cbgm.securechat.server.presence
 
+import com.cbgm.securechat.server.observability.installServerObservability
 import com.cbgm.securechat.server.persistence.ServiceEnvironment
 import com.cbgm.securechat.server.protocol.ClientRouteRegistration
 import com.cbgm.securechat.server.protocol.ErrorResponse
@@ -20,7 +21,6 @@ import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -54,7 +54,10 @@ fun Application.presenceDirectoryModule(
     val registryUrl = System.getenv("NODE_REGISTRY_URL") ?: "http://localhost:8090"
     val requestVerifier = NodeRequestVerifier()
 
-    install(CallLogging)
+    installServerObservability("presence-directory") {
+        store.routeCount()
+        true
+    }
     install(ContentNegotiation) { json(serverJson) }
 
     routing {

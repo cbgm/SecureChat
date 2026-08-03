@@ -1,5 +1,6 @@
 package com.cbgm.securechat.server.mailbox
 
+import com.cbgm.securechat.server.observability.installServerObservability
 import com.cbgm.securechat.server.persistence.ServiceEnvironment
 import com.cbgm.securechat.server.protocol.CreateMailboxRequest
 import com.cbgm.securechat.server.protocol.EnvelopeAcceptanceState
@@ -22,7 +23,6 @@ import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import io.ktor.server.request.receive
@@ -53,7 +53,10 @@ fun Application.mailboxModule(
         pushNotifier.close()
     }
 
-    install(CallLogging)
+    installServerObservability("mailbox") {
+        store.mailboxCount()
+        true
+    }
     install(ContentNegotiation) { json(serverJson) }
     if (config.trustProxyHeaders) {
         install(XForwardedHeaders)
