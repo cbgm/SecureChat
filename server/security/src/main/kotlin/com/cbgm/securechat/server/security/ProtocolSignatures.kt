@@ -7,7 +7,6 @@ import com.cbgm.securechat.server.protocol.SecureChatNodeDescriptor
 import com.cbgm.securechat.server.protocol.SignedNodeDirectory
 import com.cbgm.securechat.server.protocol.serverJson
 import com.cbgm.securechat.server.protocol.unsigned
-import kotlinx.serialization.encodeToString
 
 object ProtocolSignatures {
     fun signDescriptor(

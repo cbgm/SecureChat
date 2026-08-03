@@ -37,4 +37,8 @@ class PushCoordinator(
         }
         return true
     }
+
+    suspend fun notifyRecipient(recipientId: String) {
+        sender.notifyMessagesAvailable(recipientId)
+    }
 }

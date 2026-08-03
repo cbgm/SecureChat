@@ -118,11 +118,15 @@ services:
       MAILBOX_DATABASE_URL: jdbc:postgresql://mailbox-database:5432/securechat_mailbox
       MAILBOX_DATABASE_USER: securechat_mailbox
       MAILBOX_DATABASE_PASSWORD: ${MAILBOX_DATABASE_PASSWORD:-local-development-password}
+      PUSH_INTERNAL_URL: http://push:8095
+      PUSH_INTERNAL_API_TOKEN: ${PUSH_INTERNAL_API_TOKEN:-local-push-development-token}
     ports:
       - "127.0.0.1:8092:8092"
     depends_on:
       mailbox-database:
         condition: service_healthy
+      push:
+        condition: service_started
 
   push-database:
     image: postgres:17-alpine

@@ -23,7 +23,7 @@ class FederationRouterTest {
                 FederationRouter(
                     localNodeId = "node-a",
                     presenceDirectory = { ClientRoutingResult(it, emptyList()) },
-                    nodeRegistry = { null },
+                    nodeRegistry = { mailboxNodeDescriptor() },
                     localGateway = { error("Local gateway must not be used") },
                     remoteFederation = { _, _ -> error("Remote federation must not be used") },
                     mailbox = {
@@ -48,7 +48,7 @@ class FederationRouterTest {
                 FederationRouter(
                     localNodeId = "node-a",
                     presenceDirectory = { ClientRoutingResult(it, emptyList()) },
-                    nodeRegistry = { null },
+                    nodeRegistry = { mailboxNodeDescriptor() },
                     localGateway = { error("Local gateway must not be used") },
                     remoteFederation = { _, _ -> error("Remote federation must not be used") },
                     mailbox = {
@@ -176,5 +176,11 @@ class FederationRouterTest {
             capabilities = NodeCapability.entries.toSet(),
             validUntilEpochMilliseconds = 10_000L,
             signature = byteArrayOf(1)
+        )
+
+    private fun mailboxNodeDescriptor(): SecureChatNodeDescriptor =
+        testNodeDescriptor().copy(
+            nodeId = "mailbox-node",
+            mailboxEndpoint = "http://mailbox"
         )
 }

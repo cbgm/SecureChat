@@ -5,7 +5,6 @@ import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.feature.transport.relay.config.RelayTransportConfig
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class DefaultNodeEndpointResolver(
@@ -181,7 +180,10 @@ class DefaultNodeEndpointResolver(
                 }.map { descriptor ->
                     NodeEndpoint(
                         nodeId = descriptor.nodeId,
-                        websocketUrl = descriptor.clientEndpoint
+                        websocketUrl = descriptor.clientEndpoint,
+                        mailboxRouteEndpoint = descriptor.mailboxEndpoint,
+                        mailboxAccessEndpoint =
+                            descriptor.mailboxEndpoint.clientAccessibleFrom(descriptor.clientEndpoint)
                     )
                 }.distinctBy(NodeEndpoint::nodeId)
                 .sortedBy(NodeEndpoint::nodeId)
@@ -197,4 +199,14 @@ class DefaultNodeEndpointResolver(
     private companion object {
         const val STATIC_NODE_ID = "static-configured-relay"
     }
+}
+
+private fun String.clientAccessibleFrom(clientEndpoint: String): String {
+    val internalHost = substringAfter("://").substringBefore('/').substringBefore(':')
+    if (internalHost !in setOf("localhost", "mailbox", "mailbox-b")) return this
+    val clientAuthority = clientEndpoint.substringAfter("://").substringBefore('/')
+    val clientHost = clientAuthority.substringBefore(':')
+    val gatewayPort = clientAuthority.substringAfter(':', "8094").toIntOrNull() ?: 8094
+    val mailboxPort = gatewayPort - if (gatewayPort >= 8_200) 102 else 2
+    return "http://$clientHost:$mailboxPort"
 }

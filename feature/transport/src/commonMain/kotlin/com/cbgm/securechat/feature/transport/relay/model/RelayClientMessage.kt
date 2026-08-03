@@ -58,6 +58,12 @@ sealed interface RelayClientMessage {
     ) : RelayClientMessage
 
     @Serializable
+    @SerialName("send_federated_envelope")
+    data class SendFederatedEnvelope(
+        val envelope: FederatedEnvelope
+    ) : RelayClientMessage
+
+    @Serializable
     @SerialName("typing_state")
     data class TypingState(
         val recipientId: String,

@@ -4,6 +4,7 @@ import com.cbgm.securechat.feature.chats.domain.model.Conversation
 import com.cbgm.securechat.feature.chats.domain.usecase.ObserveConversations
 import com.cbgm.securechat.feature.messaging.application.incoming.IncomingEnvelopeProcessingResult
 import com.cbgm.securechat.feature.messaging.application.incoming.IncomingEnvelopeProcessor
+import com.cbgm.securechat.feature.messaging.application.mailbox.MailboxCoordinator
 import com.cbgm.securechat.feature.transport.relay.inbox.PendingRelayEnvelopeGateway
 import com.cbgm.securechat.notification.model.ConversationNotification
 import com.cbgm.securechat.notification.model.PendingMessageSyncResult
@@ -12,7 +13,8 @@ import kotlinx.coroutines.flow.first
 class SynchronizePendingMessages(
     private val pendingRelayEnvelopeGateway: PendingRelayEnvelopeGateway,
     private val incomingEnvelopeProcessor: IncomingEnvelopeProcessor,
-    private val observeConversations: ObserveConversations
+    private val observeConversations: ObserveConversations,
+    private val mailboxCoordinator: MailboxCoordinator
 ) {
     suspend operator fun invoke(wakeUpId: String): Result<PendingMessageSyncResult> =
         runCatching {
@@ -28,6 +30,8 @@ class SynchronizePendingMessages(
                     }
 
             var processedEnvelopeCount = 0
+
+            processedEnvelopeCount += mailboxCoordinator.synchronizePending().getOrThrow()
 
             val envelopes =
                 pendingRelayEnvelopeGateway

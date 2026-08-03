@@ -1,8 +1,12 @@
 package com.cbgm.securechat.feature.transport.sender
 
+import com.cbgm.securechat.core.protocol.mailbox.LocalMailboxCredential
+import com.cbgm.securechat.core.protocol.mailbox.MailboxDeliveryRoute
+import com.cbgm.securechat.core.protocol.mailbox.MailboxRouteRepository
 import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
 import com.cbgm.securechat.feature.transport.relay.config.RelayTransportConfig
 import com.cbgm.securechat.feature.transport.relay.identity.LocalRelayIdProvider
+import com.cbgm.securechat.feature.transport.relay.model.FederatedEnvelope
 import com.cbgm.securechat.feature.transport.relay.model.RelayEnvelope
 import com.cbgm.securechat.feature.transport.relay.model.RelayTypingEvent
 import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
@@ -17,6 +21,43 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class WebSocketOutgoingWireSenderTest {
+    @Test
+    fun verifiedMailboxRouteUsesFederatedEnvelope() =
+        runTest {
+            val route =
+                MailboxDeliveryRoute(
+                    routeId = "route-1",
+                    nodeId = "node-b",
+                    nodeEndpoint = "https://node-b.example",
+                    mailboxId = "mailbox-1",
+                    sendCapability = "send-capability",
+                    sequence = 4L,
+                    expiresAtEpochMilliseconds = Long.MAX_VALUE,
+                    identitySignature = byteArrayOf(1, 2, 3)
+                )
+            val client = RecordingWebSocketTransportClient()
+            val sender =
+                WebSocketOutgoingWireSender(
+                    webSocketTransportClient = client,
+                    localRelayIdProvider = SuccessfulLocalRelayIdProvider(),
+                    relayTransportConfig =
+                        RelayTransportConfig(
+                            serverUrl = "ws://localhost:8080/relay",
+                            httpBaseUrl = "http://localhost:8080"
+                        ),
+                    mailboxRouteRepository = FakeMailboxRouteRepository(route)
+                )
+
+            assertTrue(sender.send("recipient-relay-id", "encoded-payload").isSuccess)
+
+            val envelope = requireNotNull(client.federatedEnvelope)
+            assertEquals(route, envelope.mailboxRoute)
+            assertEquals("local-relay-id", envelope.senderRoutingId)
+            assertEquals("recipient-relay-id", envelope.recipientDeviceRoutingId)
+            assertEquals("encoded-payload", envelope.encryptedPayload)
+            assertEquals(null, client.envelope)
+        }
+
     @Test
     fun sendBuildsEnvelopeAndWaitsForRelayAcceptance() =
         runTest {
@@ -116,6 +157,7 @@ class WebSocketOutgoingWireSenderTest {
         private val sendResult: Result<Unit> = Result.success(Unit)
     ) : WebSocketTransportClient {
         var envelope: RelayEnvelope? = null
+        var federatedEnvelope: FederatedEnvelope? = null
         var timeoutMilliseconds: Long? = null
 
         override val connectionState: StateFlow<TransportConnectionState> =
@@ -138,6 +180,15 @@ class WebSocketOutgoingWireSenderTest {
             return sendResult
         }
 
+        override suspend fun sendFederatedEnvelopeAndAwaitAcceptance(
+            envelope: FederatedEnvelope,
+            timeoutMilliseconds: Long
+        ): Result<Unit> {
+            federatedEnvelope = envelope
+            this.timeoutMilliseconds = timeoutMilliseconds
+            return sendResult
+        }
+
         override suspend fun acknowledgeIncomingEnvelope(envelopeId: String): Result<Unit> = Result.success(Unit)
 
         override suspend fun sendTypingState(
@@ -146,5 +197,22 @@ class WebSocketOutgoingWireSenderTest {
         ): Result<Unit> = Result.success(Unit)
 
         override suspend fun disconnect() = Unit
+    }
+
+    private class FakeMailboxRouteRepository(
+        private val route: MailboxDeliveryRoute
+    ) : MailboxRouteRepository {
+        override suspend fun localForContact(contactId: String) = Result.success<LocalMailboxCredential?>(null)
+
+        override suspend fun remoteForRecipientRoutingId(routingId: String) = Result.success(route)
+
+        override suspend fun allLocal() = Result.success(emptyList<LocalMailboxCredential>())
+
+        override suspend fun saveLocal(credential: LocalMailboxCredential) = Result.success(Unit)
+
+        override suspend fun saveRemote(
+            contactId: String,
+            route: MailboxDeliveryRoute
+        ) = Result.success(Unit)
     }
 }

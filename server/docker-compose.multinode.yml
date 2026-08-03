@@ -44,11 +44,15 @@ services:
       MAILBOX_DATABASE_URL: jdbc:postgresql://mailbox-b-database:5432/securechat_mailbox_b
       MAILBOX_DATABASE_USER: securechat_mailbox_b
       MAILBOX_DATABASE_PASSWORD: ${MAILBOX_B_DATABASE_PASSWORD:-local-development-password}
+      PUSH_INTERNAL_URL: http://push:8095
+      PUSH_INTERNAL_API_TOKEN: ${PUSH_INTERNAL_API_TOKEN:-local-push-development-token}
     ports:
       - "127.0.0.1:8192:8092"
     depends_on:
       mailbox-b-database:
         condition: service_healthy
+      push:
+        condition: service_started
 
   federation-b-database:
     image: postgres:17-alpine

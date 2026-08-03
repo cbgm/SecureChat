@@ -5,6 +5,7 @@ import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
 import com.cbgm.securechat.feature.transport.relay.model.ClientRouteRegistration
+import com.cbgm.securechat.feature.transport.relay.model.FederatedEnvelope
 import com.cbgm.securechat.feature.transport.relay.model.RelayClientMessage
 import com.cbgm.securechat.feature.transport.relay.model.RelayEnvelope
 import com.cbgm.securechat.feature.transport.relay.model.RelayServerMessage
@@ -134,6 +135,14 @@ class DefaultWebSocketTransportClient internal constructor(
                     pendingAcknowledgements.remove(envelope.envelopeId)
                 }
             }
+        }
+
+    override suspend fun sendFederatedEnvelopeAndAwaitAcceptance(
+        envelope: FederatedEnvelope,
+        timeoutMilliseconds: Long
+    ): Result<Unit> =
+        awaitEnvelopeAcceptance(envelope.envelopeId, timeoutMilliseconds) {
+            sendFederatedEnvelopeFrame(envelope)
         }
 
     override suspend fun acknowledgeIncomingEnvelope(envelopeId: String): Result<Unit> =
@@ -463,6 +472,46 @@ class DefaultWebSocketTransportClient internal constructor(
             activeSession.send(Frame.Text(encodedMessage))
         }
     }
+
+    private suspend fun sendFederatedEnvelopeFrame(envelope: FederatedEnvelope) {
+        sendMutex.withLock {
+            val activeSession =
+                sessionMutex.withLock { session }
+                    ?: error("WebSocket session is not available")
+            activeSession.send(
+                Frame.Text(
+                    json.encodeToString<RelayClientMessage>(
+                        RelayClientMessage.SendFederatedEnvelope(envelope)
+                    )
+                )
+            )
+        }
+    }
+
+    private suspend fun awaitEnvelopeAcceptance(
+        envelopeId: String,
+        timeoutMilliseconds: Long,
+        send: suspend () -> Unit
+    ): Result<Unit> =
+        runCatching {
+            require(timeoutMilliseconds > 0L) { "Acknowledgement timeout must be positive" }
+            check(connectionState.value is TransportConnectionState.Connected) {
+                "WebSocket relay is not connected"
+            }
+            val acknowledgement = CompletableDeferred<Unit>()
+            acknowledgementsMutex.withLock {
+                check(!pendingAcknowledgements.containsKey(envelopeId)) {
+                    "Envelope is already awaiting acknowledgement"
+                }
+                pendingAcknowledgements[envelopeId] = acknowledgement
+            }
+            try {
+                send()
+                withTimeout(timeoutMilliseconds.milliseconds) { acknowledgement.await() }
+            } finally {
+                acknowledgementsMutex.withLock { pendingAcknowledgements.remove(envelopeId) }
+            }
+        }
 
     private suspend fun handleTextFrame(
         encodedMessage: String,

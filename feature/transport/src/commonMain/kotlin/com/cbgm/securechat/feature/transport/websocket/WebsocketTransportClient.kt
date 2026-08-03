@@ -1,6 +1,7 @@
 package com.cbgm.securechat.feature.transport.websocket
 
 import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
+import com.cbgm.securechat.feature.transport.relay.model.FederatedEnvelope
 import com.cbgm.securechat.feature.transport.relay.model.RelayEnvelope
 import com.cbgm.securechat.feature.transport.relay.model.RelayTypingEvent
 import kotlinx.coroutines.flow.Flow
@@ -20,6 +21,11 @@ interface WebSocketTransportClient {
         envelope: RelayEnvelope,
         timeoutMilliseconds: Long
     ): Result<Unit>
+
+    suspend fun sendFederatedEnvelopeAndAwaitAcceptance(
+        envelope: FederatedEnvelope,
+        timeoutMilliseconds: Long
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("Federated envelopes are not supported"))
 
     suspend fun acknowledgeIncomingEnvelope(envelopeId: String): Result<Unit>
 

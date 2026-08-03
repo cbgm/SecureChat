@@ -112,6 +112,20 @@ fun Application.pushModule(
             call.respond(if (accepted) HttpStatusCode.Accepted else HttpStatusCode.InsufficientStorage)
         }
 
+        post("/internal/v1/wake-ups/{recipientId}") {
+            if (!call.hasInternalAccess(config.pushInternalApiToken)) {
+                call.respond(HttpStatusCode.Unauthorized)
+                return@post
+            }
+            val recipientId = call.parameters["recipientId"]
+            if (recipientId.isNullOrBlank()) {
+                call.respond(HttpStatusCode.BadRequest)
+            } else {
+                coordinator.notifyRecipient(recipientId)
+                call.respond(HttpStatusCode.Accepted)
+            }
+        }
+
         get("/internal/v1/recipients/{recipientId}/envelopes") {
             if (!call.hasInternalAccess(config.pushInternalApiToken)) {
                 call.respond(HttpStatusCode.Unauthorized)

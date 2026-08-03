@@ -37,10 +37,12 @@ fun main() {
 }
 
 fun Application.mailboxModule(
-    store: MailboxStorage = createMailboxStorage(MailboxConfig.fromEnvironment())
+    store: MailboxStorage = createMailboxStorage(MailboxConfig.fromEnvironment()),
+    pushNotifier: MailboxPushNotifier = MailboxPushNotifier.fromEnvironment()
 ) {
     monitor.subscribe(ApplicationStopped) {
         store.close()
+        pushNotifier.close()
     }
 
     install(CallLogging)
@@ -64,14 +66,21 @@ fun Application.mailboxModule(
 
             when (val result = store.store(mailboxId, capability, request.envelope)) {
                 is MailboxResult.Stored ->
-                    call.respond(
-                        HttpStatusCode.Accepted,
-                        FederationAcknowledgement(
-                            envelopeId = request.envelope.envelopeId,
-                            state = EnvelopeAcceptanceState.STORED_AT_DESTINATION,
-                            duplicate = result.duplicate
+                    {
+                        if (!result.duplicate) {
+                            runCatching {
+                                pushNotifier.notify(request.envelope.recipientDeviceRoutingId)
+                            }
+                        }
+                        call.respond(
+                            HttpStatusCode.Accepted,
+                            FederationAcknowledgement(
+                                envelopeId = request.envelope.envelopeId,
+                                state = EnvelopeAcceptanceState.STORED_AT_DESTINATION,
+                                duplicate = result.duplicate
+                            )
                         )
-                    )
+                    }
 
                 is MailboxResult.Rejected ->
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse(result.code, "Envelope rejected"))

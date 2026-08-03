@@ -5,6 +5,7 @@ import com.cbgm.securechat.core.protocol.outbox.OutboxRunner
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
 import com.cbgm.securechat.feature.identity.domain.repository.storage.LocalPhoneNameStorage
 import com.cbgm.securechat.feature.messaging.application.incoming.IncomingRelayRunner
+import com.cbgm.securechat.feature.messaging.application.mailbox.MailboxCoordinator
 import com.cbgm.securechat.feature.transport.connection.RelayConnectionManager
 import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
 import com.cbgm.securechat.notification.application.AppVisibilityState
@@ -26,7 +27,8 @@ class ForegroundRuntimeController(
     private val incomingRelayRunner: IncomingRelayRunner,
     private val relayConnectionManager: RelayConnectionManager,
     private val outboxRunner: OutboxRunner,
-    private val appVisibilityState: AppVisibilityState
+    private val appVisibilityState: AppVisibilityState,
+    private val mailboxCoordinator: MailboxCoordinator
 ) {
     private val logger = SecureChatLog.withTag("ForegroundRuntimeController")
 
@@ -82,6 +84,24 @@ class ForegroundRuntimeController(
                         when (state) {
                             is TransportConnectionState.Connected -> {
                                 logger.info { "Relay connected: ${state.relayId}" }
+                                mailboxCoordinator
+                                    .provisionRoutes()
+                                    .onSuccess { provisioned ->
+                                        logger.info {
+                                            "Mailbox routes ready; newly provisioned=$provisioned"
+                                        }
+                                    }.onFailure { error ->
+                                        logger.warn { "Mailbox route provisioning failed: ${error.message}" }
+                                    }
+                                mailboxCoordinator
+                                    .synchronizePending()
+                                    .onSuccess { processed ->
+                                        logger.info {
+                                            "Mailbox synchronization completed; processed=$processed"
+                                        }
+                                    }.onFailure { error ->
+                                        logger.warn { "Mailbox synchronization failed: ${error.message}" }
+                                    }
                                 outboxRunner.start()
                             }
 

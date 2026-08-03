@@ -1,17 +1,20 @@
 package com.cbgm.securechat.feature.transport.sender
 
 import com.cbgm.securechat.core.id.IdGenerator
+import com.cbgm.securechat.core.protocol.mailbox.MailboxRouteRepository
 import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.feature.transport.relay.config.RelayTransportConfig
 import com.cbgm.securechat.feature.transport.relay.identity.LocalRelayIdProvider
+import com.cbgm.securechat.feature.transport.relay.model.FederatedEnvelope
 import com.cbgm.securechat.feature.transport.relay.model.RelayEnvelope
 import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
 
 class WebSocketOutgoingWireSender(
     private val webSocketTransportClient: WebSocketTransportClient,
     private val localRelayIdProvider: LocalRelayIdProvider,
-    private val relayTransportConfig: RelayTransportConfig
+    private val relayTransportConfig: RelayTransportConfig,
+    private val mailboxRouteRepository: MailboxRouteRepository? = null
 ) : OutgoingWireSender {
     override suspend fun send(
         recipientAddress: String,
@@ -30,19 +33,50 @@ class WebSocketOutgoingWireSender(
 
             val senderRelayId = localRelayIdProvider.getLocalRelayId().getOrThrow()
 
-            val envelope =
-                RelayEnvelope(
-                    envelopeId = IdGenerator.generate(),
-                    senderId = senderRelayId,
-                    recipientId = recipientAddress,
-                    payload = encodedTransportPayload,
-                    createdAtEpochMilliseconds = SystemClock.nowEpochMilliseconds()
-                )
+            val envelopeId = IdGenerator.generate()
+            val createdAt = SystemClock.nowEpochMilliseconds()
+            val route =
+                mailboxRouteRepository
+                    ?.remoteForRecipientRoutingId(recipientAddress)
+                    ?.getOrThrow()
+                    ?.takeIf { it.expiresAtEpochMilliseconds > createdAt }
 
-            webSocketTransportClient
-                .sendEnvelopeAndAwaitAcceptance(
-                    envelope = envelope,
-                    timeoutMilliseconds = relayTransportConfig.acknowledgementTimeoutMilliseconds
-                ).getOrThrow()
+            if (route == null) {
+                webSocketTransportClient
+                    .sendEnvelopeAndAwaitAcceptance(
+                        envelope =
+                            RelayEnvelope(
+                                envelopeId = envelopeId,
+                                senderId = senderRelayId,
+                                recipientId = recipientAddress,
+                                payload = encodedTransportPayload,
+                                createdAtEpochMilliseconds = createdAt
+                            ),
+                        timeoutMilliseconds = relayTransportConfig.acknowledgementTimeoutMilliseconds
+                    ).getOrThrow()
+            } else {
+                webSocketTransportClient
+                    .sendFederatedEnvelopeAndAwaitAcceptance(
+                        envelope =
+                            FederatedEnvelope(
+                                envelopeId = envelopeId,
+                                senderRoutingId = senderRelayId,
+                                recipientDeviceRoutingId = recipientAddress,
+                                mailboxRoute = route,
+                                encryptedPayload = encodedTransportPayload,
+                                createdAtEpochMilliseconds = createdAt,
+                                expiresAtEpochMilliseconds =
+                                    minOf(
+                                        createdAt + ENVELOPE_LIFETIME_MILLISECONDS,
+                                        route.expiresAtEpochMilliseconds
+                                    )
+                            ),
+                        timeoutMilliseconds = relayTransportConfig.acknowledgementTimeoutMilliseconds
+                    ).getOrThrow()
+            }
         }
+
+    private companion object {
+        const val ENVELOPE_LIFETIME_MILLISECONDS = 7L * 24L * 60L * 60L * 1_000L
+    }
 }

@@ -12,6 +12,8 @@ import com.cbgm.securechat.feature.transport.discovery.NodeDirectorySource
 import com.cbgm.securechat.feature.transport.discovery.NodeDirectoryVerifier
 import com.cbgm.securechat.feature.transport.discovery.NodeEndpointResolver
 import com.cbgm.securechat.feature.transport.discovery.registerPlatformNodeDirectoryCache
+import com.cbgm.securechat.feature.transport.mailbox.HttpMailboxGateway
+import com.cbgm.securechat.feature.transport.mailbox.MailboxGateway
 import com.cbgm.securechat.feature.transport.push.HttpPushTokenRegistrationGateway
 import com.cbgm.securechat.feature.transport.push.PushTokenRegistrationGateway
 import com.cbgm.securechat.feature.transport.relay.codec.createRelayJson
@@ -120,6 +122,10 @@ val transportModule =
             )
         }
 
+        single<MailboxGateway> {
+            HttpMailboxGateway(httpClient = get<HttpClient>())
+        }
+
         single<PushTokenRegistrationGateway> {
             HttpPushTokenRegistrationGateway(
                 httpClient = get<HttpClient>(),
@@ -132,7 +138,8 @@ val transportModule =
             WebSocketOutgoingWireSender(
                 webSocketTransportClient = get<WebSocketTransportClient>(),
                 localRelayIdProvider = get<LocalRelayIdProvider>(),
-                relayTransportConfig = get<RelayTransportConfig>()
+                relayTransportConfig = get<RelayTransportConfig>(),
+                mailboxRouteRepository = get()
             )
         }
     }

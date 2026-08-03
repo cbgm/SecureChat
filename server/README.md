@@ -15,7 +15,7 @@ The existing `:relay` service remains available during migration.
 | `:server:mailbox` | Capability-protected, expiring encrypted envelopes | 8092 |
 | `:server:federation` | Presence lookup, authenticated forwarding, mailbox fallback | 8093 |
 | `:server:gateway` | Client WebSockets and local connection delivery | 8094 |
-| `:server:push` | Durable FCM tokens, wake-ups, and encrypted-envelope replay | 8095 |
+| `:server:push` | Durable FCM tokens and opaque wake-up identifiers | 8095 |
 
 No service application imports another service application's implementation. Communication crosses
 the `server:protocol` contracts and HTTP interfaces.
@@ -143,18 +143,27 @@ docker compose `
     Select-String -Pattern "federation/typing-events|internal/v1/typing-events"
 ```
 
-For background push, close the receiving app normally without Android's Force stop action, then
-send a message from the other node. The sender gateway stores the opaque envelope in the shared
-push inbox before live federation. If no live route exists, FCM wakes the receiver after the normal
-fallback delay. Duplicate storage attempts by the receiving gateway are accepted, while the local
-federation queue is marked complete to prevent a later replay.
+After both updated clients have connected once, each mutual contact owns a separate expiring mailbox
+capability. Confirm that provisioning occurred (with three mutual contacts, the two mailbox counts
+together should normally be at least three):
+
+```powershell
+curl.exe http://localhost:8092/health
+curl.exe http://localhost:8192/health
+```
+
+For background delivery, close the receiving app normally without Android's Force stop action, then
+send a message from the other node. The federation service stores only the encrypted federated
+envelope in the recipient-selected mailbox. The mailbox asks push to send a wake-up identifier; the
+Android worker then retrieves, processes, and acknowledges the mailbox envelope. Legacy clients that
+have not exchanged a signed mailbox route still use the compatibility push inbox.
 
 ```powershell
 docker compose `
     -f server/docker-compose.yml `
     -f server/docker-compose.multinode.yml `
-    logs --since=2m push federation federation-b |
-    Select-String -Pattern "internal/v1/envelopes|FCM wake-up|push/wake|/stored"
+    logs --since=2m mailbox mailbox-b push federation federation-b |
+    Select-String -Pattern "v1/mailboxes|internal/v1/wake-ups|FCM wake-up|/stored"
 ```
 
 To test failover of node B's gateway and federation processes, keep the apps open and stop them:

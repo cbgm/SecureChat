@@ -18,6 +18,8 @@ dependencies {
     implementation(projects.server.security)
     implementation(projects.server.persistence)
     implementation(libs.bundles.ktor.server)
+    implementation(libs.bundles.ktor.client)
+    implementation(libs.ktor.client.cio)
     implementation(libs.bundles.coroutines)
     implementation(libs.hikari)
     implementation(libs.postgresql)

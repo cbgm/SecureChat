@@ -220,6 +220,13 @@ trust-on-first-use registry authority and every node descriptor, caches the last
 and rotates to another compatible gateway when its current node fails. Push continues to use its
 separate HTTP base URL and is not coupled to the selected WebSocket node.
 
+For every mutually authenticated contact, the recipient now provisions a separate expiring mailbox
+capability, signs the route with its identity key, and exchanges it inside the encrypted protocol.
+Senders attach the latest verified route to federated envelopes. Offline ciphertext is retained by
+the selected mailbox, while FCM carries only a wake-up identifier; the receiver retrieves, processes,
+and acknowledges the mailbox envelope after waking. The legacy push inbox remains as a compatibility
+fallback until both contacts have exchanged mailbox routes.
+
 See the server README for module boundaries, ports, security behavior, and migration limitations.
 
 ---

@@ -140,7 +140,11 @@ class FederationRouter(
     }
 
     private suspend fun storeInMailbox(envelope: FederatedEnvelope): FederationAcknowledgement? =
-        envelope.mailboxRoute?.let {
+        envelope.mailboxRoute?.let { route ->
+            val descriptor = nodeRegistry.find(route.nodeId) ?: return@let null
+            if (descriptor.mailboxEndpoint != route.nodeEndpoint) {
+                return@let null
+            }
             runCatching { mailbox.store(envelope) }.getOrNull()
         }
 

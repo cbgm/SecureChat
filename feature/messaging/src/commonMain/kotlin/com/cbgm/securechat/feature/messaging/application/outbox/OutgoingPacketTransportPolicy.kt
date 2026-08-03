@@ -9,6 +9,7 @@ import com.cbgm.securechat.core.protocol.packet.GroupMemberActivationAcknowledge
 import com.cbgm.securechat.core.protocol.packet.GroupVerificationReceiptPacket
 import com.cbgm.securechat.core.protocol.packet.GroupVerificationSnapshotPacket
 import com.cbgm.securechat.core.protocol.packet.GroupVerificationSnapshotRequestPacket
+import com.cbgm.securechat.core.protocol.packet.MailboxRoutePacket
 import com.cbgm.securechat.core.protocol.packet.SecureChatPacket
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
 
@@ -57,11 +58,12 @@ class DefaultOutgoingPacketTransportPolicy : OutgoingPacketTransportPolicy {
                 is GroupMemberActivationAcknowledgementPacket,
                 is GroupVerificationReceiptPacket,
                 is GroupVerificationSnapshotRequestPacket,
-                is GroupVerificationSnapshotPacket ->
+                is GroupVerificationSnapshotPacket,
+                is MailboxRoutePacket ->
                     OutgoingTransportRequirement(
                         requiresEncryption = true,
                         encryptionUnavailableMessage =
-                            "Group packets require a mutual SecureChat key exchange"
+                            "Protocol packet requires a mutual SecureChat key exchange"
                     )
 
                 else -> OutgoingTransportRequirement(requiresEncryption = false)

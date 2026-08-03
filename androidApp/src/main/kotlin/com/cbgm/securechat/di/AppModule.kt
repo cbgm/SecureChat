@@ -93,7 +93,8 @@ val appModule =
                 incomingRelayRunner = get(),
                 relayConnectionManager = get(),
                 outboxRunner = get(),
-                appVisibilityState = get()
+                appVisibilityState = get(),
+                mailboxCoordinator = get()
             )
         }
     }

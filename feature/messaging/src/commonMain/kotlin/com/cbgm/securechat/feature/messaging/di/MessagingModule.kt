@@ -1,5 +1,6 @@
 package com.cbgm.securechat.feature.messaging.di
 
+import com.cbgm.securechat.core.protocol.handler.TypedProtocolPacketHandler
 import com.cbgm.securechat.core.protocol.outbox.OutboxProcessor
 import com.cbgm.securechat.core.protocol.outbox.OutboxRunner
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
@@ -12,6 +13,10 @@ import com.cbgm.securechat.feature.messaging.application.incoming.DefaultIncomin
 import com.cbgm.securechat.feature.messaging.application.incoming.DefaultIncomingRelayRunner
 import com.cbgm.securechat.feature.messaging.application.incoming.IncomingEnvelopeProcessor
 import com.cbgm.securechat.feature.messaging.application.incoming.IncomingRelayRunner
+import com.cbgm.securechat.feature.messaging.application.mailbox.DefaultMailboxCoordinator
+import com.cbgm.securechat.feature.messaging.application.mailbox.MailboxCoordinator
+import com.cbgm.securechat.feature.messaging.application.mailbox.MailboxRoutePacketHandler
+import com.cbgm.securechat.feature.messaging.application.mailbox.MailboxRoutePayloadEncoder
 import com.cbgm.securechat.feature.messaging.application.outbox.DefaultOutboxProcessor
 import com.cbgm.securechat.feature.messaging.application.outbox.DefaultOutboxRunner
 import com.cbgm.securechat.feature.messaging.application.outbox.DefaultOutgoingPacketTransportPolicy
@@ -27,6 +32,8 @@ import com.cbgm.securechat.feature.messaging.domain.relay.ContactRelayIdResolver
 import com.cbgm.securechat.feature.messaging.domain.relay.IncomingRelayGateway
 import com.cbgm.securechat.feature.transport.relay.identity.RelayIdGenerator
 import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
+import org.koin.core.module.dsl.bind
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 val messagingModule =
@@ -104,6 +111,28 @@ val messagingModule =
             DefaultIncomingRelayRunner(
                 incomingRelayGateway = get<IncomingRelayGateway>(),
                 incomingEnvelopeProcessor = get<IncomingEnvelopeProcessor>()
+            )
+        }
+
+        singleOf(::MailboxRoutePayloadEncoder)
+
+        singleOf(::MailboxRoutePacketHandler) {
+            bind<TypedProtocolPacketHandler>()
+        }
+
+        single<MailboxCoordinator> {
+            DefaultMailboxCoordinator(
+                contactDao = get(),
+                contactRelayIdDao = get(),
+                localRelayIdProvider = get(),
+                nodeEndpointResolver = get(),
+                mailboxGateway = get(),
+                mailboxRouteRepository = get(),
+                signingKeyPairProvider = get(),
+                signatureCrypto = get(),
+                payloadEncoder = get(),
+                protocolOutbox = get(),
+                incomingEnvelopeProcessor = get()
             )
         }
     }

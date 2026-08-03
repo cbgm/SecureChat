@@ -5,7 +5,6 @@ import com.cbgm.securechat.core.crypto.signature.DetachedSignatureCrypto
 import com.cbgm.securechat.feature.transport.relay.codec.createRelayJson
 import com.cbgm.securechat.feature.transport.relay.config.RelayTransportConfig
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.encodeToString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
