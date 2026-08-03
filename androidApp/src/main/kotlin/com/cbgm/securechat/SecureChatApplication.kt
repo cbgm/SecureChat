@@ -8,7 +8,6 @@ import com.cbgm.securechat.core.crypto.SodiumRuntime
 import com.cbgm.securechat.core.crypto.di.cryptoModule
 import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.core.protocol.di.protocolModule
-import com.cbgm.securechat.core.protocol.outbox.OutboxRunner
 import com.cbgm.securechat.data.database.di.androidDatabaseModule
 import com.cbgm.securechat.di.appModule
 import com.cbgm.securechat.di.sharedModule
@@ -21,14 +20,16 @@ import com.cbgm.securechat.feature.identity.di.androidIdentityStorageModule
 import com.cbgm.securechat.feature.identity.di.identityModule
 import com.cbgm.securechat.feature.identity.domain.repository.IdentityRepository
 import com.cbgm.securechat.feature.identity.domain.repository.storage.LocalPhoneNameStorage
-import com.cbgm.securechat.feature.messaging.application.incoming.IncomingRelayRunner
 import com.cbgm.securechat.feature.messaging.di.messagingModule
 import com.cbgm.securechat.feature.onboarding.di.onboardingModule
 import com.cbgm.securechat.feature.settings.di.settingsModule
-import com.cbgm.securechat.feature.transport.connection.RelayConnectionManager
-import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
 import com.cbgm.securechat.feature.transport.di.transportModule
-import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
+import com.cbgm.securechat.notification.application.ConversationNotificationCoordinator
+import com.cbgm.securechat.notification.di.notificationAndroidModule
+import com.cbgm.securechat.notification.di.notificationModule
+import com.cbgm.securechat.notification.push.PushTokenRegistrationScheduler
+import com.cbgm.securechat.platform.notification.SecureChatNotificationManager
+import com.cbgm.securechat.platform.runtime.ForegroundRuntimeController
 import com.cbgm.securechat.startup.di.startupModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,135 +40,96 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
+import org.koin.androidx.workmanager.koin.workManagerFactory
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
+import org.koin.core.module.Module
 
 class SecureChatApplication : Application() {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val logger = SecureChatLog.withTag("SecureChatApplication")
 
+    private val applicationModules: List<Module> =
+        listOf(
+            cryptoModule,
+            protocolModule,
+            androidDatabaseModule,
+            androidIdentityStorageModule,
+            identityModule,
+            onboardingModule,
+            contactsModule,
+            androidChatsModule,
+            chatsModule,
+            transportModule,
+            messagingModule,
+            notificationModule,
+            notificationAndroidModule,
+            appModule,
+            sharedModule,
+            contactImportModule,
+            startupModule,
+            settingsModule
+        )
+
     override fun onCreate() {
         super.onCreate()
 
         initializeCrypto()
 
-        val koinApplication =
-            startKoin {
-                androidLogger()
-                androidContext(
-                    this@SecureChatApplication
-                )
-                modules(
-                    cryptoModule,
-                    protocolModule,
-                    androidDatabaseModule,
-                    androidIdentityStorageModule,
-                    identityModule,
-                    onboardingModule,
-                    contactsModule,
-                    androidChatsModule,
-                    chatsModule,
-                    transportModule,
-                    messagingModule,
-                    appModule,
-                    sharedModule,
-                    contactImportModule,
-                    startupModule,
-                    settingsModule
-                )
-            }
+        val koin = initializeDependencyInjection()
 
-        val koin = koinApplication.koin
+        initializeRuntimeServices(koin)
+        launchStartupTasks(koin)
+    }
 
+    private fun initializeDependencyInjection(): Koin =
+        startKoin {
+            androidLogger()
+            androidContext(this@SecureChatApplication)
+            workManagerFactory()
+            modules(applicationModules)
+        }.koin
+
+    private fun initializeRuntimeServices(koin: Koin) {
+        koin.get<SecureChatNotificationManager>().createChannels()
+
+        koin.get<ConversationNotificationCoordinator>().start()
+
+        koin.get<ForegroundRuntimeController>().start()
+    }
+
+    private fun launchStartupTasks(koin: Koin) {
         applicationScope.launch {
-            val identityRepository = koin.get<IdentityRepository>()
+            waitUntilLocalIdentityIsReady(koin)
 
-            val phoneNumberStorage = koin.get<LocalPhoneNameStorage>()
+            koin.get<PushTokenRegistrationScheduler>().enqueueCurrentToken()
 
-            combine(
-                identityRepository.observeIdentity(),
-                phoneNumberStorage.observePhoneNumber()
-            ) { identity, phoneNumber ->
-                identity != null && !phoneNumber.isNullOrBlank()
-            }.first { ready ->
-                ready
-            }
-
-            startRuntimeServices(koin = koin)
-
-            syncDeviceContactsIfPermitted(koin = koin)
+            syncDeviceContactsIfPermitted(koin)
         }
     }
 
-    private fun startRuntimeServices(koin: Koin) {
-        val webSocketClient =
-            koin.get<WebSocketTransportClient>()
+    private suspend fun waitUntilLocalIdentityIsReady(
+        koin: Koin
+    ) {
+        val identityRepository = koin.get<IdentityRepository>()
 
-        applicationScope.launch {
-            webSocketClient
-                .connectionState
-                .collect { state ->
-                    logger.debug { "SecureChat relay state: $state" }
-                }
-        }
+        val localPhoneNameStorage = koin.get<LocalPhoneNameStorage>()
 
-        koin.get<IncomingRelayRunner>().start()
-
-        val relayConnectionManager = koin.get<RelayConnectionManager>()
-
-        relayConnectionManager.start()
-
-        applicationScope.launch {
-            relayConnectionManager
-                .connectionState
-                .collect { state ->
-                    when (state) {
-                        is TransportConnectionState.Connected -> {
-                            logger.info { "Relay connected: ${state.relayId}" }
-
-                            koin.get<OutboxRunner>().start()
-                        }
-
-                        is TransportConnectionState.Connecting -> {
-                            logger.debug { "Relay connecting" }
-                        }
-
-                        is TransportConnectionState.Disconnected -> {
-                            logger.info { "Relay disconnected" }
-                        }
-
-                        is TransportConnectionState.Failed -> {
-                            logger.error { "Relay failed: ${state.message}" }
-                        }
-                    }
-                }
+        combine(
+            identityRepository.observeIdentity(),
+            localPhoneNameStorage.observePhoneNumber()
+        ) { identity, phoneNumber ->
+            identity != null && !phoneNumber.isNullOrBlank()
+        }.first { isReady ->
+            isReady
         }
     }
 
-    /**
-     * Refreshes the local SecureChat contact list from the Android
-     * address book on every process start.
-     *
-     * Onboarding owns the runtime permission request and explanation.
-     * Startup never displays another permission dialog; it only runs
-     * the synchronization when READ_CONTACTS is already granted.
-     *
-     * ImportDeviceContacts merges by normalized phone number, so:
-     * - new device contacts are added;
-     * - renamed/updated device contacts are refreshed;
-     * - existing SecureChat identities and conversations stay attached
-     *   to the same contact;
-     * - duplicate contacts are not intentionally created.
-     */
-    private suspend fun syncDeviceContactsIfPermitted(koin: Koin) {
-        val permissionGranted =
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_CONTACTS
-            ) == PackageManager.PERMISSION_GRANTED
-
-        if (!permissionGranted) {
+    private suspend fun syncDeviceContactsIfPermitted(
+        koin: Koin
+    ) {
+        if (!hasReadContactsPermission()) {
             logger.info { "Device contact sync skipped: READ_CONTACTS is not granted" }
 
             return
@@ -176,21 +138,32 @@ class SecureChatApplication : Application() {
         koin
             .get<ImportDeviceContacts>()
             .invoke()
-            .onSuccess {
-                logger.info { "Device contact sync completed" }
-            }.onFailure { error ->
-                logger.error(error) { "Device contact sync failed" }
-            }
+            .fold(
+                onSuccess = {
+                    logger.info { "Device contact sync completed" }
+                },
+                onFailure = { error ->
+                    logger.error(error) { "Device contact sync failed" }
+                }
+            )
     }
+
+    private fun hasReadContactsPermission(): Boolean =
+        ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.READ_CONTACTS
+        ) == PackageManager.PERMISSION_GRANTED
 
     private fun initializeCrypto() {
         runBlocking {
-            SodiumRuntime.initialize().getOrElse { error ->
-                throw IllegalStateException(
-                    "SecureChat could not initialize its cryptographic runtime",
-                    error
-                )
-            }
+            SodiumRuntime
+                .initialize()
+                .getOrElse { error ->
+                    throw IllegalStateException(
+                        "SecureChat could not initialize its cryptographic runtime",
+                        error
+                    )
+                }
         }
     }
 }

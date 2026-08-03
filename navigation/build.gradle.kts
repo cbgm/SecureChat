@@ -22,6 +22,7 @@ kotlin {
             implementation(projects.feature.identity)
             implementation(projects.feature.onboarding)
             implementation(projects.feature.settings)
+            implementation(projects.notification)
             implementation(projects.startup)
 
             implementation(libs.bundles.compose)

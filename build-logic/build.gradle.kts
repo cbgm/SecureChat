@@ -64,56 +64,52 @@ gradlePlugin {
     plugins {
         register("secureChatKmpLibrary") {
             id = "securechat.kmp.library"
-            implementationClass =
-                "com.cbgm.securechat.buildlogic.SecureChatKmpLibraryPlugin"
+            implementationClass = "com.cbgm.securechat.buildlogic.SecureChatKmpLibraryPlugin"
         }
 
         register("secureChatKmpCompose") {
             id = "securechat.kmp.compose"
-            implementationClass =
-                "com.cbgm.securechat.buildlogic.SecureChatKmpComposePlugin"
+            implementationClass = "com.cbgm.securechat.buildlogic.SecureChatKmpComposePlugin"
         }
 
         register("secureChatKmpTesting") {
             id = "securechat.kmp.testing"
-            implementationClass =
-                "com.cbgm.securechat.buildlogic.SecureChatKmpTestingPlugin"
+            implementationClass = "com.cbgm.securechat.buildlogic.SecureChatKmpTestingPlugin"
         }
 
         register("secureChatKmpComposeFeature") {
             id = "securechat.kmp.compose.feature"
-            implementationClass =
-                "com.cbgm.securechat.buildlogic.SecureChatKmpComposeFeaturePlugin"
+            implementationClass = "com.cbgm.securechat.buildlogic.SecureChatKmpComposeFeaturePlugin"
         }
 
         register("secureChatKmpSerialization") {
             id = "securechat.kmp.serialization"
-            implementationClass =
-                "com.cbgm.securechat.buildlogic.SecureChatKmpSerializationPlugin"
+            implementationClass = "com.cbgm.securechat.buildlogic.SecureChatKmpSerializationPlugin"
         }
 
         register("secureChatKmpRoom") {
             id = "securechat.kmp.room"
-            implementationClass =
-                "com.cbgm.securechat.buildlogic.SecureChatKmpRoomPlugin"
+            implementationClass = "com.cbgm.securechat.buildlogic.SecureChatKmpRoomPlugin"
         }
 
         register("secureChatLint") {
             id = "securechat.lint"
-            implementationClass =
-                "com.cbgm.securechat.buildlogic.SecureChatLintPlugin"
+            implementationClass = "com.cbgm.securechat.buildlogic.SecureChatLintPlugin"
         }
 
         register("secureChatArchitecture") {
             id = "securechat.architecture"
-            implementationClass =
-                "com.cbgm.securechat.buildlogic.SecureChatArchitecturePlugin"
+            implementationClass = "com.cbgm.securechat.buildlogic.SecureChatArchitecturePlugin"
         }
 
         register("secureChatQuality") {
             id = "securechat.quality"
-            implementationClass =
-                "com.cbgm.securechat.buildlogic.SecureChatQualityPlugin"
+            implementationClass = "com.cbgm.securechat.buildlogic.SecureChatQualityPlugin"
+        }
+
+        register("localProperties") {
+            id = "securechat.local-properties"
+            implementationClass = "com.cbgm.securechat.buildlogic.LocalPropertiesPlugin"
         }
     }
 }

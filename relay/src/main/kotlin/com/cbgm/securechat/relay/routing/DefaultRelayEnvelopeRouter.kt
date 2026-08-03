@@ -20,20 +20,22 @@ class DefaultRelayEnvelopeRouter(
             RelayRoutingResult.Failed(message = error.message ?: "Envelope could not be stored")
         }
 
-    override suspend fun deliverPending(recipientId: String) {
-        val recipientConnection = connectionRegistry.find(relayId = recipientId) ?: return
+    override suspend fun deliverPending(recipientId: String): Boolean {
+        val recipientConnection = connectionRegistry.find(relayId = recipientId) ?: return false
 
         val pendingEnvelopes =
             pendingEnvelopeStore.getPendingForRecipient(recipientId = recipientId)
 
         for (envelope in pendingEnvelopes) {
-            val serverMessage = RelayServerMessage.IncomingEnvelope(envelope = envelope)
-
             recipientConnection.sendText(
                 json.encodeToString<RelayServerMessage>(
-                    serverMessage
+                    RelayServerMessage.IncomingEnvelope(
+                        envelope = envelope
+                    )
                 )
             )
         }
+
+        return true
     }
 }

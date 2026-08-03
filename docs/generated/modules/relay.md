@@ -10,8 +10,8 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `relay` |
 | Directory | `relay` |
 | Build file | `relay/build.gradle.kts` |
-| Kotlin files | 15 |
-| Production Kotlin files | 14 |
+| Kotlin files | 24 |
+| Production Kotlin files | 23 |
 | Test Kotlin files | 1 |
 | Resource files | 2 |
 | Direct dependencies | 0 |

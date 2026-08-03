@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "229331495492",
+    "project_id": "chat-9ebf2",
+    "storage_bucket": "chat-9ebf2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:229331495492:android:bf3e1d3453001a1be66a11",
+        "android_client_info": {
+          "package_name": "com.cbgm.securechat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyc5pwZWaC7hI8hG3l6E_GuSc1UdyuyeU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

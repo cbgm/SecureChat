@@ -10,12 +10,12 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `feature` |
 | Directory | `feature/messaging` |
 | Build file | `feature/messaging/build.gradle.kts` |
-| Kotlin files | 19 |
-| Production Kotlin files | 14 |
+| Kotlin files | 21 |
+| Production Kotlin files | 16 |
 | Test Kotlin files | 5 |
 | Resource files | 1 |
 | Direct dependencies | 7 |
-| Direct dependents | 1 |
+| Direct dependents | 2 |
 
 ## Source sets
 
@@ -36,3 +36,4 @@ Generated automatically by `./gradlew architectureReport`.
 ## Dependents
 
 - [`:androidApp`](../modules/androidApp.md)
+- [`:notification`](../modules/notification.md)

@@ -1,7 +1,5 @@
 package com.cbgm.securechat.feature.messaging.di
 
-import com.cbgm.securechat.core.protocol.handler.IncomingMessageHandler
-import com.cbgm.securechat.core.protocol.identity.LocalEncryptionKeyPairProvider
 import com.cbgm.securechat.core.protocol.outbox.OutboxProcessor
 import com.cbgm.securechat.core.protocol.outbox.OutboxRunner
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
@@ -10,7 +8,9 @@ import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.feature.chats.domain.repository.TypingIndicatorGateway
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
+import com.cbgm.securechat.feature.messaging.application.incoming.DefaultIncomingEnvelopeProcessor
 import com.cbgm.securechat.feature.messaging.application.incoming.DefaultIncomingRelayRunner
+import com.cbgm.securechat.feature.messaging.application.incoming.IncomingEnvelopeProcessor
 import com.cbgm.securechat.feature.messaging.application.incoming.IncomingRelayRunner
 import com.cbgm.securechat.feature.messaging.application.outbox.DefaultOutboxProcessor
 import com.cbgm.securechat.feature.messaging.application.outbox.DefaultOutboxRunner
@@ -92,12 +92,18 @@ val messagingModule =
             )
         }
 
+        single<IncomingEnvelopeProcessor> {
+            DefaultIncomingEnvelopeProcessor(
+                contactByRelayIdResolver = get<ContactByRelayIdResolver>(),
+                localEncryptionKeyPairProvider = get(),
+                incomingMessageHandler = get()
+            )
+        }
+
         single<IncomingRelayRunner> {
             DefaultIncomingRelayRunner(
                 incomingRelayGateway = get<IncomingRelayGateway>(),
-                contactByRelayIdResolver = get<ContactByRelayIdResolver>(),
-                localEncryptionKeyPairProvider = get<LocalEncryptionKeyPairProvider>(),
-                incomingMessageHandler = get<IncomingMessageHandler>()
+                incomingEnvelopeProcessor = get<IncomingEnvelopeProcessor>()
             )
         }
     }
