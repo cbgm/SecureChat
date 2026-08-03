@@ -14,6 +14,7 @@ application {
 }
 
 dependencies {
+    implementation(projects.server.persistence)
     implementation(projects.server.protocol)
     implementation(projects.server.security)
     implementation(libs.bundles.ktor.server)

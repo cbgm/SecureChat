@@ -123,7 +123,7 @@ data class MailboxConfig(
             MailboxConfig(
                 databaseUrl = System.getenv("MAILBOX_DATABASE_URL")?.takeIf(String::isNotBlank),
                 databaseUser = System.getenv("MAILBOX_DATABASE_USER").orEmpty(),
-                databasePassword = System.getenv("MAILBOX_DATABASE_PASSWORD").orEmpty(),
+                databasePassword = ServiceEnvironment.secret("MAILBOX_DATABASE_PASSWORD").orEmpty(),
                 databaseMaximumPoolSize =
                     System.getenv("MAILBOX_DATABASE_MAXIMUM_POOL_SIZE")?.toIntOrNull()
                         ?: DEFAULT_DATABASE_MAXIMUM_POOL_SIZE,

@@ -6,6 +6,8 @@ import com.cbgm.securechat.server.protocol.ClientRoutingResult
 import com.cbgm.securechat.server.protocol.serverJson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import java.net.URI
@@ -13,6 +15,7 @@ import java.util.Base64
 
 internal class RedisPresenceStore(
     redisUrl: String,
+    redisPassword: String?,
     private val maximumTtlMilliseconds: Long,
     private val keyPrefix: String,
     private val now: () -> Long = System::currentTimeMillis
@@ -37,7 +40,7 @@ internal class RedisPresenceStore(
         require(keyPrefix.isNotBlank()) {
             "Presence Redis key prefix must not be blank"
         }
-        pool = JedisPool(URI.create(redisUrl))
+        pool = JedisPool(redisUri(redisUrl, redisPassword))
         pool.resource.use { jedis ->
             jedis.ping()
         }
@@ -138,6 +141,28 @@ internal class RedisPresenceStore(
 
     private val routingIdsKey: String
         get() = "$keyPrefix:routing-ids"
+
+    private fun redisUri(
+        redisUrl: String,
+        redisPassword: String?
+    ): URI {
+        val uri = URI.create(redisUrl)
+        if (redisPassword == null) {
+            return uri
+        }
+        require(uri.rawUserInfo == null) {
+            "Presence Redis credentials must be configured either in the URL or as a secret, not both"
+        }
+        return URI(
+            uri.scheme,
+            ":$redisPassword",
+            uri.host,
+            uri.port,
+            uri.path,
+            uri.query,
+            uri.fragment
+        )
+    }
 
     private companion object {
         const val REGISTERED_RESULT = 1L

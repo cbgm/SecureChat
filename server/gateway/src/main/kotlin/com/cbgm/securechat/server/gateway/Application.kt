@@ -1,9 +1,11 @@
 package com.cbgm.securechat.server.gateway
 
+import com.cbgm.securechat.server.persistence.ServiceEnvironment
 import com.cbgm.securechat.server.protocol.EnvelopeAcceptanceState
 import com.cbgm.securechat.server.protocol.FederatedEnvelope
 import com.cbgm.securechat.server.protocol.FederationAcknowledgement
 import com.cbgm.securechat.server.protocol.serverJson
+import com.cbgm.securechat.server.security.InternalApiAuthentication
 import com.cbgm.securechat.server.security.NodeIdentity
 import com.cbgm.securechat.server.security.NodeIdentityStore
 import com.cbgm.securechat.server.security.NodeRequestSigner
@@ -72,7 +74,7 @@ fun Application.gatewayModule(
                 HttpFederationClient(
                     httpClient = httpClient,
                     baseUrl = config.federationInternalUrl,
-                    internalToken = config.internalApiToken
+                    internalToken = config.federationInternalApiToken
                 ),
             presence =
                 HttpPresenceClient(
@@ -84,7 +86,7 @@ fun Application.gatewayModule(
                 HttpLegacyPushClient(
                     httpClient = httpClient,
                     baseUrl = config.pushInternalUrl,
-                    internalToken = config.internalApiToken
+                    internalToken = config.pushInternalApiToken
                 )
         )
 
@@ -113,10 +115,7 @@ fun Application.gatewayModule(
         }
 
         post("/internal/v1/envelopes") {
-            if (
-                config.internalApiToken != null &&
-                call.request.headers[INTERNAL_TOKEN_HEADER] != config.internalApiToken
-            ) {
+            if (!call.hasInternalAccess(config.gatewayInternalApiToken)) {
                 call.respond(HttpStatusCode.Unauthorized)
                 return@post
             }
@@ -143,18 +142,29 @@ fun Application.gatewayModule(
     }
 }
 
+private fun io.ktor.server.application.ApplicationCall.hasInternalAccess(
+    expectedToken: String?
+): Boolean =
+    InternalApiAuthentication.isAuthorized(
+        expectedToken,
+        request.headers[InternalApiAuthentication.TOKEN_HEADER]
+    )
+
 data class GatewayConfig(
     val port: Int,
     val nodeIdentityPath: String,
     val federationInternalUrl: String,
     val pushInternalUrl: String,
     val presenceDirectoryUrl: String,
-    val internalApiToken: String?,
+    val federationInternalApiToken: String?,
+    val pushInternalApiToken: String?,
+    val gatewayInternalApiToken: String?,
     val maximumFrameBytes: Long
 ) {
     companion object {
-        fun fromEnvironment(): GatewayConfig =
-            GatewayConfig(
+        fun fromEnvironment(): GatewayConfig {
+            val legacyToken = ServiceEnvironment.secret("INTERNAL_API_TOKEN")
+            return GatewayConfig(
                 port =
                     System
                         .getenv("PORT")
@@ -172,15 +182,18 @@ data class GatewayConfig(
                 presenceDirectoryUrl =
                     System.getenv("PRESENCE_DIRECTORY_URL")
                         ?: "http://localhost:8091",
-                internalApiToken =
-                    System
-                        .getenv("INTERNAL_API_TOKEN")
-                        ?.takeIf(String::isNotBlank),
+                federationInternalApiToken =
+                    ServiceEnvironment.secret("FEDERATION_INTERNAL_API_TOKEN") ?: legacyToken,
+                pushInternalApiToken =
+                    ServiceEnvironment.secret("PUSH_INTERNAL_API_TOKEN") ?: legacyToken,
+                gatewayInternalApiToken =
+                    ServiceEnvironment.secret("GATEWAY_INTERNAL_API_TOKEN") ?: legacyToken,
                 maximumFrameBytes =
                     System
                         .getenv("MAX_FRAME_BYTES")
                         ?.toLongOrNull()
                         ?: 1_048_576L
             )
+        }
     }
 }

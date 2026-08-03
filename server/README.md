@@ -8,7 +8,7 @@ The existing `:relay` service remains available during migration.
 | Module | Purpose | Default port |
 |---|---|---:|
 | `:server:protocol` | Shared serialized API models only | - |
-| `:server:security` | Ed25519 node identities, signing, verification, and replay protection | - |
+| `:server:security` | Node signing, replay protection, and constant-time internal authentication | - |
 | `:server:persistence` | Bounded idempotency and environment infrastructure | - |
 | `:server:node-registry` | Signed descriptors, heartbeats, compatible node directory | 8090 |
 | `:server:presence-directory` | Signed, expiring device routes with generation checks | 8091 |
@@ -31,6 +31,9 @@ MAILBOX_DATABASE_PASSWORD=replace-for-non-local-deployments
 PRESENCE_REDIS_PASSWORD=replace-for-non-local-deployments
 NODE_REGISTRY_DATABASE_PASSWORD=replace-for-non-local-deployments
 FEDERATION_DATABASE_PASSWORD=replace-for-non-local-deployments
+FEDERATION_INTERNAL_API_TOKEN=replace-with-a-different-random-token
+GATEWAY_INTERNAL_API_TOKEN=replace-with-a-different-random-token
+PUSH_INTERNAL_API_TOKEN=replace-with-a-different-random-token
 COMPOSE_PARALLEL_LIMIT=1
 ```
 
@@ -62,10 +65,94 @@ envelopes.
 - Node descriptors and heartbeats are signed.
 - Federation requests are signed over method, path, timestamp, nonce, and body hash.
 - Request nonces are retained for a bounded window to reject replays.
+- Gateway, federation, and push internal endpoints use separate credentials and constant-time checks.
 - Presence routes are accepted only with a valid client signature and non-stale generation.
 - Mailbox IDs and capabilities are random. Only capability hashes are retained.
 - Encrypted envelope IDs are deduplicated and expired entries are removed.
 - Firebase Admin credentials are mounted only into the push container.
+
+The default development Compose file publishes diagnostic ports only on `127.0.0.1`. They remain
+available to the Android emulator through `10.0.2.2`, but are not reachable through the host's LAN
+address.
+
+## Production deployment
+
+Production uses [`docker-compose.production.yml`](docker-compose.production.yml) as an override.
+It adds a Caddy TLS edge, removes every direct host port from the Kotlin services, PostgreSQL, and
+Redis, separates edge and backend networks, mounts credentials as per-service Compose secrets, and
+runs the Kotlin containers with a read-only root filesystem, no Linux capabilities, and
+`no-new-privileges`.
+
+Requirements:
+
+- Docker Compose 2.24.4 or newer because the override uses `!reset`;
+- a public DNS `A` or `AAAA` record for the SecureChat domain;
+- inbound TCP ports 80 and 443, plus UDP 443 for HTTP/3;
+- the Firebase Admin JSON file already used by the push service.
+
+Generate independent random database passwords and internal service tokens on the production host:
+
+```powershell
+.\server\scripts\New-ProductionSecrets.ps1 `
+    -Domain "chat.example.com" `
+    -FirebaseAdminCredentials "C:\secure\chat-project-firebase-adminsdk.json"
+```
+
+The script does not overwrite existing secrets. It creates ignored files under `server/secrets/`
+and `server/.env.production`. Protect and back up those files; losing database passwords prevents a
+replacement container from opening the existing database volumes.
+
+Review the merged configuration before starting it:
+
+```powershell
+docker compose `
+    --env-file server/.env.production `
+    -f server/docker-compose.yml `
+    -f server/docker-compose.production.yml `
+    config
+```
+
+Start production:
+
+```powershell
+docker compose `
+    --env-file server/.env.production `
+    -f server/docker-compose.yml `
+    -f server/docker-compose.production.yml `
+    up -d --build
+```
+
+Caddy automatically obtains and renews the public certificate. Only Caddy publishes host ports in
+the merged production configuration. Public traffic is restricted to these protocol routes:
+
+| Public route | Service |
+|---|---|
+| `/relay` | Gateway WebSocket |
+| `/push/*` | Push registration and opaque wake-up retrieval |
+| `/v1/federation/*` | Signed node-to-node envelope delivery |
+| `/v1/mailboxes/*` | Capability-protected mailbox operations |
+| `/v1/nodes/*` | Signed node registry |
+
+Configure clients with:
+
+```text
+serverUrl = wss://chat.example.com/relay
+httpBaseUrl = https://chat.example.com
+```
+
+Verify the public registry and TLS certificate:
+
+```powershell
+curl.exe https://chat.example.com/v1/nodes
+docker compose `
+    --env-file server/.env.production `
+    -f server/docker-compose.yml `
+    -f server/docker-compose.production.yml `
+    ps
+```
+
+Do not copy the local development tokens into production. The production override removes those
+environment values and makes every Kotlin service load only the secret files granted to it.
 
 ## Push persistence
 

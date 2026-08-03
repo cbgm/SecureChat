@@ -5,6 +5,7 @@ import com.cbgm.securechat.server.protocol.PendingRelayEnvelopesResponse
 import com.cbgm.securechat.server.protocol.PushDeviceRegistrationRequest
 import com.cbgm.securechat.server.protocol.RelayEnvelope
 import com.cbgm.securechat.server.protocol.serverJson
+import com.cbgm.securechat.server.security.InternalApiAuthentication
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
@@ -103,7 +104,7 @@ fun Application.pushModule(
         }
 
         post("/internal/v1/envelopes") {
-            if (!call.hasInternalAccess(config.internalApiToken)) {
+            if (!call.hasInternalAccess(config.pushInternalApiToken)) {
                 call.respond(HttpStatusCode.Unauthorized)
                 return@post
             }
@@ -112,7 +113,7 @@ fun Application.pushModule(
         }
 
         get("/internal/v1/recipients/{recipientId}/envelopes") {
-            if (!call.hasInternalAccess(config.internalApiToken)) {
+            if (!call.hasInternalAccess(config.pushInternalApiToken)) {
                 call.respond(HttpStatusCode.Unauthorized)
                 return@get
             }
@@ -125,7 +126,7 @@ fun Application.pushModule(
         }
 
         post("/internal/v1/recipients/{recipientId}/envelopes/{envelopeId}/ack") {
-            if (!call.hasInternalAccess(config.internalApiToken)) {
+            if (!call.hasInternalAccess(config.pushInternalApiToken)) {
                 call.respond(HttpStatusCode.Unauthorized)
                 return@post
             }
@@ -142,7 +143,7 @@ fun Application.pushModule(
 }
 
 data class PushConfig(
-    val internalApiToken: String?,
+    val pushInternalApiToken: String?,
     val databaseUrl: String?,
     val databaseUser: String,
     val databasePassword: String,
@@ -169,10 +170,12 @@ data class PushConfig(
     companion object {
         fun fromEnvironment(): PushConfig =
             PushConfig(
-                internalApiToken = System.getenv("INTERNAL_API_TOKEN")?.takeIf(String::isNotBlank),
+                pushInternalApiToken =
+                    ServiceEnvironment.secret("PUSH_INTERNAL_API_TOKEN")
+                        ?: ServiceEnvironment.secret("INTERNAL_API_TOKEN"),
                 databaseUrl = System.getenv("PUSH_DATABASE_URL")?.takeIf(String::isNotBlank),
                 databaseUser = System.getenv("PUSH_DATABASE_USER").orEmpty(),
-                databasePassword = System.getenv("PUSH_DATABASE_PASSWORD").orEmpty(),
+                databasePassword = ServiceEnvironment.secret("PUSH_DATABASE_PASSWORD").orEmpty(),
                 databaseMaximumPoolSize =
                     System.getenv("PUSH_DATABASE_MAXIMUM_POOL_SIZE")?.toIntOrNull()
                         ?: DEFAULT_DATABASE_MAXIMUM_POOL_SIZE,
@@ -194,6 +197,8 @@ data class PushConfig(
     }
 }
 
-private fun io.ktor.server.application.ApplicationCall.hasInternalAccess(expectedToken: String?): Boolean = expectedToken == null || request.headers[INTERNAL_TOKEN_HEADER] == expectedToken
-
-private const val INTERNAL_TOKEN_HEADER = "X-SecureChat-Internal-Token"
+private fun io.ktor.server.application.ApplicationCall.hasInternalAccess(expectedToken: String?): Boolean =
+    InternalApiAuthentication.isAuthorized(
+        expectedToken,
+        request.headers[InternalApiAuthentication.TOKEN_HEADER]
+    )

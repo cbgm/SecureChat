@@ -5,6 +5,7 @@ import com.cbgm.securechat.server.protocol.FederatedEnvelope
 import com.cbgm.securechat.server.protocol.FederationAcknowledgement
 import com.cbgm.securechat.server.protocol.PendingRelayEnvelopesResponse
 import com.cbgm.securechat.server.protocol.RelayEnvelope
+import com.cbgm.securechat.server.security.InternalApiAuthentication
 import com.cbgm.securechat.server.security.NodeRequestHeaders
 import com.cbgm.securechat.server.security.NodeRequestSigner
 import io.ktor.client.HttpClient
@@ -27,7 +28,7 @@ class HttpFederationClient(
     override suspend fun route(envelope: FederatedEnvelope): FederationAcknowledgement =
         httpClient
             .post("${baseUrl.trimEnd('/')}/internal/v1/outgoing-envelopes") {
-                internalToken?.let { header(INTERNAL_TOKEN_HEADER, it) }
+                internalToken?.let { header(InternalApiAuthentication.TOKEN_HEADER, it) }
                 contentType(ContentType.Application.Json)
                 setBody(envelope)
             }.body()
@@ -69,7 +70,7 @@ class HttpLegacyPushClient(
     override suspend fun store(envelope: RelayEnvelope): Boolean =
         httpClient
             .post("${baseUrl.trimEnd('/')}/internal/v1/envelopes") {
-                internalToken?.let { header(INTERNAL_TOKEN_HEADER, it) }
+                internalToken?.let { header(InternalApiAuthentication.TOKEN_HEADER, it) }
                 contentType(ContentType.Application.Json)
                 setBody(envelope)
             }.status
@@ -78,7 +79,7 @@ class HttpLegacyPushClient(
     override suspend fun pending(recipientId: String): List<RelayEnvelope> =
         httpClient
             .get("${baseUrl.trimEnd('/')}/internal/v1/recipients/$recipientId/envelopes") {
-                internalToken?.let { header(INTERNAL_TOKEN_HEADER, it) }
+                internalToken?.let { header(InternalApiAuthentication.TOKEN_HEADER, it) }
             }.body<PendingRelayEnvelopesResponse>()
             .envelopes
 
@@ -89,9 +90,7 @@ class HttpLegacyPushClient(
         httpClient.post(
             "${baseUrl.trimEnd('/')}/internal/v1/recipients/$recipientId/envelopes/$envelopeId/ack"
         ) {
-            internalToken?.let { header(INTERNAL_TOKEN_HEADER, it) }
+            internalToken?.let { header(InternalApiAuthentication.TOKEN_HEADER, it) }
         }
     }
 }
-
-const val INTERNAL_TOKEN_HEADER = "X-SecureChat-Internal-Token"

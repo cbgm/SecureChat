@@ -7,6 +7,7 @@ import com.cbgm.securechat.server.protocol.unsigned
 import com.cbgm.securechat.server.security.NodeIdentity
 import com.cbgm.securechat.server.security.Signatures
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.encodeToString
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -50,6 +51,7 @@ class RedisPresenceStoreIntegrationTest {
         createPresenceStorage(
             PresenceConfig(
                 redisUrl = redisUrl,
+                redisPassword = null,
                 redisKeyPrefix = keyPrefix,
                 maximumTtlMilliseconds = 120_000L
             )

@@ -15,7 +15,7 @@ services:
       POSTGRES_USER: securechat_registry
       POSTGRES_PASSWORD: ${NODE_REGISTRY_DATABASE_PASSWORD:-local-development-password}
     ports:
-      - "${NODE_REGISTRY_DATABASE_PORT:-5437}:5432"
+      - "127.0.0.1:${NODE_REGISTRY_DATABASE_PORT:-5437}:5432"
     volumes:
       - node-registry-database-data:/var/lib/postgresql/data
     healthcheck:
@@ -38,7 +38,7 @@ services:
       NODE_REGISTRY_DATABASE_USER: securechat_registry
       NODE_REGISTRY_DATABASE_PASSWORD: ${NODE_REGISTRY_DATABASE_PASSWORD:-local-development-password}
     ports:
-      - "8090:8090"
+      - "127.0.0.1:8090:8090"
     volumes:
       - registry-identity:/data
     depends_on:
@@ -78,9 +78,10 @@ services:
     environment:
       PORT: 8091
       NODE_REGISTRY_URL: http://node-registry:8090
-      PRESENCE_REDIS_URL: redis://:${PRESENCE_REDIS_PASSWORD:-local-development-password}@presence-redis:6379
+      PRESENCE_REDIS_URL: redis://presence-redis:6379
+      PRESENCE_REDIS_PASSWORD: ${PRESENCE_REDIS_PASSWORD:-local-development-password}
     ports:
-      - "8091:8091"
+      - "127.0.0.1:8091:8091"
     depends_on:
       node-registry:
         condition: service_started
@@ -95,7 +96,7 @@ services:
       POSTGRES_USER: securechat_mailbox
       POSTGRES_PASSWORD: ${MAILBOX_DATABASE_PASSWORD:-local-development-password}
     ports:
-      - "${MAILBOX_DATABASE_PORT:-5436}:5432"
+      - "127.0.0.1:${MAILBOX_DATABASE_PORT:-5436}:5432"
     volumes:
       - mailbox-database-data:/var/lib/postgresql/data
     healthcheck:
@@ -117,7 +118,7 @@ services:
       MAILBOX_DATABASE_USER: securechat_mailbox
       MAILBOX_DATABASE_PASSWORD: ${MAILBOX_DATABASE_PASSWORD:-local-development-password}
     ports:
-      - "8092:8092"
+      - "127.0.0.1:8092:8092"
     depends_on:
       mailbox-database:
         condition: service_healthy
@@ -130,7 +131,7 @@ services:
       POSTGRES_USER: securechat_push
       POSTGRES_PASSWORD: ${PUSH_DATABASE_PASSWORD:-local-development-password}
     ports:
-      - "${PUSH_DATABASE_PORT:-5435}:5432"
+      - "127.0.0.1:${PUSH_DATABASE_PORT:-5435}:5432"
     volumes:
       - push-database-data:/var/lib/postgresql/data
     healthcheck:
@@ -148,13 +149,13 @@ services:
         SERVICE: push
     environment:
       PORT: 8095
-      INTERNAL_API_TOKEN: local-development-token
+      PUSH_INTERNAL_API_TOKEN: ${PUSH_INTERNAL_API_TOKEN:-local-push-development-token}
       GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase-admin.json
       PUSH_DATABASE_URL: jdbc:postgresql://push-database:5432/securechat_push
       PUSH_DATABASE_USER: securechat_push
       PUSH_DATABASE_PASSWORD: ${PUSH_DATABASE_PASSWORD:-local-development-password}
     ports:
-      - "8095:8095"
+      - "127.0.0.1:8095:8095"
     volumes:
       - type: bind
         source: ${FIREBASE_ADMIN_CREDENTIALS:?Define FIREBASE_ADMIN_CREDENTIALS in server/.env}
@@ -174,7 +175,7 @@ services:
       POSTGRES_USER: securechat_federation
       POSTGRES_PASSWORD: ${FEDERATION_DATABASE_PASSWORD:-local-development-password}
     ports:
-      - "${FEDERATION_DATABASE_PORT:-5438}:5432"
+      - "127.0.0.1:${FEDERATION_DATABASE_PORT:-5438}:5432"
     volumes:
       - federation-database-data:/var/lib/postgresql/data
     healthcheck:
@@ -199,12 +200,13 @@ services:
       CLIENT_ENDPOINT: ws://localhost:8094/relay
       FEDERATION_ENDPOINT: http://localhost:8093
       MAILBOX_ENDPOINT: http://localhost:8092
-      INTERNAL_API_TOKEN: local-development-token
+      FEDERATION_INTERNAL_API_TOKEN: ${FEDERATION_INTERNAL_API_TOKEN:-local-federation-development-token}
+      GATEWAY_INTERNAL_API_TOKEN: ${GATEWAY_INTERNAL_API_TOKEN:-local-gateway-development-token}
       FEDERATION_DATABASE_URL: jdbc:postgresql://federation-database:5432/securechat_federation
       FEDERATION_DATABASE_USER: securechat_federation
       FEDERATION_DATABASE_PASSWORD: ${FEDERATION_DATABASE_PASSWORD:-local-development-password}
     ports:
-      - "8093:8093"
+      - "127.0.0.1:8093:8093"
     volumes:
       - node-identity:/data
     depends_on:
@@ -230,9 +232,11 @@ services:
       FEDERATION_INTERNAL_URL: http://federation:8093
       PUSH_INTERNAL_URL: http://push:8095
       PRESENCE_DIRECTORY_URL: http://presence-directory:8091
-      INTERNAL_API_TOKEN: local-development-token
+      FEDERATION_INTERNAL_API_TOKEN: ${FEDERATION_INTERNAL_API_TOKEN:-local-federation-development-token}
+      GATEWAY_INTERNAL_API_TOKEN: ${GATEWAY_INTERNAL_API_TOKEN:-local-gateway-development-token}
+      PUSH_INTERNAL_API_TOKEN: ${PUSH_INTERNAL_API_TOKEN:-local-push-development-token}
     ports:
-      - "8094:8094"
+      - "127.0.0.1:8094:8094"
     volumes:
       - node-identity:/data
     depends_on:

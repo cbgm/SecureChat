@@ -8,6 +8,7 @@ import com.cbgm.securechat.server.protocol.FederatedEnvelope
 import com.cbgm.securechat.server.protocol.FederationAcknowledgement
 import com.cbgm.securechat.server.protocol.NodeCapability
 import com.cbgm.securechat.server.protocol.serverJson
+import com.cbgm.securechat.server.security.InternalApiAuthentication
 import com.cbgm.securechat.server.security.NodeIdentity
 import com.cbgm.securechat.server.security.NodeIdentityStore
 import com.cbgm.securechat.server.security.NodeRequestAuthentication
@@ -69,7 +70,12 @@ fun Application.federationModule(
     }
 
     val registry = HttpNodeRegistryClient(httpClient, config.nodeRegistryUrl)
-    val localGateway = HttpLocalGatewayClient(httpClient, config.gatewayInternalUrl, config.internalApiToken)
+    val localGateway =
+        HttpLocalGatewayClient(
+            httpClient,
+            config.gatewayInternalUrl,
+            config.gatewayInternalApiToken
+        )
     val outboundQueue = createOutboundEnvelopeStorage(config)
     val router =
         FederationRouter(
@@ -128,7 +134,7 @@ fun Application.federationModule(
         }
 
         post("/internal/v1/outgoing-envelopes") {
-            if (!call.hasInternalAccess(config.internalApiToken)) {
+            if (!call.hasInternalAccess(config.federationInternalApiToken)) {
                 call.respond(HttpStatusCode.Unauthorized)
                 return@post
             }
@@ -192,7 +198,8 @@ data class FederationConfig(
     val nodeRegistryUrl: String,
     val presenceDirectoryUrl: String,
     val gatewayInternalUrl: String,
-    val internalApiToken: String?,
+    val federationInternalApiToken: String?,
+    val gatewayInternalApiToken: String?,
     val maximumDeduplicationEntries: Int,
     val registerNode: Boolean,
     val clientEndpoint: String,
@@ -216,7 +223,7 @@ data class FederationConfig(
             FederationConfig(
                 databaseUrl = System.getenv("FEDERATION_DATABASE_URL")?.takeIf(String::isNotBlank),
                 databaseUser = System.getenv("FEDERATION_DATABASE_USER").orEmpty(),
-                databasePassword = System.getenv("FEDERATION_DATABASE_PASSWORD").orEmpty(),
+                databasePassword = ServiceEnvironment.secret("FEDERATION_DATABASE_PASSWORD").orEmpty(),
                 databaseMaximumPoolSize =
                     ServiceEnvironment.int(
                         "FEDERATION_DATABASE_MAXIMUM_POOL_SIZE",
@@ -226,7 +233,12 @@ data class FederationConfig(
                 presenceDirectoryUrl =
                     ServiceEnvironment.string("PRESENCE_DIRECTORY_URL", "http://localhost:8091"),
                 gatewayInternalUrl = ServiceEnvironment.string("GATEWAY_INTERNAL_URL", "http://localhost:8094"),
-                internalApiToken = System.getenv("INTERNAL_API_TOKEN")?.takeIf(String::isNotBlank),
+                federationInternalApiToken =
+                    ServiceEnvironment.secret("FEDERATION_INTERNAL_API_TOKEN")
+                        ?: ServiceEnvironment.secret("INTERNAL_API_TOKEN"),
+                gatewayInternalApiToken =
+                    ServiceEnvironment.secret("GATEWAY_INTERNAL_API_TOKEN")
+                        ?: ServiceEnvironment.secret("INTERNAL_API_TOKEN"),
                 maximumDeduplicationEntries =
                     ServiceEnvironment.int("MAX_DEDUPLICATION_ENTRIES", 100_000),
                 registerNode = ServiceEnvironment.string("REGISTER_NODE", "true").toBoolean(),
@@ -274,7 +286,11 @@ internal fun createOutboundEnvelopeStorage(config: FederationConfig): OutboundEn
     return PostgresOutboundEnvelopeStorage(database)
 }
 
-private fun io.ktor.server.application.ApplicationCall.hasInternalAccess(expectedToken: String?): Boolean = expectedToken == null || request.headers[INTERNAL_TOKEN_HEADER] == expectedToken
+private fun io.ktor.server.application.ApplicationCall.hasInternalAccess(expectedToken: String?): Boolean =
+    InternalApiAuthentication.isAuthorized(
+        expectedToken,
+        request.headers[InternalApiAuthentication.TOKEN_HEADER]
+    )
 
 private fun io.ktor.server.application.ApplicationCall.requestAuthentication(): NodeRequestAuthentication? {
     val nodeId = request.headers[NodeRequestHeaders.NODE_ID] ?: return null

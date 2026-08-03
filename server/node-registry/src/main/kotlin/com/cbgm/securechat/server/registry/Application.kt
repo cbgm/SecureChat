@@ -133,7 +133,8 @@ data class NodeRegistryConfig(
                 databaseUrl =
                     System.getenv("NODE_REGISTRY_DATABASE_URL")?.takeIf(String::isNotBlank),
                 databaseUser = System.getenv("NODE_REGISTRY_DATABASE_USER").orEmpty(),
-                databasePassword = System.getenv("NODE_REGISTRY_DATABASE_PASSWORD").orEmpty(),
+                databasePassword =
+                    ServiceEnvironment.secret("NODE_REGISTRY_DATABASE_PASSWORD").orEmpty(),
                 databaseMaximumPoolSize =
                     System.getenv("NODE_REGISTRY_DATABASE_MAXIMUM_POOL_SIZE")?.toIntOrNull()
                         ?: DEFAULT_DATABASE_MAXIMUM_POOL_SIZE,

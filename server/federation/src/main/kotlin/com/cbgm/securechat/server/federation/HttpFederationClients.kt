@@ -6,6 +6,7 @@ import com.cbgm.securechat.server.protocol.FederationAcknowledgement
 import com.cbgm.securechat.server.protocol.MailboxEnvelopeRequest
 import com.cbgm.securechat.server.protocol.SecureChatNodeDescriptor
 import com.cbgm.securechat.server.protocol.serverJson
+import com.cbgm.securechat.server.security.InternalApiAuthentication
 import com.cbgm.securechat.server.security.NodeRequestHeaders
 import com.cbgm.securechat.server.security.NodeRequestSigner
 import io.ktor.client.HttpClient
@@ -19,6 +20,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import kotlinx.serialization.encodeToString
 
 class HttpPresenceDirectoryClient(
     private val httpClient: HttpClient,
@@ -45,7 +47,7 @@ class HttpLocalGatewayClient(
     override suspend fun deliver(envelope: FederatedEnvelope): FederationAcknowledgement =
         httpClient
             .post("$baseUrl/internal/v1/envelopes") {
-                internalToken?.let { header(INTERNAL_TOKEN_HEADER, it) }
+                internalToken?.let { header(InternalApiAuthentication.TOKEN_HEADER, it) }
                 contentType(ContentType.Application.Json)
                 setBody(envelope)
             }.body()
@@ -89,5 +91,3 @@ class HttpMailboxClient(
             }.body()
     }
 }
-
-const val INTERNAL_TOKEN_HEADER = "X-SecureChat-Internal-Token"

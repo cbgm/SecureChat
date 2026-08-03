@@ -22,3 +22,5 @@ node_modules/
 **/firebase-service-account*.json
 **/*service-account-key*.json
 server/.env
+server/.env.production
+server/secrets/*.txt

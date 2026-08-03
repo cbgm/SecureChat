@@ -51,7 +51,7 @@ class PostgresPushStoresIntegrationTest {
 
     private fun databaseConfig(databaseUrl: String): PushConfig =
         PushConfig(
-            internalApiToken = null,
+            pushInternalApiToken = null,
             databaseUrl = databaseUrl,
             databaseUser = System.getenv("PUSH_TEST_DATABASE_USER") ?: "securechat_push",
             databasePassword =

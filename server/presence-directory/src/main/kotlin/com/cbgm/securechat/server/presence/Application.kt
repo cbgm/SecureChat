@@ -1,5 +1,6 @@
 package com.cbgm.securechat.server.presence
 
+import com.cbgm.securechat.server.persistence.ServiceEnvironment
 import com.cbgm.securechat.server.protocol.ClientRouteRegistration
 import com.cbgm.securechat.server.protocol.ErrorResponse
 import com.cbgm.securechat.server.protocol.SecureChatNodeDescriptor
@@ -128,6 +129,7 @@ fun Application.presenceDirectoryModule(
 
 data class PresenceConfig(
     val redisUrl: String?,
+    val redisPassword: String?,
     val redisKeyPrefix: String,
     val maximumTtlMilliseconds: Long
 ) {
@@ -144,6 +146,7 @@ data class PresenceConfig(
         fun fromEnvironment(): PresenceConfig =
             PresenceConfig(
                 redisUrl = System.getenv("PRESENCE_REDIS_URL")?.takeIf(String::isNotBlank),
+                redisPassword = ServiceEnvironment.secret("PRESENCE_REDIS_PASSWORD"),
                 redisKeyPrefix =
                     System.getenv("PRESENCE_REDIS_KEY_PREFIX")?.takeIf(String::isNotBlank)
                         ?: DEFAULT_REDIS_KEY_PREFIX,
@@ -164,6 +167,7 @@ internal fun createPresenceStorage(config: PresenceConfig): PresenceStorage {
     } else {
         RedisPresenceStore(
             redisUrl = redisUrl,
+            redisPassword = config.redisPassword,
             maximumTtlMilliseconds = config.maximumTtlMilliseconds,
             keyPrefix = config.redisKeyPrefix
         )

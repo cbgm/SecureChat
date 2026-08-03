@@ -1,0 +1,39 @@
+{$SECURECHAT_DOMAIN} {
+    encode zstd gzip
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "no-referrer"
+        -Server
+    }
+
+    @relay path /relay
+    handle @relay {
+        reverse_proxy gateway:8094 {
+            stream_close_delay 5m
+        }
+    }
+
+    @push path /push /push/*
+    handle @push {
+        reverse_proxy push:8095
+    }
+
+    @federation path /v1/federation /v1/federation/*
+    handle @federation {
+        reverse_proxy federation:8093
+    }
+
+    @mailboxes path /v1/mailboxes /v1/mailboxes/*
+    handle @mailboxes {
+        reverse_proxy mailbox:8092
+    }
+
+    @nodes path /v1/nodes /v1/nodes/*
+    handle @nodes {
+        reverse_proxy node-registry:8090
+    }
+
+    respond 404
+}
