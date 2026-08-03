@@ -215,6 +215,11 @@ The app automatically signs and refreshes its presence route after connecting to
 gateway, enabling the federation service to locate active clients across nodes. Device routing IDs
 are derived from random signing identities and do not contain or hash phone numbers.
 
+The Android client fetches the signed node directory from the registry, verifies the pinned or
+trust-on-first-use registry authority and every node descriptor, caches the last valid directory,
+and rotates to another compatible gateway when its current node fails. Push continues to use its
+separate HTTP base URL and is not coupled to the selected WebSocket node.
+
 See the server README for module boundaries, ports, security behavior, and migration limitations.
 
 ---

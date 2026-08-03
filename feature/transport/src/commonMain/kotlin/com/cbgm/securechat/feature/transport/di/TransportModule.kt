@@ -6,6 +6,12 @@ import com.cbgm.securechat.core.protocol.identity.LocalSigningPublicKeyProvider
 import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
 import com.cbgm.securechat.feature.transport.connection.DefaultRelayConnectionManager
 import com.cbgm.securechat.feature.transport.connection.RelayConnectionManager
+import com.cbgm.securechat.feature.transport.discovery.DefaultNodeEndpointResolver
+import com.cbgm.securechat.feature.transport.discovery.HttpNodeDirectorySource
+import com.cbgm.securechat.feature.transport.discovery.NodeDirectorySource
+import com.cbgm.securechat.feature.transport.discovery.NodeDirectoryVerifier
+import com.cbgm.securechat.feature.transport.discovery.NodeEndpointResolver
+import com.cbgm.securechat.feature.transport.discovery.registerPlatformNodeDirectoryCache
 import com.cbgm.securechat.feature.transport.push.HttpPushTokenRegistrationGateway
 import com.cbgm.securechat.feature.transport.push.PushTokenRegistrationGateway
 import com.cbgm.securechat.feature.transport.relay.codec.createRelayJson
@@ -29,6 +35,8 @@ import org.koin.dsl.module
 
 val transportModule =
     module {
+
+        registerPlatformNodeDirectoryCache()
 
         single<HttpClient> {
             createPlatformHttpClient(
@@ -78,8 +86,31 @@ val transportModule =
             DefaultRelayConnectionManager(
                 webSocketTransportClient = get<WebSocketTransportClient>(),
                 localRelayIdProvider = get<LocalRelayIdProvider>(),
-                relayTransportConfig = get<RelayTransportConfig>()
+                relayTransportConfig = get<RelayTransportConfig>(),
+                nodeEndpointResolver = get<NodeEndpointResolver>()
             )
+        }
+
+        single {
+            NodeDirectoryVerifier(
+                signatureCrypto = get<DetachedSignatureCrypto>(),
+                cryptoHash = get(),
+                json = get(qualifier = named(RELAY_JSON_QUALIFIER))
+            )
+        }
+
+        single<NodeEndpointResolver> {
+            DefaultNodeEndpointResolver(
+                source = get<NodeDirectorySource>(),
+                json = get(qualifier = named(RELAY_JSON_QUALIFIER)),
+                cache = get(),
+                verifier = get(),
+                config = get<RelayTransportConfig>()
+            )
+        }
+
+        single<NodeDirectorySource> {
+            HttpNodeDirectorySource(httpClient = get<HttpClient>())
         }
 
         single<PendingRelayEnvelopeGateway> {
@@ -106,4 +137,4 @@ val transportModule =
         }
     }
 
-private const val RELAY_JSON_QUALIFIER = "RelayJson"
+internal const val RELAY_JSON_QUALIFIER = "RelayJson"

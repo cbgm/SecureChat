@@ -48,7 +48,27 @@ android {
             value =
                 localProperties.buildConfigString(
                     key = "securechat.relay.httpBaseUrl",
-                    defaultValue = "http://10.0.2.2:8080"
+                    defaultValue = "http://10.0.2.2:8095"
+                )
+        )
+
+        buildConfigField(
+            type = "String",
+            name = "NODE_REGISTRY_BASE_URL",
+            value =
+                localProperties.buildConfigString(
+                    key = "securechat.registry.baseUrl",
+                    defaultValue = "http://10.0.2.2:8090"
+                )
+        )
+
+        buildConfigField(
+            type = "String",
+            name = "NODE_REGISTRY_AUTHORITY_NODE_ID",
+            value =
+                localProperties.buildConfigString(
+                    key = "securechat.registry.authorityNodeId",
+                    defaultValue = ""
                 )
         )
     }

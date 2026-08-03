@@ -51,20 +51,21 @@ docker compose -f server/docker-compose.yml up --build
 Configure the Android emulator to use:
 
 ```text
-ws://10.0.2.2:8094/relay
-http://10.0.2.2:8095
+securechat.registry.baseUrl=http://10.0.2.2:8090
+securechat.relay.httpBaseUrl=http://10.0.2.2:8095
 ```
 
-Use the gateway URL as `serverUrl` and the push URL as `httpBaseUrl` in
-`RelayTransportConfig`. The push health response must contain `fcmEnabled=true`.
+The registry URL is used for signed WebSocket node discovery. The push URL remains separate. Leave
+`securechat.registry.authorityNodeId` empty for local trust on first use, or pin the registry ID
+returned by `/v1/nodes`. The push health response must contain `fcmEnabled=true`.
 
 ## Run the two-node federation test
 
 The multi-node override adds a completely separate node B with its own identity, gateway,
 federation service, mailbox, PostgreSQL databases, and persistent volumes. Both nodes share only
-the central node registry, presence directory, and push service. Node A remains available on port
-8094. Node B uses port 8194 through a local failover edge; its gateway health endpoint is exposed
-directly on port 8294.
+the central node registry, presence directory, and push service. Node A advertises port 8094 and
+node B advertises port 8294. Clients obtain both direct endpoints from the signed registry response;
+the former port-8194 Caddy failure-injection edge is no longer used.
 
 Start both nodes from the repository root:
 
@@ -72,7 +73,7 @@ Start both nodes from the repository root:
 docker compose `
     -f server/docker-compose.yml `
     -f server/docker-compose.multinode.yml `
-    up -d --build
+    up -d --build --remove-orphans
 ```
 
 Wait for both signed descriptors to be registered, then verify the topology:
@@ -88,35 +89,28 @@ curl.exe http://localhost:8095/health
 The registry must report `nodes=2`. Before opening the apps, both gateway health responses should
 report `connections=0`.
 
-Build and install an app for node A on the first emulator. The Gradle property temporarily overrides
-`local.properties`; the file is not edited:
+Build the discovery-enabled app once:
 
 ```powershell
 $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 
-.\gradlew.bat `
-    "-Psecurechat.relay.websocketUrl=ws://10.0.2.2:8094/relay" `
-    :androidApp:assembleDebug `
+.\gradlew.bat :androidApp:assembleDebug `
     --no-configuration-cache
 
 & $adb -s emulator-5554 install -r `
     ".\androidApp\build\outputs\apk\debug\androidApp-debug.apk"
 ```
 
-Build and install the node B version on the second emulator:
+Install the same APK on the second emulator. Each installation has a different relay ID and chooses
+a stable starting node from the verified directory:
 
 ```powershell
-.\gradlew.bat `
-    "-Psecurechat.relay.websocketUrl=ws://10.0.2.2:8194/relay" `
-    :androidApp:assembleDebug `
-    --no-configuration-cache
-
 & $adb -s emulator-5556 install -r `
     ".\androidApp\build\outputs\apk\debug\androidApp-debug.apk"
 ```
 
-Open both apps and verify that each node owns one connection while the shared presence directory
-contains two signed routes:
+Open both apps and verify that the gateway connection counts add up to two while the shared presence
+directory contains two signed routes:
 
 ```powershell
 curl.exe http://localhost:8091/health
@@ -124,9 +118,11 @@ curl.exe http://localhost:8094/health
 curl.exe http://localhost:8294/health
 ```
 
-Expected values are `routes=2`, `connections=1`, and `connections=1`. Send a message in both
-directions. The compatibility `send_envelope` frame now enters federation whenever the recipient is
-not connected to the sender's gateway. Confirm the node-to-node and destination-gateway requests:
+Node selection is derived from each installation's random relay ID, so the two gateway counts may
+be `1 + 1` or `2 + 0`. With three emulators, a split is normally visible immediately. Send a message
+between clients connected to different gateways. The compatibility `send_envelope` frame enters
+federation whenever the recipient is not connected to the sender's gateway. Confirm the
+node-to-node and destination-gateway requests:
 
 ```powershell
 docker compose `
@@ -170,10 +166,10 @@ docker compose `
     stop gateway-b federation-b
 ```
 
-The node B app reconnects through port 8194 to gateway A. Within the normal reconnect window,
-gateway A should report `connections=2` and presence should still report `routes=2`. Messages must
-continue in both directions. After the 90-second registry heartbeat grace period, registry health
-reports `nodes=1`.
+Every client connected to node B temporarily blacklists the failed descriptor and selects node A
+from the cached signed directory. Within the normal reconnect window, gateway A should own the
+migrated connections and messages must continue in both directions. After the 90-second registry
+heartbeat grace period, registry health reports `nodes=1`.
 
 Restore node B with:
 
@@ -184,10 +180,15 @@ docker compose `
     up -d federation-b gateway-b
 ```
 
-The port-8194 edge is a local failure-injection harness. It verifies WebSocket reconnection, signed
-route migration, and continued delivery when one node process stack disappears. Selecting another
-independently hosted node directly from the signed registry directory remains a separate client
-discovery milestone.
+The app refreshes the directory every minute, rejects invalid authority or node signatures, rejects
+expired and incompatible descriptors, and keeps failed nodes out of selection for 30 seconds. If
+the registry is briefly unavailable, the last verified directory has a five-minute grace period.
+When `securechat.registry.baseUrl` is blank, the static `securechat.relay.websocketUrl` remains
+available for legacy single-relay development.
+
+The trusted registry ID is deliberately retained across app restarts. If local testing deletes the
+`registry-identity` Docker volume, clear the app data once before trusting the newly generated local
+authority. Production clients must never reset that trust automatically.
 
 The gateway accepts the existing relay WebSocket frames. Current clients fetch `/v1/gateway`, create
 a connection ID, and attach a signed, expiring presence route to the initial `register` frame. They
@@ -279,9 +280,13 @@ the merged production configuration. Public traffic is restricted to these proto
 Configure clients with:
 
 ```text
-serverUrl = wss://chat.example.com/relay
-httpBaseUrl = https://chat.example.com
+securechat.registry.baseUrl=https://chat.example.com
+securechat.registry.authorityNodeId=<authorityNodeId from /v1/nodes>
+securechat.relay.httpBaseUrl=https://chat.example.com
 ```
+
+Production builds must pin `authorityNodeId`. Trust on first use is intended only to make local
+development with a newly generated registry identity convenient.
 
 Verify the public registry and TLS certificate:
 
@@ -478,6 +483,7 @@ Compose simple. No service accesses another service's database tables.
 
 ```bash
 ./gradlew \
+  :feature:transport:allTests \
   :server:protocol:test \
   :server:security:test \
   :server:persistence:test \
