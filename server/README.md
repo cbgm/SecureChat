@@ -29,6 +29,7 @@ FIREBASE_ADMIN_CREDENTIALS=C:/secure/chat-project-firebase-adminsdk.json
 PUSH_DATABASE_PASSWORD=replace-for-non-local-deployments
 MAILBOX_DATABASE_PASSWORD=replace-for-non-local-deployments
 PRESENCE_REDIS_PASSWORD=replace-for-non-local-deployments
+NODE_REGISTRY_DATABASE_PASSWORD=replace-for-non-local-deployments
 COMPOSE_PARALLEL_LIMIT=1
 ```
 
@@ -160,16 +161,46 @@ $env:PRESENCE_TEST_REDIS_URL = "redis://:local-development-password@localhost:63
 .\gradlew.bat :server:presence-directory:test
 ```
 
+## Node registry persistence
+
+The node registry uses its own PostgreSQL database when `NODE_REGISTRY_DATABASE_URL` is configured.
+Docker Compose provides `node-registry-database` and retains its data in the
+`node-registry-database-data` volume. Signed node descriptors, heartbeat timestamps, and accepted
+heartbeat nonces survive registry-container and complete Compose restarts. Persisting nonces keeps
+replay protection effective across restarts.
+
+The registry signing identity remains in the separate `registry-identity` volume. The health
+endpoint reports the active adapter and currently healthy node count:
+
+```powershell
+curl.exe http://localhost:8090/health
+docker compose -f server/docker-compose.yml restart node-registry
+curl.exe http://localhost:8090/health
+```
+
+Both responses must contain `persistence=postgresql`. A node is included only while its signed
+descriptor is valid and its last heartbeat remains inside the configured grace period.
+
+The optional PostgreSQL integration test can be enabled against the Compose database:
+
+```powershell
+docker compose -f server/docker-compose.yml up -d node-registry-database
+$env:NODE_REGISTRY_TEST_DATABASE_URL = "jdbc:postgresql://localhost:5437/securechat_registry"
+$env:NODE_REGISTRY_TEST_DATABASE_USER = "securechat_registry"
+$env:NODE_REGISTRY_TEST_DATABASE_PASSWORD = "local-development-password"
+.\gradlew.bat :server:node-registry:test
+```
+
 ## Remaining persistence work
 
 The remaining services use bounded in-memory adapters behind service-owned stores. This keeps the
 complete topology executable and testable without allowing one service to access another service's
-tables. Their production adapters remain intentionally local to their owning service. Node registry
-and the federation outbound queue still need PostgreSQL.
+tables. Their production adapters remain intentionally local to their owning service. The federation
+outbound queue still needs PostgreSQL.
 
-The push, mailbox, and presence services deliberately fall back to bounded in-memory stores when
-their persistence URLs are absent, which keeps isolated tests and development outside Docker
-Compose simple.
+The push, mailbox, presence, and node-registry services deliberately fall back to bounded in-memory
+stores when their persistence URLs are absent, which keeps isolated tests and development outside
+Docker Compose simple.
 
 Replacing an adapter does not change `:server:protocol` or create service-to-service implementation
 dependencies.

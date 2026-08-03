@@ -18,7 +18,11 @@ dependencies {
     implementation(projects.server.security)
     implementation(projects.server.persistence)
     implementation(libs.bundles.ktor.server)
+    implementation(libs.bundles.coroutines)
+    implementation(libs.hikari)
+    implementation(libs.postgresql)
     implementation(libs.logback.classic)
     testImplementation(kotlin("test"))
+    testImplementation(libs.bundles.coroutines.test)
     testImplementation(libs.ktor.server.test.host)
 }

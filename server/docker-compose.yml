@@ -7,6 +7,23 @@ x-service: &securechat-service
     dockerfile: server/Dockerfile
 
 services:
+  node-registry-database:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: securechat_registry
+      POSTGRES_USER: securechat_registry
+      POSTGRES_PASSWORD: ${NODE_REGISTRY_DATABASE_PASSWORD:-local-development-password}
+    ports:
+      - "${NODE_REGISTRY_DATABASE_PORT:-5437}:5432"
+    volumes:
+      - node-registry-database-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
   node-registry:
     <<: *securechat-service
     build:
@@ -17,10 +34,16 @@ services:
     environment:
       PORT: 8090
       REGISTRY_IDENTITY_PATH: /data/registry.identity
+      NODE_REGISTRY_DATABASE_URL: jdbc:postgresql://node-registry-database:5432/securechat_registry
+      NODE_REGISTRY_DATABASE_USER: securechat_registry
+      NODE_REGISTRY_DATABASE_PASSWORD: ${NODE_REGISTRY_DATABASE_PASSWORD:-local-development-password}
     ports:
       - "8090:8090"
     volumes:
       - registry-identity:/data
+    depends_on:
+      node-registry-database:
+        condition: service_healthy
 
   presence-redis:
     image: redis:7.4-alpine
@@ -194,6 +217,7 @@ services:
 volumes:
   registry-identity:
   node-identity:
+  node-registry-database-data:
   presence-redis-data:
   mailbox-database-data:
   push-database-data:
