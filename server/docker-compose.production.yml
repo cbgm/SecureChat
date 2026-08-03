@@ -51,6 +51,7 @@ services:
     <<: *hardened-service
     ports: !reset []
     environment:
+      TRUST_PROXY_HEADERS: "true"
       NODE_REGISTRY_DATABASE_PASSWORD: !reset null
       NODE_REGISTRY_DATABASE_PASSWORD_FILE: /run/secrets/node-registry-database-password
     secrets:
@@ -103,6 +104,7 @@ services:
     <<: *hardened-service
     ports: !reset []
     environment:
+      TRUST_PROXY_HEADERS: "true"
       MAILBOX_DATABASE_PASSWORD: !reset null
       MAILBOX_DATABASE_PASSWORD_FILE: /run/secrets/mailbox-database-password
       PUSH_INTERNAL_API_TOKEN: !reset null
@@ -129,6 +131,7 @@ services:
     ports: !reset []
     volumes: !reset []
     environment:
+      TRUST_PROXY_HEADERS: "true"
       PUSH_DATABASE_PASSWORD: !reset null
       PUSH_DATABASE_PASSWORD_FILE: /run/secrets/push-database-password
       PUSH_INTERNAL_API_TOKEN: !reset null
@@ -156,6 +159,7 @@ services:
     <<: *hardened-service
     ports: !reset []
     environment:
+      TRUST_PROXY_HEADERS: "true"
       CLIENT_ENDPOINT: wss://${SECURECHAT_DOMAIN:?Set SECURECHAT_DOMAIN}/relay
       FEDERATION_ENDPOINT: https://${SECURECHAT_DOMAIN:?Set SECURECHAT_DOMAIN}
       MAILBOX_ENDPOINT: https://${SECURECHAT_DOMAIN:?Set SECURECHAT_DOMAIN}

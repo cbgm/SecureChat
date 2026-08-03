@@ -5,7 +5,10 @@ import com.cbgm.securechat.server.protocol.PendingRelayEnvelopesResponse
 import com.cbgm.securechat.server.protocol.PushDeviceRegistrationRequest
 import com.cbgm.securechat.server.protocol.RelayEnvelope
 import com.cbgm.securechat.server.protocol.serverJson
+import com.cbgm.securechat.server.security.BoundedRateLimiter
 import com.cbgm.securechat.server.security.InternalApiAuthentication
+import com.cbgm.securechat.server.security.RateLimitPolicy
+import com.cbgm.securechat.server.security.enforceRateLimit
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
@@ -15,6 +18,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
@@ -38,6 +42,7 @@ fun main() {
 fun Application.pushModule(
     config: PushConfig = PushConfig.fromEnvironment()
 ) {
+    val deviceRegistrationRateLimiter = BoundedRateLimiter(config.deviceRegistrationRateLimit)
     val stores =
         if (config.databaseUrl == null) {
             PushStores.inMemory(config)
@@ -63,6 +68,9 @@ fun Application.pushModule(
 
     install(CallLogging)
     install(ContentNegotiation) { json(serverJson) }
+    if (config.trustProxyHeaders) {
+        install(XForwardedHeaders)
+    }
 
     routing {
         get("/health") {
@@ -74,6 +82,9 @@ fun Application.pushModule(
         }
 
         post("/push/devices") {
+            if (!call.enforceRateLimit(deviceRegistrationRateLimiter)) {
+                return@post
+            }
             val request = call.receive<PushDeviceRegistrationRequest>()
             if (request.relayId.isBlank() || request.token.isBlank() || request.platform.isBlank()) {
                 call.respond(HttpStatusCode.BadRequest)
@@ -164,7 +175,13 @@ data class PushConfig(
     val databaseMaximumPoolSize: Int,
     val maximumEnvelopes: Int,
     val envelopeRetentionMilliseconds: Long,
-    val wakeUpLifetimeMilliseconds: Long
+    val wakeUpLifetimeMilliseconds: Long,
+    val deviceRegistrationRateLimit: RateLimitPolicy =
+        RateLimitPolicy(
+            maximumRequests = DEFAULT_DEVICE_REGISTRATION_RATE_LIMIT_REQUESTS,
+            windowMilliseconds = DEFAULT_DEVICE_REGISTRATION_RATE_LIMIT_WINDOW_MILLISECONDS
+        ),
+    val trustProxyHeaders: Boolean = false
 ) {
     init {
         require(databaseMaximumPoolSize > 0) {
@@ -201,13 +218,36 @@ data class PushConfig(
                         ?: DEFAULT_ENVELOPE_RETENTION_MILLISECONDS,
                 wakeUpLifetimeMilliseconds =
                     System.getenv("PUSH_WAKE_UP_LIFETIME_MILLISECONDS")?.toLongOrNull()
-                        ?: DEFAULT_WAKE_UP_LIFETIME_MILLISECONDS
+                        ?: DEFAULT_WAKE_UP_LIFETIME_MILLISECONDS,
+                deviceRegistrationRateLimit =
+                    RateLimitPolicy(
+                        maximumRequests =
+                            ServiceEnvironment.int(
+                                "PUSH_DEVICE_REGISTRATION_RATE_LIMIT_REQUESTS",
+                                DEFAULT_DEVICE_REGISTRATION_RATE_LIMIT_REQUESTS
+                            ),
+                        windowMilliseconds =
+                            ServiceEnvironment.long(
+                                "PUSH_DEVICE_REGISTRATION_RATE_LIMIT_WINDOW_MILLISECONDS",
+                                DEFAULT_DEVICE_REGISTRATION_RATE_LIMIT_WINDOW_MILLISECONDS
+                            ),
+                        maximumTrackedClients =
+                            ServiceEnvironment.int(
+                                "PUSH_RATE_LIMIT_MAXIMUM_TRACKED_CLIENTS",
+                                DEFAULT_RATE_LIMIT_MAXIMUM_TRACKED_CLIENTS
+                            )
+                    ),
+                trustProxyHeaders =
+                    ServiceEnvironment.string("TRUST_PROXY_HEADERS", "false").toBoolean()
             )
 
         private const val DEFAULT_DATABASE_MAXIMUM_POOL_SIZE = 10
         private const val DEFAULT_MAXIMUM_ENVELOPES = 100_000
         private const val DEFAULT_ENVELOPE_RETENTION_MILLISECONDS = 7L * 24L * 60L * 60L * 1_000L
         private const val DEFAULT_WAKE_UP_LIFETIME_MILLISECONDS = 15L * 60L * 1_000L
+        private const val DEFAULT_DEVICE_REGISTRATION_RATE_LIMIT_REQUESTS = 60
+        private const val DEFAULT_DEVICE_REGISTRATION_RATE_LIMIT_WINDOW_MILLISECONDS = 60_000L
+        private const val DEFAULT_RATE_LIMIT_MAXIMUM_TRACKED_CLIENTS = 100_000
     }
 }
 

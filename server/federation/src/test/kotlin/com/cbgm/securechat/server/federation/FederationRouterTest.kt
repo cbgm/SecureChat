@@ -80,6 +80,8 @@ class FederationRouterTest {
     @Test
     fun durablePushFallbackCompletesFederationQueue() =
         kotlinx.coroutines.test.runTest {
+            val currentTime = 1_000L
+            val queue = OutboundEnvelopeQueue(now = { currentTime })
             val router =
                 FederationRouter(
                     localNodeId = "node-a",
@@ -87,7 +89,9 @@ class FederationRouterTest {
                     nodeRegistry = { null },
                     localGateway = { error("Local gateway must not be used") },
                     remoteFederation = { _, _ -> error("Remote federation must not be used") },
-                    mailbox = { error("Mailbox route is unavailable") }
+                    mailbox = { error("Mailbox route is unavailable") },
+                    queue = queue,
+                    now = { currentTime }
                 )
             val envelope = testEnvelope().copy(mailboxRoute = null)
 

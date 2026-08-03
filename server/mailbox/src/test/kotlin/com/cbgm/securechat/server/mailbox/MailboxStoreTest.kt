@@ -11,6 +11,33 @@ import kotlin.test.assertTrue
 
 class MailboxStoreTest {
     @Test
+    fun creationEnforcesPerOwnerAndGlobalQuotas() =
+        runTest {
+            val store = MailboxStore(now = { 1_000L })
+            val request =
+                CreateMailboxRequest(
+                    nodeId = "node-a",
+                    nodeEndpoint = "http://mailbox",
+                    expiresAtEpochMilliseconds = 10_000L
+                )
+
+            assertIs<MailboxCreationResult.Created>(
+                store.createWithQuota(request, "owner-a", 2, 1)
+            )
+            assertEquals(
+                MailboxCreationResult.OwnerQuotaExceeded,
+                store.createWithQuota(request, "owner-a", 2, 1)
+            )
+            assertIs<MailboxCreationResult.Created>(
+                store.createWithQuota(request, "owner-b", 2, 1)
+            )
+            assertEquals(
+                MailboxCreationResult.GlobalQuotaExceeded,
+                store.createWithQuota(request, "owner-c", 2, 1)
+            )
+        }
+
+    @Test
     fun retrievalCapabilityRevokesMailboxAndPendingEnvelopes() =
         runTest {
             val store = MailboxStore(now = { 1_000L })

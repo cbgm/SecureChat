@@ -6,9 +6,12 @@ import com.cbgm.securechat.server.protocol.NodeDirectory
 import com.cbgm.securechat.server.protocol.NodeHeartbeatRequest
 import com.cbgm.securechat.server.protocol.NodeRegistrationRequest
 import com.cbgm.securechat.server.protocol.serverJson
+import com.cbgm.securechat.server.security.BoundedRateLimiter
 import com.cbgm.securechat.server.security.NodeIdentity
 import com.cbgm.securechat.server.security.NodeIdentityStore
 import com.cbgm.securechat.server.security.ProtocolSignatures
+import com.cbgm.securechat.server.security.RateLimitPolicy
+import com.cbgm.securechat.server.security.enforceRateLimit
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
@@ -18,6 +21,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
@@ -42,14 +46,20 @@ fun main() {
 
 fun Application.nodeRegistryModule(
     identity: NodeIdentity,
-    store: NodeRegistryStorage = createNodeRegistryStorage(NodeRegistryConfig.fromEnvironment())
+    config: NodeRegistryConfig = NodeRegistryConfig.fromEnvironment(),
+    store: NodeRegistryStorage = createNodeRegistryStorage(config)
 ) {
+    val registrationRateLimiter = BoundedRateLimiter(config.registrationRateLimit)
+    val heartbeatRateLimiter = BoundedRateLimiter(config.heartbeatRateLimit)
     monitor.subscribe(ApplicationStopped) {
         store.close()
     }
 
     install(CallLogging)
     install(ContentNegotiation) { json(serverJson) }
+    if (config.trustProxyHeaders) {
+        install(XForwardedHeaders)
+    }
 
     routing {
         get("/health") {
@@ -59,6 +69,9 @@ fun Application.nodeRegistryModule(
         }
 
         post("/v1/nodes") {
+            if (!call.enforceRateLimit(registrationRateLimiter)) {
+                return@post
+            }
             when (val result = store.register(call.receive<NodeRegistrationRequest>().descriptor)) {
                 RegistrationResult.Accepted -> call.respond(HttpStatusCode.Created)
                 is RegistrationResult.Rejected ->
@@ -67,6 +80,9 @@ fun Application.nodeRegistryModule(
         }
 
         post("/v1/nodes/{nodeId}/heartbeat") {
+            if (!call.enforceRateLimit(heartbeatRateLimiter)) {
+                return@post
+            }
             val heartbeat = call.receive<NodeHeartbeatRequest>()
             if (heartbeat.nodeId != call.parameters["nodeId"]) {
                 call.respond(HttpStatusCode.BadRequest, ErrorResponse("NODE_ID_MISMATCH", "Path and body differ"))
@@ -110,7 +126,18 @@ data class NodeRegistryConfig(
     val databaseMaximumPoolSize: Int,
     val supportedProtocolVersions: Set<Int>,
     val heartbeatGraceMilliseconds: Long,
-    val replayRetentionMilliseconds: Long
+    val replayRetentionMilliseconds: Long,
+    val registrationRateLimit: RateLimitPolicy =
+        RateLimitPolicy(
+            maximumRequests = DEFAULT_REGISTRATION_RATE_LIMIT_REQUESTS,
+            windowMilliseconds = DEFAULT_REGISTRATION_RATE_LIMIT_WINDOW_MILLISECONDS
+        ),
+    val heartbeatRateLimit: RateLimitPolicy =
+        RateLimitPolicy(
+            maximumRequests = DEFAULT_HEARTBEAT_RATE_LIMIT_REQUESTS,
+            windowMilliseconds = DEFAULT_HEARTBEAT_RATE_LIMIT_WINDOW_MILLISECONDS
+        ),
+    val trustProxyHeaders: Boolean = false
 ) {
     init {
         require(databaseMaximumPoolSize > 0) {
@@ -144,12 +171,55 @@ data class NodeRegistryConfig(
                         ?: DEFAULT_HEARTBEAT_GRACE_MILLISECONDS,
                 replayRetentionMilliseconds =
                     System.getenv("NODE_REGISTRY_REPLAY_RETENTION_MILLISECONDS")?.toLongOrNull()
-                        ?: DEFAULT_REPLAY_RETENTION_MILLISECONDS
+                        ?: DEFAULT_REPLAY_RETENTION_MILLISECONDS,
+                registrationRateLimit =
+                    RateLimitPolicy(
+                        maximumRequests =
+                            ServiceEnvironment.int(
+                                "NODE_REGISTRY_REGISTRATION_RATE_LIMIT_REQUESTS",
+                                DEFAULT_REGISTRATION_RATE_LIMIT_REQUESTS
+                            ),
+                        windowMilliseconds =
+                            ServiceEnvironment.long(
+                                "NODE_REGISTRY_REGISTRATION_RATE_LIMIT_WINDOW_MILLISECONDS",
+                                DEFAULT_REGISTRATION_RATE_LIMIT_WINDOW_MILLISECONDS
+                            ),
+                        maximumTrackedClients =
+                            ServiceEnvironment.int(
+                                "NODE_REGISTRY_RATE_LIMIT_MAXIMUM_TRACKED_CLIENTS",
+                                DEFAULT_RATE_LIMIT_MAXIMUM_TRACKED_CLIENTS
+                            )
+                    ),
+                heartbeatRateLimit =
+                    RateLimitPolicy(
+                        maximumRequests =
+                            ServiceEnvironment.int(
+                                "NODE_REGISTRY_HEARTBEAT_RATE_LIMIT_REQUESTS",
+                                DEFAULT_HEARTBEAT_RATE_LIMIT_REQUESTS
+                            ),
+                        windowMilliseconds =
+                            ServiceEnvironment.long(
+                                "NODE_REGISTRY_HEARTBEAT_RATE_LIMIT_WINDOW_MILLISECONDS",
+                                DEFAULT_HEARTBEAT_RATE_LIMIT_WINDOW_MILLISECONDS
+                            ),
+                        maximumTrackedClients =
+                            ServiceEnvironment.int(
+                                "NODE_REGISTRY_RATE_LIMIT_MAXIMUM_TRACKED_CLIENTS",
+                                DEFAULT_RATE_LIMIT_MAXIMUM_TRACKED_CLIENTS
+                            )
+                    ),
+                trustProxyHeaders =
+                    ServiceEnvironment.string("TRUST_PROXY_HEADERS", "false").toBoolean()
             )
 
         private const val DEFAULT_DATABASE_MAXIMUM_POOL_SIZE = 10
         private const val DEFAULT_HEARTBEAT_GRACE_MILLISECONDS = 90_000L
         private const val DEFAULT_REPLAY_RETENTION_MILLISECONDS = 5L * 60L * 1_000L
+        private const val DEFAULT_REGISTRATION_RATE_LIMIT_REQUESTS = 10
+        private const val DEFAULT_REGISTRATION_RATE_LIMIT_WINDOW_MILLISECONDS = 60L * 60L * 1_000L
+        private const val DEFAULT_HEARTBEAT_RATE_LIMIT_REQUESTS = 180
+        private const val DEFAULT_HEARTBEAT_RATE_LIMIT_WINDOW_MILLISECONDS = 60_000L
+        private const val DEFAULT_RATE_LIMIT_MAXIMUM_TRACKED_CLIENTS = 100_000
     }
 }
 

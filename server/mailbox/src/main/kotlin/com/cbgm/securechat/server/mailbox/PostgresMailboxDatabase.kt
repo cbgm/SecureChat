@@ -73,14 +73,23 @@ internal class PostgresMailboxDatabase(
                 """
                 CREATE TABLE IF NOT EXISTS mailboxes (
                     mailbox_id TEXT PRIMARY KEY,
+                    owner_key_hash TEXT NOT NULL DEFAULT '',
                     send_capability_hash BYTEA NOT NULL,
                     retrieval_capability_hash BYTEA NOT NULL,
                     expires_at_epoch_milliseconds BIGINT NOT NULL
                 )
                 """.trimIndent(),
                 """
+                ALTER TABLE mailboxes
+                ADD COLUMN IF NOT EXISTS owner_key_hash TEXT NOT NULL DEFAULT ''
+                """.trimIndent(),
+                """
                 CREATE INDEX IF NOT EXISTS mailboxes_expiry_idx
                 ON mailboxes (expires_at_epoch_milliseconds)
+                """.trimIndent(),
+                """
+                CREATE INDEX IF NOT EXISTS mailboxes_owner_idx
+                ON mailboxes (owner_key_hash)
                 """.trimIndent(),
                 """
                 CREATE TABLE IF NOT EXISTS mailbox_envelopes (

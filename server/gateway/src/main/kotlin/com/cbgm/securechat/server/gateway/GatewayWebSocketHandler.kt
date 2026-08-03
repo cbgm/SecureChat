@@ -13,6 +13,7 @@ import io.ktor.server.websocket.DefaultWebSocketServerSession
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.channels.consumeEach
+import kotlinx.serialization.encodeToString
 import java.util.UUID
 
 class GatewayWebSocketHandler(

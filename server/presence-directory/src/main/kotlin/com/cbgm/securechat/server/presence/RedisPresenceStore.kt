@@ -6,6 +6,8 @@ import com.cbgm.securechat.server.protocol.ClientRoutingResult
 import com.cbgm.securechat.server.protocol.serverJson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import java.net.URI

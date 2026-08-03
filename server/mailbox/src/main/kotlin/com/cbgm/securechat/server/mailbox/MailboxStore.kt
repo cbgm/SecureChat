@@ -12,7 +12,27 @@ import java.util.concurrent.ConcurrentHashMap
 interface MailboxStorage : AutoCloseable {
     val persistenceMode: String
 
-    suspend fun create(request: CreateMailboxRequest): CreateMailboxResponse
+    suspend fun create(request: CreateMailboxRequest): CreateMailboxResponse =
+        when (
+            val result =
+                createWithQuota(
+                    request = request,
+                    ownerKeyHash = UNATTRIBUTED_OWNER,
+                    maximumMailboxes = Int.MAX_VALUE,
+                    maximumMailboxesPerOwner = Int.MAX_VALUE
+                )
+        ) {
+            is MailboxCreationResult.Created -> result.response
+            MailboxCreationResult.GlobalQuotaExceeded,
+            MailboxCreationResult.OwnerQuotaExceeded -> error("Unlimited mailbox creation was rejected")
+        }
+
+    suspend fun createWithQuota(
+        request: CreateMailboxRequest,
+        ownerKeyHash: String,
+        maximumMailboxes: Int,
+        maximumMailboxesPerOwner: Int
+    ): MailboxCreationResult
 
     suspend fun store(
         mailboxId: String,
@@ -45,6 +65,7 @@ class MailboxStore(
     private val now: () -> Long = System::currentTimeMillis
 ) : MailboxStorage {
     private data class Mailbox(
+        val ownerKeyHash: String,
         val sendCapabilityHash: ByteArray,
         val retrievalCapabilityHash: ByteArray,
         val expiresAtEpochMilliseconds: Long,
@@ -53,36 +74,58 @@ class MailboxStore(
 
     private val mailboxes = ConcurrentHashMap<String, Mailbox>()
     private val secureRandom = SecureRandom()
+    private val creationLock = Any()
 
     override val persistenceMode: String = "memory"
 
-    override suspend fun create(request: CreateMailboxRequest): CreateMailboxResponse {
-        require(request.expiresAtEpochMilliseconds > now())
-        val mailboxId = randomToken()
-        val sendCapability = randomToken()
-        val retrievalCapability = randomToken()
-        mailboxes[mailboxId] =
-            Mailbox(
-                sendCapabilityHash = hash(sendCapability),
-                retrievalCapabilityHash = hash(retrievalCapability),
-                expiresAtEpochMilliseconds = request.expiresAtEpochMilliseconds
-            )
+    override suspend fun createWithQuota(
+        request: CreateMailboxRequest,
+        ownerKeyHash: String,
+        maximumMailboxes: Int,
+        maximumMailboxesPerOwner: Int
+    ): MailboxCreationResult =
+        synchronized(creationLock) {
+            require(request.expiresAtEpochMilliseconds > now())
+            validateCreation(ownerKeyHash, maximumMailboxes, maximumMailboxesPerOwner)
+            purgeExpiredMailboxes()
+            if (mailboxes.size >= maximumMailboxes) {
+                return@synchronized MailboxCreationResult.GlobalQuotaExceeded
+            }
+            if (
+                mailboxes.values.count { it.ownerKeyHash == ownerKeyHash } >=
+                maximumMailboxesPerOwner
+            ) {
+                return@synchronized MailboxCreationResult.OwnerQuotaExceeded
+            }
 
-        return CreateMailboxResponse(
-            deliveryRoute =
-                DeliveryRoute(
-                    routeId = randomToken(),
-                    nodeId = request.nodeId,
-                    nodeEndpoint = request.nodeEndpoint,
-                    mailboxId = mailboxId,
-                    sendCapability = sendCapability,
-                    sequence = request.routeSequence,
-                    expiresAtEpochMilliseconds = request.expiresAtEpochMilliseconds,
-                    identitySignature = byteArrayOf()
-                ),
-            retrievalCapability = retrievalCapability
-        )
-    }
+            val mailboxId = randomToken()
+            val sendCapability = randomToken()
+            val retrievalCapability = randomToken()
+            mailboxes[mailboxId] =
+                Mailbox(
+                    ownerKeyHash = ownerKeyHash,
+                    sendCapabilityHash = hash(sendCapability),
+                    retrievalCapabilityHash = hash(retrievalCapability),
+                    expiresAtEpochMilliseconds = request.expiresAtEpochMilliseconds
+                )
+
+            MailboxCreationResult.Created(
+                CreateMailboxResponse(
+                    deliveryRoute =
+                        DeliveryRoute(
+                            routeId = randomToken(),
+                            nodeId = request.nodeId,
+                            nodeEndpoint = request.nodeEndpoint,
+                            mailboxId = mailboxId,
+                            sendCapability = sendCapability,
+                            sequence = request.routeSequence,
+                            expiresAtEpochMilliseconds = request.expiresAtEpochMilliseconds,
+                            identitySignature = byteArrayOf()
+                        ),
+                    retrievalCapability = retrievalCapability
+                )
+            )
+        }
 
     override suspend fun store(
         mailboxId: String,
@@ -213,3 +256,25 @@ sealed interface MailboxRevocationResult {
 
     data object Unauthorized : MailboxRevocationResult
 }
+
+sealed interface MailboxCreationResult {
+    data class Created(
+        val response: CreateMailboxResponse
+    ) : MailboxCreationResult
+
+    data object GlobalQuotaExceeded : MailboxCreationResult
+
+    data object OwnerQuotaExceeded : MailboxCreationResult
+}
+
+private fun validateCreation(
+    ownerKeyHash: String,
+    maximumMailboxes: Int,
+    maximumMailboxesPerOwner: Int
+) {
+    require(ownerKeyHash.isNotBlank()) { "Mailbox owner key must not be blank" }
+    require(maximumMailboxes > 0) { "Maximum mailbox count must be positive" }
+    require(maximumMailboxesPerOwner > 0) { "Per-owner mailbox count must be positive" }
+}
+
+private const val UNATTRIBUTED_OWNER = "unattributed"

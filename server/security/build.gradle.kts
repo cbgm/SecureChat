@@ -11,5 +11,6 @@ kotlin {
 dependencies {
     implementation(projects.server.protocol)
     implementation(libs.bundles.serialization)
+    implementation(libs.ktor.server.core)
     testImplementation(kotlin("test"))
 }

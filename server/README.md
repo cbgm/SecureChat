@@ -247,11 +247,78 @@ Legacy pending envelopes addressed to `scphone1_` IDs are not rewritten.
 - Retrieval capabilities can revoke their mailbox; revocation deletes every queued envelope.
 - Failed client revocations remain locally marked as pending and are retried after reconnect.
 - Encrypted envelope IDs are deduplicated and expired entries are removed.
+- Public mailbox creation, push registration, node registration/heartbeat, and federation writes are
+  rate-limited by client address with bounded in-memory tracking.
+- Mailbox creation also enforces atomic PostgreSQL quotas globally and per hashed client address;
+  raw client addresses are not persisted.
 - Firebase Admin credentials are mounted only into the push container.
 
 The default development Compose file publishes diagnostic ports only on `127.0.0.1`. They remain
 available to the Android emulator through `10.0.2.2`, but are not reachable through the host's LAN
 address.
+
+### Abuse protection
+
+Excess requests return `429 Too Many Requests` with a JSON `RATE_LIMITED` error and a
+`Retry-After` header. Per-client mailbox quota exhaustion also returns `429`; global mailbox
+capacity exhaustion returns `507 Insufficient Storage`. The default limits are:
+
+| Operation | Environment variables | Default |
+|---|---|---:|
+| Mailbox creation per client | `MAILBOX_CREATION_RATE_LIMIT_REQUESTS`, `MAILBOX_CREATION_RATE_LIMIT_WINDOW_MILLISECONDS` | 30/hour |
+| Active mailboxes per client | `MAILBOX_MAXIMUM_MAILBOXES_PER_CLIENT` | 100 |
+| Active mailboxes globally | `MAILBOX_MAXIMUM_MAILBOXES` | 100,000 |
+| Push device registration per client | `PUSH_DEVICE_REGISTRATION_RATE_LIMIT_REQUESTS`, `PUSH_DEVICE_REGISTRATION_RATE_LIMIT_WINDOW_MILLISECONDS` | 60/minute |
+| Node registration per client | `NODE_REGISTRY_REGISTRATION_RATE_LIMIT_REQUESTS`, `NODE_REGISTRY_REGISTRATION_RATE_LIMIT_WINDOW_MILLISECONDS` | 10/hour |
+| Node heartbeat per client | `NODE_REGISTRY_HEARTBEAT_RATE_LIMIT_REQUESTS`, `NODE_REGISTRY_HEARTBEAT_RATE_LIMIT_WINDOW_MILLISECONDS` | 180/minute |
+| Inbound federation writes per client | `FEDERATION_INCOMING_RATE_LIMIT_REQUESTS`, `FEDERATION_INCOMING_RATE_LIMIT_WINDOW_MILLISECONDS` | 1,200/minute |
+
+Each service bounds its rate-limit key map at 100,000 clients by default. Configure the bound with
+the service's `*_RATE_LIMIT_MAXIMUM_TRACKED_CLIENTS` variable shown in the Compose file. These
+fixed-window request limits are process-local. If a service is horizontally replicated, enforce an
+additional distributed or edge limit so the deployment-wide allowance does not multiply by the
+number of replicas.
+
+`TRUST_PROXY_HEADERS` is false by default. The production override enables it only on public
+services whose direct host ports are removed and whose traffic enters through Caddy. Do not enable
+it when a service is directly reachable, because an untrusted caller could supply a forged
+`X-Forwarded-For` address.
+
+Run the focused automated tests on Windows with:
+
+```powershell
+.\gradlew.bat `
+    :server:security:test `
+    :server:mailbox:test `
+    :server:node-registry:test `
+    :server:federation:test `
+    :server:push:test `
+    --no-configuration-cache
+```
+
+To inspect a real `429` response, temporarily set the mailbox creation rate to one request per
+minute and recreate only that service. The single test mailbox expires automatically after one
+hour:
+
+```powershell
+$env:MAILBOX_CREATION_RATE_LIMIT_REQUESTS = "1"
+$env:MAILBOX_CREATION_RATE_LIMIT_WINDOW_MILLISECONDS = "60000"
+docker compose -f server/docker-compose.yml up -d --build --force-recreate mailbox
+
+$expires = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + 3600000
+$body = @{nodeId="rate-test"; nodeEndpoint="http://mailbox:8092"; expiresAtEpochMilliseconds=$expires} |
+    ConvertTo-Json -Compress
+curl.exe -i -H "Content-Type: application/json" -d $body http://localhost:8092/v1/mailboxes
+curl.exe -i -H "Content-Type: application/json" -d $body http://localhost:8092/v1/mailboxes
+```
+
+The second response must be `429` and include `Retry-After: 60`. Restore defaults afterward:
+
+```powershell
+Remove-Item Env:MAILBOX_CREATION_RATE_LIMIT_REQUESTS
+Remove-Item Env:MAILBOX_CREATION_RATE_LIMIT_WINDOW_MILLISECONDS
+docker compose -f server/docker-compose.yml up -d --force-recreate mailbox
+```
 
 ## Production deployment
 

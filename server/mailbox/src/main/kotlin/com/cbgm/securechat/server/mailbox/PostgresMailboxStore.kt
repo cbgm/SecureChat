@@ -5,6 +5,8 @@ import com.cbgm.securechat.server.protocol.CreateMailboxResponse
 import com.cbgm.securechat.server.protocol.DeliveryRoute
 import com.cbgm.securechat.server.protocol.FederatedEnvelope
 import com.cbgm.securechat.server.protocol.serverJson
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.sql.Connection
@@ -25,53 +27,79 @@ internal class PostgresMailboxStore(
 
     override val persistenceMode: String = "postgresql"
 
-    override suspend fun create(request: CreateMailboxRequest): CreateMailboxResponse {
+    override suspend fun createWithQuota(
+        request: CreateMailboxRequest,
+        ownerKeyHash: String,
+        maximumMailboxes: Int,
+        maximumMailboxesPerOwner: Int
+    ): MailboxCreationResult {
         require(request.expiresAtEpochMilliseconds > now())
+        require(ownerKeyHash.isNotBlank())
+        require(maximumMailboxes > 0)
+        require(maximumMailboxesPerOwner > 0)
 
-        repeat(MAXIMUM_IDENTIFIER_ATTEMPTS) {
-            val mailboxId = randomToken()
-            val sendCapability = randomToken()
-            val retrievalCapability = randomToken()
-            val inserted =
-                database.withConnection { connection ->
-                    connection
-                        .prepareStatement(
-                            """
-                            INSERT INTO mailboxes (
-                                mailbox_id,
-                                send_capability_hash,
-                                retrieval_capability_hash,
-                                expires_at_epoch_milliseconds
-                            ) VALUES (?, ?, ?, ?)
-                            ON CONFLICT (mailbox_id) DO NOTHING
-                            """.trimIndent()
-                        ).use { statement ->
-                            statement.setString(1, mailboxId)
-                            statement.setBytes(2, hash(sendCapability))
-                            statement.setBytes(3, hash(retrievalCapability))
-                            statement.setLong(4, request.expiresAtEpochMilliseconds)
-                            statement.executeUpdate() == 1
-                        }
+        return database.withConnection { connection ->
+            connection.inMailboxTransaction {
+                connection.createStatement().use { statement ->
+                    statement.execute("LOCK TABLE mailboxes IN SHARE ROW EXCLUSIVE MODE")
                 }
-            if (inserted) {
-                return CreateMailboxResponse(
-                    deliveryRoute =
-                        DeliveryRoute(
-                            routeId = randomToken(),
-                            nodeId = request.nodeId,
-                            nodeEndpoint = request.nodeEndpoint,
-                            mailboxId = mailboxId,
-                            sendCapability = sendCapability,
-                            sequence = request.routeSequence,
-                            expiresAtEpochMilliseconds = request.expiresAtEpochMilliseconds,
-                            identitySignature = byteArrayOf()
-                        ),
-                    retrievalCapability = retrievalCapability
-                )
+                purgeExpiredMailboxes(connection)
+                if (countMailboxes(connection) >= maximumMailboxes) {
+                    return@inMailboxTransaction MailboxCreationResult.GlobalQuotaExceeded
+                }
+                if (countMailboxes(connection, ownerKeyHash) >= maximumMailboxesPerOwner) {
+                    return@inMailboxTransaction MailboxCreationResult.OwnerQuotaExceeded
+                }
+
+                repeat(MAXIMUM_IDENTIFIER_ATTEMPTS) {
+                    val mailboxId = randomToken()
+                    val sendCapability = randomToken()
+                    val retrievalCapability = randomToken()
+                    val inserted =
+                        connection
+                            .prepareStatement(
+                                """
+                                INSERT INTO mailboxes (
+                                    mailbox_id,
+                                    owner_key_hash,
+                                    send_capability_hash,
+                                    retrieval_capability_hash,
+                                    expires_at_epoch_milliseconds
+                                ) VALUES (?, ?, ?, ?, ?)
+                                ON CONFLICT (mailbox_id) DO NOTHING
+                                """.trimIndent()
+                            ).use { statement ->
+                                statement.setString(1, mailboxId)
+                                statement.setString(2, ownerKeyHash)
+                                statement.setBytes(3, hash(sendCapability))
+                                statement.setBytes(4, hash(retrievalCapability))
+                                statement.setLong(5, request.expiresAtEpochMilliseconds)
+                                statement.executeUpdate() == 1
+                            }
+                    if (inserted) {
+                        return@inMailboxTransaction MailboxCreationResult.Created(
+                            CreateMailboxResponse(
+                                deliveryRoute =
+                                    DeliveryRoute(
+                                        routeId = randomToken(),
+                                        nodeId = request.nodeId,
+                                        nodeEndpoint = request.nodeEndpoint,
+                                        mailboxId = mailboxId,
+                                        sendCapability = sendCapability,
+                                        sequence = request.routeSequence,
+                                        expiresAtEpochMilliseconds =
+                                            request.expiresAtEpochMilliseconds,
+                                        identitySignature = byteArrayOf()
+                                    ),
+                                retrievalCapability = retrievalCapability
+                            )
+                        )
+                    }
+                }
+
+                error("Could not allocate a unique mailbox identifier")
             }
         }
-
-        error("Could not allocate a unique mailbox identifier")
     }
 
     override suspend fun store(
@@ -285,6 +313,25 @@ internal class PostgresMailboxStore(
                 statement.setLong(1, now())
                 statement.executeUpdate()
             }
+    }
+
+    private fun countMailboxes(
+        connection: Connection,
+        ownerKeyHash: String? = null
+    ): Int {
+        val sql =
+            if (ownerKeyHash == null) {
+                "SELECT COUNT(*) FROM mailboxes"
+            } else {
+                "SELECT COUNT(*) FROM mailboxes WHERE owner_key_hash = ?"
+            }
+        return connection.prepareStatement(sql).use { statement ->
+            ownerKeyHash?.let { statement.setString(1, it) }
+            statement.executeQuery().use { results ->
+                results.next()
+                results.getInt(1)
+            }
+        }
     }
 
     private fun purgeExpiredEnvelopes(

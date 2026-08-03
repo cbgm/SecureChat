@@ -232,6 +232,10 @@ contact is blocked, a direct chat is deleted, or either identity changes. Offlin
 are persisted and retried after reconnect, while obsolete remote delivery routes are removed
 immediately.
 
+Public server write endpoints now apply bounded per-client rate limits. Mailbox provisioning also
+uses atomic global and per-client quotas, with only a hash of the client address stored in
+PostgreSQL. Production trusts forwarded client addresses only behind the Caddy-only public edge.
+
 See the server README for module boundaries, ports, security behavior, and migration limitations.
 
 ---

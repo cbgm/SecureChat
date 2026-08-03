@@ -9,6 +9,7 @@ import com.cbgm.securechat.server.protocol.FederatedTypingEvent
 import com.cbgm.securechat.server.protocol.FederationAcknowledgement
 import com.cbgm.securechat.server.protocol.NodeCapability
 import com.cbgm.securechat.server.protocol.serverJson
+import com.cbgm.securechat.server.security.BoundedRateLimiter
 import com.cbgm.securechat.server.security.InternalApiAuthentication
 import com.cbgm.securechat.server.security.NodeIdentity
 import com.cbgm.securechat.server.security.NodeIdentityStore
@@ -16,7 +17,9 @@ import com.cbgm.securechat.server.security.NodeRequestAuthentication
 import com.cbgm.securechat.server.security.NodeRequestHeaders
 import com.cbgm.securechat.server.security.NodeRequestSigner
 import com.cbgm.securechat.server.security.NodeRequestVerifier
+import com.cbgm.securechat.server.security.RateLimitPolicy
 import com.cbgm.securechat.server.security.Signatures
+import com.cbgm.securechat.server.security.enforceRateLimit
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.http.HttpStatusCode
@@ -28,6 +31,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
@@ -62,6 +66,7 @@ fun Application.federationModule(
     config: FederationConfig = FederationConfig.fromEnvironment(),
     suppliedHttpClient: HttpClient? = null
 ) {
+    val incomingRateLimiter = BoundedRateLimiter(config.incomingRateLimit)
     val httpClient =
         suppliedHttpClient ?: HttpClient(CIO) {
             install(ClientContentNegotiation) { json(serverJson) }
@@ -129,6 +134,9 @@ fun Application.federationModule(
 
     install(CallLogging)
     install(ContentNegotiation) { json(serverJson) }
+    if (config.trustProxyHeaders) {
+        install(XForwardedHeaders)
+    }
 
     routing {
         get("/health") {
@@ -174,6 +182,9 @@ fun Application.federationModule(
         }
 
         post("/v1/federation/envelopes") {
+            if (!call.enforceRateLimit(incomingRateLimiter)) {
+                return@post
+            }
             val body = call.receiveText()
             val envelope =
                 runCatching { serverJson.decodeFromString<FederatedEnvelope>(body) }
@@ -215,6 +226,9 @@ fun Application.federationModule(
         }
 
         post("/v1/federation/typing-events") {
+            if (!call.enforceRateLimit(incomingRateLimiter)) {
+                return@post
+            }
             val body = call.receiveText()
             val event =
                 runCatching { serverJson.decodeFromString<FederatedTypingEvent>(body) }
@@ -264,7 +278,13 @@ data class FederationConfig(
     val outboundRetryPollIntervalMilliseconds: Long,
     val outboundRetryBaseDelayMilliseconds: Long,
     val outboundRetryMaximumDelayMilliseconds: Long,
-    val outboundRetryBatchSize: Int
+    val outboundRetryBatchSize: Int,
+    val incomingRateLimit: RateLimitPolicy =
+        RateLimitPolicy(
+            maximumRequests = DEFAULT_INCOMING_RATE_LIMIT_REQUESTS,
+            windowMilliseconds = DEFAULT_INCOMING_RATE_LIMIT_WINDOW_MILLISECONDS
+        ),
+    val trustProxyHeaders: Boolean = false
 ) {
     init {
         require(databaseMaximumPoolSize > 0)
@@ -317,7 +337,27 @@ data class FederationConfig(
                         DEFAULT_RETRY_MAXIMUM_DELAY_MILLISECONDS
                     ),
                 outboundRetryBatchSize =
-                    ServiceEnvironment.int("FEDERATION_RETRY_BATCH_SIZE", DEFAULT_RETRY_BATCH_SIZE)
+                    ServiceEnvironment.int("FEDERATION_RETRY_BATCH_SIZE", DEFAULT_RETRY_BATCH_SIZE),
+                incomingRateLimit =
+                    RateLimitPolicy(
+                        maximumRequests =
+                            ServiceEnvironment.int(
+                                "FEDERATION_INCOMING_RATE_LIMIT_REQUESTS",
+                                DEFAULT_INCOMING_RATE_LIMIT_REQUESTS
+                            ),
+                        windowMilliseconds =
+                            ServiceEnvironment.long(
+                                "FEDERATION_INCOMING_RATE_LIMIT_WINDOW_MILLISECONDS",
+                                DEFAULT_INCOMING_RATE_LIMIT_WINDOW_MILLISECONDS
+                            ),
+                        maximumTrackedClients =
+                            ServiceEnvironment.int(
+                                "FEDERATION_RATE_LIMIT_MAXIMUM_TRACKED_CLIENTS",
+                                DEFAULT_RATE_LIMIT_MAXIMUM_TRACKED_CLIENTS
+                            )
+                    ),
+                trustProxyHeaders =
+                    ServiceEnvironment.string("TRUST_PROXY_HEADERS", "false").toBoolean()
             )
 
         private const val DEFAULT_DATABASE_MAXIMUM_POOL_SIZE = 10
@@ -325,6 +365,9 @@ data class FederationConfig(
         private const val DEFAULT_RETRY_BASE_DELAY_MILLISECONDS = 5_000L
         private const val DEFAULT_RETRY_MAXIMUM_DELAY_MILLISECONDS = 5L * 60L * 1_000L
         private const val DEFAULT_RETRY_BATCH_SIZE = 100
+        private const val DEFAULT_INCOMING_RATE_LIMIT_REQUESTS = 1_200
+        private const val DEFAULT_INCOMING_RATE_LIMIT_WINDOW_MILLISECONDS = 60_000L
+        private const val DEFAULT_RATE_LIMIT_MAXIMUM_TRACKED_CLIENTS = 100_000
     }
 }
 
