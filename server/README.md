@@ -30,6 +30,7 @@ PUSH_DATABASE_PASSWORD=replace-for-non-local-deployments
 MAILBOX_DATABASE_PASSWORD=replace-for-non-local-deployments
 PRESENCE_REDIS_PASSWORD=replace-for-non-local-deployments
 NODE_REGISTRY_DATABASE_PASSWORD=replace-for-non-local-deployments
+FEDERATION_DATABASE_PASSWORD=replace-for-non-local-deployments
 COMPOSE_PARALLEL_LIMIT=1
 ```
 
@@ -191,19 +192,45 @@ $env:NODE_REGISTRY_TEST_DATABASE_PASSWORD = "local-development-password"
 .\gradlew.bat :server:node-registry:test
 ```
 
-## Remaining persistence work
+## Federation outbound persistence
 
-The remaining services use bounded in-memory adapters behind service-owned stores. This keeps the
-complete topology executable and testable without allowing one service to access another service's
-tables. Their production adapters remain intentionally local to their owning service. The federation
-outbound queue still needs PostgreSQL.
+The federation service uses its own PostgreSQL database when `FEDERATION_DATABASE_URL` is
+configured. Docker Compose provides `federation-database` and retains its data in the
+`federation-database-data` volume. Pending encrypted envelopes, delivery attempt counts, and the
+next retry time survive federation-container and complete Compose restarts.
 
-The push, mailbox, presence, and node-registry services deliberately fall back to bounded in-memory
-stores when their persistence URLs are absent, which keeps isolated tests and development outside
-Docker Compose simple.
+A retry worker starts with the federation service, immediately loads due rows, and retries online
+delivery followed by the recipient-selected mailbox fallback. Failed attempts use exponential
+backoff. Delivered and expired envelopes are not retried. Configure the worker with
+`FEDERATION_RETRY_POLL_INTERVAL_MILLISECONDS`, `FEDERATION_RETRY_BASE_DELAY_MILLISECONDS`,
+`FEDERATION_RETRY_MAXIMUM_DELAY_MILLISECONDS`, and `FEDERATION_RETRY_BATCH_SIZE`.
 
-Replacing an adapter does not change `:server:protocol` or create service-to-service implementation
-dependencies.
+The health endpoint reports the active adapter and number of pending outbound envelopes:
+
+```powershell
+curl.exe http://localhost:8093/health
+docker compose -f server/docker-compose.yml restart federation
+curl.exe http://localhost:8093/health
+```
+
+Both responses must contain `persistence=postgresql`. If the destination remains unavailable, the
+same non-zero pending count remains after restart. Do not use `docker compose down --volumes`
+because that explicitly deletes every service database.
+
+The optional PostgreSQL integration test can be enabled against the Compose database:
+
+```powershell
+docker compose -f server/docker-compose.yml up -d federation-database
+$env:FEDERATION_TEST_DATABASE_URL = "jdbc:postgresql://localhost:5438/securechat_federation"
+$env:FEDERATION_TEST_DATABASE_USER = "securechat_federation"
+$env:FEDERATION_TEST_DATABASE_PASSWORD = "local-development-password"
+.\gradlew.bat :server:federation:test
+```
+
+All service-owned production persistence adapters are now wired: PostgreSQL for node registry,
+mailbox, federation, and push; Redis for presence. Each service still falls back to its in-memory
+adapter when its persistence URL is absent, keeping isolated tests and development outside Docker
+Compose simple. No service accesses another service's database tables.
 
 ## Verification
 

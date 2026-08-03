@@ -3,6 +3,8 @@ package com.cbgm.securechat.server.federation
 import com.cbgm.securechat.server.protocol.EnvelopeAcceptanceState
 import com.cbgm.securechat.server.protocol.FederatedEnvelope
 import com.cbgm.securechat.server.protocol.FederationAcknowledgement
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class FederationRouter(
     private val localNodeId: String,
@@ -11,27 +13,83 @@ class FederationRouter(
     private val localGateway: LocalGatewayClient,
     private val remoteFederation: RemoteFederationClient,
     private val mailbox: MailboxClient,
-    private val queue: OutboundEnvelopeQueue = OutboundEnvelopeQueue()
+    private val queue: OutboundEnvelopeStorage = OutboundEnvelopeQueue(),
+    private val retryBaseDelayMilliseconds: Long = 5_000L,
+    private val retryMaximumDelayMilliseconds: Long = 5L * 60L * 1_000L,
+    private val now: () -> Long = System::currentTimeMillis
 ) {
-    suspend fun route(envelope: FederatedEnvelope): FederationAcknowledgement {
-        val existing = queue.get(envelope.envelopeId)
-        if (existing?.state == EnvelopeAcceptanceState.STORED_AT_DESTINATION) {
-            return FederationAcknowledgement(envelope.envelopeId, existing.state, duplicate = true)
+    private val deliveryMutex = Mutex()
+
+    init {
+        require(retryBaseDelayMilliseconds > 0L)
+        require(retryMaximumDelayMilliseconds >= retryBaseDelayMilliseconds)
+    }
+
+    suspend fun route(envelope: FederatedEnvelope): FederationAcknowledgement =
+        deliveryMutex.withLock {
+            val existing = queue.get(envelope.envelopeId)
+            if (existing?.state == EnvelopeAcceptanceState.STORED_AT_DESTINATION) {
+                return@withLock FederationAcknowledgement(
+                    envelope.envelopeId,
+                    existing.state,
+                    duplicate = true
+                )
+            }
+
+            val queued = queue.enqueue(envelope)
+            deliver(queued)
         }
 
-        queue.enqueue(envelope)
-        queue.markAttempt(envelope.envelopeId)
-        val onlineAcknowledgement = routeOnline(envelope)
-        val acknowledgement = onlineAcknowledgement ?: storeInMailbox(envelope)
+    suspend fun retryPending(limit: Int): Int {
+        require(limit > 0)
+        val due = queue.pendingDue(now(), limit)
+        var processed = 0
+        due.forEach { candidate ->
+            deliveryMutex.withLock {
+                val current = queue.get(candidate.envelope.envelopeId)
+                if (
+                    current?.state == EnvelopeAcceptanceState.QUEUED_AT_GATEWAY &&
+                    current.nextAttemptAtEpochMilliseconds <= now()
+                ) {
+                    deliver(current)
+                    processed += 1
+                }
+            }
+        }
+        return processed
+    }
+
+    suspend fun pendingCount(): Int = queue.pendingCount()
+
+    private suspend fun deliver(entry: OutboundEnvelopeEntry): FederationAcknowledgement {
+        val nextAttemptAt = now() + retryDelay(entry.attempts)
+        val attempted =
+            queue.markAttempt(entry.envelope.envelopeId, nextAttemptAt)
+                ?: return FederationAcknowledgement(
+                    entry.envelope.envelopeId,
+                    EnvelopeAcceptanceState.QUEUED_AT_GATEWAY
+                )
+        val onlineAcknowledgement = routeOnline(attempted.envelope)
+        val acknowledgement = onlineAcknowledgement ?: storeInMailbox(attempted.envelope)
         if (acknowledgement?.state == EnvelopeAcceptanceState.STORED_AT_DESTINATION) {
-            queue.markStored(envelope.envelopeId)
+            queue.markStored(attempted.envelope.envelopeId)
             return acknowledgement
         }
 
-        return FederationAcknowledgement(envelope.envelopeId, EnvelopeAcceptanceState.QUEUED_AT_GATEWAY)
+        return FederationAcknowledgement(
+            attempted.envelope.envelopeId,
+            EnvelopeAcceptanceState.QUEUED_AT_GATEWAY
+        )
     }
 
-    fun pendingCount(): Int = queue.pending().size
+    private fun retryDelay(completedAttempts: Int): Long {
+        val shift = completedAttempts.coerceIn(0, MAXIMUM_BACKOFF_SHIFT)
+        val multiplier = 1L shl shift
+        if (retryBaseDelayMilliseconds > retryMaximumDelayMilliseconds / multiplier) {
+            return retryMaximumDelayMilliseconds
+        }
+        return retryBaseDelayMilliseconds * multiplier
+    }
 
     private suspend fun routeOnline(envelope: FederatedEnvelope): FederationAcknowledgement? {
         val routes = presenceDirectory.resolve(envelope.recipientDeviceRoutingId).routes
@@ -57,4 +115,8 @@ class FederationRouter(
         envelope.mailboxRoute?.let {
             runCatching { mailbox.store(envelope) }.getOrNull()
         }
+
+    private companion object {
+        const val MAXIMUM_BACKOFF_SHIFT = 20
+    }
 }

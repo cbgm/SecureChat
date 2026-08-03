@@ -70,6 +70,7 @@ fun Application.federationModule(
 
     val registry = HttpNodeRegistryClient(httpClient, config.nodeRegistryUrl)
     val localGateway = HttpLocalGatewayClient(httpClient, config.gatewayInternalUrl, config.internalApiToken)
+    val outboundQueue = createOutboundEnvelopeStorage(config)
     val router =
         FederationRouter(
             localNodeId = identity.nodeId,
@@ -77,11 +78,21 @@ fun Application.federationModule(
             nodeRegistry = registry,
             localGateway = localGateway,
             remoteFederation = HttpRemoteFederationClient(httpClient, NodeRequestSigner(identity)),
-            mailbox = HttpMailboxClient(httpClient)
+            mailbox = HttpMailboxClient(httpClient),
+            queue = outboundQueue,
+            retryBaseDelayMilliseconds = config.outboundRetryBaseDelayMilliseconds,
+            retryMaximumDelayMilliseconds = config.outboundRetryMaximumDelayMilliseconds
         )
     val verifier = NodeRequestVerifier()
     val incomingIds = BoundedIdempotencyStore(maximumEntries = config.maximumDeduplicationEntries)
     val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    serviceScope.launch {
+        OutboundEnvelopeRetryAgent(
+            router = router,
+            pollIntervalMilliseconds = config.outboundRetryPollIntervalMilliseconds,
+            batchSize = config.outboundRetryBatchSize
+        ).run()
+    }
     if (config.registerNode) {
         serviceScope.launch {
             NodeRegistrationAgent(
@@ -97,14 +108,19 @@ fun Application.federationModule(
             ).run()
         }
     }
-    monitor.subscribe(ApplicationStopped) { serviceScope.cancel() }
+    monitor.subscribe(ApplicationStopped) {
+        serviceScope.cancel()
+        outboundQueue.close()
+    }
 
     install(CallLogging)
     install(ContentNegotiation) { json(serverJson) }
 
     routing {
         get("/health") {
-            call.respondText("ok pending=${router.pendingCount()}")
+            call.respondText(
+                "ok persistence=${outboundQueue.persistenceMode} pending=${router.pendingCount()}"
+            )
         }
 
         get("/v1/federation/capabilities") {
@@ -141,7 +157,10 @@ fun Application.federationModule(
                         publicKey = Signatures.decodePublicKey(descriptor.identityPublicKey)
                     )
             if (!authenticated) {
-                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("INVALID_NODE_AUTH", "Node authentication failed"))
+                call.respond(
+                    HttpStatusCode.Unauthorized,
+                    ErrorResponse("INVALID_NODE_AUTH", "Node authentication failed")
+                )
                 return@post
             }
 
@@ -166,6 +185,10 @@ fun Application.federationModule(
 }
 
 data class FederationConfig(
+    val databaseUrl: String?,
+    val databaseUser: String,
+    val databasePassword: String,
+    val databaseMaximumPoolSize: Int,
     val nodeRegistryUrl: String,
     val presenceDirectoryUrl: String,
     val gatewayInternalUrl: String,
@@ -174,11 +197,31 @@ data class FederationConfig(
     val registerNode: Boolean,
     val clientEndpoint: String,
     val federationEndpoint: String,
-    val mailboxEndpoint: String
+    val mailboxEndpoint: String,
+    val outboundRetryPollIntervalMilliseconds: Long,
+    val outboundRetryBaseDelayMilliseconds: Long,
+    val outboundRetryMaximumDelayMilliseconds: Long,
+    val outboundRetryBatchSize: Int
 ) {
+    init {
+        require(databaseMaximumPoolSize > 0)
+        require(outboundRetryPollIntervalMilliseconds > 0L)
+        require(outboundRetryBaseDelayMilliseconds > 0L)
+        require(outboundRetryMaximumDelayMilliseconds >= outboundRetryBaseDelayMilliseconds)
+        require(outboundRetryBatchSize > 0)
+    }
+
     companion object {
         fun fromEnvironment(): FederationConfig =
             FederationConfig(
+                databaseUrl = System.getenv("FEDERATION_DATABASE_URL")?.takeIf(String::isNotBlank),
+                databaseUser = System.getenv("FEDERATION_DATABASE_USER").orEmpty(),
+                databasePassword = System.getenv("FEDERATION_DATABASE_PASSWORD").orEmpty(),
+                databaseMaximumPoolSize =
+                    ServiceEnvironment.int(
+                        "FEDERATION_DATABASE_MAXIMUM_POOL_SIZE",
+                        DEFAULT_DATABASE_MAXIMUM_POOL_SIZE
+                    ),
                 nodeRegistryUrl = ServiceEnvironment.string("NODE_REGISTRY_URL", "http://localhost:8090"),
                 presenceDirectoryUrl =
                     ServiceEnvironment.string("PRESENCE_DIRECTORY_URL", "http://localhost:8091"),
@@ -189,9 +232,46 @@ data class FederationConfig(
                 registerNode = ServiceEnvironment.string("REGISTER_NODE", "true").toBoolean(),
                 clientEndpoint = ServiceEnvironment.string("CLIENT_ENDPOINT", "ws://localhost:8094/relay"),
                 federationEndpoint = ServiceEnvironment.string("FEDERATION_ENDPOINT", "http://localhost:8093"),
-                mailboxEndpoint = ServiceEnvironment.string("MAILBOX_ENDPOINT", "http://localhost:8092")
+                mailboxEndpoint = ServiceEnvironment.string("MAILBOX_ENDPOINT", "http://localhost:8092"),
+                outboundRetryPollIntervalMilliseconds =
+                    ServiceEnvironment.long(
+                        "FEDERATION_RETRY_POLL_INTERVAL_MILLISECONDS",
+                        DEFAULT_RETRY_POLL_INTERVAL_MILLISECONDS
+                    ),
+                outboundRetryBaseDelayMilliseconds =
+                    ServiceEnvironment.long(
+                        "FEDERATION_RETRY_BASE_DELAY_MILLISECONDS",
+                        DEFAULT_RETRY_BASE_DELAY_MILLISECONDS
+                    ),
+                outboundRetryMaximumDelayMilliseconds =
+                    ServiceEnvironment.long(
+                        "FEDERATION_RETRY_MAXIMUM_DELAY_MILLISECONDS",
+                        DEFAULT_RETRY_MAXIMUM_DELAY_MILLISECONDS
+                    ),
+                outboundRetryBatchSize =
+                    ServiceEnvironment.int("FEDERATION_RETRY_BATCH_SIZE", DEFAULT_RETRY_BATCH_SIZE)
             )
+
+        private const val DEFAULT_DATABASE_MAXIMUM_POOL_SIZE = 10
+        private const val DEFAULT_RETRY_POLL_INTERVAL_MILLISECONDS = 1_000L
+        private const val DEFAULT_RETRY_BASE_DELAY_MILLISECONDS = 5_000L
+        private const val DEFAULT_RETRY_MAXIMUM_DELAY_MILLISECONDS = 5L * 60L * 1_000L
+        private const val DEFAULT_RETRY_BATCH_SIZE = 100
     }
+}
+
+internal fun createOutboundEnvelopeStorage(config: FederationConfig): OutboundEnvelopeStorage {
+    val databaseUrl = config.databaseUrl ?: return OutboundEnvelopeQueue()
+    val database =
+        PostgresOutboundEnvelopeDatabase(
+            PostgresOutboundEnvelopeDatabaseConfig(
+                jdbcUrl = databaseUrl,
+                username = config.databaseUser,
+                password = config.databasePassword,
+                maximumPoolSize = config.databaseMaximumPoolSize
+            )
+        )
+    return PostgresOutboundEnvelopeStorage(database)
 }
 
 private fun io.ktor.server.application.ApplicationCall.hasInternalAccess(expectedToken: String?): Boolean = expectedToken == null || request.headers[INTERNAL_TOKEN_HEADER] == expectedToken

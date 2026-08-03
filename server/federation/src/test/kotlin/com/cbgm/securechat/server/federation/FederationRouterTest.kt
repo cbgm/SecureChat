@@ -34,6 +34,45 @@ class FederationRouterTest {
             assertEquals(EnvelopeAcceptanceState.STORED_AT_DESTINATION, acknowledgement.state)
         }
 
+    @Test
+    fun queuedEnvelopeIsRetriedWhenItsBackoffIsDue() =
+        kotlinx.coroutines.test.runTest {
+            var currentTime = 1_000L
+            var mailboxAttempts = 0
+            val queue = OutboundEnvelopeQueue(now = { currentTime })
+            val router =
+                FederationRouter(
+                    localNodeId = "node-a",
+                    presenceDirectory = { ClientRoutingResult(it, emptyList()) },
+                    nodeRegistry = { null },
+                    localGateway = { error("Local gateway must not be used") },
+                    remoteFederation = { _, _ -> error("Remote federation must not be used") },
+                    mailbox = {
+                        mailboxAttempts += 1
+                        if (mailboxAttempts == 1) {
+                            error("Mailbox temporarily unavailable")
+                        }
+                        FederationAcknowledgement(
+                            it.envelopeId,
+                            EnvelopeAcceptanceState.STORED_AT_DESTINATION
+                        )
+                    },
+                    queue = queue,
+                    retryBaseDelayMilliseconds = 500L,
+                    retryMaximumDelayMilliseconds = 2_000L,
+                    now = { currentTime }
+                )
+
+            assertEquals(EnvelopeAcceptanceState.QUEUED_AT_GATEWAY, router.route(testEnvelope()).state)
+            assertEquals(1, router.pendingCount())
+            currentTime = 1_499L
+            assertEquals(0, router.retryPending(limit = 10))
+            currentTime = 1_500L
+            assertEquals(1, router.retryPending(limit = 10))
+            assertEquals(2, mailboxAttempts)
+            assertEquals(0, router.pendingCount())
+        }
+
     private fun testEnvelope(): FederatedEnvelope =
         FederatedEnvelope(
             envelopeId = "envelope-1",

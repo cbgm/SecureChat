@@ -4,31 +4,102 @@ import com.cbgm.securechat.server.protocol.EnvelopeAcceptanceState
 import com.cbgm.securechat.server.protocol.FederatedEnvelope
 import java.util.concurrent.ConcurrentHashMap
 
-class OutboundEnvelopeQueue {
-    data class Entry(
-        val envelope: FederatedEnvelope,
-        val state: EnvelopeAcceptanceState,
-        val attempts: Int
-    )
+data class OutboundEnvelopeEntry(
+    val envelope: FederatedEnvelope,
+    val state: EnvelopeAcceptanceState,
+    val attempts: Int,
+    val nextAttemptAtEpochMilliseconds: Long
+)
 
-    private val entries = ConcurrentHashMap<String, Entry>()
+interface OutboundEnvelopeStorage : AutoCloseable {
+    val persistenceMode: String
 
-    fun enqueue(envelope: FederatedEnvelope): Entry =
-        entries.computeIfAbsent(envelope.envelopeId) {
-            Entry(envelope, EnvelopeAcceptanceState.QUEUED_AT_GATEWAY, attempts = 0)
+    suspend fun enqueue(envelope: FederatedEnvelope): OutboundEnvelopeEntry
+
+    suspend fun markAttempt(
+        envelopeId: String,
+        nextAttemptAtEpochMilliseconds: Long
+    ): OutboundEnvelopeEntry?
+
+    suspend fun markStored(envelopeId: String)
+
+    suspend fun get(envelopeId: String): OutboundEnvelopeEntry?
+
+    suspend fun pendingDue(
+        nowEpochMilliseconds: Long,
+        limit: Int
+    ): List<OutboundEnvelopeEntry>
+
+    suspend fun pendingCount(): Int
+}
+
+class OutboundEnvelopeQueue(
+    private val now: () -> Long = System::currentTimeMillis
+) : OutboundEnvelopeStorage {
+    private val entries = ConcurrentHashMap<String, OutboundEnvelopeEntry>()
+
+    override val persistenceMode: String = "memory"
+
+    override suspend fun enqueue(envelope: FederatedEnvelope): OutboundEnvelopeEntry {
+        purgeExpired()
+        return entries.computeIfAbsent(envelope.envelopeId) {
+            OutboundEnvelopeEntry(
+                envelope = envelope,
+                state = EnvelopeAcceptanceState.QUEUED_AT_GATEWAY,
+                attempts = 0,
+                nextAttemptAtEpochMilliseconds = now()
+            )
         }
-
-    fun markAttempt(envelopeId: String) {
-        entries.computeIfPresent(envelopeId) { _, entry -> entry.copy(attempts = entry.attempts + 1) }
     }
 
-    fun markStored(envelopeId: String) {
+    override suspend fun markAttempt(
+        envelopeId: String,
+        nextAttemptAtEpochMilliseconds: Long
+    ): OutboundEnvelopeEntry? =
+        entries.computeIfPresent(envelopeId) { _, entry ->
+            entry.copy(
+                attempts = entry.attempts + 1,
+                nextAttemptAtEpochMilliseconds = nextAttemptAtEpochMilliseconds
+            )
+        }
+
+    override suspend fun markStored(envelopeId: String) {
         entries.computeIfPresent(envelopeId) { _, entry ->
             entry.copy(state = EnvelopeAcceptanceState.STORED_AT_DESTINATION)
         }
     }
 
-    fun get(envelopeId: String): Entry? = entries[envelopeId]
+    override suspend fun get(envelopeId: String): OutboundEnvelopeEntry? {
+        purgeExpired()
+        return entries[envelopeId]
+    }
 
-    fun pending(): List<Entry> = entries.values.filter { it.state == EnvelopeAcceptanceState.QUEUED_AT_GATEWAY }
+    override suspend fun pendingDue(
+        nowEpochMilliseconds: Long,
+        limit: Int
+    ): List<OutboundEnvelopeEntry> {
+        require(limit > 0)
+        purgeExpired()
+        return entries.values
+            .asSequence()
+            .filter { it.state == EnvelopeAcceptanceState.QUEUED_AT_GATEWAY }
+            .filter { it.nextAttemptAtEpochMilliseconds <= nowEpochMilliseconds }
+            .sortedWith(
+                compareBy<OutboundEnvelopeEntry>(OutboundEnvelopeEntry::nextAttemptAtEpochMilliseconds)
+                    .thenBy { it.envelope.envelopeId }
+            ).take(limit)
+            .toList()
+    }
+
+    override suspend fun pendingCount(): Int {
+        purgeExpired()
+        return entries.values.count { it.state == EnvelopeAcceptanceState.QUEUED_AT_GATEWAY }
+    }
+
+    override fun close() = Unit
+
+    private fun purgeExpired() {
+        val currentTime = now()
+        entries.entries.removeIf { it.value.envelope.expiresAtEpochMilliseconds <= currentTime }
+    }
 }

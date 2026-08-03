@@ -166,6 +166,23 @@ services:
       push-database:
         condition: service_healthy
 
+  federation-database:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: securechat_federation
+      POSTGRES_USER: securechat_federation
+      POSTGRES_PASSWORD: ${FEDERATION_DATABASE_PASSWORD:-local-development-password}
+    ports:
+      - "${FEDERATION_DATABASE_PORT:-5438}:5432"
+    volumes:
+      - federation-database-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
   federation:
     <<: *securechat-service
     build:
@@ -183,14 +200,22 @@ services:
       FEDERATION_ENDPOINT: http://localhost:8093
       MAILBOX_ENDPOINT: http://localhost:8092
       INTERNAL_API_TOKEN: local-development-token
+      FEDERATION_DATABASE_URL: jdbc:postgresql://federation-database:5432/securechat_federation
+      FEDERATION_DATABASE_USER: securechat_federation
+      FEDERATION_DATABASE_PASSWORD: ${FEDERATION_DATABASE_PASSWORD:-local-development-password}
     ports:
       - "8093:8093"
     volumes:
       - node-identity:/data
     depends_on:
-      - node-registry
-      - presence-directory
-      - mailbox
+      node-registry:
+        condition: service_started
+      presence-directory:
+        condition: service_started
+      mailbox:
+        condition: service_started
+      federation-database:
+        condition: service_healthy
 
   gateway:
     <<: *securechat-service
@@ -221,3 +246,4 @@ volumes:
   presence-redis-data:
   mailbox-database-data:
   push-database-data:
+  federation-database-data:
