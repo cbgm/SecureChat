@@ -2,11 +2,16 @@ package com.cbgm.securechat.server.gateway
 
 import com.cbgm.securechat.server.protocol.ClientRouteRegistration
 import com.cbgm.securechat.server.protocol.FederatedEnvelope
+import com.cbgm.securechat.server.protocol.FederatedTypingEvent
 import com.cbgm.securechat.server.protocol.FederationAcknowledgement
 import com.cbgm.securechat.server.protocol.RelayEnvelope
 
 interface FederationClient {
     suspend fun route(envelope: FederatedEnvelope): FederationAcknowledgement
+
+    suspend fun routeTyping(event: FederatedTypingEvent): Boolean = false
+
+    suspend fun markStored(envelopeId: String) = Unit
 }
 
 interface PresenceClient {

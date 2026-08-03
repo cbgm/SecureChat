@@ -2,6 +2,7 @@ package com.cbgm.securechat.server.federation
 
 import com.cbgm.securechat.server.protocol.ClientRoutingResult
 import com.cbgm.securechat.server.protocol.FederatedEnvelope
+import com.cbgm.securechat.server.protocol.FederatedTypingEvent
 import com.cbgm.securechat.server.protocol.FederationAcknowledgement
 import com.cbgm.securechat.server.protocol.MailboxEnvelopeRequest
 import com.cbgm.securechat.server.protocol.SecureChatNodeDescriptor
@@ -20,6 +21,8 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+import kotlinx.serialization.encodeToString
 
 class HttpPresenceDirectoryClient(
     private val httpClient: HttpClient,
@@ -42,7 +45,8 @@ class HttpLocalGatewayClient(
     private val httpClient: HttpClient,
     private val baseUrl: String,
     private val internalToken: String?
-) : LocalGatewayClient {
+) : LocalGatewayClient,
+    LocalTypingGatewayClient {
     override suspend fun deliver(envelope: FederatedEnvelope): FederationAcknowledgement =
         httpClient
             .post("$baseUrl/internal/v1/envelopes") {
@@ -50,12 +54,22 @@ class HttpLocalGatewayClient(
                 contentType(ContentType.Application.Json)
                 setBody(envelope)
             }.body()
+
+    override suspend fun deliver(event: FederatedTypingEvent): Boolean =
+        httpClient
+            .post("$baseUrl/internal/v1/typing-events") {
+                internalToken?.let { header(InternalApiAuthentication.TOKEN_HEADER, it) }
+                contentType(ContentType.Application.Json)
+                setBody(event)
+            }.status
+            .isSuccess()
 }
 
 class HttpRemoteFederationClient(
     private val httpClient: HttpClient,
     private val signer: NodeRequestSigner
-) : RemoteFederationClient {
+) : RemoteFederationClient,
+    RemoteTypingFederationClient {
     override suspend fun deliver(
         descriptor: SecureChatNodeDescriptor,
         envelope: FederatedEnvelope
@@ -72,6 +86,25 @@ class HttpRemoteFederationClient(
                 header(HttpHeaders.ContentType, ContentType.Application.Json)
                 setBody(body)
             }.body()
+    }
+
+    override suspend fun deliver(
+        descriptor: SecureChatNodeDescriptor,
+        event: FederatedTypingEvent
+    ): Boolean {
+        val path = "/v1/federation/typing-events"
+        val body = serverJson.encodeToString(event)
+        val authentication = signer.sign("POST", path, body)
+        return httpClient
+            .post(descriptor.federationEndpoint.trimEnd('/') + path) {
+                header(NodeRequestHeaders.NODE_ID, authentication.nodeId)
+                header(NodeRequestHeaders.TIMESTAMP, authentication.timestampEpochMilliseconds)
+                header(NodeRequestHeaders.NONCE, authentication.nonce)
+                header(NodeRequestHeaders.SIGNATURE, authentication.signature)
+                header(HttpHeaders.ContentType, ContentType.Application.Json)
+                setBody(body)
+            }.status
+            .isSuccess()
     }
 }
 

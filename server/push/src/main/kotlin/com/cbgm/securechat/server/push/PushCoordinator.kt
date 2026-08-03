@@ -26,7 +26,7 @@ class PushCoordinator(
     suspend fun accept(envelope: RelayEnvelope): Boolean {
         val accepted = pendingEnvelopes.enqueue(envelope)
         if (!accepted) {
-            return false
+            return pendingEnvelopes.contains(envelope.envelopeId)
         }
 
         scope.launch {

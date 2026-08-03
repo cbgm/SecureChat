@@ -22,5 +22,6 @@ dependencies {
     implementation(libs.ktor.client.cio)
     implementation(libs.logback.classic)
     testImplementation(kotlin("test"))
+    testImplementation(libs.bundles.coroutines.test)
     testImplementation(libs.ktor.server.test.host)
 }

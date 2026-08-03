@@ -4,6 +4,7 @@ import com.cbgm.securechat.server.protocol.ClientRoute
 import com.cbgm.securechat.server.protocol.ClientRouteRegistration
 import com.cbgm.securechat.server.protocol.EnvelopeAcceptanceState
 import com.cbgm.securechat.server.protocol.FederatedEnvelope
+import com.cbgm.securechat.server.protocol.FederatedTypingEvent
 import com.cbgm.securechat.server.protocol.GatewayClientMessage
 import com.cbgm.securechat.server.protocol.GatewayServerMessage
 import com.cbgm.securechat.server.protocol.RelayEnvelope
@@ -12,6 +13,7 @@ import io.ktor.server.websocket.DefaultWebSocketServerSession
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.channels.consumeEach
+import kotlinx.serialization.encodeToString
 import java.util.UUID
 
 class GatewayWebSocketHandler(
@@ -282,8 +284,11 @@ class GatewayWebSocketHandler(
         }
 
         val accepted =
-            acceptIncoming(
-                envelope = envelope.toFederatedEnvelope()
+            storeAndRouteLegacyEnvelope(
+                envelope = envelope,
+                pushStorage = legacyPush::store,
+                networkDelivery = ::routeEnvelope,
+                markFederationStored = federation::markStored
             )
 
         if (accepted) {
@@ -316,19 +321,7 @@ class GatewayWebSocketHandler(
             return
         }
 
-        val acceptedLocally =
-            acceptLocallyIfConnected(envelope)
-
-        val accepted =
-            if (acceptedLocally) {
-                true
-            } else {
-                federation.route(envelope).state in
-                    setOf(
-                        EnvelopeAcceptanceState.QUEUED_AT_GATEWAY,
-                        EnvelopeAcceptanceState.STORED_AT_DESTINATION
-                    )
-            }
+        val accepted = routeEnvelope(envelope)
 
         if (accepted) {
             sender.send(
@@ -351,18 +344,37 @@ class GatewayWebSocketHandler(
         recipientId: String,
         isTyping: Boolean
     ) {
-        connections
-            .find(recipientId)
-            .forEach { recipient ->
-                runCatching {
-                    recipient.send(
-                        GatewayServerMessage.TypingState(
-                            senderId = sender.routingId,
-                            isTyping = isTyping
-                        )
+        val event =
+            FederatedTypingEvent(
+                senderRoutingId = sender.routingId,
+                recipientRoutingId = recipientId,
+                isTyping = isTyping
+            )
+
+        routeFederatedTypingEvent(
+            event = event,
+            localDelivery = ::acceptIncomingTyping,
+            federation = federation
+        )
+    }
+
+    suspend fun acceptIncomingTyping(event: FederatedTypingEvent): Boolean {
+        val recipients = connections.find(event.recipientRoutingId)
+        if (recipients.isEmpty()) {
+            return false
+        }
+
+        recipients.forEach { recipient ->
+            runCatching {
+                recipient.send(
+                    GatewayServerMessage.TypingState(
+                        senderId = event.senderRoutingId,
+                        isTyping = event.isTyping
                     )
-                }
+                )
             }
+        }
+        return true
     }
 
     private suspend fun acceptLocallyIfConnected(
@@ -382,6 +394,13 @@ class GatewayWebSocketHandler(
             recipients = recipients
         )
     }
+
+    private suspend fun routeEnvelope(envelope: FederatedEnvelope): Boolean =
+        routeFederatedEnvelope(
+            envelope = envelope,
+            localDelivery = ::acceptLocallyIfConnected,
+            federation = federation
+        )
 
     private suspend fun storeAndDeliver(
         envelope: FederatedEnvelope,
@@ -411,6 +430,55 @@ class GatewayWebSocketHandler(
 
         return true
     }
+}
+
+internal suspend fun routeFederatedEnvelope(
+    envelope: FederatedEnvelope,
+    localDelivery: suspend (FederatedEnvelope) -> Boolean,
+    federation: FederationClient
+): Boolean {
+    if (localDelivery(envelope)) {
+        return true
+    }
+
+    return federation.route(envelope).state in
+        setOf(
+            EnvelopeAcceptanceState.QUEUED_AT_GATEWAY,
+            EnvelopeAcceptanceState.STORED_AT_DESTINATION
+        )
+}
+
+internal suspend fun storeAndRouteLegacyEnvelope(
+    envelope: RelayEnvelope,
+    pushStorage: suspend (RelayEnvelope) -> Boolean,
+    networkDelivery: suspend (FederatedEnvelope) -> Boolean,
+    markFederationStored: suspend (String) -> Unit
+): Boolean {
+    val storedForPush = runCatching { pushStorage(envelope) }.getOrDefault(false)
+    val routedOnline =
+        runCatching {
+            networkDelivery(envelope.toFederatedEnvelope())
+        }.getOrDefault(false)
+
+    if (storedForPush) {
+        runCatching {
+            markFederationStored(envelope.envelopeId)
+        }
+    }
+
+    return storedForPush || routedOnline
+}
+
+internal suspend fun routeFederatedTypingEvent(
+    event: FederatedTypingEvent,
+    localDelivery: suspend (FederatedTypingEvent) -> Boolean,
+    federation: FederationClient
+): Boolean {
+    if (localDelivery(event)) {
+        return true
+    }
+
+    return runCatching { federation.routeTyping(event) }.getOrDefault(false)
 }
 
 private fun RelayEnvelope.toFederatedEnvelope(): FederatedEnvelope =

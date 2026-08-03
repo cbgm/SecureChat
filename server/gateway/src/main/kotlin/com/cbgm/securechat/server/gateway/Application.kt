@@ -3,6 +3,7 @@ package com.cbgm.securechat.server.gateway
 import com.cbgm.securechat.server.persistence.ServiceEnvironment
 import com.cbgm.securechat.server.protocol.EnvelopeAcceptanceState
 import com.cbgm.securechat.server.protocol.FederatedEnvelope
+import com.cbgm.securechat.server.protocol.FederatedTypingEvent
 import com.cbgm.securechat.server.protocol.FederationAcknowledgement
 import com.cbgm.securechat.server.protocol.GatewayNodeInformation
 import com.cbgm.securechat.server.protocol.serverJson
@@ -149,6 +150,22 @@ fun Application.gatewayModule(
             } else {
                 call.respond(HttpStatusCode.ServiceUnavailable)
             }
+        }
+
+        post("/internal/v1/typing-events") {
+            if (!call.hasInternalAccess(config.gatewayInternalApiToken)) {
+                call.respond(HttpStatusCode.Unauthorized)
+                return@post
+            }
+
+            val delivered = handler.acceptIncomingTyping(call.receive<FederatedTypingEvent>())
+            call.respond(
+                if (delivered) {
+                    HttpStatusCode.Accepted
+                } else {
+                    HttpStatusCode.NotFound
+                }
+            )
         }
     }
 }

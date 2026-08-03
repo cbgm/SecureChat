@@ -5,6 +5,7 @@ import com.cbgm.securechat.server.persistence.ServiceEnvironment
 import com.cbgm.securechat.server.protocol.EnvelopeAcceptanceState
 import com.cbgm.securechat.server.protocol.ErrorResponse
 import com.cbgm.securechat.server.protocol.FederatedEnvelope
+import com.cbgm.securechat.server.protocol.FederatedTypingEvent
 import com.cbgm.securechat.server.protocol.FederationAcknowledgement
 import com.cbgm.securechat.server.protocol.NodeCapability
 import com.cbgm.securechat.server.protocol.serverJson
@@ -76,6 +77,11 @@ fun Application.federationModule(
             config.gatewayInternalUrl,
             config.gatewayInternalApiToken
         )
+    val remoteFederation =
+        HttpRemoteFederationClient(
+            httpClient,
+            NodeRequestSigner(identity)
+        )
     val outboundQueue = createOutboundEnvelopeStorage(config)
     val router =
         FederationRouter(
@@ -83,8 +89,10 @@ fun Application.federationModule(
             presenceDirectory = HttpPresenceDirectoryClient(httpClient, config.presenceDirectoryUrl),
             nodeRegistry = registry,
             localGateway = localGateway,
-            remoteFederation = HttpRemoteFederationClient(httpClient, NodeRequestSigner(identity)),
+            remoteFederation = remoteFederation,
             mailbox = HttpMailboxClient(httpClient),
+            localTypingGateway = localGateway,
+            remoteTypingFederation = remoteFederation,
             queue = outboundQueue,
             retryBaseDelayMilliseconds = config.outboundRetryBaseDelayMilliseconds,
             retryMaximumDelayMilliseconds = config.outboundRetryMaximumDelayMilliseconds
@@ -142,6 +150,29 @@ fun Application.federationModule(
             call.respond(HttpStatusCode.Accepted, acknowledgement)
         }
 
+        post("/internal/v1/outgoing-typing-events") {
+            if (!call.hasInternalAccess(config.federationInternalApiToken)) {
+                call.respond(HttpStatusCode.Unauthorized)
+                return@post
+            }
+            val delivered = router.routeTyping(call.receive<FederatedTypingEvent>())
+            call.respond(if (delivered) HttpStatusCode.Accepted else HttpStatusCode.NotFound)
+        }
+
+        post("/internal/v1/outgoing-envelopes/{envelopeId}/stored") {
+            if (!call.hasInternalAccess(config.federationInternalApiToken)) {
+                call.respond(HttpStatusCode.Unauthorized)
+                return@post
+            }
+            val envelopeId = call.parameters["envelopeId"]
+            if (envelopeId.isNullOrBlank()) {
+                call.respond(HttpStatusCode.BadRequest)
+                return@post
+            }
+            router.markStored(envelopeId)
+            call.respond(HttpStatusCode.NoContent)
+        }
+
         post("/v1/federation/envelopes") {
             val body = call.receiveText()
             val envelope =
@@ -150,19 +181,14 @@ fun Application.federationModule(
                         call.respond(HttpStatusCode.BadRequest, ErrorResponse("INVALID_ENVELOPE", "Invalid envelope"))
                         return@post
                     }
-            val authentication = call.requestAuthentication()
-            val descriptor = authentication?.nodeId?.let { registry.find(it) }
-            val authenticated =
-                authentication != null &&
-                    descriptor != null &&
-                    verifier.verify(
-                        authentication = authentication,
-                        method = "POST",
-                        path = "/v1/federation/envelopes",
-                        body = body,
-                        publicKey = Signatures.decodePublicKey(descriptor.identityPublicKey)
-                    )
-            if (!authenticated) {
+            if (
+                !call.hasValidNodeAuthentication(
+                    path = "/v1/federation/envelopes",
+                    body = body,
+                    registry = registry,
+                    verifier = verifier
+                )
+            ) {
                 call.respond(
                     HttpStatusCode.Unauthorized,
                     ErrorResponse("INVALID_NODE_AUTH", "Node authentication failed")
@@ -186,6 +212,36 @@ fun Application.federationModule(
                 incomingIds.record(envelope.envelopeId, envelope.expiresAtEpochMilliseconds)
             }
             call.respond(HttpStatusCode.Accepted, acknowledgement)
+        }
+
+        post("/v1/federation/typing-events") {
+            val body = call.receiveText()
+            val event =
+                runCatching { serverJson.decodeFromString<FederatedTypingEvent>(body) }
+                    .getOrElse {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponse("INVALID_TYPING_EVENT", "Invalid typing event")
+                        )
+                        return@post
+                    }
+            if (
+                !call.hasValidNodeAuthentication(
+                    path = "/v1/federation/typing-events",
+                    body = body,
+                    registry = registry,
+                    verifier = verifier
+                )
+            ) {
+                call.respond(
+                    HttpStatusCode.Unauthorized,
+                    ErrorResponse("INVALID_NODE_AUTH", "Node authentication failed")
+                )
+                return@post
+            }
+
+            val delivered = router.routeTyping(event)
+            call.respond(if (delivered) HttpStatusCode.Accepted else HttpStatusCode.NotFound)
         }
     }
 }
@@ -298,4 +354,21 @@ private fun io.ktor.server.application.ApplicationCall.requestAuthentication(): 
     val nonce = request.headers[NodeRequestHeaders.NONCE] ?: return null
     val signature = request.headers[NodeRequestHeaders.SIGNATURE] ?: return null
     return NodeRequestAuthentication(nodeId, timestamp, nonce, signature)
+}
+
+private suspend fun io.ktor.server.application.ApplicationCall.hasValidNodeAuthentication(
+    path: String,
+    body: String,
+    registry: NodeRegistryClient,
+    verifier: NodeRequestVerifier
+): Boolean {
+    val authentication = requestAuthentication() ?: return false
+    val descriptor = registry.find(authentication.nodeId) ?: return false
+    return verifier.verify(
+        authentication = authentication,
+        method = "POST",
+        path = path,
+        body = body,
+        publicKey = Signatures.decodePublicKey(descriptor.identityPublicKey)
+    )
 }

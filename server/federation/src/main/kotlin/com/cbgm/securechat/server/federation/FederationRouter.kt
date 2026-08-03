@@ -2,6 +2,7 @@ package com.cbgm.securechat.server.federation
 
 import com.cbgm.securechat.server.protocol.EnvelopeAcceptanceState
 import com.cbgm.securechat.server.protocol.FederatedEnvelope
+import com.cbgm.securechat.server.protocol.FederatedTypingEvent
 import com.cbgm.securechat.server.protocol.FederationAcknowledgement
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -13,6 +14,9 @@ class FederationRouter(
     private val localGateway: LocalGatewayClient,
     private val remoteFederation: RemoteFederationClient,
     private val mailbox: MailboxClient,
+    private val localTypingGateway: LocalTypingGatewayClient = LocalTypingGatewayClient { false },
+    private val remoteTypingFederation: RemoteTypingFederationClient =
+        RemoteTypingFederationClient { _, _ -> false },
     private val queue: OutboundEnvelopeStorage = OutboundEnvelopeQueue(),
     private val retryBaseDelayMilliseconds: Long = 5_000L,
     private val retryMaximumDelayMilliseconds: Long = 5L * 60L * 1_000L,
@@ -60,6 +64,30 @@ class FederationRouter(
     }
 
     suspend fun pendingCount(): Int = queue.pendingCount()
+
+    suspend fun markStored(envelopeId: String) {
+        queue.markStored(envelopeId)
+    }
+
+    suspend fun routeTyping(event: FederatedTypingEvent): Boolean {
+        val routes = presenceDirectory.resolve(event.recipientRoutingId).routes
+        for (route in routes.sortedByDescending { it.generation }) {
+            val delivered =
+                runCatching {
+                    if (route.nodeId == localNodeId) {
+                        localTypingGateway.deliver(event)
+                    } else {
+                        val descriptor = nodeRegistry.find(route.nodeId) ?: return@runCatching false
+                        remoteTypingFederation.deliver(descriptor, event)
+                    }
+                }.getOrDefault(false)
+
+            if (delivered) {
+                return true
+            }
+        }
+        return false
+    }
 
     private suspend fun deliver(entry: OutboundEnvelopeEntry): FederationAcknowledgement {
         val nextAttemptAt = now() + retryDelay(entry.attempts)

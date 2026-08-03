@@ -9,6 +9,7 @@ import com.cbgm.securechat.server.security.NodeIdentity
 import com.cbgm.securechat.server.security.ProtocolSignatures
 import com.cbgm.securechat.server.security.Signatures
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.encodeToString
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,7 +20,8 @@ class PostgresNodeRegistryStoreIntegrationTest {
     fun descriptorAndHeartbeatReplayProtectionSurviveStoreRecreation() =
         runTest {
             val databaseUrl =
-                System.getenv("NODE_REGISTRY_TEST_DATABASE_URL")
+                System
+                    .getenv("NODE_REGISTRY_TEST_DATABASE_URL")
                     ?.takeIf(String::isNotBlank)
                     ?: return@runTest
             val identity = NodeIdentity.generate()

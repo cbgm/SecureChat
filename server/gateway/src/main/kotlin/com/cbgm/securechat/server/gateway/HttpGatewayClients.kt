@@ -2,6 +2,7 @@ package com.cbgm.securechat.server.gateway
 
 import com.cbgm.securechat.server.protocol.ClientRouteRegistration
 import com.cbgm.securechat.server.protocol.FederatedEnvelope
+import com.cbgm.securechat.server.protocol.FederatedTypingEvent
 import com.cbgm.securechat.server.protocol.FederationAcknowledgement
 import com.cbgm.securechat.server.protocol.PendingRelayEnvelopesResponse
 import com.cbgm.securechat.server.protocol.RelayEnvelope
@@ -32,6 +33,23 @@ class HttpFederationClient(
                 contentType(ContentType.Application.Json)
                 setBody(envelope)
             }.body()
+
+    override suspend fun routeTyping(event: FederatedTypingEvent): Boolean =
+        httpClient
+            .post("${baseUrl.trimEnd('/')}/internal/v1/outgoing-typing-events") {
+                internalToken?.let { header(InternalApiAuthentication.TOKEN_HEADER, it) }
+                contentType(ContentType.Application.Json)
+                setBody(event)
+            }.status
+            .isSuccess()
+
+    override suspend fun markStored(envelopeId: String) {
+        httpClient.post(
+            "${baseUrl.trimEnd('/')}/internal/v1/outgoing-envelopes/$envelopeId/stored"
+        ) {
+            internalToken?.let { header(InternalApiAuthentication.TOKEN_HEADER, it) }
+        }
+    }
 }
 
 class HttpPresenceClient(

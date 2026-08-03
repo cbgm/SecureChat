@@ -1,10 +1,14 @@
 package com.cbgm.securechat.server.federation
 
+import com.cbgm.securechat.server.protocol.ClientRoute
 import com.cbgm.securechat.server.protocol.ClientRoutingResult
 import com.cbgm.securechat.server.protocol.DeliveryRoute
 import com.cbgm.securechat.server.protocol.EnvelopeAcceptanceState
 import com.cbgm.securechat.server.protocol.FederatedEnvelope
+import com.cbgm.securechat.server.protocol.FederatedTypingEvent
 import com.cbgm.securechat.server.protocol.FederationAcknowledgement
+import com.cbgm.securechat.server.protocol.NodeCapability
+import com.cbgm.securechat.server.protocol.SecureChatNodeDescriptor
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -73,6 +77,73 @@ class FederationRouterTest {
             assertEquals(0, router.pendingCount())
         }
 
+    @Test
+    fun durablePushFallbackCompletesFederationQueue() =
+        kotlinx.coroutines.test.runTest {
+            val router =
+                FederationRouter(
+                    localNodeId = "node-a",
+                    presenceDirectory = { ClientRoutingResult(it, emptyList()) },
+                    nodeRegistry = { null },
+                    localGateway = { error("Local gateway must not be used") },
+                    remoteFederation = { _, _ -> error("Remote federation must not be used") },
+                    mailbox = { error("Mailbox route is unavailable") }
+                )
+            val envelope = testEnvelope().copy(mailboxRoute = null)
+
+            assertEquals(EnvelopeAcceptanceState.QUEUED_AT_GATEWAY, router.route(envelope).state)
+            assertEquals(1, router.pendingCount())
+
+            router.markStored(envelope.envelopeId)
+
+            assertEquals(0, router.pendingCount())
+        }
+
+    @Test
+    fun typingEventIsRoutedToRemoteNodePresence() =
+        kotlinx.coroutines.test.runTest {
+            var deliveredEvent: FederatedTypingEvent? = null
+            val event =
+                FederatedTypingEvent(
+                    senderRoutingId = "sender",
+                    recipientRoutingId = "recipient",
+                    isTyping = true
+                )
+            val router =
+                FederationRouter(
+                    localNodeId = "node-a",
+                    presenceDirectory =
+                        {
+                            ClientRoutingResult(
+                                routingId = it,
+                                routes =
+                                    listOf(
+                                        ClientRoute(
+                                            routingId = it,
+                                            nodeId = "node-b",
+                                            connectionId = "connection-b",
+                                            generation = 1L,
+                                            expiresAtEpochMilliseconds = 10_000L,
+                                            clientSignature = byteArrayOf(1)
+                                        )
+                                    )
+                            )
+                        },
+                    nodeRegistry = { testNodeDescriptor() },
+                    localGateway = { error("Envelope gateway must not be used") },
+                    remoteFederation = { _, _ -> error("Envelope federation must not be used") },
+                    mailbox = { error("Mailbox must not be used") },
+                    remoteTypingFederation =
+                        { _, candidate ->
+                            deliveredEvent = candidate
+                            true
+                        }
+                )
+
+            assertTrue(router.routeTyping(event))
+            assertEquals(event, deliveredEvent)
+        }
+
     private fun testEnvelope(): FederatedEnvelope =
         FederatedEnvelope(
             envelopeId = "envelope-1",
@@ -92,5 +163,18 @@ class FederationRouterTest {
             encryptedPayload = "ciphertext",
             createdAtEpochMilliseconds = 1_000L,
             expiresAtEpochMilliseconds = 9_000L
+        )
+
+    private fun testNodeDescriptor(): SecureChatNodeDescriptor =
+        SecureChatNodeDescriptor(
+            nodeId = "node-b",
+            clientEndpoint = "ws://gateway-b/relay",
+            federationEndpoint = "http://federation-b",
+            mailboxEndpoint = "http://mailbox-b",
+            identityPublicKey = byteArrayOf(1),
+            protocolVersions = setOf(1),
+            capabilities = NodeCapability.entries.toSet(),
+            validUntilEpochMilliseconds = 10_000L,
+            signature = byteArrayOf(1)
         )
 }

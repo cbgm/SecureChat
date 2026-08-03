@@ -34,6 +34,11 @@ FEDERATION_DATABASE_PASSWORD=replace-for-non-local-deployments
 FEDERATION_INTERNAL_API_TOKEN=replace-with-a-different-random-token
 GATEWAY_INTERNAL_API_TOKEN=replace-with-a-different-random-token
 PUSH_INTERNAL_API_TOKEN=replace-with-a-different-random-token
+# Used only by docker-compose.multinode.yml:
+MAILBOX_B_DATABASE_PASSWORD=replace-for-non-local-deployments
+FEDERATION_B_DATABASE_PASSWORD=replace-for-non-local-deployments
+FEDERATION_B_INTERNAL_API_TOKEN=replace-with-a-different-random-token
+GATEWAY_B_INTERNAL_API_TOKEN=replace-with-a-different-random-token
 COMPOSE_PARALLEL_LIMIT=1
 ```
 
@@ -52,6 +57,137 @@ http://10.0.2.2:8095
 
 Use the gateway URL as `serverUrl` and the push URL as `httpBaseUrl` in
 `RelayTransportConfig`. The push health response must contain `fcmEnabled=true`.
+
+## Run the two-node federation test
+
+The multi-node override adds a completely separate node B with its own identity, gateway,
+federation service, mailbox, PostgreSQL databases, and persistent volumes. Both nodes share only
+the central node registry, presence directory, and push service. Node A remains available on port
+8094. Node B uses port 8194 through a local failover edge; its gateway health endpoint is exposed
+directly on port 8294.
+
+Start both nodes from the repository root:
+
+```powershell
+docker compose `
+    -f server/docker-compose.yml `
+    -f server/docker-compose.multinode.yml `
+    up -d --build
+```
+
+Wait for both signed descriptors to be registered, then verify the topology:
+
+```powershell
+curl.exe http://localhost:8090/health
+curl.exe http://localhost:8091/health
+curl.exe http://localhost:8094/health
+curl.exe http://localhost:8294/health
+curl.exe http://localhost:8095/health
+```
+
+The registry must report `nodes=2`. Before opening the apps, both gateway health responses should
+report `connections=0`.
+
+Build and install an app for node A on the first emulator. The Gradle property temporarily overrides
+`local.properties`; the file is not edited:
+
+```powershell
+$adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
+
+.\gradlew.bat `
+    "-Psecurechat.relay.websocketUrl=ws://10.0.2.2:8094/relay" `
+    :androidApp:assembleDebug `
+    --no-configuration-cache
+
+& $adb -s emulator-5554 install -r `
+    ".\androidApp\build\outputs\apk\debug\androidApp-debug.apk"
+```
+
+Build and install the node B version on the second emulator:
+
+```powershell
+.\gradlew.bat `
+    "-Psecurechat.relay.websocketUrl=ws://10.0.2.2:8194/relay" `
+    :androidApp:assembleDebug `
+    --no-configuration-cache
+
+& $adb -s emulator-5556 install -r `
+    ".\androidApp\build\outputs\apk\debug\androidApp-debug.apk"
+```
+
+Open both apps and verify that each node owns one connection while the shared presence directory
+contains two signed routes:
+
+```powershell
+curl.exe http://localhost:8091/health
+curl.exe http://localhost:8094/health
+curl.exe http://localhost:8294/health
+```
+
+Expected values are `routes=2`, `connections=1`, and `connections=1`. Send a message in both
+directions. The compatibility `send_envelope` frame now enters federation whenever the recipient is
+not connected to the sender's gateway. Confirm the node-to-node and destination-gateway requests:
+
+```powershell
+docker compose `
+    -f server/docker-compose.yml `
+    -f server/docker-compose.multinode.yml `
+    logs --since=2m federation federation-b gateway gateway-b |
+    Select-String -Pattern "/v1/federation/envelopes|/internal/v1/envelopes"
+```
+
+Typing events use a separate ephemeral federation path. They are signed between nodes but are not
+stored in PostgreSQL, mailbox, or push. Type from a node A client to the node B client and verify:
+
+```powershell
+docker compose `
+    -f server/docker-compose.yml `
+    -f server/docker-compose.multinode.yml `
+    logs --since=2m federation federation-b gateway gateway-b |
+    Select-String -Pattern "federation/typing-events|internal/v1/typing-events"
+```
+
+For background push, close the receiving app normally without Android's Force stop action, then
+send a message from the other node. The sender gateway stores the opaque envelope in the shared
+push inbox before live federation. If no live route exists, FCM wakes the receiver after the normal
+fallback delay. Duplicate storage attempts by the receiving gateway are accepted, while the local
+federation queue is marked complete to prevent a later replay.
+
+```powershell
+docker compose `
+    -f server/docker-compose.yml `
+    -f server/docker-compose.multinode.yml `
+    logs --since=2m push federation federation-b |
+    Select-String -Pattern "internal/v1/envelopes|FCM wake-up|push/wake|/stored"
+```
+
+To test failover of node B's gateway and federation processes, keep the apps open and stop them:
+
+```powershell
+docker compose `
+    -f server/docker-compose.yml `
+    -f server/docker-compose.multinode.yml `
+    stop gateway-b federation-b
+```
+
+The node B app reconnects through port 8194 to gateway A. Within the normal reconnect window,
+gateway A should report `connections=2` and presence should still report `routes=2`. Messages must
+continue in both directions. After the 90-second registry heartbeat grace period, registry health
+reports `nodes=1`.
+
+Restore node B with:
+
+```powershell
+docker compose `
+    -f server/docker-compose.yml `
+    -f server/docker-compose.multinode.yml `
+    up -d federation-b gateway-b
+```
+
+The port-8194 edge is a local failure-injection harness. It verifies WebSocket reconnection, signed
+route migration, and continued delivery when one node process stack disappears. Selecting another
+independently hosted node directly from the signed registry directory remains a separate client
+discovery milestone.
 
 The gateway accepts the existing relay WebSocket frames. Current clients fetch `/v1/gateway`, create
 a connection ID, and attach a signed, expiring presence route to the initial `register` frame. They
