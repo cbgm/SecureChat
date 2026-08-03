@@ -47,6 +47,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -115,11 +116,7 @@ import com.cbgm.securechat.resources.feature_chats_direct_chat_reinvite_required
 import com.cbgm.securechat.resources.feature_chats_direct_chat_reinvite_required_title
 import com.cbgm.securechat.resources.feature_chats_encrypted
 import com.cbgm.securechat.resources.feature_chats_failed
-import com.cbgm.securechat.resources.feature_chats_group_accept
-import com.cbgm.securechat.resources.feature_chats_group_decline
 import com.cbgm.securechat.resources.feature_chats_group_deleted_status
-import com.cbgm.securechat.resources.feature_chats_group_invitation_description
-import com.cbgm.securechat.resources.feature_chats_group_invitation_title
 import com.cbgm.securechat.resources.feature_chats_group_member_accepted
 import com.cbgm.securechat.resources.feature_chats_group_member_active
 import com.cbgm.securechat.resources.feature_chats_group_member_count
@@ -816,6 +813,14 @@ private fun MessageList(
     bottomPadding: Dp,
     modifier: Modifier = Modifier
 ) {
+    val newestMessage = messages.firstOrNull()
+
+    LaunchedEffect(newestMessage?.id) {
+        if (newestMessage?.isMine == true) {
+            listState.animateScrollToItem(index = 0)
+        }
+    }
+
     LazyColumn(
         modifier = modifier,
         state = listState,

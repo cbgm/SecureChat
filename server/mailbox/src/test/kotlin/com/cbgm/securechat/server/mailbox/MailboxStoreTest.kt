@@ -1,0 +1,52 @@
+package com.cbgm.securechat.server.mailbox
+
+import com.cbgm.securechat.server.protocol.CreateMailboxRequest
+import com.cbgm.securechat.server.protocol.FederatedEnvelope
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
+
+class MailboxStoreTest {
+    @Test
+    fun envelopeIsStoredIdempotentlyUntilProcessedAcknowledgement() =
+        runTest {
+            val store = MailboxStore(now = { 1_000L })
+            val mailbox =
+                store.create(
+                    CreateMailboxRequest(
+                        nodeId = "node-a",
+                        nodeEndpoint = "http://mailbox",
+                        expiresAtEpochMilliseconds = 10_000L
+                    )
+                )
+            val route = mailbox.deliveryRoute
+            val envelope =
+                FederatedEnvelope(
+                    envelopeId = "envelope-1",
+                    senderRoutingId = "sender",
+                    recipientDeviceRoutingId = "recipient",
+                    mailboxRoute = route,
+                    encryptedPayload = "ciphertext",
+                    createdAtEpochMilliseconds = 1_000L,
+                    expiresAtEpochMilliseconds = 9_000L
+                )
+
+            assertIs<MailboxResult.Stored>(store.store(route.mailboxId, route.sendCapability, envelope))
+            val duplicate =
+                assertIs<MailboxResult.Stored>(
+                    store.store(route.mailboxId, route.sendCapability, envelope)
+                )
+            assertTrue(duplicate.duplicate)
+            assertEquals(listOf(envelope), store.pending(route.mailboxId, mailbox.retrievalCapability))
+            assertTrue(
+                store.acknowledge(
+                    route.mailboxId,
+                    mailbox.retrievalCapability,
+                    envelope.envelopeId
+                )
+            )
+            assertEquals(emptyList(), store.pending(route.mailboxId, mailbox.retrievalCapability))
+        }
+}

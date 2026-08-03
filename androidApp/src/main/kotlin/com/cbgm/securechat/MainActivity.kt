@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.cbgm.securechat.notification.push.PushTokenRegistrationScheduler
 import com.cbgm.securechat.platform.notification.SecureChatNotificationIntentHandler
 import com.cbgm.securechat.platform.runtime.ForegroundRuntimeController
 import org.koin.android.ext.android.inject
@@ -13,6 +14,8 @@ class MainActivity : ComponentActivity() {
     private val foregroundRuntimeController by inject<ForegroundRuntimeController>()
 
     private val notificationIntentHandler by inject<SecureChatNotificationIntentHandler>()
+
+    private val pushTokenRegistrationScheduler by inject<PushTokenRegistrationScheduler>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -29,6 +32,7 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
 
+        pushTokenRegistrationScheduler.enqueueCurrentToken()
         foregroundRuntimeController.onAppVisible()
     }
 

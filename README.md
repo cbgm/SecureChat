@@ -201,6 +201,20 @@ page. Never edit generated files manually.
 
 ---
 
+# Federated Server Implementation
+
+The independently deployable registry, presence, gateway, federation, mailbox, and push services are now
+available under [`server/`](server/README.md). The original `relay/` remains available as the migration
+compatibility server. A complete local network can be started with:
+
+```bash
+docker compose -f server/docker-compose.yml up --build
+```
+
+See the server README for module boundaries, ports, security behavior, and migration limitations.
+
+---
+
 # License
 
 Licensed under the Apache 2.0 License.

@@ -28,5 +28,15 @@ Select a module to open its generated detail page with source sets, file counts,
 | [`:quality:detekt-rules`](modules/quality-detekt-rules.md) | `quality` | 11 | 0 | 0 | 0 | 0 |
 | [`:relay`](modules/relay.md) | `relay` | 24 | 1 | 2 | 0 | 0 |
 | [`:resources`](modules/resources.md) | `resources` | 0 | 0 | 19 | 0 | 2 |
+| [`:server`](modules/server.md) | `server` | 0 | 0 | 0 | 0 | 0 |
+| [`:server:federation`](modules/server-federation.md) | `server` | 7 | 1 | 0 | 3 | 0 |
+| [`:server:gateway`](modules/server-gateway.md) | `server` | 5 | 0 | 0 | 2 | 0 |
+| [`:server:mailbox`](modules/server-mailbox.md) | `server` | 6 | 2 | 0 | 3 | 0 |
+| [`:server:node-registry`](modules/server-node-registry.md) | `server` | 3 | 1 | 0 | 3 | 0 |
+| [`:server:persistence`](modules/server-persistence.md) | `server` | 2 | 0 | 0 | 1 | 4 |
+| [`:server:presence-directory`](modules/server-presence-directory.md) | `server` | 3 | 1 | 0 | 2 | 0 |
+| [`:server:protocol`](modules/server-protocol.md) | `server` | 6 | 1 | 0 | 0 | 8 |
+| [`:server:push`](modules/server-push.md) | `server` | 13 | 3 | 0 | 2 | 0 |
+| [`:server:security`](modules/server-security.md) | `server` | 8 | 1 | 0 | 1 | 5 |
 | [`:shared`](modules/shared.md) | `shared` | 9 | 2 | 0 | 4 | 1 |
 | [`:startup`](modules/startup.md) | `startup` | 8 | 0 | 1 | 3 | 2 |

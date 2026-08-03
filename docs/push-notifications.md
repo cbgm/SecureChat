@@ -120,6 +120,12 @@ FCM wake-up failed
 Push fallback failed
 ```
 
-## Current server limitation
+## Persistence
 
-The relay's envelope, wake-up, and push-token stores are currently in memory because the existing relay is in memory. Messages survive client disconnects but not a relay-process restart. Before production deployment, replace these stores with authenticated persistent storage and add retention/cleanup policies.
+The federated `:server:push` service stores pending encrypted envelopes, wake-up mappings, and FCM
+device tokens in its private PostgreSQL database. Docker Compose retains this database in the
+`push-database-data` volume, so normal service and Compose restarts preserve offline delivery.
+
+The migration-only `:relay` service still uses in-memory stores. Its messages survive client
+disconnects but not a relay-process restart. Use the federated server topology for restart-durable
+push delivery.

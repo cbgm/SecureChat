@@ -5,6 +5,7 @@
 xcuserdata
 !src/**/build/
 local.properties
+/.securechat-server/
 .idea
 .DS_Store
 captures
@@ -20,3 +21,4 @@ node_modules/
 
 **/firebase-service-account*.json
 **/*service-account-key*.json
+server/.env

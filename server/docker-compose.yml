@@ -1,0 +1,169 @@
+name: securechat-network
+
+x-service: &securechat-service
+  restart: unless-stopped
+  build:
+    context: ..
+    dockerfile: server/Dockerfile
+
+services:
+  node-registry:
+    <<: *securechat-service
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+      args:
+        SERVICE: node-registry
+    environment:
+      PORT: 8090
+      REGISTRY_IDENTITY_PATH: /data/registry.identity
+    ports:
+      - "8090:8090"
+    volumes:
+      - registry-identity:/data
+
+  presence-directory:
+    <<: *securechat-service
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+      args:
+        SERVICE: presence-directory
+    environment:
+      PORT: 8091
+      NODE_REGISTRY_URL: http://node-registry:8090
+    ports:
+      - "8091:8091"
+
+  mailbox-database:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: securechat_mailbox
+      POSTGRES_USER: securechat_mailbox
+      POSTGRES_PASSWORD: ${MAILBOX_DATABASE_PASSWORD:-local-development-password}
+    ports:
+      - "${MAILBOX_DATABASE_PORT:-5436}:5432"
+    volumes:
+      - mailbox-database-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  mailbox:
+    <<: *securechat-service
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+      args:
+        SERVICE: mailbox
+    environment:
+      PORT: 8092
+      MAILBOX_DATABASE_URL: jdbc:postgresql://mailbox-database:5432/securechat_mailbox
+      MAILBOX_DATABASE_USER: securechat_mailbox
+      MAILBOX_DATABASE_PASSWORD: ${MAILBOX_DATABASE_PASSWORD:-local-development-password}
+    ports:
+      - "8092:8092"
+    depends_on:
+      mailbox-database:
+        condition: service_healthy
+
+  push-database:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: securechat_push
+      POSTGRES_USER: securechat_push
+      POSTGRES_PASSWORD: ${PUSH_DATABASE_PASSWORD:-local-development-password}
+    ports:
+      - "${PUSH_DATABASE_PORT:-5435}:5432"
+    volumes:
+      - push-database-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  push:
+    <<: *securechat-service
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+      args:
+        SERVICE: push
+    environment:
+      PORT: 8095
+      INTERNAL_API_TOKEN: local-development-token
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase-admin.json
+      PUSH_DATABASE_URL: jdbc:postgresql://push-database:5432/securechat_push
+      PUSH_DATABASE_USER: securechat_push
+      PUSH_DATABASE_PASSWORD: ${PUSH_DATABASE_PASSWORD:-local-development-password}
+    ports:
+      - "8095:8095"
+    volumes:
+      - type: bind
+        source: ${FIREBASE_ADMIN_CREDENTIALS:?Define FIREBASE_ADMIN_CREDENTIALS in server/.env}
+        target: /run/secrets/firebase-admin.json
+        read_only: true
+        bind:
+          create_host_path: false
+    depends_on:
+      push-database:
+        condition: service_healthy
+
+  federation:
+    <<: *securechat-service
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+      args:
+        SERVICE: federation
+    environment:
+      PORT: 8093
+      NODE_IDENTITY_PATH: /data/node.identity
+      NODE_REGISTRY_URL: http://node-registry:8090
+      PRESENCE_DIRECTORY_URL: http://presence-directory:8091
+      GATEWAY_INTERNAL_URL: http://gateway:8094
+      CLIENT_ENDPOINT: ws://localhost:8094/relay
+      FEDERATION_ENDPOINT: http://localhost:8093
+      MAILBOX_ENDPOINT: http://localhost:8092
+      INTERNAL_API_TOKEN: local-development-token
+    ports:
+      - "8093:8093"
+    volumes:
+      - node-identity:/data
+    depends_on:
+      - node-registry
+      - presence-directory
+      - mailbox
+
+  gateway:
+    <<: *securechat-service
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+      args:
+        SERVICE: gateway
+    environment:
+      PORT: 8094
+      NODE_IDENTITY_PATH: /data/node.identity
+      FEDERATION_INTERNAL_URL: http://federation:8093
+      PUSH_INTERNAL_URL: http://push:8095
+      PRESENCE_DIRECTORY_URL: http://presence-directory:8091
+      INTERNAL_API_TOKEN: local-development-token
+    ports:
+      - "8094:8094"
+    volumes:
+      - node-identity:/data
+    depends_on:
+      - federation
+      - push
+
+volumes:
+  registry-identity:
+  node-identity:
+  mailbox-database-data:
+  push-database-data:
