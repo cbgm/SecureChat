@@ -45,6 +45,7 @@ import com.cbgm.securechat.feature.contacts.presentation.screen.details.ContactD
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModel
+import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val contactsModule =

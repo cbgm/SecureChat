@@ -240,6 +240,11 @@ All six Kotlin services now share Prometheus-compatible metrics, liveness and st
 readiness endpoints, and validated `X-Request-ID` correlation in HTTP responses and structured
 console logs. Docker Compose uses the readiness contract to order application startup.
 
+Node operators can create checksummed, timestamped backups of every PostgreSQL database and signing
+identity, validate them without downtime, and restore them into fresh Docker volumes with an
+explicit disaster-recovery command. Short-lived Redis presence routes are intentionally rebuilt by
+reconnecting clients instead of being restored.
+
 See the server README for module boundaries, ports, security behavior, and migration limitations.
 
 ---

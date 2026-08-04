@@ -24,3 +24,4 @@ node_modules/
 server/.env
 server/.env.production
 server/secrets/*.txt
+server/backups/

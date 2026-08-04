@@ -5,7 +5,6 @@ import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.feature.transport.relay.config.RelayTransportConfig
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class DefaultNodeEndpointResolver(

@@ -360,6 +360,114 @@ two-node topology, node B also exposes mailbox, federation, and gateway readines
 proxied by Caddy in production; attach a trusted collector to the backend Docker network instead of
 publishing `/metrics` to the internet.
 
+## Backup and disaster recovery
+
+`Backup-SecureChat.ps1` creates a timestamped ZIP without stopping message delivery. PostgreSQL
+produces consistent custom-format dumps inside each database container and `docker cp` transfers
+them without passing binary data through PowerShell. The archive contains:
+
+- node-registry, mailbox, federation, and push PostgreSQL dumps;
+- the registry signing identity and node identity;
+- node B's databases and identity when `-MultiNode` is selected;
+- a versioned manifest with a SHA-256 checksum for every payload.
+
+Create a local single-node backup from the repository root:
+
+```powershell
+.\server\scripts\Backup-SecureChat.ps1
+```
+
+Enable automatic deletion of backup archives older than fourteen days:
+
+```powershell
+.\server\scripts\Backup-SecureChat.ps1 -RetentionDays 14
+```
+
+Back up the two-node topology:
+
+```powershell
+.\server\scripts\Backup-SecureChat.ps1 -MultiNode
+```
+
+For production, use an encrypted backup destination outside the repository:
+
+```powershell
+.\server\scripts\Backup-SecureChat.ps1 `
+    -Production `
+    -OutputDirectory "D:\SecureChatBackups" `
+    -RetentionDays 30
+```
+
+Retention is disabled by default. A backup never contains `.env`, Compose secret files, or the
+Firebase Admin credential. Back those up separately in an encrypted secret store. The database
+dumps contain FCM registrations, capability hashes, routing metadata, and encrypted envelopes, so
+the backup archive itself is sensitive even though it contains no message plaintext.
+
+For unattended production backups on Windows, register the command with Task Scheduler. This
+example runs every day at 03:00; adapt the repository and encrypted destination paths first:
+
+```powershell
+$action = New-ScheduledTaskAction `
+    -Execute "powershell.exe" `
+    -Argument '-NoProfile -ExecutionPolicy Bypass -File "C:\SecureChat\server\scripts\Backup-SecureChat.ps1" -Production -OutputDirectory "D:\SecureChatBackups" -RetentionDays 30'
+$trigger = New-ScheduledTaskTrigger -Daily -At 03:00
+
+Register-ScheduledTask `
+    -TaskName "SecureChat daily backup" `
+    -Action $action `
+    -Trigger $trigger `
+    -Description "Back up SecureChat databases and identities"
+```
+
+Validate the newest archive without changing Docker data:
+
+```powershell
+$backup = Get-ChildItem .\server\backups\SecureChat-backup-*.zip |
+    Sort-Object LastWriteTimeUtc -Descending |
+    Select-Object -First 1
+
+.\server\scripts\Restore-SecureChatBackup.ps1 `
+    -Archive $backup.FullName `
+    -ValidateOnly
+```
+
+### Fresh-volume restore drill
+
+The restore command is intentionally blocked unless `-ConfirmDataLoss` is present. With
+`-RecreateVolumes`, it removes the Compose project's current containers and volumes, starts clean
+PostgreSQL volumes, restores every dump and identity, and waits until all application services are
+healthy:
+
+```powershell
+.\server\scripts\Restore-SecureChatBackup.ps1 `
+    -Archive $backup.FullName `
+    -RecreateVolumes `
+    -ConfirmDataLoss
+```
+
+Add `-MultiNode` when restoring an archive created with `-MultiNode`. Add `-Production` for the
+production override; `server/.env.production`, `server/secrets`, and the Firebase credential must
+already be present because they are deliberately not included in the archive.
+
+After a local two-node restore, verify the durable state:
+
+```powershell
+curl.exe http://localhost:8090/health
+curl.exe http://localhost:8092/health
+curl.exe http://localhost:8192/health
+curl.exe http://localhost:8093/health
+curl.exe http://localhost:8193/health
+curl.exe http://localhost:8095/health
+```
+
+The mailbox and push counts should match the values captured before the backup. Node counts can be
+temporarily zero because restored heartbeats are time-limited; the federation agents re-register
+their restored identities and the registry returns to two nodes. Redis presence routes are not
+backed up because they expire within minutes and connected clients republish them automatically.
+
+Run a fresh-volume restore drill regularly and after changing PostgreSQL major versions. Merely
+creating archives does not prove that they remain restorable.
+
 ## Production deployment
 
 Production uses [`docker-compose.production.yml`](docker-compose.production.yml) as an override.
