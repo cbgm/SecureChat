@@ -245,6 +245,10 @@ identity, validate them without downtime, and restore them into fresh Docker vol
 explicit disaster-recovery command. Short-lived Redis presence routes are intentionally rebuilt by
 reconnecting clients instead of being restored.
 
+A non-destructive PowerShell smoke test now validates the single-node or two-node Compose topology,
+all storage-aware health checks, expected restored counts, request-ID propagation, and Prometheus
+metrics. Restore failures include the unhealthy service's probe output and recent logs.
+
 See the server README for module boundaries, ports, security behavior, and migration limitations.
 
 ---

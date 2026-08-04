@@ -9,6 +9,8 @@ param(
 
     [switch]$RecreateVolumes,
 
+    [switch]$BuildImages,
+
     [switch]$ValidateOnly,
 
     [switch]$ConfirmDataLoss
@@ -111,6 +113,51 @@ function Wait-ForHealthyService {
         Start-Sleep -Seconds 2
     }
     throw "Timed out waiting for healthy Compose service: $Service"
+}
+
+function Write-ComposeFailureDiagnostics {
+    param([Parameter(Mandatory = $true)][string[]]$Services)
+
+    Write-Warning "SecureChat service startup failed. Compose state and failing health checks follow."
+    & docker @($composeArguments + @("ps", "--all"))
+
+    foreach ($service in $Services) {
+        $containerId = (& docker @($composeArguments + @("ps", "--all", "--quiet", $service)) |
+            Out-String).Trim()
+        if ([string]::IsNullOrWhiteSpace($containerId)) {
+            continue
+        }
+
+        $inspectOutput = (& docker inspect $containerId 2>$null | Out-String).Trim()
+        if ([string]::IsNullOrWhiteSpace($inspectOutput)) {
+            continue
+        }
+
+        $inspect = @($inspectOutput | ConvertFrom-Json)
+        if ($inspect.Count -ne 1) {
+            continue
+        }
+
+        $state = $inspect[0].State
+        $healthStatus = if ($null -eq $state.Health) { "none" } else { $state.Health.Status }
+        if ($state.Running -and $healthStatus -in @("none", "healthy")) {
+            continue
+        }
+
+        Write-Warning "Service '$service': status=$($state.Status), health=$healthStatus"
+        if ($null -ne $state.Health) {
+            foreach ($entry in @($state.Health.Log | Select-Object -Last 3)) {
+                $probeOutput = ([string]$entry.Output).Trim()
+                Write-Host "Health probe exit=$($entry.ExitCode): $probeOutput"
+            }
+        }
+        & docker @($composeArguments + @("logs", "--tail", "80", $service))
+    }
+
+    Write-Warning (
+        "If a probe reports that ReadinessProbe cannot be loaded, rebuild that service image " +
+        "and recreate the service. You can also run this restore with -BuildImages."
+    )
 }
 
 function Get-LowercaseSha256 {
@@ -349,9 +396,19 @@ try {
         Remove-Item -LiteralPath $verificationPath -Force
     }
 
-    Invoke-ComposeCommand -CommandArguments @("up", "-d")
-    foreach ($service in $applicationServices) {
-        Wait-ForHealthyService -Service $service
+    if ($BuildImages) {
+        Write-Host "Building SecureChat application images before startup."
+        Invoke-ComposeCommand -CommandArguments (@("build") + $applicationServices)
+    }
+
+    try {
+        Invoke-ComposeCommand -CommandArguments @("up", "-d")
+        foreach ($service in $applicationServices) {
+            Wait-ForHealthyService -Service $service
+        }
+    } catch {
+        Write-ComposeFailureDiagnostics -Services $applicationServices
+        throw
     }
 
     Write-Host "Restore completed and every application service is healthy."

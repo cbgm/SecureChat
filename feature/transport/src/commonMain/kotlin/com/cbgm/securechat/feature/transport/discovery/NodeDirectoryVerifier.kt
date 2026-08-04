@@ -2,6 +2,7 @@ package com.cbgm.securechat.feature.transport.discovery
 
 import com.cbgm.securechat.core.crypto.hash.CryptoHash
 import com.cbgm.securechat.core.crypto.signature.DetachedSignatureCrypto
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class NodeDirectoryVerifier(

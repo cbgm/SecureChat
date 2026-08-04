@@ -4,6 +4,8 @@ import com.cbgm.securechat.server.protocol.NodeHeartbeatRequest
 import com.cbgm.securechat.server.protocol.SecureChatNodeDescriptor
 import com.cbgm.securechat.server.protocol.serverJson
 import com.cbgm.securechat.server.security.ProtocolSignatures
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import java.sql.Connection
 
 internal class PostgresNodeRegistryStore(

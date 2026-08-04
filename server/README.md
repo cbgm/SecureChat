@@ -234,6 +234,38 @@ This is an addressing migration: update and open every test client once so each 
 its new routing ID. Cached contact mappings are replaced automatically from exchanged signing keys.
 Legacy pending envelopes addressed to `scphone1_` IDs are not rewritten.
 
+## Automated network smoke test
+
+`Test-SecureChatNetwork.ps1` verifies the complete local Compose topology without changing stored
+data. It waits for every PostgreSQL, Redis, and Kotlin container to become healthy, validates every
+service health response, checks the expected registry node count, and verifies gateway request-ID
+propagation and Prometheus metrics.
+
+Run it against the already running two-node network:
+
+```powershell
+.\server\scripts\Test-SecureChatNetwork.ps1 `
+    -MultiNode `
+    -RequireFcm
+```
+
+After a restore, exact durable counts can be asserted as part of the same test:
+
+```powershell
+.\server\scripts\Test-SecureChatNetwork.ps1 `
+    -MultiNode `
+    -RequireFcm `
+    -ExpectedNodes 2 `
+    -ExpectedMailboxCountA 2 `
+    -ExpectedMailboxCountB 2 `
+    -ExpectedPushDevices 3
+```
+
+Use `-Start` when the script should start the Compose network first. Add `-BuildImages` to rebuild
+application images before startup; image rebuilding is never implicit. The smoke test validates the
+server topology and durable counts. Signed cross-node messages, typing events, and real FCM delivery
+still require the Android client test described above.
+
 ## Security behavior
 
 - A node identity is generated once and persisted in the shared node identity volume.
@@ -447,17 +479,21 @@ healthy:
 
 Add `-MultiNode` when restoring an archive created with `-MultiNode`. Add `-Production` for the
 production override; `server/.env.production`, `server/secrets`, and the Firebase credential must
-already be present because they are deliberately not included in the archive.
+already be present because they are deliberately not included in the archive. Add `-BuildImages`
+when the source or health-probe implementation changed since the current Compose images were built.
+If startup fails, the restore command now prints the state, recent health-probe results, and logs of
+each failing application service automatically.
 
-After a local two-node restore, verify the durable state:
+After a local two-node restore, verify the durable state with exact pre-backup counts:
 
 ```powershell
-curl.exe http://localhost:8090/health
-curl.exe http://localhost:8092/health
-curl.exe http://localhost:8192/health
-curl.exe http://localhost:8093/health
-curl.exe http://localhost:8193/health
-curl.exe http://localhost:8095/health
+.\server\scripts\Test-SecureChatNetwork.ps1 `
+    -MultiNode `
+    -RequireFcm `
+    -ExpectedNodes 2 `
+    -ExpectedMailboxCountA 2 `
+    -ExpectedMailboxCountB 2 `
+    -ExpectedPushDevices 3
 ```
 
 The mailbox and push counts should match the values captured before the backup. Node counts can be

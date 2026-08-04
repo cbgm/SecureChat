@@ -5,6 +5,8 @@ import com.cbgm.securechat.server.protocol.CreateMailboxResponse
 import com.cbgm.securechat.server.protocol.DeliveryRoute
 import com.cbgm.securechat.server.protocol.FederatedEnvelope
 import com.cbgm.securechat.server.protocol.serverJson
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.sql.Connection

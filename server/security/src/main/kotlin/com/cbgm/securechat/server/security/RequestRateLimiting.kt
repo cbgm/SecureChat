@@ -7,6 +7,7 @@ import io.ktor.server.plugins.origin
 import io.ktor.server.response.respond
 import java.security.MessageDigest
 import java.util.Base64
+import java.util.LinkedHashMap
 
 data class RateLimitPolicy(
     val maximumRequests: Int,
@@ -82,11 +83,7 @@ class BoundedRateLimiter(
 
     private fun evictOverflow() {
         while (windows.size > policy.maximumTrackedClients) {
-            val eldestKey =
-                windows.entries
-                    .iterator()
-                    .next()
-                    .key
+            val eldestKey = windows.entries.iterator().next().key
             windows.remove(eldestKey)
         }
     }
@@ -97,9 +94,11 @@ class BoundedRateLimiter(
     }
 }
 
-fun ApplicationCall.hashedClientAddress(): String = ClientRateLimitKeys.hash(request.origin.remoteAddress)
+fun ApplicationCall.hashedClientAddress(): String =
+    ClientRateLimitKeys.hash(request.origin.remoteAddress)
 
-fun ApplicationCall.clientRateLimitKey(): String = ClientRateLimitKeys.hash(request.origin.remoteAddress)
+fun ApplicationCall.clientRateLimitKey(): String =
+    ClientRateLimitKeys.hash(request.origin.remoteAddress)
 
 suspend fun ApplicationCall.enforceRateLimit(
     limiter: BoundedRateLimiter

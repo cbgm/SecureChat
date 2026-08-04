@@ -8,6 +8,7 @@ import com.cbgm.securechat.server.security.ClientRoutingIds
 import com.cbgm.securechat.server.security.NodeIdentity
 import com.cbgm.securechat.server.security.Signatures
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.encodeToString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -22,14 +23,7 @@ class PresenceStoreTest {
             assertIs<PresenceResult.Accepted>(store.register(registration(identity, generation = 2L)))
             assertIs<PresenceResult.Rejected>(store.register(registration(identity, generation = 1L)))
             val routingId = ClientRoutingIds.fromSigningPublicKey(identity.encodedPublicKey)
-            assertEquals(
-                2L,
-                store
-                    .resolve(routingId)
-                    .routes
-                    .single()
-                    .generation
-            )
+            assertEquals(2L, store.resolve(routingId).routes.single().generation)
         }
 
     @Test

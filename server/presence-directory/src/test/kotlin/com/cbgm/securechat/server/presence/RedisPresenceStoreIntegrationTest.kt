@@ -8,6 +8,7 @@ import com.cbgm.securechat.server.security.ClientRoutingIds
 import com.cbgm.securechat.server.security.NodeIdentity
 import com.cbgm.securechat.server.security.Signatures
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.encodeToString
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -18,8 +19,7 @@ class RedisPresenceStoreIntegrationTest {
     fun routeAndGenerationSurviveStoreRecreation() =
         runTest {
             val redisUrl =
-                System
-                    .getenv("PRESENCE_TEST_REDIS_URL")
+                System.getenv("PRESENCE_TEST_REDIS_URL")
                     ?.takeIf(String::isNotBlank)
                     ?: return@runTest
             val suffix = UUID.randomUUID().toString().replace("-", "")
