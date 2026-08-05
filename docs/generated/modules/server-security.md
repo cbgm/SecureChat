@@ -10,12 +10,12 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `server` |
 | Directory | `server/security` |
 | Build file | `server/security/build.gradle.kts` |
-| Kotlin files | 8 |
-| Production Kotlin files | 7 |
-| Test Kotlin files | 1 |
+| Kotlin files | 13 |
+| Production Kotlin files | 10 |
+| Test Kotlin files | 3 |
 | Resource files | 0 |
 | Direct dependencies | 1 |
-| Direct dependents | 5 |
+| Direct dependents | 6 |
 
 ## Source sets
 
@@ -33,3 +33,4 @@ Generated automatically by `./gradlew architectureReport`.
 - [`:server:mailbox`](../modules/server-mailbox.md)
 - [`:server:node-registry`](../modules/server-node-registry.md)
 - [`:server:presence-directory`](../modules/server-presence-directory.md)
+- [`:server:push`](../modules/server-push.md)

@@ -10,11 +10,11 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `server` |
 | Directory | `server/presence-directory` |
 | Build file | `server/presence-directory/build.gradle.kts` |
-| Kotlin files | 3 |
-| Production Kotlin files | 2 |
-| Test Kotlin files | 1 |
+| Kotlin files | 8 |
+| Production Kotlin files | 6 |
+| Test Kotlin files | 2 |
 | Resource files | 0 |
-| Direct dependencies | 2 |
+| Direct dependencies | 4 |
 | Direct dependents | 0 |
 
 ## Source sets
@@ -24,6 +24,8 @@ Generated automatically by `./gradlew architectureReport`.
 
 ## Dependencies
 
+- [`:server:observability`](../modules/server-observability.md)
+- [`:server:persistence`](../modules/server-persistence.md)
 - [`:server:protocol`](../modules/server-protocol.md)
 - [`:server:security`](../modules/server-security.md)
 

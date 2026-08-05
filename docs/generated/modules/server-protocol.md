@@ -15,7 +15,7 @@ Generated automatically by `./gradlew architectureReport`.
 | Test Kotlin files | 1 |
 | Resource files | 0 |
 | Direct dependencies | 0 |
-| Direct dependents | 7 |
+| Direct dependents | 8 |
 
 ## Source sets
 
@@ -34,4 +34,5 @@ None.
 - [`:server:node-registry`](../modules/server-node-registry.md)
 - [`:server:persistence`](../modules/server-persistence.md)
 - [`:server:presence-directory`](../modules/server-presence-directory.md)
+- [`:server:push`](../modules/server-push.md)
 - [`:server:security`](../modules/server-security.md)

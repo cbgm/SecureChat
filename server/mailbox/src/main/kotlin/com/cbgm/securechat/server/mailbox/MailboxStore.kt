@@ -291,9 +291,11 @@ private fun purgeExpiredMailboxes(
     }
 }
 
-private fun InMemoryMailbox.storedPayloadBytes(): Long = envelopes.values.sumOf(FederatedEnvelope::payloadBytes)
+private fun InMemoryMailbox.storedPayloadBytes(): Long =
+    envelopes.values.sumOf(FederatedEnvelope::payloadBytes)
 
-private fun FederatedEnvelope.payloadBytes(): Long = encryptedPayload.encodeToByteArray().size.toLong()
+private fun FederatedEnvelope.payloadBytes(): Long =
+    encryptedPayload.encodeToByteArray().size.toLong()
 
 private fun randomToken(secureRandom: SecureRandom): String {
     val bytes = ByteArray(CAPABILITY_TOKEN_BYTES)
@@ -301,7 +303,8 @@ private fun randomToken(secureRandom: SecureRandom): String {
     return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
 }
 
-private fun hashCapability(value: String): ByteArray = MessageDigest.getInstance(CAPABILITY_HASH_ALGORITHM).digest(value.encodeToByteArray())
+private fun hashCapability(value: String): ByteArray =
+    MessageDigest.getInstance(CAPABILITY_HASH_ALGORITHM).digest(value.encodeToByteArray())
 
 private fun capabilityMatches(
     capability: String,

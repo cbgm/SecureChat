@@ -309,7 +309,8 @@ internal class PostgresMailboxStore(
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
     }
 
-    private fun hash(value: String): ByteArray = MessageDigest.getInstance(CAPABILITY_HASH_ALGORITHM).digest(value.encodeToByteArray())
+    private fun hash(value: String): ByteArray =
+        MessageDigest.getInstance(CAPABILITY_HASH_ALGORITHM).digest(value.encodeToByteArray())
 
     private fun matches(
         capability: String,

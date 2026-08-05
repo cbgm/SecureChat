@@ -10,11 +10,11 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `server` |
 | Directory | `server/push` |
 | Build file | `server/push/build.gradle.kts` |
-| Kotlin files | 13 |
-| Production Kotlin files | 10 |
-| Test Kotlin files | 3 |
+| Kotlin files | 16 |
+| Production Kotlin files | 12 |
+| Test Kotlin files | 4 |
 | Resource files | 0 |
-| Direct dependencies | 2 |
+| Direct dependencies | 4 |
 | Direct dependents | 0 |
 
 ## Source sets
@@ -24,8 +24,10 @@ Generated automatically by `./gradlew architectureReport`.
 
 ## Dependencies
 
+- [`:server:observability`](../modules/server-observability.md)
 - [`:server:persistence`](../modules/server-persistence.md)
 - [`:server:protocol`](../modules/server-protocol.md)
+- [`:server:security`](../modules/server-security.md)
 
 ## Dependents
 

@@ -27,7 +27,8 @@ class HttpPresenceDirectoryClient(
     private val httpClient: HttpClient,
     private val baseUrl: String
 ) : PresenceDirectoryClient {
-    override suspend fun resolve(routingId: String): ClientRoutingResult = httpClient.get("$baseUrl/v1/routes/$routingId").body()
+    override suspend fun resolve(routingId: String): ClientRoutingResult =
+        httpClient.get("$baseUrl/v1/routes/$routingId").body()
 }
 
 class HttpNodeRegistryClient(
