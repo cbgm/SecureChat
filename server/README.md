@@ -266,6 +266,13 @@ application images before startup; image rebuilding is never implicit. The smoke
 server topology and durable counts. Signed cross-node messages, typing events, and real FCM delivery
 still require the Android client test described above.
 
+The `Server Smoke Test` GitHub Actions workflow runs the same check for pull requests targeting
+`develop` when server, Gradle, or workflow files change. CI uses an intentionally invalid local
+Firebase credential, so it verifies push-service startup and persistence with `fcmEnabled=false`
+without storing a Firebase secret. It builds both nodes, waits for both signed registrations, asserts
+empty fresh databases, uploads Compose state and complete service logs on failure, and always removes
+the CI containers and volumes afterward. Real FCM delivery remains covered by the local emulator test.
+
 ## Security behavior
 
 - A node identity is generated once and persisted in the shared node identity volume.

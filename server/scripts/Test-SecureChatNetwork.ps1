@@ -173,6 +173,32 @@ function Assert-Count {
     }
 }
 
+function Wait-ForExpectedCount {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][string]$Url,
+        [Parameter(Mandatory = $true)][string]$Field,
+        [Parameter(Mandatory = $true)][int]$Expected
+    )
+
+    if ($Expected -lt 0) {
+        return Get-HealthText -Name $Name -Url $Url
+    }
+
+    $pattern = "(?:^|\s)$([Regex]::Escape($Field))=(\d+)(?:\s|$)"
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    $lastValue = ""
+    while ((Get-Date) -lt $deadline) {
+        $lastValue = Get-HealthText -Name $Name -Url $Url
+        if ($lastValue -match $pattern -and [int]$Matches[1] -eq $Expected) {
+            return $lastValue
+        }
+        Start-Sleep -Seconds 2
+    }
+
+    throw "Timed out waiting for $Field=$Expected from '$Name'. Last response: $lastValue"
+}
+
 if ($BuildImages -and -not $Start) {
     throw "-BuildImages requires -Start."
 }
@@ -277,11 +303,12 @@ foreach ($check in $checks) {
     Write-Host "PASS $($check.Name): $healthText"
 }
 
-Assert-Count `
+$results["node-registry"] = Wait-ForExpectedCount `
     -Name "node-registry" `
-    -Value $results["node-registry"] `
+    -Url "http://localhost:8090/health" `
     -Field "nodes" `
     -Expected $ExpectedNodes
+Write-Host "PASS expected registry count: nodes=$ExpectedNodes"
 Assert-Count `
     -Name "mailbox" `
     -Value $results["mailbox"] `

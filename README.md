@@ -247,7 +247,9 @@ reconnecting clients instead of being restored.
 
 A non-destructive PowerShell smoke test now validates the single-node or two-node Compose topology,
 all storage-aware health checks, expected restored counts, request-ID propagation, and Prometheus
-metrics. Restore failures include the unhealthy service's probe output and recent logs.
+metrics. Restore failures include the unhealthy service's probe output and recent logs. Pull requests
+that change the server now run the fresh two-node smoke test automatically and retain Compose state
+and service logs as a failure artifact.
 
 See the server README for module boundaries, ports, security behavior, and migration limitations.
 
