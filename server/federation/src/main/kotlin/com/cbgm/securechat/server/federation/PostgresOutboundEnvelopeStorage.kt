@@ -35,10 +35,16 @@ internal class PostgresOutboundEnvelopeStorage(
                     val currentTime = now()
                     statement.setString(1, envelope.envelopeId)
                     statement.setString(2, serverJson.encodeToString(envelope))
-                    statement.setString(3, EnvelopeAcceptanceState.QUEUED_AT_GATEWAY.name)
-                    statement.setLong(4, currentTime)
-                    statement.setLong(5, envelope.expiresAtEpochMilliseconds)
-                    statement.setLong(6, currentTime)
+                    statement.setString(
+                        ENQUEUE_STATE_PARAMETER_INDEX,
+                        EnvelopeAcceptanceState.QUEUED_AT_GATEWAY.name
+                    )
+                    statement.setLong(ENQUEUE_NEXT_ATTEMPT_PARAMETER_INDEX, currentTime)
+                    statement.setLong(
+                        ENQUEUE_EXPIRY_PARAMETER_INDEX,
+                        envelope.expiresAtEpochMilliseconds
+                    )
+                    statement.setLong(ENQUEUE_UPDATED_AT_PARAMETER_INDEX, currentTime)
                     statement.executeUpdate()
                 }
             requireNotNull(find(connection, envelope.envelopeId))
@@ -65,9 +71,12 @@ internal class PostgresOutboundEnvelopeStorage(
                     val currentTime = now()
                     statement.setLong(1, nextAttemptAtEpochMilliseconds)
                     statement.setLong(2, currentTime)
-                    statement.setString(3, envelopeId)
-                    statement.setString(4, EnvelopeAcceptanceState.QUEUED_AT_GATEWAY.name)
-                    statement.setLong(5, currentTime)
+                    statement.setString(ENVELOPE_ID_PARAMETER_INDEX, envelopeId)
+                    statement.setString(
+                        ATTEMPT_STATE_PARAMETER_INDEX,
+                        EnvelopeAcceptanceState.QUEUED_AT_GATEWAY.name
+                    )
+                    statement.setLong(ATTEMPT_EXPIRY_PARAMETER_INDEX, currentTime)
                     statement.executeQuery().use { results ->
                         if (results.next()) results.toEntry() else null
                     }
@@ -86,7 +95,7 @@ internal class PostgresOutboundEnvelopeStorage(
                 ).use { statement ->
                     statement.setString(1, EnvelopeAcceptanceState.STORED_AT_DESTINATION.name)
                     statement.setLong(2, now())
-                    statement.setString(3, envelopeId)
+                    statement.setString(ENVELOPE_ID_PARAMETER_INDEX, envelopeId)
                     statement.executeUpdate()
                 }
         }
@@ -118,7 +127,7 @@ internal class PostgresOutboundEnvelopeStorage(
                 ).use { statement ->
                     statement.setString(1, EnvelopeAcceptanceState.QUEUED_AT_GATEWAY.name)
                     statement.setLong(2, nowEpochMilliseconds)
-                    statement.setInt(3, limit)
+                    statement.setInt(PENDING_LIMIT_PARAMETER_INDEX, limit)
                     statement.executeQuery().use { results ->
                         buildList {
                             while (results.next()) {
@@ -187,4 +196,15 @@ internal class PostgresOutboundEnvelopeStorage(
             attempts = getInt("attempts"),
             nextAttemptAtEpochMilliseconds = getLong("next_attempt_at_epoch_milliseconds")
         )
+
+    private companion object {
+        const val ENQUEUE_STATE_PARAMETER_INDEX = 3
+        const val ENQUEUE_NEXT_ATTEMPT_PARAMETER_INDEX = 4
+        const val ENQUEUE_EXPIRY_PARAMETER_INDEX = 5
+        const val ENQUEUE_UPDATED_AT_PARAMETER_INDEX = 6
+        const val ENVELOPE_ID_PARAMETER_INDEX = 3
+        const val ATTEMPT_STATE_PARAMETER_INDEX = 4
+        const val ATTEMPT_EXPIRY_PARAMETER_INDEX = 5
+        const val PENDING_LIMIT_PARAMETER_INDEX = 3
+    }
 }

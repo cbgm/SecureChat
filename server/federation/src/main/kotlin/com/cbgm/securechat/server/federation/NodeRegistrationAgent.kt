@@ -99,8 +99,15 @@ data class NodeRegistrationConfig(
     val clientEndpoint: String,
     val federationEndpoint: String,
     val mailboxEndpoint: String,
-    val descriptorLifetimeMilliseconds: Long = 10L * 60L * 1_000L,
-    val registrationRefreshMilliseconds: Long = 5L * 60L * 1_000L,
-    val heartbeatIntervalMilliseconds: Long = 30_000L,
-    val retryDelayMilliseconds: Long = 5_000L
-)
+    val descriptorLifetimeMilliseconds: Long = DEFAULT_DESCRIPTOR_LIFETIME_MILLISECONDS,
+    val registrationRefreshMilliseconds: Long = DEFAULT_REGISTRATION_REFRESH_MILLISECONDS,
+    val heartbeatIntervalMilliseconds: Long = DEFAULT_HEARTBEAT_INTERVAL_MILLISECONDS,
+    val retryDelayMilliseconds: Long = DEFAULT_RETRY_DELAY_MILLISECONDS
+) {
+    private companion object {
+        const val DEFAULT_DESCRIPTOR_LIFETIME_MILLISECONDS = 10L * 60L * 1_000L
+        const val DEFAULT_REGISTRATION_REFRESH_MILLISECONDS = 5L * 60L * 1_000L
+        const val DEFAULT_HEARTBEAT_INTERVAL_MILLISECONDS = 30_000L
+        const val DEFAULT_RETRY_DELAY_MILLISECONDS = 5_000L
+    }
+}

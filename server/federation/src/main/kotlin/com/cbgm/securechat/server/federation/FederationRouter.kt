@@ -7,6 +7,9 @@ import com.cbgm.securechat.server.protocol.FederationAcknowledgement
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+private const val DEFAULT_RETRY_BASE_DELAY_MILLISECONDS = 5_000L
+private const val DEFAULT_RETRY_MAXIMUM_DELAY_MILLISECONDS = 5L * 60L * 1_000L
+
 class FederationRouter(
     private val localNodeId: String,
     private val presenceDirectory: PresenceDirectoryClient,
@@ -18,8 +21,8 @@ class FederationRouter(
     private val remoteTypingFederation: RemoteTypingFederationClient =
         RemoteTypingFederationClient { _, _ -> false },
     private val queue: OutboundEnvelopeStorage = OutboundEnvelopeQueue(),
-    private val retryBaseDelayMilliseconds: Long = 5_000L,
-    private val retryMaximumDelayMilliseconds: Long = 5L * 60L * 1_000L,
+    private val retryBaseDelayMilliseconds: Long = DEFAULT_RETRY_BASE_DELAY_MILLISECONDS,
+    private val retryMaximumDelayMilliseconds: Long = DEFAULT_RETRY_MAXIMUM_DELAY_MILLISECONDS,
     private val now: () -> Long = System::currentTimeMillis
 ) {
     private val deliveryMutex = Mutex()
@@ -91,23 +94,25 @@ class FederationRouter(
 
     private suspend fun deliver(entry: OutboundEnvelopeEntry): FederationAcknowledgement {
         val nextAttemptAt = now() + retryDelay(entry.attempts)
-        val attempted =
-            queue.markAttempt(entry.envelope.envelopeId, nextAttemptAt)
-                ?: return FederationAcknowledgement(
-                    entry.envelope.envelopeId,
-                    EnvelopeAcceptanceState.QUEUED_AT_GATEWAY
-                )
-        val onlineAcknowledgement = routeOnline(attempted.envelope)
-        val acknowledgement = onlineAcknowledgement ?: storeInMailbox(attempted.envelope)
-        if (acknowledgement?.state == EnvelopeAcceptanceState.STORED_AT_DESTINATION) {
-            queue.markStored(attempted.envelope.envelopeId)
-            return acknowledgement
+        val attempted = queue.markAttempt(entry.envelope.envelopeId, nextAttemptAt)
+        val acknowledgement =
+            attempted?.let { candidate ->
+                routeOnline(candidate.envelope) ?: storeInMailbox(candidate.envelope)
+            }
+        val storedAcknowledgement =
+            acknowledgement?.takeIf {
+                it.state == EnvelopeAcceptanceState.STORED_AT_DESTINATION
+            }
+
+        if (storedAcknowledgement != null) {
+            queue.markStored(entry.envelope.envelopeId)
         }
 
-        return FederationAcknowledgement(
-            attempted.envelope.envelopeId,
-            EnvelopeAcceptanceState.QUEUED_AT_GATEWAY
-        )
+        return storedAcknowledgement
+            ?: FederationAcknowledgement(
+                entry.envelope.envelopeId,
+                EnvelopeAcceptanceState.QUEUED_AT_GATEWAY
+            )
     }
 
     private fun retryDelay(completedAttempts: Int): Long {
