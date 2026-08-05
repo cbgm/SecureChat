@@ -119,7 +119,11 @@ internal class PostgresMailboxStore(
                 if (queries.contains(connection, mailboxId, envelope.envelopeId)) {
                     return@inMailboxTransaction MailboxResult.Stored(duplicate = true)
                 }
-                if (queries.storedBytes(connection, mailboxId) + payloadBytes > maximumMailboxBytes) {
+                if (queries.storedBytes(
+                        connection,
+                        mailboxId
+                    ) + payloadBytes > maximumMailboxBytes
+                ) {
                     return@inMailboxTransaction MailboxResult.Rejected("MAILBOX_QUOTA_EXCEEDED")
                 }
 
@@ -238,10 +242,12 @@ internal class PostgresMailboxStore(
                 if (!matches(retrievalCapability, mailbox.retrievalCapabilityHash)) {
                     return@inMailboxTransaction MailboxRevocationResult.Unauthorized
                 }
-                connection.prepareStatement("DELETE FROM mailboxes WHERE mailbox_id = ?").use { statement ->
-                    statement.setString(1, mailboxId)
-                    statement.executeUpdate()
-                }
+                connection
+                    .prepareStatement("DELETE FROM mailboxes WHERE mailbox_id = ?")
+                    .use { statement ->
+                        statement.setString(1, mailboxId)
+                        statement.executeUpdate()
+                    }
                 MailboxRevocationResult.Revoked
             }
         }
