@@ -7,6 +7,9 @@ import java.net.http.HttpResponse
 import java.time.Duration
 import kotlin.system.exitProcess
 
+private const val HTTP_SUCCESS_MINIMUM = 200
+private const val HTTP_SUCCESS_MAXIMUM = 299
+
 object ReadinessProbe {
     @JvmStatic
     fun main(args: Array<String>) {
@@ -27,6 +30,6 @@ object ReadinessProbe {
                     .statusCode()
             }.getOrDefault(0)
 
-        exitProcess(if (statusCode in 200..299) 0 else 1)
+        exitProcess(if (statusCode in HTTP_SUCCESS_MINIMUM..HTTP_SUCCESS_MAXIMUM) 0 else 1)
     }
 }

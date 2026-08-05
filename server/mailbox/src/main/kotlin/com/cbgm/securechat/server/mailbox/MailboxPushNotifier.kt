@@ -14,13 +14,17 @@ class MailboxPushNotifier private constructor(
     private val internalToken: String?
 ) : AutoCloseable {
     suspend fun notify(recipientId: String): Boolean {
-        val client = httpClient ?: return false
-        val url = baseUrl ?: return false
-        return client
-            .post("${url.trimEnd('/')}/internal/v1/wake-ups/$recipientId") {
-                internalToken?.let { header(InternalApiAuthentication.TOKEN_HEADER, it) }
-            }.status
-            .isSuccess()
+        val client = httpClient
+        val pushBaseUrl = baseUrl
+        return if (client != null && pushBaseUrl != null) {
+            client
+                .post("${pushBaseUrl.trimEnd('/')}/internal/v1/wake-ups/$recipientId") {
+                    internalToken?.let { header(InternalApiAuthentication.TOKEN_HEADER, it) }
+                }.status
+                .isSuccess()
+        } else {
+            false
+        }
     }
 
     override fun close() {

@@ -72,13 +72,14 @@ class GroupVerificationCoordinator(
                     return@withLock
                 }
 
-                if (securityState.ownerContactId == null) {
+                val ownerContactId = securityState.ownerContactId
+                if (ownerContactId == null) {
                     refreshOwnedStateLocked(groupId)
                     broadcastSnapshotLocked(groupId)
                 } else {
                     enqueueSnapshotRequestLocked(
                         groupId = groupId,
-                        ownerContactId = securityState.ownerContactId!!
+                        ownerContactId = ownerContactId
                     )
                 }
             }

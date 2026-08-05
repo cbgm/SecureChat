@@ -24,7 +24,8 @@ interface MailboxStorage : AutoCloseable {
         ) {
             is MailboxCreationResult.Created -> result.response
             MailboxCreationResult.GlobalQuotaExceeded,
-            MailboxCreationResult.OwnerQuotaExceeded -> error("Unlimited mailbox creation was rejected")
+            MailboxCreationResult.OwnerQuotaExceeded ->
+                error("Unlimited mailbox creation was rejected")
         }
 
     suspend fun createWithQuota(
@@ -60,19 +61,11 @@ interface MailboxStorage : AutoCloseable {
 }
 
 class MailboxStore(
-    private val maximumEnvelopeBytes: Int = 1_048_576,
-    private val maximumMailboxBytes: Long = 100L * 1_048_576L,
+    private val maximumEnvelopeBytes: Int = DEFAULT_MAXIMUM_ENVELOPE_BYTES,
+    private val maximumMailboxBytes: Long = DEFAULT_MAXIMUM_MAILBOX_BYTES,
     private val now: () -> Long = System::currentTimeMillis
 ) : MailboxStorage {
-    private data class Mailbox(
-        val ownerKeyHash: String,
-        val sendCapabilityHash: ByteArray,
-        val retrievalCapabilityHash: ByteArray,
-        val expiresAtEpochMilliseconds: Long,
-        val envelopes: ConcurrentHashMap<String, FederatedEnvelope> = ConcurrentHashMap()
-    )
-
-    private val mailboxes = ConcurrentHashMap<String, Mailbox>()
+    private val mailboxes = ConcurrentHashMap<String, InMemoryMailbox>()
     private val secureRandom = SecureRandom()
     private val creationLock = Any()
 
@@ -87,7 +80,7 @@ class MailboxStore(
         synchronized(creationLock) {
             require(request.expiresAtEpochMilliseconds > now())
             validateCreation(ownerKeyHash, maximumMailboxes, maximumMailboxesPerOwner)
-            purgeExpiredMailboxes()
+            purgeExpiredMailboxes(mailboxes, now())
             if (mailboxes.size >= maximumMailboxes) {
                 return@synchronized MailboxCreationResult.GlobalQuotaExceeded
             }
@@ -98,14 +91,14 @@ class MailboxStore(
                 return@synchronized MailboxCreationResult.OwnerQuotaExceeded
             }
 
-            val mailboxId = randomToken()
-            val sendCapability = randomToken()
-            val retrievalCapability = randomToken()
+            val mailboxId = randomToken(secureRandom)
+            val sendCapability = randomToken(secureRandom)
+            val retrievalCapability = randomToken(secureRandom)
             mailboxes[mailboxId] =
-                Mailbox(
+                InMemoryMailbox(
                     ownerKeyHash = ownerKeyHash,
-                    sendCapabilityHash = hash(sendCapability),
-                    retrievalCapabilityHash = hash(retrievalCapability),
+                    sendCapabilityHash = hashCapability(sendCapability),
+                    retrievalCapabilityHash = hashCapability(retrievalCapability),
                     expiresAtEpochMilliseconds = request.expiresAtEpochMilliseconds
                 )
 
@@ -113,7 +106,7 @@ class MailboxStore(
                 CreateMailboxResponse(
                     deliveryRoute =
                         DeliveryRoute(
-                            routeId = randomToken(),
+                            routeId = randomToken(secureRandom),
                             nodeId = request.nodeId,
                             nodeEndpoint = request.nodeEndpoint,
                             mailboxId = mailboxId,
@@ -132,46 +125,39 @@ class MailboxStore(
         sendCapability: String,
         envelope: FederatedEnvelope
     ): MailboxResult {
-        val mailbox = activeMailbox(mailboxId) ?: return MailboxResult.Rejected("MAILBOX_NOT_FOUND")
-        if (!matches(sendCapability, mailbox.sendCapabilityHash)) {
-            return MailboxResult.Rejected("INVALID_CAPABILITY")
-        }
-        if (envelope.expiresAtEpochMilliseconds <= now()) {
-            return MailboxResult.Rejected("ENVELOPE_EXPIRED")
-        }
-        if (envelope.encryptedPayload.encodeToByteArray().size > maximumEnvelopeBytes) {
-            return MailboxResult.Rejected("ENVELOPE_TOO_LARGE")
-        }
-        if (envelope.mailboxRoute?.mailboxId != mailboxId) {
-            return MailboxResult.Rejected("MAILBOX_ROUTE_MISMATCH")
-        }
+        val mailbox = activeMailbox(mailboxId)
+        return when {
+            mailbox == null -> MailboxResult.Rejected("MAILBOX_NOT_FOUND")
+            !capabilityMatches(sendCapability, mailbox.sendCapabilityHash) ->
+                MailboxResult.Rejected("INVALID_CAPABILITY")
 
-        purgeExpired(mailbox)
-        val duplicate = mailbox.envelopes.containsKey(envelope.envelopeId)
-        val projectedBytes =
-            mailbox.envelopes.values.sumOf {
-                it.encryptedPayload
-                    .encodeToByteArray()
-                    .size
-                    .toLong()
-            } + envelope.encryptedPayload.encodeToByteArray().size
-        if (!duplicate && projectedBytes > maximumMailboxBytes) {
-            return MailboxResult.Rejected("MAILBOX_QUOTA_EXCEEDED")
+            envelope.expiresAtEpochMilliseconds <= now() ->
+                MailboxResult.Rejected("ENVELOPE_EXPIRED")
+
+            envelope.encryptedPayload.encodeToByteArray().size > maximumEnvelopeBytes ->
+                MailboxResult.Rejected("ENVELOPE_TOO_LARGE")
+
+            envelope.mailboxRoute?.mailboxId != mailboxId ->
+                MailboxResult.Rejected("MAILBOX_ROUTE_MISMATCH")
+
+            else -> storeValidatedEnvelope(mailbox, envelope)
         }
-        mailbox.envelopes.putIfAbsent(envelope.envelopeId, envelope)
-        return MailboxResult.Stored(duplicate)
     }
 
     override suspend fun pending(
         mailboxId: String,
         retrievalCapability: String
     ): List<FederatedEnvelope>? {
-        val mailbox = activeMailbox(mailboxId) ?: return null
-        if (!matches(retrievalCapability, mailbox.retrievalCapabilityHash)) {
-            return null
+        val mailbox = activeMailbox(mailboxId)
+        return if (
+            mailbox != null &&
+            capabilityMatches(retrievalCapability, mailbox.retrievalCapabilityHash)
+        ) {
+            purgeExpiredEnvelopes(mailbox, now())
+            mailbox.envelopes.values.sortedBy(FederatedEnvelope::createdAtEpochMilliseconds)
+        } else {
+            null
         }
-        purgeExpired(mailbox)
-        return mailbox.envelopes.values.sortedBy(FederatedEnvelope::createdAtEpochMilliseconds)
     }
 
     override suspend fun acknowledge(
@@ -179,65 +165,75 @@ class MailboxStore(
         retrievalCapability: String,
         envelopeId: String
     ): Boolean {
-        val mailbox = activeMailbox(mailboxId) ?: return false
-        if (!matches(retrievalCapability, mailbox.retrievalCapabilityHash)) {
-            return false
+        val mailbox = activeMailbox(mailboxId)
+        return if (
+            mailbox != null &&
+            capabilityMatches(retrievalCapability, mailbox.retrievalCapabilityHash)
+        ) {
+            mailbox.envelopes.remove(envelopeId)
+            true
+        } else {
+            false
         }
-        mailbox.envelopes.remove(envelopeId)
-        return true
     }
 
     override suspend fun revoke(
         mailboxId: String,
         retrievalCapability: String
     ): MailboxRevocationResult {
-        val mailbox = activeMailbox(mailboxId) ?: return MailboxRevocationResult.NotFound
-        if (!matches(retrievalCapability, mailbox.retrievalCapabilityHash)) {
-            return MailboxRevocationResult.Unauthorized
+        val mailbox = activeMailbox(mailboxId)
+        return when {
+            mailbox == null -> MailboxRevocationResult.NotFound
+            !capabilityMatches(retrievalCapability, mailbox.retrievalCapabilityHash) ->
+                MailboxRevocationResult.Unauthorized
+
+            else -> {
+                mailboxes.remove(mailboxId, mailbox)
+                MailboxRevocationResult.Revoked
+            }
         }
-        mailboxes.remove(mailboxId, mailbox)
-        return MailboxRevocationResult.Revoked
     }
 
     override suspend fun mailboxCount(): Int {
-        purgeExpiredMailboxes()
+        purgeExpiredMailboxes(mailboxes, now())
         return mailboxes.size
     }
 
     override fun close() = Unit
 
-    private fun activeMailbox(mailboxId: String): Mailbox? {
-        val mailbox = mailboxes[mailboxId] ?: return null
-        if (mailbox.expiresAtEpochMilliseconds <= now()) {
+    private fun activeMailbox(mailboxId: String): InMemoryMailbox? {
+        val mailbox = mailboxes[mailboxId]
+        return if (mailbox != null && mailbox.expiresAtEpochMilliseconds <= now()) {
             mailboxes.remove(mailboxId, mailbox)
-            return null
+            null
+        } else {
+            mailbox
         }
-        return mailbox
     }
 
-    private fun purgeExpired(mailbox: Mailbox) {
-        val currentTime = now()
-        mailbox.envelopes.entries.removeIf { (_, envelope) -> envelope.expiresAtEpochMilliseconds <= currentTime }
+    private fun storeValidatedEnvelope(
+        mailbox: InMemoryMailbox,
+        envelope: FederatedEnvelope
+    ): MailboxResult {
+        purgeExpiredEnvelopes(mailbox, now())
+        val duplicate = mailbox.envelopes.containsKey(envelope.envelopeId)
+        val projectedBytes = mailbox.storedPayloadBytes() + envelope.payloadBytes()
+        return if (!duplicate && projectedBytes > maximumMailboxBytes) {
+            MailboxResult.Rejected("MAILBOX_QUOTA_EXCEEDED")
+        } else {
+            mailbox.envelopes.putIfAbsent(envelope.envelopeId, envelope)
+            MailboxResult.Stored(duplicate)
+        }
     }
-
-    private fun purgeExpiredMailboxes() {
-        val currentTime = now()
-        mailboxes.entries.removeIf { (_, mailbox) -> mailbox.expiresAtEpochMilliseconds <= currentTime }
-    }
-
-    private fun randomToken(): String {
-        val bytes = ByteArray(32)
-        secureRandom.nextBytes(bytes)
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
-    }
-
-    private fun hash(value: String): ByteArray = MessageDigest.getInstance("SHA-256").digest(value.encodeToByteArray())
-
-    private fun matches(
-        capability: String,
-        expectedHash: ByteArray
-    ): Boolean = MessageDigest.isEqual(hash(capability), expectedHash)
 }
+
+private data class InMemoryMailbox(
+    val ownerKeyHash: String,
+    val sendCapabilityHash: ByteArray,
+    val retrievalCapabilityHash: ByteArray,
+    val expiresAtEpochMilliseconds: Long,
+    val envelopes: ConcurrentHashMap<String, FederatedEnvelope> = ConcurrentHashMap()
+)
 
 sealed interface MailboxResult {
     data class Stored(
@@ -277,4 +273,43 @@ private fun validateCreation(
     require(maximumMailboxesPerOwner > 0) { "Per-owner mailbox count must be positive" }
 }
 
+private fun purgeExpiredEnvelopes(
+    mailbox: InMemoryMailbox,
+    currentTime: Long
+) {
+    mailbox.envelopes.entries.removeIf { (_, envelope) ->
+        envelope.expiresAtEpochMilliseconds <= currentTime
+    }
+}
+
+private fun purgeExpiredMailboxes(
+    mailboxes: ConcurrentHashMap<String, InMemoryMailbox>,
+    currentTime: Long
+) {
+    mailboxes.entries.removeIf { (_, mailbox) ->
+        mailbox.expiresAtEpochMilliseconds <= currentTime
+    }
+}
+
+private fun InMemoryMailbox.storedPayloadBytes(): Long = envelopes.values.sumOf(FederatedEnvelope::payloadBytes)
+
+private fun FederatedEnvelope.payloadBytes(): Long = encryptedPayload.encodeToByteArray().size.toLong()
+
+private fun randomToken(secureRandom: SecureRandom): String {
+    val bytes = ByteArray(CAPABILITY_TOKEN_BYTES)
+    secureRandom.nextBytes(bytes)
+    return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+}
+
+private fun hashCapability(value: String): ByteArray = MessageDigest.getInstance(CAPABILITY_HASH_ALGORITHM).digest(value.encodeToByteArray())
+
+private fun capabilityMatches(
+    capability: String,
+    expectedHash: ByteArray
+): Boolean = MessageDigest.isEqual(hashCapability(capability), expectedHash)
+
 private const val UNATTRIBUTED_OWNER = "unattributed"
+private const val DEFAULT_MAXIMUM_ENVELOPE_BYTES = 1_048_576
+private const val DEFAULT_MAXIMUM_MAILBOX_BYTES = 100L * DEFAULT_MAXIMUM_ENVELOPE_BYTES
+private const val CAPABILITY_TOKEN_BYTES = 32
+private const val CAPABILITY_HASH_ALGORITHM = "SHA-256"

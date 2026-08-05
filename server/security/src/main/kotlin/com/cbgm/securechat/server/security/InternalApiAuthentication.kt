@@ -8,16 +8,13 @@ object InternalApiAuthentication {
     fun isAuthorized(
         expectedToken: String?,
         presentedToken: String?
-    ): Boolean {
-        if (expectedToken == null) {
-            return true
-        }
-        if (presentedToken == null) {
-            return false
-        }
-        return MessageDigest.isEqual(
-            expectedToken.encodeToByteArray(),
-            presentedToken.encodeToByteArray()
-        )
-    }
+    ): Boolean =
+        expectedToken?.let { expected ->
+            presentedToken?.let { presented ->
+                MessageDigest.isEqual(
+                    expected.encodeToByteArray(),
+                    presented.encodeToByteArray()
+                )
+            } ?: false
+        } ?: true
 }

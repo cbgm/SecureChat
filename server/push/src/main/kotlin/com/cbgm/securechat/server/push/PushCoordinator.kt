@@ -5,11 +5,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+private const val DEFAULT_FALLBACK_DELAY_MILLISECONDS = 5_000L
+
 class PushCoordinator(
     private val pendingEnvelopes: PendingEnvelopeStore,
     private val sender: FirebasePushSender,
     private val scope: CoroutineScope,
-    private val fallbackDelayMilliseconds: Long = 5_000L
+    private val fallbackDelayMilliseconds: Long = DEFAULT_FALLBACK_DELAY_MILLISECONDS
 ) {
     fun resumePendingNotifications() {
         scope.launch {

@@ -106,12 +106,13 @@ internal fun <T> Connection.inNodeRegistryTransaction(block: () -> T): T {
     autoCommit = false
 
     return try {
-        val result = block()
-        commit()
-        result
-    } catch (error: Throwable) {
-        rollback()
-        throw error
+        runCatching {
+            val result = block()
+            commit()
+            result
+        }.onFailure {
+            rollback()
+        }.getOrThrow()
     } finally {
         autoCommit = previousAutoCommit
     }

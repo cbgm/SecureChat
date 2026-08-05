@@ -6,6 +6,9 @@ import com.cbgm.securechat.server.security.ProtocolSignatures
 import com.cbgm.securechat.server.security.ReplayProtection
 import java.util.concurrent.ConcurrentHashMap
 
+private const val DEFAULT_HEARTBEAT_GRACE_MILLISECONDS = 90_000L
+private const val DEFAULT_REPLAY_RETENTION_MILLISECONDS = 5L * 60L * 1_000L
+
 interface NodeRegistryStorage : AutoCloseable {
     val persistenceMode: String
 
@@ -20,8 +23,8 @@ interface NodeRegistryStorage : AutoCloseable {
 
 class NodeRegistryStore(
     private val supportedProtocolVersions: Set<Int> = setOf(1),
-    private val heartbeatGraceMilliseconds: Long = 90_000L,
-    replayRetentionMilliseconds: Long = 5L * 60L * 1_000L,
+    private val heartbeatGraceMilliseconds: Long = DEFAULT_HEARTBEAT_GRACE_MILLISECONDS,
+    replayRetentionMilliseconds: Long = DEFAULT_REPLAY_RETENTION_MILLISECONDS,
     private val now: () -> Long = System::currentTimeMillis
 ) : NodeRegistryStorage {
     private data class RegisteredNode(
@@ -40,23 +43,45 @@ class NodeRegistryStore(
 
     override suspend fun register(descriptor: SecureChatNodeDescriptor): RegistrationResult {
         val currentTime = now()
-        validateNodeDescriptor(descriptor, supportedProtocolVersions, currentTime)?.let { return it }
+        val rejection =
+            validateNodeDescriptor(
+                descriptor = descriptor,
+                supportedProtocolVersions = supportedProtocolVersions,
+                currentTime = currentTime
+            )
 
-        nodes[descriptor.nodeId] = RegisteredNode(descriptor, currentTime)
-        return RegistrationResult.Accepted
+        return if (rejection == null) {
+            nodes[descriptor.nodeId] = RegisteredNode(descriptor, currentTime)
+            RegistrationResult.Accepted
+        } else {
+            rejection
+        }
     }
 
     override suspend fun heartbeat(heartbeat: NodeHeartbeatRequest): RegistrationResult {
-        val registered = nodes[heartbeat.nodeId] ?: return RegistrationResult.Rejected("NODE_NOT_REGISTERED")
-        if (!replayProtection.accept(heartbeat.nodeId, heartbeat.nonce, heartbeat.timestampEpochMilliseconds)) {
-            return RegistrationResult.Rejected("STALE_OR_REPLAYED_HEARTBEAT")
-        }
-        if (!ProtocolSignatures.verifyHeartbeat(heartbeat, registered.descriptor)) {
-            return RegistrationResult.Rejected("INVALID_SIGNATURE")
-        }
+        val registered = nodes[heartbeat.nodeId]
+        return when {
+            registered == null ->
+                RegistrationResult.Rejected("NODE_NOT_REGISTERED")
 
-        nodes[heartbeat.nodeId] = registered.copy(lastHeartbeatAtEpochMilliseconds = now())
-        return RegistrationResult.Accepted
+            !replayProtection.accept(
+                scope = heartbeat.nodeId,
+                nonce = heartbeat.nonce,
+                timestampEpochMilliseconds = heartbeat.timestampEpochMilliseconds
+            ) ->
+                RegistrationResult.Rejected("STALE_OR_REPLAYED_HEARTBEAT")
+
+            !ProtocolSignatures.verifyHeartbeat(heartbeat, registered.descriptor) ->
+                RegistrationResult.Rejected("INVALID_SIGNATURE")
+
+            else -> {
+                nodes[heartbeat.nodeId] =
+                    registered.copy(
+                        lastHeartbeatAtEpochMilliseconds = now()
+                    )
+                RegistrationResult.Accepted
+            }
+        }
     }
 
     override suspend fun healthyNodes(): List<SecureChatNodeDescriptor> {
@@ -64,13 +89,18 @@ class NodeRegistryStore(
         return nodes.values
             .asSequence()
             .filter { it.descriptor.validUntilEpochMilliseconds > currentTime }
-            .filter { currentTime - it.lastHeartbeatAtEpochMilliseconds <= heartbeatGraceMilliseconds }
-            .map(RegisteredNode::descriptor)
+            .filter {
+                currentTime - it.lastHeartbeatAtEpochMilliseconds <=
+                    heartbeatGraceMilliseconds
+            }.map(RegisteredNode::descriptor)
             .sortedBy(SecureChatNodeDescriptor::nodeId)
             .toList()
     }
 
-    override suspend fun findHealthy(nodeId: String): SecureChatNodeDescriptor? = healthyNodes().firstOrNull { it.nodeId == nodeId }
+    override suspend fun findHealthy(nodeId: String): SecureChatNodeDescriptor? =
+        healthyNodes().firstOrNull { descriptor ->
+            descriptor.nodeId == nodeId
+        }
 
     override fun close() = Unit
 }
@@ -79,18 +109,19 @@ internal fun validateNodeDescriptor(
     descriptor: SecureChatNodeDescriptor,
     supportedProtocolVersions: Set<Int>,
     currentTime: Long
-): RegistrationResult.Rejected? {
-    if (!ProtocolSignatures.verifyDescriptor(descriptor)) {
-        return RegistrationResult.Rejected("INVALID_SIGNATURE")
+): RegistrationResult.Rejected? =
+    when {
+        !ProtocolSignatures.verifyDescriptor(descriptor) ->
+            RegistrationResult.Rejected("INVALID_SIGNATURE")
+
+        descriptor.validUntilEpochMilliseconds <= currentTime ->
+            RegistrationResult.Rejected("DESCRIPTOR_EXPIRED")
+
+        descriptor.protocolVersions.intersect(supportedProtocolVersions).isEmpty() ->
+            RegistrationResult.Rejected("INCOMPATIBLE_PROTOCOL")
+
+        else -> null
     }
-    if (descriptor.validUntilEpochMilliseconds <= currentTime) {
-        return RegistrationResult.Rejected("DESCRIPTOR_EXPIRED")
-    }
-    if (descriptor.protocolVersions.intersect(supportedProtocolVersions).isEmpty()) {
-        return RegistrationResult.Rejected("INCOMPATIBLE_PROTOCOL")
-    }
-    return null
-}
 
 internal fun isHeartbeatFresh(
     heartbeat: NodeHeartbeatRequest,
@@ -98,7 +129,8 @@ internal fun isHeartbeatFresh(
     currentTime: Long
 ): Boolean =
     heartbeat.nonce.isNotBlank() &&
-        kotlin.math.abs(currentTime - heartbeat.timestampEpochMilliseconds) <= replayRetentionMilliseconds
+        kotlin.math.abs(currentTime - heartbeat.timestampEpochMilliseconds) <=
+        replayRetentionMilliseconds
 
 sealed interface RegistrationResult {
     data object Accepted : RegistrationResult

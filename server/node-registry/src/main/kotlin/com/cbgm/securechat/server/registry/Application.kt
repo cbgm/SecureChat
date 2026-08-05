@@ -30,6 +30,8 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import java.nio.file.Path
 
+private const val DEFAULT_NODE_REGISTRY_PORT = 8090
+
 fun main() {
     val identity =
         NodeIdentityStore(
@@ -39,7 +41,7 @@ fun main() {
     embeddedServer(
         factory = Netty,
         host = "0.0.0.0",
-        port = ServiceEnvironment.int("PORT", 8090),
+        port = ServiceEnvironment.int("PORT", DEFAULT_NODE_REGISTRY_PORT),
         module = { nodeRegistryModule(identity) }
     ).start(wait = true)
 }

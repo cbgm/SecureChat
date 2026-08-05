@@ -7,6 +7,8 @@ import com.cbgm.securechat.server.security.ClientRoutingIds
 import com.cbgm.securechat.server.security.ProtocolSignatures
 import java.util.concurrent.ConcurrentHashMap
 
+private const val DEFAULT_MAXIMUM_TTL_MILLISECONDS = 120_000L
+
 interface PresenceStorage : AutoCloseable {
     val persistenceMode: String
 
@@ -23,7 +25,7 @@ interface PresenceStorage : AutoCloseable {
 }
 
 class PresenceStore(
-    private val maximumTtlMilliseconds: Long = 120_000L,
+    private val maximumTtlMilliseconds: Long = DEFAULT_MAXIMUM_TTL_MILLISECONDS,
     private val now: () -> Long = System::currentTimeMillis
 ) : PresenceStorage {
     private val routes = ConcurrentHashMap<String, ConcurrentHashMap<String, ClientRoute>>()
@@ -33,18 +35,31 @@ class PresenceStore(
     override suspend fun register(registration: ClientRouteRegistration): PresenceResult {
         val route = registration.route
         val currentTime = now()
-        validatePresenceRegistration(registration, maximumTtlMilliseconds, currentTime)?.let { return it }
+        val rejection =
+            validatePresenceRegistration(
+                registration = registration,
+                maximumTtlMilliseconds = maximumTtlMilliseconds,
+                currentTime = currentTime
+            )
+        if (rejection != null) {
+            return rejection
+        }
 
         val deviceRoutes = routes.computeIfAbsent(route.routingId) { ConcurrentHashMap() }
         val newestGeneration = deviceRoutes.values.maxOfOrNull(ClientRoute::generation) ?: -1L
-        if (route.generation < newestGeneration) {
-            return PresenceResult.Rejected("STALE_GENERATION")
+
+        return when {
+            route.generation < newestGeneration ->
+                PresenceResult.Rejected("STALE_GENERATION")
+
+            else -> {
+                if (route.generation > newestGeneration) {
+                    deviceRoutes.clear()
+                }
+                deviceRoutes[route.connectionId] = route
+                PresenceResult.Accepted
+            }
         }
-        if (route.generation > newestGeneration) {
-            deviceRoutes.clear()
-        }
-        deviceRoutes[route.connectionId] = route
-        return PresenceResult.Accepted
     }
 
     override suspend fun remove(
@@ -69,13 +84,17 @@ class PresenceStore(
 
     override suspend fun routeCount(): Int {
         purgeExpired()
-        return routes.values.sumOf { it.size }
+        return routes.values.sumOf { deviceRoutes ->
+            deviceRoutes.size
+        }
     }
 
     private fun purgeExpired() {
         val currentTime = now()
         routes.forEach { (routingId, deviceRoutes) ->
-            deviceRoutes.entries.removeIf { (_, route) -> route.expiresAtEpochMilliseconds <= currentTime }
+            deviceRoutes.entries.removeIf { (_, route) ->
+                route.expiresAtEpochMilliseconds <= currentTime
+            }
             if (deviceRoutes.isEmpty()) {
                 routes.remove(routingId, deviceRoutes)
             }
@@ -91,19 +110,27 @@ internal fun validatePresenceRegistration(
     currentTime: Long
 ): PresenceResult.Rejected? {
     val route = registration.route
-    if (!ClientRoutingIds.matchesSigningPublicKey(route.routingId, registration.clientSigningPublicKey)) {
-        return PresenceResult.Rejected("INVALID_ROUTING_ID")
+    return when {
+        !ClientRoutingIds.matchesSigningPublicKey(
+            route.routingId,
+            registration.clientSigningPublicKey
+        ) ->
+            PresenceResult.Rejected("INVALID_ROUTING_ID")
+
+        route.expiresAtEpochMilliseconds <= currentTime ->
+            PresenceResult.Rejected("ROUTE_EXPIRED")
+
+        route.expiresAtEpochMilliseconds - currentTime > maximumTtlMilliseconds ->
+            PresenceResult.Rejected("TTL_TOO_LONG")
+
+        !ProtocolSignatures.verifyClientRoute(
+            route,
+            registration.clientSigningPublicKey
+        ) ->
+            PresenceResult.Rejected("INVALID_SIGNATURE")
+
+        else -> null
     }
-    if (route.expiresAtEpochMilliseconds <= currentTime) {
-        return PresenceResult.Rejected("ROUTE_EXPIRED")
-    }
-    if (route.expiresAtEpochMilliseconds - currentTime > maximumTtlMilliseconds) {
-        return PresenceResult.Rejected("TTL_TOO_LONG")
-    }
-    if (!ProtocolSignatures.verifyClientRoute(route, registration.clientSigningPublicKey)) {
-        return PresenceResult.Rejected("INVALID_SIGNATURE")
-    }
-    return null
 }
 
 sealed interface PresenceResult {

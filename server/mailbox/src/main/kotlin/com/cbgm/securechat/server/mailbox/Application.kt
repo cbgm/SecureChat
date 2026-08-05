@@ -2,42 +2,23 @@ package com.cbgm.securechat.server.mailbox
 
 import com.cbgm.securechat.server.observability.installServerObservability
 import com.cbgm.securechat.server.persistence.ServiceEnvironment
-import com.cbgm.securechat.server.protocol.CreateMailboxRequest
-import com.cbgm.securechat.server.protocol.EnvelopeAcceptanceState
-import com.cbgm.securechat.server.protocol.ErrorResponse
-import com.cbgm.securechat.server.protocol.FederationAcknowledgement
-import com.cbgm.securechat.server.protocol.MailboxEnvelopeRequest
-import com.cbgm.securechat.server.protocol.MailboxEnvelopesResponse
 import com.cbgm.securechat.server.protocol.serverJson
 import com.cbgm.securechat.server.security.BoundedRateLimiter
 import com.cbgm.securechat.server.security.RateLimitPolicy
-import com.cbgm.securechat.server.security.enforceRateLimit
-import com.cbgm.securechat.server.security.hashedClientAddress
-import com.cbgm.securechat.server.security.respondTooManyRequests
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
-import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
-import io.ktor.server.request.receive
-import io.ktor.server.response.respond
-import io.ktor.server.response.respondText
-import io.ktor.server.routing.delete
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
-import io.ktor.server.routing.routing
 
 fun main() {
     embeddedServer(
         factory = Netty,
         host = "0.0.0.0",
-        port = ServiceEnvironment.int("PORT", 8092),
+        port = ServiceEnvironment.int("PORT", DEFAULT_MAILBOX_PORT),
         module = { mailboxModule() }
     ).start(wait = true)
 }
@@ -47,12 +28,30 @@ fun Application.mailboxModule(
     store: MailboxStorage = createMailboxStorage(config),
     pushNotifier: MailboxPushNotifier = MailboxPushNotifier.fromEnvironment()
 ) {
-    val creationRateLimiter = BoundedRateLimiter(config.creationRateLimit)
+    configureMailboxLifecycle(store, pushNotifier)
+    configureMailboxPlugins(config, store)
+    configureMailboxRoutes(
+        config = config,
+        store = store,
+        pushNotifier = pushNotifier,
+        creationRateLimiter = BoundedRateLimiter(config.creationRateLimit)
+    )
+}
+
+private fun Application.configureMailboxLifecycle(
+    store: MailboxStorage,
+    pushNotifier: MailboxPushNotifier
+) {
     monitor.subscribe(ApplicationStopped) {
         store.close()
         pushNotifier.close()
     }
+}
 
+private fun Application.configureMailboxPlugins(
+    config: MailboxConfig,
+    store: MailboxStorage
+) {
     installServerObservability("mailbox") {
         store.mailboxCount()
         true
@@ -60,111 +59,6 @@ fun Application.mailboxModule(
     install(ContentNegotiation) { json(serverJson) }
     if (config.trustProxyHeaders) {
         install(XForwardedHeaders)
-    }
-
-    routing {
-        get("/health") {
-            call.respondText(
-                "ok persistence=${store.persistenceMode} mailboxes=${store.mailboxCount()}"
-            )
-        }
-
-        post("/v1/mailboxes") {
-            if (!call.enforceRateLimit(creationRateLimiter)) {
-                return@post
-            }
-            when (
-                val result =
-                    store.createWithQuota(
-                        request = call.receive<CreateMailboxRequest>(),
-                        ownerKeyHash = call.hashedClientAddress(),
-                        maximumMailboxes = config.maximumMailboxes,
-                        maximumMailboxesPerOwner = config.maximumMailboxesPerClient
-                    )
-            ) {
-                is MailboxCreationResult.Created ->
-                    call.respond(HttpStatusCode.Created, result.response)
-
-                MailboxCreationResult.OwnerQuotaExceeded ->
-                    call.respondTooManyRequests(
-                        retryAfterSeconds =
-                            (config.creationRateLimit.windowMilliseconds / 1_000L)
-                                .coerceAtLeast(1L),
-                        code = "MAILBOX_CLIENT_QUOTA_EXCEEDED",
-                        message = "Active mailbox quota exceeded"
-                    )
-
-                MailboxCreationResult.GlobalQuotaExceeded ->
-                    call.respond(
-                        HttpStatusCode.InsufficientStorage,
-                        ErrorResponse(
-                            code = "MAILBOX_GLOBAL_QUOTA_EXCEEDED",
-                            message = "Mailbox service capacity exhausted"
-                        )
-                    )
-            }
-        }
-
-        post("/v1/mailboxes/{mailboxId}/envelopes") {
-            val mailboxId = call.parameters["mailboxId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
-            val capability = call.bearerCapability() ?: return@post call.respond(HttpStatusCode.Unauthorized)
-            val request = call.receive<MailboxEnvelopeRequest>()
-
-            when (val result = store.store(mailboxId, capability, request.envelope)) {
-                is MailboxResult.Stored ->
-                    {
-                        if (!result.duplicate) {
-                            runCatching {
-                                pushNotifier.notify(request.envelope.recipientDeviceRoutingId)
-                            }
-                        }
-                        call.respond(
-                            HttpStatusCode.Accepted,
-                            FederationAcknowledgement(
-                                envelopeId = request.envelope.envelopeId,
-                                state = EnvelopeAcceptanceState.STORED_AT_DESTINATION,
-                                duplicate = result.duplicate
-                            )
-                        )
-                    }
-
-                is MailboxResult.Rejected ->
-                    call.respond(HttpStatusCode.BadRequest, ErrorResponse(result.code, "Envelope rejected"))
-            }
-        }
-
-        get("/v1/mailboxes/{mailboxId}/envelopes") {
-            val mailboxId = call.parameters["mailboxId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
-            val capability = call.bearerCapability() ?: return@get call.respond(HttpStatusCode.Unauthorized)
-            val pending = store.pending(mailboxId, capability) ?: return@get call.respond(HttpStatusCode.Unauthorized)
-            call.respond(MailboxEnvelopesResponse(pending))
-        }
-
-        delete("/v1/mailboxes/{mailboxId}/envelopes/{envelopeId}") {
-            val mailboxId = call.parameters["mailboxId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
-            val envelopeId = call.parameters["envelopeId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
-            val capability = call.bearerCapability() ?: return@delete call.respond(HttpStatusCode.Unauthorized)
-            if (store.acknowledge(mailboxId, capability, envelopeId)) {
-                call.respond(HttpStatusCode.NoContent)
-            } else {
-                call.respond(HttpStatusCode.Unauthorized)
-            }
-        }
-
-        delete("/v1/mailboxes/{mailboxId}") {
-            val mailboxId =
-                call.parameters["mailboxId"]
-                    ?: return@delete call.respond(HttpStatusCode.BadRequest)
-            val capability =
-                call.bearerCapability()
-                    ?: return@delete call.respond(HttpStatusCode.Unauthorized)
-            when (store.revoke(mailboxId, capability)) {
-                MailboxRevocationResult.Revoked,
-                MailboxRevocationResult.NotFound -> call.respond(HttpStatusCode.NoContent)
-
-                MailboxRevocationResult.Unauthorized -> call.respond(HttpStatusCode.Unauthorized)
-            }
-        }
     }
 }
 
@@ -280,8 +174,4 @@ internal fun createMailboxStorage(config: MailboxConfig): MailboxStorage {
     )
 }
 
-private fun ApplicationCall.bearerCapability(): String? =
-    request.headers[HttpHeaders.Authorization]
-        ?.takeIf { it.startsWith("Bearer ", ignoreCase = true) }
-        ?.substringAfter(' ')
-        ?.takeIf(String::isNotBlank)
+private const val DEFAULT_MAILBOX_PORT = 8092

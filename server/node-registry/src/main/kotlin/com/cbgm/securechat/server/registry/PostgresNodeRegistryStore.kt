@@ -4,8 +4,6 @@ import com.cbgm.securechat.server.protocol.NodeHeartbeatRequest
 import com.cbgm.securechat.server.protocol.SecureChatNodeDescriptor
 import com.cbgm.securechat.server.protocol.serverJson
 import com.cbgm.securechat.server.security.ProtocolSignatures
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import java.sql.Connection
 
 internal class PostgresNodeRegistryStore(
@@ -39,8 +37,8 @@ internal class PostgresNodeRegistryStore(
                 ).use { statement ->
                     statement.setString(1, descriptor.nodeId)
                     statement.setString(2, serverJson.encodeToString(descriptor))
-                    statement.setLong(3, descriptor.validUntilEpochMilliseconds)
-                    statement.setLong(4, currentTime)
+                    statement.setLong(DESCRIPTOR_EXPIRATION_PARAMETER, descriptor.validUntilEpochMilliseconds)
+                    statement.setLong(LAST_HEARTBEAT_PARAMETER, currentTime)
                     statement.executeUpdate()
                 }
         }
@@ -126,7 +124,7 @@ internal class PostgresNodeRegistryStore(
                 ).use { statement ->
                     statement.setString(1, nodeId)
                     statement.setLong(2, currentTime)
-                    statement.setLong(3, currentTime - heartbeatGraceMilliseconds)
+                    statement.setLong(HEARTBEAT_CUTOFF_PARAMETER, currentTime - heartbeatGraceMilliseconds)
                     statement.executeQuery().use { results ->
                         if (results.next()) {
                             serverJson.decodeFromString<SecureChatNodeDescriptor>(results.getString(1))
@@ -191,7 +189,17 @@ internal class PostgresNodeRegistryStore(
             ).use { statement ->
                 statement.setString(1, heartbeat.nodeId)
                 statement.setString(2, heartbeat.nonce)
-                statement.setLong(3, currentTime + replayRetentionMilliseconds)
+                statement.setLong(
+                    NONCE_EXPIRATION_PARAMETER,
+                    currentTime + replayRetentionMilliseconds
+                )
                 statement.executeUpdate() == 1
             }
+
+    private companion object {
+        const val DESCRIPTOR_EXPIRATION_PARAMETER = 3
+        const val LAST_HEARTBEAT_PARAMETER = 4
+        const val HEARTBEAT_CUTOFF_PARAMETER = 3
+        const val NONCE_EXPIRATION_PARAMETER = 3
+    }
 }
