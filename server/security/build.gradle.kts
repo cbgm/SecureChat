@@ -13,4 +13,5 @@ dependencies {
     implementation(libs.bundles.serialization)
     implementation(libs.ktor.server.core)
     testImplementation(kotlin("test"))
+    testImplementation(libs.bundles.coroutines.test)
 }

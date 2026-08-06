@@ -25,6 +25,7 @@ internal fun Application.installPushRoutes(
         installDeviceRegistrationRoute(runtime)
         installWakeUpInboxRoute(runtime)
         installWakeUpAcknowledgementRoute(runtime)
+        installNodePushRoutes(runtime)
         installInternalEnvelopeRoute(runtime, config)
         installInternalWakeUpRoute(runtime, config)
         installInternalPendingRoute(runtime, config)
@@ -172,7 +173,8 @@ private fun Route.installInternalAcknowledgementRoute(
     }
 }
 
-private fun PushDeviceRegistrationRequest.isValid(): Boolean = listOf(relayId, token, platform).all(String::isNotBlank)
+private fun PushDeviceRegistrationRequest.isValid(): Boolean =
+    listOf(relayId, token, platform).all(String::isNotBlank)
 
 private fun ApplicationCall.hasInternalAccess(expectedToken: String?): Boolean =
     InternalApiAuthentication.isAuthorized(

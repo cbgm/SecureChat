@@ -2,14 +2,14 @@ package com.cbgm.securechat.server.presence
 
 import com.cbgm.securechat.server.protocol.ClientRouteRegistration
 import com.cbgm.securechat.server.protocol.ErrorResponse
-import com.cbgm.securechat.server.protocol.SecureChatNodeDescriptor
-import com.cbgm.securechat.server.security.Signatures
-import io.ktor.client.call.body
-import io.ktor.client.request.get
+import com.cbgm.securechat.server.protocol.NodeCapability
+import com.cbgm.securechat.server.protocol.serverJson
+import com.cbgm.securechat.server.security.NodeRequestAuthorizationRequirements
+import com.cbgm.securechat.server.security.nodeRequestAuthentication
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.request.receive
+import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
@@ -38,17 +38,60 @@ private fun Route.installHealthRoute(runtime: PresenceRuntime) {
 
 private fun Route.installRouteRegistration(runtime: PresenceRuntime) {
     put("/v1/routes/{routingId}") {
-        val registration = call.receive<ClientRouteRegistration>()
-        if (registration.route.routingId == call.parameters["routingId"]) {
-            call.respondToRegistration(runtime.store.register(registration))
-        } else {
-            call.respond(
-                HttpStatusCode.BadRequest,
-                ErrorResponse("ROUTING_ID_MISMATCH", "Path and body differ")
-            )
+        val body = call.receiveText()
+        val registration =
+            runCatching { serverJson.decodeFromString<ClientRouteRegistration>(body) }
+                .getOrNull()
+        val routingId = call.parameters["routingId"]
+        val authorized =
+            registration?.let { routeRegistration ->
+                call.isAuthorizedRegistration(
+                    registration = routeRegistration,
+                    routingId = routingId,
+                    body = body,
+                    runtime = runtime
+                )
+            } ?: false
+
+        when {
+            registration == null ->
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    ErrorResponse("INVALID_ROUTE", "Invalid route registration")
+                )
+
+            registration.route.routingId != routingId ->
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    ErrorResponse("ROUTING_ID_MISMATCH", "Path and body differ")
+                )
+
+            !authorized ->
+                call.respond(HttpStatusCode.Unauthorized)
+
+            else ->
+                call.respondToRegistration(runtime.store.register(registration))
         }
     }
 }
+
+private suspend fun ApplicationCall.isAuthorizedRegistration(
+    registration: ClientRouteRegistration,
+    routingId: String?,
+    body: String,
+    runtime: PresenceRuntime
+): Boolean =
+    runtime.nodeRequestAuthorizer.isAuthorized(
+        authentication = nodeRequestAuthentication(),
+        method = "PUT",
+        path = "/v1/routes/$routingId",
+        body = body,
+        requirements =
+            NodeRequestAuthorizationRequirements(
+                expectedNodeId = registration.route.nodeId,
+                requiredCapability = NodeCapability.GATEWAY
+            )
+    )
 
 private fun Route.installRouteRemoval(runtime: PresenceRuntime) {
     delete("/v1/routes/{routingId}/{connectionId}") {
@@ -109,48 +152,25 @@ private suspend fun ApplicationCall.isAuthorizedRemoval(
     routeKey: PresenceRouteKey,
     runtime: PresenceRuntime
 ): Boolean {
-    val authentication = requestAuthentication()
-    val descriptor =
-        authentication?.let { authenticationValue ->
-            runtime.fetchNodeDescriptor(authenticationValue.nodeId)
-        }
+    val registeredNodeId =
+        runtime.store
+            .resolve(routeKey.routingId)
+            .routes
+            .firstOrNull { route -> route.connectionId == routeKey.connectionId }
+            ?.nodeId
+    val path = "/v1/routes/${routeKey.routingId}/${routeKey.connectionId}"
 
-    return if (authentication == null || descriptor == null) {
-        false
-    } else {
-        val registeredNodeId =
-            runtime.store
-                .resolve(routeKey.routingId)
-                .routes
-                .firstOrNull { route ->
-                    route.connectionId == routeKey.connectionId
-                }?.nodeId
-        listOf(
-            descriptor.nodeId == authentication.nodeId,
-            descriptor.nodeId == registeredNodeId,
-            runtime.requestVerifier.verify(
-                authentication = authentication,
-                method = "DELETE",
-                path = "/v1/routes/${routeKey.routingId}/${routeKey.connectionId}",
-                body = "",
-                publicKey = Signatures.decodePublicKey(descriptor.identityPublicKey)
+    return runtime.nodeRequestAuthorizer.isAuthorized(
+        authentication = nodeRequestAuthentication(),
+        method = "DELETE",
+        path = path,
+        body = "",
+        requirements =
+            NodeRequestAuthorizationRequirements(
+                expectedNodeId = registeredNodeId,
+                requiredCapability = NodeCapability.GATEWAY
             )
-        ).all { condition -> condition }
-    }
-}
-
-private suspend fun PresenceRuntime.fetchNodeDescriptor(
-    nodeId: String
-): SecureChatNodeDescriptor? {
-    val response =
-        httpClient.get(
-            "${registryUrl.trimEnd('/')}/v1/nodes/$nodeId"
-        )
-    return if (response.status == HttpStatusCode.OK) {
-        response.body<SecureChatNodeDescriptor>()
-    } else {
-        null
-    }
+    )
 }
 
 private data class PresenceRouteKey(

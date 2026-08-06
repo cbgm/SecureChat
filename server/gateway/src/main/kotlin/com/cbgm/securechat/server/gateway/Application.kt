@@ -40,6 +40,7 @@ data class GatewayConfig(
     val nodeIdentityPath: String,
     val federationInternalUrl: String,
     val pushInternalUrl: String,
+    val pushNodeApiUrl: String?,
     val presenceDirectoryUrl: String,
     val federationInternalApiToken: String?,
     val pushInternalApiToken: String?,
@@ -77,6 +78,8 @@ data class GatewayConfig(
                         "PUSH_INTERNAL_URL",
                         "http://localhost:8095"
                     ),
+                pushNodeApiUrl =
+                    System.getenv("PUSH_NODE_API_URL")?.takeIf(String::isNotBlank),
                 presenceDirectoryUrl =
                     ServiceEnvironment.string(
                         "PRESENCE_DIRECTORY_URL",

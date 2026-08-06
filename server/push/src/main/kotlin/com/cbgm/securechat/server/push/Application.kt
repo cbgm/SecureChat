@@ -29,6 +29,8 @@ fun Application.pushModule(
 
 data class PushConfig(
     val pushInternalApiToken: String?,
+    val nodeRegistryUrl: String?,
+    val presenceDirectoryUrl: String?,
     val databaseUrl: String?,
     val databaseUser: String,
     val databasePassword: String,
@@ -64,6 +66,10 @@ data class PushConfig(
                 pushInternalApiToken =
                     ServiceEnvironment.secret("PUSH_INTERNAL_API_TOKEN")
                         ?: ServiceEnvironment.secret("INTERNAL_API_TOKEN"),
+                nodeRegistryUrl =
+                    System.getenv("NODE_REGISTRY_URL")?.takeIf(String::isNotBlank),
+                presenceDirectoryUrl =
+                    System.getenv("PRESENCE_DIRECTORY_URL")?.takeIf(String::isNotBlank),
                 databaseUrl = System.getenv("PUSH_DATABASE_URL")?.takeIf(String::isNotBlank),
                 databaseUser = System.getenv("PUSH_DATABASE_USER").orEmpty(),
                 databasePassword =

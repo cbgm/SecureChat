@@ -6,11 +6,14 @@ import com.cbgm.securechat.server.protocol.FederatedTypingEvent
 import com.cbgm.securechat.server.protocol.FederationAcknowledgement
 import com.cbgm.securechat.server.protocol.PendingRelayEnvelopesResponse
 import com.cbgm.securechat.server.protocol.RelayEnvelope
+import com.cbgm.securechat.server.protocol.serverJson
 import com.cbgm.securechat.server.security.InternalApiAuthentication
+import com.cbgm.securechat.server.security.NodeRequestAuthentication
 import com.cbgm.securechat.server.security.NodeRequestHeaders
 import com.cbgm.securechat.server.security.NodeRequestSigner
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -57,13 +60,18 @@ class HttpPresenceClient(
     private val baseUrl: String,
     private val signer: NodeRequestSigner
 ) : PresenceClient {
-    override suspend fun register(registration: ClientRouteRegistration): Boolean =
-        httpClient
-            .put("${baseUrl.trimEnd('/')}/v1/routes/${registration.route.routingId}") {
+    override suspend fun register(registration: ClientRouteRegistration): Boolean {
+        val path = "/v1/routes/${registration.route.routingId}"
+        val body = serverJson.encodeToString(registration)
+        val authentication = signer.sign("PUT", path, body)
+        return httpClient
+            .put(baseUrl.trimEnd('/') + path) {
+                nodeAuthentication(authentication)
                 contentType(ContentType.Application.Json)
-                setBody(registration)
+                setBody(body)
             }.status
             .isSuccess()
+    }
 
     override suspend fun remove(
         routingId: String,
@@ -72,10 +80,7 @@ class HttpPresenceClient(
         val path = "/v1/routes/$routingId/$connectionId"
         val authentication = signer.sign("DELETE", path, "")
         httpClient.delete(baseUrl.trimEnd('/') + path) {
-            header(NodeRequestHeaders.NODE_ID, authentication.nodeId)
-            header(NodeRequestHeaders.TIMESTAMP, authentication.timestampEpochMilliseconds)
-            header(NodeRequestHeaders.NONCE, authentication.nonce)
-            header(NodeRequestHeaders.SIGNATURE, authentication.signature)
+            nodeAuthentication(authentication)
         }
     }
 }
@@ -111,4 +116,51 @@ class HttpLegacyPushClient(
             internalToken?.let { header(InternalApiAuthentication.TOKEN_HEADER, it) }
         }
     }
+}
+
+class HttpNodePushClient(
+    private val httpClient: HttpClient,
+    private val baseUrl: String,
+    private val signer: NodeRequestSigner
+) : LegacyPushClient {
+    override suspend fun store(envelope: RelayEnvelope): Boolean {
+        val path = "/v1/node-push/envelopes"
+        val body = serverJson.encodeToString(envelope)
+        val authentication = signer.sign("POST", path, body)
+        return httpClient
+            .post(baseUrl.trimEnd('/') + path) {
+                nodeAuthentication(authentication)
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }.status
+            .isSuccess()
+    }
+
+    override suspend fun pending(recipientId: String): List<RelayEnvelope> {
+        val path = "/v1/node-push/recipients/$recipientId/envelopes"
+        val authentication = signer.sign("GET", path, "")
+        return httpClient
+            .get(baseUrl.trimEnd('/') + path) {
+                nodeAuthentication(authentication)
+            }.body<PendingRelayEnvelopesResponse>()
+            .envelopes
+    }
+
+    override suspend fun acknowledge(
+        recipientId: String,
+        envelopeId: String
+    ) {
+        val path = "/v1/node-push/recipients/$recipientId/envelopes/$envelopeId/ack"
+        val authentication = signer.sign("POST", path, "")
+        httpClient.post(baseUrl.trimEnd('/') + path) {
+            nodeAuthentication(authentication)
+        }
+    }
+}
+
+private fun HttpRequestBuilder.nodeAuthentication(authentication: NodeRequestAuthentication) {
+    header(NodeRequestHeaders.NODE_ID, authentication.nodeId)
+    header(NodeRequestHeaders.TIMESTAMP, authentication.timestampEpochMilliseconds)
+    header(NodeRequestHeaders.NONCE, authentication.nonce)
+    header(NodeRequestHeaders.SIGNATURE, authentication.signature)
 }

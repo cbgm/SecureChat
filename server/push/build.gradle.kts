@@ -25,6 +25,8 @@ dependencies {
     implementation(projects.server.security)
     implementation(projects.server.observability)
     implementation(libs.bundles.ktor.server)
+    implementation(libs.bundles.ktor.client)
+    implementation(libs.ktor.client.cio)
     implementation(libs.bundles.coroutines)
     implementation(libs.firebase.admin)
     implementation(libs.hikari)

@@ -25,3 +25,11 @@ server/.env
 server/.env.production
 server/secrets/*.txt
 server/backups/
+
+server/control-plane/.env
+server/control-plane/.env.production
+server/control-plane/secrets/*.txt
+server/community-node/.env
+server/community-node/.env.production
+server/community-node/secrets/*.txt
+server/.standalone-smoke/

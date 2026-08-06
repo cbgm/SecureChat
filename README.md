@@ -251,6 +251,13 @@ metrics. Restore failures include the unhealthy service's probe output and recen
 that change the server now run the fresh two-node smoke test automatically and retain Compose state
 and service logs as a failure artifact.
 
+The control plane and community-node data plane can also be deployed as completely separate Compose
+projects. Community nodes use their persistent Ed25519 node identity for registry, presence, push,
+and federation requests; operators never receive a shared control-plane token. A second smoke test
+starts two community nodes plus the control plane, verifies two stable registrations, sends an
+encrypted envelope in both directions, and asserts that no project shares a Docker network or volume
+with another.
+
 See the server README for module boundaries, ports, security behavior, and migration limitations.
 
 ---

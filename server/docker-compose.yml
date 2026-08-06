@@ -170,6 +170,8 @@ services:
         SERVICE: push
     environment:
       PORT: 8095
+      NODE_REGISTRY_URL: http://node-registry:8090
+      PRESENCE_DIRECTORY_URL: http://presence-directory:8091
       PUSH_INTERNAL_API_TOKEN: ${PUSH_INTERNAL_API_TOKEN:-local-push-development-token}
       GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase-admin.json
       PUSH_DATABASE_URL: jdbc:postgresql://push-database:5432/securechat_push
@@ -188,6 +190,8 @@ services:
         bind:
           create_host_path: false
     depends_on:
+      node-registry:
+        condition: service_healthy
       push-database:
         condition: service_healthy
 

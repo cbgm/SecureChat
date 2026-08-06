@@ -234,6 +234,43 @@ This is an addressing migration: update and open every test client once so each 
 its new routing ID. Cached contact mappings are replaced automatically from exchanged signing keys.
 Legacy pending envelopes addressed to `scphone1_` IDs are not rewritten.
 
+## Run standalone community nodes
+
+The production-shaped deployment is split into two independent packages:
+
+```text
+server/control-plane/    registry, presence, push, PostgreSQL, Redis, Caddy
+server/community-node/   gateway, federation, mailbox, PostgreSQL, Caddy
+```
+
+The packages share no Docker network or volume. A community node reaches the control plane only
+through `CONTROL_PLANE_URL`, and all privileged remote requests are signed with the node's persisted
+Ed25519 identity. Existing colocated deployments retain the internal-token endpoints for backward
+compatibility; community nodes use `/v1/routes/**` and `/v1/node-push/**` instead.
+
+Run the complete local isolation proof from the repository root:
+
+```powershell
+.\server\scripts\Test-StandaloneCommunityNodes.ps1 `
+    -BuildImages
+```
+
+The script starts one control-plane project and two instances of the community-node project. It
+waits for every service, requires two distinct signed registry entries, registers node-owned presence
+routes through the public control plane, sends a real encrypted envelope in both directions, and
+checks that each destination can read only its routed push queue. It also proves that all three
+Compose projects have disjoint Docker networks and volumes, then restarts node A and confirms that
+its node identity remains unchanged. It removes the test projects and volumes unless `-KeepRunning`
+is supplied.
+
+For manual and production deployment, copy the corresponding `.env.example` and follow:
+
+- [`control-plane/README.md`](control-plane/README.md)
+- [`community-node/README.md`](community-node/README.md)
+
+The `Standalone Community Node Smoke Test` GitHub Actions workflow runs the same signed,
+bidirectional federation and deployment-isolation proof for pull requests that change the server.
+
 ## Automated network smoke test
 
 `Test-SecureChatNetwork.ps1` verifies the complete local Compose topology without changing stored

@@ -54,8 +54,22 @@ private fun createGatewayHandler(
     config: GatewayConfig,
     httpClient: HttpClient,
     connections: ConnectionRegistry
-): GatewayWebSocketHandler =
-    GatewayWebSocketHandler(
+): GatewayWebSocketHandler {
+    val signer = NodeRequestSigner(identity)
+    val pushClient =
+        config.pushNodeApiUrl?.let { nodeApiUrl ->
+            HttpNodePushClient(
+                httpClient = httpClient,
+                baseUrl = nodeApiUrl,
+                signer = signer
+            )
+        } ?: HttpLegacyPushClient(
+            httpClient = httpClient,
+            baseUrl = config.pushInternalUrl,
+            internalToken = config.pushInternalApiToken
+        )
+
+    return GatewayWebSocketHandler(
         nodeId = identity.nodeId,
         connections = connections,
         federation =
@@ -68,15 +82,11 @@ private fun createGatewayHandler(
             HttpPresenceClient(
                 httpClient = httpClient,
                 baseUrl = config.presenceDirectoryUrl,
-                signer = NodeRequestSigner(identity)
+                signer = signer
             ),
-        legacyPush =
-            HttpLegacyPushClient(
-                httpClient = httpClient,
-                baseUrl = config.pushInternalUrl,
-                internalToken = config.pushInternalApiToken
-            )
+        legacyPush = pushClient
     )
+}
 
 internal fun Application.configureGatewayLifecycle(runtime: GatewayRuntime) {
     if (runtime.ownsHttpClient) {
