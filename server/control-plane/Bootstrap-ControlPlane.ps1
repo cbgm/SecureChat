@@ -12,6 +12,7 @@ $secretsDirectory = Join-Path $deploymentDirectory "secrets"
 $composePath = Join-Path $deploymentDirectory "docker-compose.yml"
 $controlPlanePort = 8390
 $script:DockerExecutable = $null
+$script:DockerContext = $null
 
 function Show-Result {
     param(
@@ -65,47 +66,164 @@ function Resolve-DockerExecutable {
     throw "Docker Desktop is not installed."
 }
 
-function Test-DockerEngine {
-    & $script:DockerExecutable info *> $null
-    return $LASTEXITCODE -eq 0
+function Reset-DockerEnvironment {
+    Remove-Item Env:DOCKER_HOST -ErrorAction SilentlyContinue
+    Remove-Item Env:DOCKER_TLS_VERIFY -ErrorAction SilentlyContinue
+    Remove-Item Env:DOCKER_CERT_PATH -ErrorAction SilentlyContinue
 }
 
-function Ensure-DockerEngine {
-    $script:DockerExecutable = Resolve-DockerExecutable
+function Get-AvailableDockerContexts {
+    $output = & $script:DockerExecutable context ls --format "{{.Name}}" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        return @()
+    }
 
-    if (Test-DockerEngine) {
+    return @(
+        $output |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    )
+}
+
+function Select-DockerContext {
+    $contexts = Get-AvailableDockerContexts
+
+    if ($contexts -contains "desktop-linux") {
+        $script:DockerContext = "desktop-linux"
         return
     }
 
+    if ($contexts -contains "default") {
+        $script:DockerContext = "default"
+        return
+    }
+
+    $script:DockerContext = $null
+}
+
+function Invoke-DockerRaw {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments,
+        [switch]$IgnoreExitCode
+    )
+
+    $allArguments = @()
+    if (-not [string]::IsNullOrWhiteSpace($script:DockerContext)) {
+        $allArguments += @("--context", $script:DockerContext)
+    }
+    $allArguments += $Arguments
+
+    $output = & $script:DockerExecutable @allArguments 2>&1
+    $exitCode = $LASTEXITCODE
+
+    if (-not $IgnoreExitCode -and $exitCode -ne 0) {
+        $message = ($output | Out-String).Trim()
+        if ([string]::IsNullOrWhiteSpace($message)) {
+            $message = "Docker command failed."
+        }
+        throw $message
+    }
+
+    return [PSCustomObject]@{
+        ExitCode = $exitCode
+        Output = $output
+    }
+}
+
+function Test-DockerEngine {
+    $result = Invoke-DockerRaw `
+        -Arguments @("version", "--format", "{{.Server.Version}}") `
+        -IgnoreExitCode
+
+    if ($result.ExitCode -ne 0) {
+        return $false
+    }
+
+    $version = ($result.Output | Out-String).Trim()
+    return -not [string]::IsNullOrWhiteSpace($version)
+}
+
+function Start-DockerDesktopApplication {
     $desktopCandidates = @(
         (Join-Path $env:ProgramFiles "Docker\Docker\Docker Desktop.exe"),
         (Join-Path $env:LOCALAPPDATA "Docker\Docker Desktop.exe")
     )
 
-    $desktop = $desktopCandidates | Where-Object {
-        Test-Path -LiteralPath $_ -PathType Leaf
-    } | Select-Object -First 1
+    $desktop = $desktopCandidates |
+        Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } |
+        Select-Object -First 1
 
     if ($null -eq $desktop) {
         throw "Docker Desktop is installed incompletely or cannot be found."
     }
 
-    Start-Process -FilePath $desktop | Out-Null
+    $existing = Get-Process -Name "Docker Desktop" -ErrorAction SilentlyContinue
+    if ($null -eq $existing) {
+        Start-Process -FilePath $desktop | Out-Null
+    }
+}
 
-    $deadline = [DateTime]::UtcNow.AddMinutes(3)
+function Try-StartDockerWindowsService {
+    $service = Get-Service -Name "com.docker.service" -ErrorAction SilentlyContinue
+    if ($null -eq $service -or $service.Status -eq "Running") {
+        return
+    }
+
+    try {
+        Start-Service -Name "com.docker.service" -ErrorAction Stop
+    } catch {
+        # Docker Desktop can still start its backend without us manually
+        # starting the Windows service, depending on the installation mode.
+    }
+}
+
+function Ensure-DockerEngine {
+    Reset-DockerEnvironment
+    $script:DockerExecutable = Resolve-DockerExecutable
+    Select-DockerContext
+
+    if (Test-DockerEngine) {
+        return
+    }
+
+    Try-StartDockerWindowsService
+    Start-DockerDesktopApplication
+
+    $deadline = [DateTime]::UtcNow.AddMinutes(5)
+
     while ([DateTime]::UtcNow -lt $deadline) {
         Start-Sleep -Seconds 2
+
+        # Docker Desktop may create the desktop-linux context only after
+        # its backend has started, so refresh the context while waiting.
+        Select-DockerContext
+
         if (Test-DockerEngine) {
             return
         }
     }
 
-    throw "Docker Desktop did not become ready."
+    $diagnostic = Invoke-DockerRaw `
+        -Arguments @("version") `
+        -IgnoreExitCode
+
+    $details = ($diagnostic.Output | Out-String).Trim()
+    if ([string]::IsNullOrWhiteSpace($details)) {
+        $details = "Docker Desktop did not expose a usable Docker API."
+    }
+
+    throw "Docker Desktop started, but its Docker engine did not become ready within 5 minutes.`n`n$details"
 }
 
 function Assert-ComposeVersion {
-    $versionOutput = (& $script:DockerExecutable compose version --short | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0 -or $versionOutput -notmatch '(\d+\.\d+\.\d+)') {
+    $result = Invoke-DockerRaw `
+        -Arguments @("compose", "version", "--short") `
+        -IgnoreExitCode
+
+    $versionOutput = ($result.Output | Out-String).Trim()
+
+    if ($result.ExitCode -ne 0 -or $versionOutput -notmatch '(\d+\.\d+\.\d+)') {
         throw "Docker Compose is not available."
     }
 
@@ -234,10 +352,8 @@ function Invoke-Docker {
         [string[]]$Arguments
     )
 
-    & $script:DockerExecutable @Arguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "Docker failed while starting SecureChat."
-    }
+    $result = Invoke-DockerRaw -Arguments $Arguments
+    return $result.Output
 }
 
 function Get-LanIpv4Address {
@@ -337,7 +453,7 @@ try {
 
     Push-Location $deploymentDirectory
     try {
-        Invoke-Docker -Arguments ($composeArguments + @("config", "--quiet"))
+        Invoke-Docker -Arguments ($composeArguments + @("config", "--quiet")) | Out-Null
         Invoke-Docker -Arguments (
             $composeArguments + @(
                 "up",
@@ -348,7 +464,7 @@ try {
                 "--wait-timeout",
                 "300"
             )
-        )
+        ) | Out-Null
     } finally {
         Pop-Location
     }
@@ -365,6 +481,7 @@ try {
     Show-Result `
         -Message "SecureChat control plane is running.`n`n$controlPlaneUrl" `
         -IsError $false
+
     exit 0
 } catch {
     Show-Result -Message $_.Exception.Message -IsError $true
