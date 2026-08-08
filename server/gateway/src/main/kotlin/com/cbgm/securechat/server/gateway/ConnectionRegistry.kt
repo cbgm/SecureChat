@@ -12,9 +12,20 @@ import java.util.concurrent.ConcurrentHashMap
 class GatewayConnection(
     val routingId: String,
     val connectionId: String,
+    routingAliases: Set<String> = emptySet(),
     private val session: DefaultWebSocketServerSession
 ) {
     private val sendMutex = Mutex()
+
+    @Volatile
+    private var acceptedRoutingAliases: Set<String> = routingAliases
+
+    fun acceptsSenderRoutingId(senderRoutingId: String): Boolean =
+        senderRoutingId == routingId || senderRoutingId in acceptedRoutingAliases
+
+    fun updateRoutingAliases(routingAliases: Collection<String>) {
+        acceptedRoutingAliases = routingAliases.toSet()
+    }
 
     suspend fun send(message: GatewayServerMessage) {
         sendMutex.withLock {

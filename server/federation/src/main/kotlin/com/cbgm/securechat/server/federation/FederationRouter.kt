@@ -77,11 +77,17 @@ class FederationRouter(
         for (route in routes.sortedByDescending { it.generation }) {
             val delivered =
                 runCatching {
+                    val routedEvent =
+                        if (route.routingId == event.recipientRoutingId) {
+                            event
+                        } else {
+                            event.copy(recipientRoutingId = route.routingId)
+                        }
                     if (route.nodeId == localNodeId) {
-                        localTypingGateway.deliver(event)
+                        localTypingGateway.deliver(routedEvent)
                     } else {
                         val descriptor = nodeRegistry.find(route.nodeId) ?: return@runCatching false
-                        remoteTypingFederation.deliver(descriptor, event)
+                        remoteTypingFederation.deliver(descriptor, routedEvent)
                     }
                 }.getOrDefault(false)
 
@@ -93,8 +99,9 @@ class FederationRouter(
     }
 
     private suspend fun deliver(entry: OutboundEnvelopeEntry): FederationAcknowledgement {
-        val nextAttemptAt = now() + retryDelay(entry.attempts)
-        val attempted = queue.markAttempt(entry.envelope.envelopeId, nextAttemptAt)
+        val routableEntry = bindBootstrapRecipient(entry)
+        val nextAttemptAt = now() + retryDelay(routableEntry.attempts)
+        val attempted = queue.markAttempt(routableEntry.envelope.envelopeId, nextAttemptAt)
         val acknowledgement =
             attempted?.let { candidate ->
                 routeOnline(candidate.envelope) ?: storeInMailbox(candidate.envelope)
@@ -113,6 +120,29 @@ class FederationRouter(
                 entry.envelope.envelopeId,
                 EnvelopeAcceptanceState.QUEUED_AT_GATEWAY
             )
+    }
+
+    private suspend fun bindBootstrapRecipient(entry: OutboundEnvelopeEntry): OutboundEnvelopeEntry {
+        val recipientRoutingId = entry.envelope.recipientDeviceRoutingId
+        if (!recipientRoutingId.startsWith(BOOTSTRAP_ROUTING_ID_PREFIX)) {
+            return entry
+        }
+
+        val canonicalRoute =
+            presenceDirectory
+                .resolve(recipientRoutingId)
+                .routes
+                .maxByOrNull { route -> route.generation }
+                ?: return entry
+
+        if (canonicalRoute.routingId == recipientRoutingId) {
+            return entry
+        }
+
+        return queue.bindRecipient(
+            envelopeId = entry.envelope.envelopeId,
+            recipientDeviceRoutingId = canonicalRoute.routingId
+        ) ?: entry
     }
 
     private fun retryDelay(completedAttempts: Int): Long {
@@ -155,5 +185,6 @@ class FederationRouter(
 
     private companion object {
         const val MAXIMUM_BACKOFF_SHIFT = 20
+        const val BOOTSTRAP_ROUTING_ID_PREFIX = "scphone1_"
     }
 }

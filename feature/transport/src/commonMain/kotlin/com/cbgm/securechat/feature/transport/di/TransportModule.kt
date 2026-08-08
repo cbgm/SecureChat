@@ -3,6 +3,7 @@ package com.cbgm.securechat.feature.transport.di
 import com.cbgm.securechat.core.crypto.signature.DetachedSignatureCrypto
 import com.cbgm.securechat.core.protocol.identity.LocalSigningKeyPairProvider
 import com.cbgm.securechat.core.protocol.identity.LocalSigningPublicKeyProvider
+import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
 import com.cbgm.securechat.feature.transport.connection.DefaultRelayConnectionManager
 import com.cbgm.securechat.feature.transport.connection.RelayConnectionManager
@@ -18,7 +19,9 @@ import com.cbgm.securechat.feature.transport.push.HttpPushTokenRegistrationGatew
 import com.cbgm.securechat.feature.transport.push.PushTokenRegistrationGateway
 import com.cbgm.securechat.feature.transport.relay.codec.createRelayJson
 import com.cbgm.securechat.feature.transport.relay.config.RelayTransportConfig
+import com.cbgm.securechat.feature.transport.relay.identity.DefaultLocalBootstrapRelayIdProvider
 import com.cbgm.securechat.feature.transport.relay.identity.DefaultLocalRelayIdProvider
+import com.cbgm.securechat.feature.transport.relay.identity.LocalBootstrapRelayIdProvider
 import com.cbgm.securechat.feature.transport.relay.identity.LocalRelayIdProvider
 import com.cbgm.securechat.feature.transport.relay.identity.RelayIdGenerator
 import com.cbgm.securechat.feature.transport.relay.identity.Sha256RelayIdGenerator
@@ -51,12 +54,19 @@ val transportModule =
         }
 
         single<RelayIdGenerator> {
-            Sha256RelayIdGenerator()
+            Sha256RelayIdGenerator(phoneNumberNormalizer = get<PhoneNumberNormalizer>())
         }
 
         single<LocalRelayIdProvider> {
             DefaultLocalRelayIdProvider(
                 localSigningPublicKeyProvider = get<LocalSigningPublicKeyProvider>(),
+                relayIdGenerator = get<RelayIdGenerator>()
+            )
+        }
+
+        single<LocalBootstrapRelayIdProvider> {
+            DefaultLocalBootstrapRelayIdProvider(
+                localPhoneNumberProvider = get(),
                 relayIdGenerator = get<RelayIdGenerator>()
             )
         }
@@ -80,7 +90,8 @@ val transportModule =
         single {
             ClientPresenceRouteManager(
                 httpClient = get<HttpClient>(),
-                registrationFactory = get<ClientRouteRegistrationFactory>()
+                registrationFactory = get<ClientRouteRegistrationFactory>(),
+                localBootstrapRelayIdProvider = get<LocalBootstrapRelayIdProvider>()
             )
         }
 
@@ -88,6 +99,7 @@ val transportModule =
             DefaultRelayConnectionManager(
                 webSocketTransportClient = get<WebSocketTransportClient>(),
                 localRelayIdProvider = get<LocalRelayIdProvider>(),
+                localBootstrapRelayIdProvider = get<LocalBootstrapRelayIdProvider>(),
                 relayTransportConfig = get<RelayTransportConfig>(),
                 nodeEndpointResolver = get<NodeEndpointResolver>()
             )

@@ -54,7 +54,7 @@ class GatewayWebSocketHandler(
         sender: GatewayConnection,
         envelope: RelayEnvelope
     ) {
-        if (envelope.senderId != sender.routingId) {
+        if (!sender.acceptsSenderRoutingId(envelope.senderId)) {
             sender.send(
                 GatewayServerMessage.Error(
                     code = "SENDER_MISMATCH",
@@ -92,7 +92,7 @@ class GatewayWebSocketHandler(
         sender: GatewayConnection,
         envelope: FederatedEnvelope
     ) {
-        if (envelope.senderRoutingId != sender.routingId) {
+        if (!sender.acceptsSenderRoutingId(envelope.senderRoutingId)) {
             sender.send(
                 GatewayServerMessage.Error(
                     code = "SENDER_MISMATCH",
@@ -262,7 +262,7 @@ internal suspend fun routeFederatedTypingEvent(
     return runCatching { federation.routeTyping(event) }.getOrDefault(false)
 }
 
-private fun RelayEnvelope.toFederatedEnvelope(): FederatedEnvelope =
+internal fun RelayEnvelope.toFederatedEnvelope(): FederatedEnvelope =
     FederatedEnvelope(
         envelopeId = envelopeId,
         senderRoutingId = senderId,
@@ -272,7 +272,11 @@ private fun RelayEnvelope.toFederatedEnvelope(): FederatedEnvelope =
         createdAtEpochMilliseconds = createdAtEpochMilliseconds,
         expiresAtEpochMilliseconds =
             createdAtEpochMilliseconds +
-                DEFAULT_ENVELOPE_TTL_MILLISECONDS
+                if (recipientId.startsWith(BOOTSTRAP_ROUTING_ID_PREFIX)) {
+                    BOOTSTRAP_ENVELOPE_TTL_MILLISECONDS
+                } else {
+                    DEFAULT_ENVELOPE_TTL_MILLISECONDS
+                }
     )
 
 private fun FederatedEnvelope.toRelayEnvelope(): RelayEnvelope =
@@ -284,4 +288,6 @@ private fun FederatedEnvelope.toRelayEnvelope(): RelayEnvelope =
         createdAtEpochMilliseconds = createdAtEpochMilliseconds
     )
 
+private const val BOOTSTRAP_ROUTING_ID_PREFIX = "scphone1_"
+private const val BOOTSTRAP_ENVELOPE_TTL_MILLISECONDS = 24L * 60L * 60L * 1_000L
 private const val DEFAULT_ENVELOPE_TTL_MILLISECONDS = 7L * 24L * 60L * 60L * 1_000L

@@ -439,6 +439,7 @@ class DefaultWebSocketTransportClient internal constructor(
                 connectionId = connectionId.takeIf { connectionIdRegistered },
                 generation = routeRegistration?.route?.generation,
                 expiresAtEpochMilliseconds = routeRegistration?.route?.expiresAtEpochMilliseconds,
+                aliases = routeRegistration?.route?.aliases?.takeIf { it.isNotEmpty() },
                 clientSigningPublicKey = routeRegistration?.clientSigningPublicKey,
                 clientSignature = routeRegistration?.route?.clientSignature
             )

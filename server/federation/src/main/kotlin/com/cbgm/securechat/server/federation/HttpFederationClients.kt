@@ -1,6 +1,7 @@
 package com.cbgm.securechat.server.federation
 
 import com.cbgm.securechat.server.protocol.ClientRoutingResult
+import com.cbgm.securechat.server.protocol.EnvelopeAcceptanceState
 import com.cbgm.securechat.server.protocol.FederatedEnvelope
 import com.cbgm.securechat.server.protocol.FederatedTypingEvent
 import com.cbgm.securechat.server.protocol.FederationAcknowledgement
@@ -47,13 +48,22 @@ class HttpLocalGatewayClient(
     private val internalToken: String?
 ) : LocalGatewayClient,
     LocalTypingGatewayClient {
-    override suspend fun deliver(envelope: FederatedEnvelope): FederationAcknowledgement =
-        httpClient
-            .post("$baseUrl/internal/v1/envelopes") {
+    override suspend fun deliver(envelope: FederatedEnvelope): FederationAcknowledgement {
+        val response =
+            httpClient.post("$baseUrl/internal/v1/envelopes") {
                 internalToken?.let { header(InternalApiAuthentication.TOKEN_HEADER, it) }
                 contentType(ContentType.Application.Json)
                 setBody(envelope)
-            }.body()
+            }
+        return if (response.status.isSuccess()) {
+            response.body()
+        } else {
+            FederationAcknowledgement(
+                envelopeId = envelope.envelopeId,
+                state = EnvelopeAcceptanceState.QUEUED_AT_GATEWAY
+            )
+        }
+    }
 
     override suspend fun deliver(event: FederatedTypingEvent): Boolean =
         httpClient
@@ -77,15 +87,23 @@ class HttpRemoteFederationClient(
         val path = "/v1/federation/envelopes"
         val body = serverJson.encodeToString(envelope)
         val authentication = signer.sign("POST", path, body)
-        return httpClient
-            .post(descriptor.federationEndpoint.trimEnd('/') + path) {
+        val response =
+            httpClient.post(descriptor.federationEndpoint.trimEnd('/') + path) {
                 header(NodeRequestHeaders.NODE_ID, authentication.nodeId)
                 header(NodeRequestHeaders.TIMESTAMP, authentication.timestampEpochMilliseconds)
                 header(NodeRequestHeaders.NONCE, authentication.nonce)
                 header(NodeRequestHeaders.SIGNATURE, authentication.signature)
                 header(HttpHeaders.ContentType, ContentType.Application.Json)
                 setBody(body)
-            }.body()
+            }
+        return if (response.status.isSuccess()) {
+            response.body()
+        } else {
+            FederationAcknowledgement(
+                envelopeId = envelope.envelopeId,
+                state = EnvelopeAcceptanceState.QUEUED_AT_GATEWAY
+            )
+        }
     }
 
     override suspend fun deliver(

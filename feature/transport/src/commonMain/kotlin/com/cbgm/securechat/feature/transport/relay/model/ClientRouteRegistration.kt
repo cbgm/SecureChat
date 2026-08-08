@@ -9,12 +9,8 @@ data class GatewayNodeInformation(
     val routeRefreshIntervalMilliseconds: Long
 ) {
     init {
-        require(nodeId.isNotBlank()) {
-            "Gateway node ID must not be blank"
-        }
-        require(routeLifetimeMilliseconds > 0L) {
-            "Route lifetime must be positive"
-        }
+        require(nodeId.isNotBlank()) { "Gateway node ID must not be blank" }
+        require(routeLifetimeMilliseconds > 0L) { "Route lifetime must be positive" }
         require(routeRefreshIntervalMilliseconds in 1 until routeLifetimeMilliseconds) {
             "Route refresh interval must be positive and shorter than the route lifetime"
         }
@@ -28,6 +24,7 @@ data class ClientRoute(
     val connectionId: String,
     val generation: Long,
     val expiresAtEpochMilliseconds: Long,
+    val aliases: List<String>? = null,
     val clientSignature: ByteArray
 )
 
@@ -37,7 +34,8 @@ data class UnsignedClientRoute(
     val nodeId: String,
     val connectionId: String,
     val generation: Long,
-    val expiresAtEpochMilliseconds: Long
+    val expiresAtEpochMilliseconds: Long,
+    val aliases: List<String>? = null
 )
 
 fun ClientRoute.unsigned(): UnsignedClientRoute =
@@ -46,7 +44,8 @@ fun ClientRoute.unsigned(): UnsignedClientRoute =
         nodeId = nodeId,
         connectionId = connectionId,
         generation = generation,
-        expiresAtEpochMilliseconds = expiresAtEpochMilliseconds
+        expiresAtEpochMilliseconds = expiresAtEpochMilliseconds,
+        aliases = aliases
     )
 
 @Serializable

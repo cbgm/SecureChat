@@ -1,12 +1,13 @@
 package com.cbgm.securechat.feature.transport.relay.identity
 
+import com.cbgm.securechat.core.protocol.phone.DefaultPhoneNumberNormalizer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class Sha256RelayIdGeneratorTest {
-    private val generator = Sha256RelayIdGenerator()
+    private val generator = Sha256RelayIdGenerator(DefaultPhoneNumberNormalizer())
 
     @Test
     fun sameSigningIdentityProducesSameRoutingId() {

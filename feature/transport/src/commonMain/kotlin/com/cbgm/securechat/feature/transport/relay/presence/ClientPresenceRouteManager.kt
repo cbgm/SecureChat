@@ -2,6 +2,7 @@ package com.cbgm.securechat.feature.transport.relay.presence
 
 import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.core.time.SystemClock
+import com.cbgm.securechat.feature.transport.relay.identity.LocalBootstrapRelayIdProvider
 import com.cbgm.securechat.feature.transport.relay.model.ClientRouteRegistration
 import com.cbgm.securechat.feature.transport.relay.model.GatewayNodeInformation
 import io.ktor.client.HttpClient
@@ -12,7 +13,8 @@ import kotlin.time.Duration.Companion.milliseconds
 
 internal class ClientPresenceRouteManager(
     private val httpClient: HttpClient,
-    private val registrationFactory: ClientRouteRegistrationFactory
+    private val registrationFactory: ClientRouteRegistrationFactory,
+    private val localBootstrapRelayIdProvider: LocalBootstrapRelayIdProvider
 ) {
     private val logger = SecureChatLog.withTag("ClientPresenceRouteManager")
 
@@ -33,8 +35,16 @@ internal class ClientPresenceRouteManager(
             connectionId = connection.connectionId,
             generation = connection.generation,
             expiresAtEpochMilliseconds =
-                SystemClock.nowEpochMilliseconds() + gatewayInformation.routeLifetimeMilliseconds
+                SystemClock.nowEpochMilliseconds() + gatewayInformation.routeLifetimeMilliseconds,
+            aliases = bootstrapRoutingAliases()
         )
+
+    private suspend fun bootstrapRoutingAliases(): List<String> =
+        localBootstrapRelayIdProvider
+            .getLocalBootstrapRelayId()
+            .getOrNull()
+            ?.let(::listOf)
+            .orEmpty()
 
     suspend fun maintain(
         connection: PresenceRouteConnection,

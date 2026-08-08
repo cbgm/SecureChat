@@ -121,6 +121,11 @@ internal class GatewaySessionHandler(
             GatewayConnection(
                 routingId = message.relayId,
                 connectionId = message.connectionId ?: UUID.randomUUID().toString(),
+                routingAliases =
+                    message.aliases
+                        ?.takeIf { message.generation != null }
+                        .orEmpty()
+                        .toSet(),
                 session = session
             )
         val registration = message.toRouteRegistration(connection, nodeId)
@@ -173,6 +178,8 @@ internal class GatewaySessionHandler(
                     code = "ROUTE_REJECTED",
                     message = "Presence route rejected"
                 )
+
+            else -> connection.updateRoutingAliases(registration.route.aliases.orEmpty())
         }
     }
 
@@ -231,6 +238,7 @@ private fun GatewayClientMessage.Register.toRouteRegistration(
                         connectionId = connection.connectionId,
                         generation = routeGeneration,
                         expiresAtEpochMilliseconds = routeExpiration,
+                        aliases = aliases,
                         clientSignature = routeSignature
                     ),
                 clientSigningPublicKey = signingPublicKey

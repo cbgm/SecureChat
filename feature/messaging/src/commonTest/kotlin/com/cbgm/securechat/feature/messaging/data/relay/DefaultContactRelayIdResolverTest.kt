@@ -162,6 +162,9 @@ class DefaultContactRelayIdResolverTest {
         var callCount: Int = 0
         var signingPublicKey: ByteArray? = null
 
+        override fun deriveFromPhoneNumber(phoneNumber: String): Result<String> =
+            Result.success("scphone1_test")
+
         override fun deriveFromSigningPublicKey(signingPublicKey: ByteArray): Result<String> {
             callCount += 1
             this.signingPublicKey = signingPublicKey

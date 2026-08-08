@@ -32,10 +32,19 @@ class DefaultContactByRelayIdResolver(
             val existingContactId =
                 contacts
                     .firstOrNull { contact ->
-                        contact.secureChatIdentity
-                            ?.signingPublicKey
-                            ?.let(relayIdGenerator::deriveFromSigningPublicKey)
-                            ?.getOrNull() == relayId
+                        val identityMatches =
+                            contact.secureChatIdentity
+                                ?.signingPublicKey
+                                ?.let(relayIdGenerator::deriveFromSigningPublicKey)
+                                ?.getOrNull() == relayId
+                        val phoneMatches =
+                            contact.phoneNumbers.any { phoneNumber ->
+                                relayIdGenerator
+                                    .deriveFromPhoneNumber(phoneNumber.value)
+                                    .getOrNull() == relayId
+                            }
+
+                        identityMatches || phoneMatches
                     }?.id
 
             if (existingContactId != null) {

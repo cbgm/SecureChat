@@ -1,8 +1,27 @@
 package com.cbgm.securechat.feature.transport.relay.identity
 
+import com.cbgm.securechat.core.protocol.phone.PhoneNumberNormalizer
 import okio.ByteString.Companion.toByteString
 
-class Sha256RelayIdGenerator : RelayIdGenerator {
+class Sha256RelayIdGenerator(
+    private val phoneNumberNormalizer: PhoneNumberNormalizer
+) : RelayIdGenerator {
+    override fun deriveFromPhoneNumber(phoneNumber: String): Result<String> =
+        runCatching {
+            val normalizedPhoneNumber =
+                phoneNumberNormalizer.normalize(phoneNumber = phoneNumber).getOrThrow()
+
+            val digest =
+                normalizedPhoneNumber
+                    .encodeToByteArray()
+                    .toByteString()
+                    .sha256()
+                    .base64Url()
+                    .trimEnd('=')
+
+            "$BOOTSTRAP_ROUTING_ID_PREFIX$digest"
+        }
+
     override fun deriveFromSigningPublicKey(signingPublicKey: ByteArray): Result<String> =
         runCatching {
             require(signingPublicKey.isNotEmpty()) {
@@ -16,10 +35,11 @@ class Sha256RelayIdGenerator : RelayIdGenerator {
                     .base64Url()
                     .trimEnd('=')
 
-            "$ROUTING_ID_PREFIX$digest"
+            "$DEVICE_ROUTING_ID_PREFIX$digest"
         }
 
     private companion object {
-        const val ROUTING_ID_PREFIX = "scrouting1_"
+        const val BOOTSTRAP_ROUTING_ID_PREFIX = "scphone1_"
+        const val DEVICE_ROUTING_ID_PREFIX = "scrouting1_"
     }
 }

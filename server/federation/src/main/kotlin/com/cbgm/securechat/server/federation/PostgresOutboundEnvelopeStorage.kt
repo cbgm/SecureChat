@@ -27,8 +27,9 @@ internal class PostgresOutboundEnvelopeStorage(
                         attempts,
                         next_attempt_at_epoch_milliseconds,
                         expires_at_epoch_milliseconds,
-                        updated_at_epoch_milliseconds
-                    ) VALUES (?, ?, ?, 0, ?, ?, ?)
+                        updated_at_epoch_milliseconds,
+                        routing_version
+                    ) VALUES (?, ?, ?, 0, ?, ?, ?, 1)
                     ON CONFLICT (envelope_id) DO NOTHING
                     """.trimIndent()
                 ).use { statement ->
@@ -48,6 +49,33 @@ internal class PostgresOutboundEnvelopeStorage(
                     statement.executeUpdate()
                 }
             requireNotNull(find(connection, envelope.envelopeId))
+        }
+
+    override suspend fun bindRecipient(
+        envelopeId: String,
+        recipientDeviceRoutingId: String
+    ): OutboundEnvelopeEntry? =
+        database.withConnection { connection ->
+            val current = find(connection, envelopeId) ?: return@withConnection null
+            val updatedEnvelope = current.envelope.copy(recipientDeviceRoutingId = recipientDeviceRoutingId)
+            connection
+                .prepareStatement(
+                    """
+                    UPDATE federation_outbound_envelopes
+                    SET envelope_json = ?,
+                        routing_version = 1,
+                        updated_at_epoch_milliseconds = ?
+                    WHERE envelope_id = ?
+                      AND state = ?
+                    """.trimIndent()
+                ).use { statement ->
+                    statement.setString(1, serverJson.encodeToString(updatedEnvelope))
+                    statement.setLong(2, now())
+                    statement.setString(3, envelopeId)
+                    statement.setString(4, EnvelopeAcceptanceState.QUEUED_AT_GATEWAY.name)
+                    statement.executeUpdate()
+                }
+            find(connection, envelopeId)
         }
 
     override suspend fun markAttempt(

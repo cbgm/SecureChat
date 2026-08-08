@@ -22,6 +22,7 @@ data class ClientRoute(
     val connectionId: String,
     val generation: Long,
     val expiresAtEpochMilliseconds: Long,
+    val aliases: List<String>? = null,
     val clientSignature: ByteArray
 ) {
     init {
@@ -39,7 +40,8 @@ data class UnsignedClientRoute(
     val nodeId: String,
     val connectionId: String,
     val generation: Long,
-    val expiresAtEpochMilliseconds: Long
+    val expiresAtEpochMilliseconds: Long,
+    val aliases: List<String>? = null
 )
 
 fun ClientRoute.unsigned(): UnsignedClientRoute =
@@ -48,7 +50,8 @@ fun ClientRoute.unsigned(): UnsignedClientRoute =
         nodeId = nodeId,
         connectionId = connectionId,
         generation = generation,
-        expiresAtEpochMilliseconds = expiresAtEpochMilliseconds
+        expiresAtEpochMilliseconds = expiresAtEpochMilliseconds,
+        aliases = aliases
     )
 
 @Serializable

@@ -5,6 +5,7 @@ import com.cbgm.securechat.core.protocol.mailbox.MailboxDeliveryRoute
 import com.cbgm.securechat.core.protocol.mailbox.MailboxRouteRepository
 import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
 import com.cbgm.securechat.feature.transport.relay.config.RelayTransportConfig
+import com.cbgm.securechat.feature.transport.relay.identity.LocalBootstrapRelayIdProvider
 import com.cbgm.securechat.feature.transport.relay.identity.LocalRelayIdProvider
 import com.cbgm.securechat.feature.transport.relay.model.FederatedEnvelope
 import com.cbgm.securechat.feature.transport.relay.model.RelayEnvelope
@@ -40,6 +41,7 @@ class WebSocketOutgoingWireSenderTest {
                 WebSocketOutgoingWireSender(
                     webSocketTransportClient = client,
                     localRelayIdProvider = SuccessfulLocalRelayIdProvider(),
+                    localBootstrapRelayIdProvider = SuccessfulLocalBootstrapRelayIdProvider(),
                     relayTransportConfig =
                         RelayTransportConfig(
                             serverUrl = "ws://localhost:8080/relay",
@@ -66,6 +68,7 @@ class WebSocketOutgoingWireSenderTest {
                 WebSocketOutgoingWireSender(
                     webSocketTransportClient = client,
                     localRelayIdProvider = SuccessfulLocalRelayIdProvider(),
+                    localBootstrapRelayIdProvider = SuccessfulLocalBootstrapRelayIdProvider(),
                     relayTransportConfig =
                         RelayTransportConfig(
                             serverUrl = "ws://localhost:8080/relay",
@@ -102,6 +105,7 @@ class WebSocketOutgoingWireSenderTest {
                 WebSocketOutgoingWireSender(
                     webSocketTransportClient = client,
                     localRelayIdProvider = SuccessfulLocalRelayIdProvider(),
+                    localBootstrapRelayIdProvider = SuccessfulLocalBootstrapRelayIdProvider(),
                     relayTransportConfig =
                         RelayTransportConfig(
                             serverUrl = "ws://localhost:8080/relay",
@@ -131,6 +135,7 @@ class WebSocketOutgoingWireSenderTest {
                         object : LocalRelayIdProvider {
                             override suspend fun getLocalRelayId(): Result<String> = Result.failure(expectedError)
                         },
+                    localBootstrapRelayIdProvider = SuccessfulLocalBootstrapRelayIdProvider(),
                     relayTransportConfig =
                         RelayTransportConfig(
                             serverUrl = "ws://localhost:8080/relay",
@@ -151,6 +156,10 @@ class WebSocketOutgoingWireSenderTest {
 
     private class SuccessfulLocalRelayIdProvider : LocalRelayIdProvider {
         override suspend fun getLocalRelayId(): Result<String> = Result.success("local-relay-id")
+    }
+
+    private class SuccessfulLocalBootstrapRelayIdProvider : LocalBootstrapRelayIdProvider {
+        override suspend fun getLocalBootstrapRelayId(): Result<String> = Result.success("scphone1_local")
     }
 
     private class RecordingWebSocketTransportClient(

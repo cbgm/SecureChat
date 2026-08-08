@@ -5,6 +5,7 @@ import com.cbgm.securechat.core.protocol.mailbox.MailboxRouteRepository
 import com.cbgm.securechat.core.protocol.transport.OutgoingWireSender
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.feature.transport.relay.config.RelayTransportConfig
+import com.cbgm.securechat.feature.transport.relay.identity.LocalBootstrapRelayIdProvider
 import com.cbgm.securechat.feature.transport.relay.identity.LocalRelayIdProvider
 import com.cbgm.securechat.feature.transport.relay.model.FederatedEnvelope
 import com.cbgm.securechat.feature.transport.relay.model.RelayEnvelope
@@ -13,6 +14,7 @@ import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
 class WebSocketOutgoingWireSender(
     private val webSocketTransportClient: WebSocketTransportClient,
     private val localRelayIdProvider: LocalRelayIdProvider,
+    private val localBootstrapRelayIdProvider: LocalBootstrapRelayIdProvider,
     private val relayTransportConfig: RelayTransportConfig,
     private val mailboxRouteRepository: MailboxRouteRepository? = null
 ) : OutgoingWireSender {
@@ -21,17 +23,15 @@ class WebSocketOutgoingWireSender(
         encodedTransportPayload: String
     ): Result<Unit> =
         runCatching {
-            require(recipientAddress.isNotBlank()) {
-                "Recipient address must not be blank"
-            }
+            require(recipientAddress.isNotBlank()) { "Recipient address must not be blank" }
+            require(encodedTransportPayload.isNotBlank()) { "Transport payload must not be blank" }
 
-            require(
-                encodedTransportPayload.isNotBlank()
-            ) {
-                "Transport payload must not be blank"
-            }
-
-            val senderRelayId = localRelayIdProvider.getLocalRelayId().getOrThrow()
+            val senderRelayId =
+                if (recipientAddress.startsWith(BOOTSTRAP_ROUTING_ID_PREFIX)) {
+                    localBootstrapRelayIdProvider.getLocalBootstrapRelayId().getOrThrow()
+                } else {
+                    localRelayIdProvider.getLocalRelayId().getOrThrow()
+                }
 
             val envelopeId = IdGenerator.generate()
             val createdAt = SystemClock.nowEpochMilliseconds()
@@ -78,5 +78,6 @@ class WebSocketOutgoingWireSender(
 
     private companion object {
         const val ENVELOPE_LIFETIME_MILLISECONDS = 7L * 24L * 60L * 60L * 1_000L
+        const val BOOTSTRAP_ROUTING_ID_PREFIX = "scphone1_"
     }
 }

@@ -18,25 +18,26 @@ class ClientRouteRegistrationFactory(
         nodeId: String,
         connectionId: String,
         generation: Long,
-        expiresAtEpochMilliseconds: Long
+        expiresAtEpochMilliseconds: Long,
+        aliases: List<String> = emptyList()
     ): Result<ClientRouteRegistration> =
         runCatching {
+            val routeAliases = aliases.takeIf { it.isNotEmpty() }
             val unsignedRoute =
                 UnsignedClientRoute(
                     routingId = routingId,
                     nodeId = nodeId,
                     connectionId = connectionId,
                     generation = generation,
-                    expiresAtEpochMilliseconds = expiresAtEpochMilliseconds
+                    expiresAtEpochMilliseconds = expiresAtEpochMilliseconds,
+                    aliases = routeAliases
                 )
             val signingKeyPair = signingKeyPairProvider.getSigningKeyPair().getOrThrow()
             val payload = json.encodeToString(unsignedRoute).encodeToByteArray()
             val signature =
                 signatureCrypto
-                    .sign(
-                        payload = payload,
-                        signingPrivateKey = signingKeyPair.privateKey
-                    ).getOrThrow()
+                    .sign(payload = payload, signingPrivateKey = signingKeyPair.privateKey)
+                    .getOrThrow()
 
             ClientRouteRegistration(
                 route =
@@ -46,6 +47,7 @@ class ClientRouteRegistrationFactory(
                         connectionId = connectionId,
                         generation = generation,
                         expiresAtEpochMilliseconds = expiresAtEpochMilliseconds,
+                        aliases = routeAliases,
                         clientSignature = signature
                     ),
                 clientSigningPublicKey = signingKeyPair.publicKey

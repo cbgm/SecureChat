@@ -15,6 +15,7 @@ sealed interface RelayClientMessage {
         val connectionId: String? = null,
         val generation: Long? = null,
         val expiresAtEpochMilliseconds: Long? = null,
+        val aliases: List<String>? = null,
         val clientSigningPublicKey: ByteArray? = null,
         val clientSignature: ByteArray? = null
     ) : RelayClientMessage {

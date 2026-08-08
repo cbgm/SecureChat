@@ -82,6 +82,10 @@ internal class PostgresOutboundEnvelopeDatabase(
                 )
                 """.trimIndent(),
                 """
+                ALTER TABLE federation_outbound_envelopes
+                ADD COLUMN IF NOT EXISTS routing_version INTEGER NOT NULL DEFAULT 0
+                """.trimIndent(),
+                """
                 CREATE INDEX IF NOT EXISTS federation_outbound_pending_idx
                 ON federation_outbound_envelopes (
                     state,

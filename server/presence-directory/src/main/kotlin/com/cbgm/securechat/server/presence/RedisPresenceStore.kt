@@ -50,39 +50,57 @@ internal class RedisPresenceStore(
         val currentTime = now()
         validatePresenceRegistration(registration, maximumTtlMilliseconds, currentTime)?.let { return it }
         val route = registration.route
-        val keys = routingKeys(route.routingId)
-        val result =
-            withJedis { jedis ->
-                jedis.eval(
-                    REGISTER_SCRIPT,
-                    listOf(keys.generation, keys.routes, keys.expiries, routingIdsKey),
-                    listOf(
-                        route.routingId,
-                        currentTime.toString(),
-                        route.generation.toString(),
-                        route.connectionId,
-                        serverJson.encodeToString(route),
-                        route.expiresAtEpochMilliseconds.toString()
-                    )
-                ) as Long
+        val routingIds = listOf(route.routingId) + route.aliases.orEmpty()
+        val encodedRoute = serverJson.encodeToString(route)
+        val results =
+            routingIds.map { routingId ->
+                val keys = routingKeys(routingId)
+                withJedis { jedis ->
+                    jedis.eval(
+                        REGISTER_SCRIPT,
+                        listOf(keys.generation, keys.routes, keys.expiries, routingIdsKey),
+                        listOf(
+                            routingId,
+                            currentTime.toString(),
+                            route.generation.toString(),
+                            route.connectionId,
+                            encodedRoute,
+                            route.expiresAtEpochMilliseconds.toString(),
+                            if (routingId == route.routingId) "1" else "0"
+                        )
+                    ) as Long
+                }
             }
-        return if (result == REGISTERED_RESULT) {
+        return if (results.all { result -> result == REGISTERED_RESULT }) {
             PresenceResult.Accepted
         } else {
+            routingIds.distinct().forEach { routingId ->
+                removeRoute(routingId, route.connectionId, currentTime)
+            }
             PresenceResult.Rejected("STALE_GENERATION")
         }
     }
 
-    override suspend fun remove(
+    override suspend fun remove(routingId: String, connectionId: String) {
+        val route = resolve(routingId).routes.firstOrNull { candidate -> candidate.connectionId == connectionId }
+        val routingIds = listOf(route?.routingId ?: routingId) + route?.aliases.orEmpty()
+        val currentTime = now()
+        routingIds.distinct().forEach { currentRoutingId ->
+            removeRoute(currentRoutingId, connectionId, currentTime)
+        }
+    }
+
+    private suspend fun removeRoute(
         routingId: String,
-        connectionId: String
+        connectionId: String,
+        currentTime: Long
     ) {
         val keys = routingKeys(routingId)
         withJedis { jedis ->
             jedis.eval(
                 REMOVE_SCRIPT,
                 listOf(keys.generation, keys.routes, keys.expiries, routingIdsKey),
-                listOf(routingId, now().toString(), connectionId)
+                listOf(routingId, currentTime.toString(), connectionId)
             )
         }
     }
@@ -192,7 +210,9 @@ internal class RedisPresenceStore(
 
             redis.call('HSET', KEYS[2], ARGV[4], ARGV[5])
             redis.call('ZADD', KEYS[3], ARGV[6], ARGV[4])
-            redis.call('SADD', KEYS[4], ARGV[1])
+            if ARGV[7] == '1' then
+                redis.call('SADD', KEYS[4], ARGV[1])
+            end
             local latest = redis.call('ZREVRANGE', KEYS[3], 0, 0, 'WITHSCORES')
             redis.call('PEXPIREAT', KEYS[1], latest[2])
             redis.call('PEXPIREAT', KEYS[2], latest[2])

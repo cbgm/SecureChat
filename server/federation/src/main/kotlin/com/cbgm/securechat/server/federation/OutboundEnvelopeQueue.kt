@@ -16,6 +16,11 @@ interface OutboundEnvelopeStorage : AutoCloseable {
 
     suspend fun enqueue(envelope: FederatedEnvelope): OutboundEnvelopeEntry
 
+    suspend fun bindRecipient(
+        envelopeId: String,
+        recipientDeviceRoutingId: String
+    ): OutboundEnvelopeEntry?
+
     suspend fun markAttempt(
         envelopeId: String,
         nextAttemptAtEpochMilliseconds: Long
@@ -51,6 +56,16 @@ class OutboundEnvelopeQueue(
             )
         }
     }
+
+    override suspend fun bindRecipient(
+        envelopeId: String,
+        recipientDeviceRoutingId: String
+    ): OutboundEnvelopeEntry? =
+        entries.computeIfPresent(envelopeId) { _, entry ->
+            entry.copy(
+                envelope = entry.envelope.copy(recipientDeviceRoutingId = recipientDeviceRoutingId)
+            )
+        }
 
     override suspend fun markAttempt(
         envelopeId: String,
