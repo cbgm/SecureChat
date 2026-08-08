@@ -33,3 +33,5 @@ server/community-node/.env
 server/community-node/.env.production
 server/community-node/secrets/*.txt
 server/.standalone-smoke/
+server/community-node/.env.runtime
+server/community-node/release.env

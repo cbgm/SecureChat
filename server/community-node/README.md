@@ -1,97 +1,82 @@
 # Standalone SecureChat community node
 
-This Compose project is the independently hostable data-plane package. It contains only:
+This directory is the independently hostable SecureChat data plane. A node contains only:
 
 - gateway
-- federation service
+- federation
 - mailbox
-- mailbox and federation PostgreSQL databases
-- Caddy edge proxy
+- mailbox PostgreSQL
+- federation PostgreSQL
+- Caddy
 
-It shares no Docker network, volume, database, or static API token with the central control plane.
-The mailbox, gateway, and federation containers share one persistent Ed25519 node identity. That
-identity signs registry heartbeats, presence mutations, push coordination, and federation traffic.
+Every machine gets its own persistent Ed25519 node identity and its own Docker volumes. No node
+shares a Docker network, database, token, or identity volume with the control plane or another node.
 
-## Local isolated start
+## Zero-input deployment bundle
 
-Start the control plane first, copy `.env.example` to `.env`, and run:
+The `Server Images` workflow publishes multi-architecture server images and creates a
+`securechat-community-node-<channel>` artifact. It contains a ZIP for Windows and a TAR.GZ for
+Linux/macOS. Both bundles already contain the control-plane URL, image prefix, and moving image
+channel for the branch that built them.
 
-```powershell
-docker compose `
-    --env-file server/community-node/.env `
-    -f server/community-node/docker-compose.yml `
-    up -d --build
-```
+After extracting the artifact, the operator does not edit an env file and does not type Docker
+commands.
 
-Verify the node and registry:
+### Windows
 
-```powershell
-curl.exe http://localhost:8492/health
-curl.exe http://localhost:8493/health
-curl.exe http://localhost:8494/health
-curl.exe http://localhost:8391/health
-```
+Double-click `Start-SecureChatNode.cmd`.
 
-The registry health response must increase to `nodes=1`. Restarting the project without `down -v`
-preserves both the node ID and queued federation/mailbox data.
+### Linux
 
-`host.docker.internal` is appropriate for the local container-isolation test. Android emulators and
-real remote nodes need an address resolvable by both clients and other node hosts. Use a real HTTPS
-DNS name for production.
+Launch `start-securechat-node.sh` from the desktop/file manager or configure it as an executable
+launcher.
 
-## Run a second independent node
+### macOS
 
-Create another env file with a different project name and ports, for example:
+Double-click `Start-SecureChatNode.command`.
 
-```dotenv
-COMMUNITY_NODE_PROJECT_NAME=securechat-community-node-b
-COMMUNITY_NODE_HTTP_PORT=8590
-CLIENT_ENDPOINT=ws://host.docker.internal:8590/relay
-FEDERATION_ENDPOINT=http://host.docker.internal:8590
-MAILBOX_ENDPOINT=http://host.docker.internal:8590
-MAILBOX_DIAGNOSTIC_PORT=8592
-FEDERATION_DIAGNOSTIC_PORT=8593
-GATEWAY_DIAGNOSTIC_PORT=8594
-MAILBOX_DATABASE_PORT=5736
-FEDERATION_DATABASE_PORT=5738
-```
+The bootstrapper automatically:
 
-Start it with `--env-file`. Compose project names isolate every network and volume.
+1. detects the machine's primary IPv4 address;
+2. creates strong database passwords and internal API tokens once;
+3. writes the runtime Compose environment;
+4. advertises the detected machine address on port `8490`;
+5. pulls the published mailbox, federation, and gateway images;
+6. starts the node and waits for all services to become healthy;
+7. preserves the node identity, databases, and generated secrets on every restart;
+8. starts the image updater, which follows the branch/release channel embedded in the bundle.
 
-
-## Automated isolation proof
-
-From the repository root, run:
-
-```powershell
-.\server\scripts\Test-StandaloneCommunityNodes.ps1 -BuildImages
-```
-
-The test launches the control plane and two separately named community-node projects, registers two
-persistent node identities, sends a federated envelope from A to B and from B to A, checks signed
-presence and push access, and rejects any shared Docker network or volume between the projects.
-
-## Production
-
-Set `COMMUNITY_NODE_DOMAIN`, use the public HTTPS control-plane URL, provide the four secret files,
-and merge the production override:
-
-```powershell
-docker compose `
-    --env-file server/community-node/.env.production `
-    -f server/community-node/docker-compose.yml `
-    -f server/community-node/docker-compose.production.yml `
-    up -d --build
-```
-
-The advertised endpoints become:
+The generated files are local deployment state and are not part of the source repository:
 
 ```text
-wss://<COMMUNITY_NODE_DOMAIN>/relay
-https://<COMMUNITY_NODE_DOMAIN>/v1/federation/**
-https://<COMMUNITY_NODE_DOMAIN>/v1/mailboxes/**
+.env.runtime
+secrets/
 ```
 
-Do not copy another operator's `node-identity` volume. A new operator must generate a new identity.
-Do not run `docker compose down -v` unless intentionally deleting the node identity and all queued
-data.
+A later image published to the same channel is picked up automatically by the updater. Compose
+configuration changes still require a newer deployment bundle.
+
+## Network requirement
+
+A community node can run on any Docker-capable Windows, Linux, or macOS machine that can reach the
+configured SecureChat control plane and whose advertised `8490` port is reachable by SecureChat
+clients and other nodes. The bundle automatically discovers the machine address; it cannot create
+router/NAT port-forwarding rules or a public DNS name.
+
+The current development bundle falls back to the development control-plane URL when no repository
+variable is configured. Production should set the GitHub Actions repository variable
+`SECURECHAT_CONTROL_PLANE_URL` to the public control-plane URL; bundles then contain that URL
+automatically.
+
+## Persistence
+
+Do not delete the Docker volumes unless the node is intentionally being destroyed. In particular,
+removing the `node-identity` volume creates a new node identity and therefore a new registry node ID.
+
+The one-click bootstrapper uses normal `docker compose up` semantics and never runs `down -v`.
+
+## Development compose
+
+`docker-compose.yml` remains the source-build/local-development stack used by the existing server
+smoke tests. `docker-compose.release.yml` is only the release/deployment override and replaces the
+three SecureChat build targets with published GHCR images.

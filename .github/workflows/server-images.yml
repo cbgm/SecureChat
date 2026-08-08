@@ -1,0 +1,186 @@
+name: Server Images
+
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "server/**"
+      - "build-logic/**"
+      - "gradle/**"
+      - "gradle.properties"
+      - "settings.gradle.kts"
+      - ".github/workflows/server-images.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: server-images-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Server quality gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run quality checks
+        run: ./gradlew qualityCheck --no-daemon --stacktrace --console=plain
+
+      - name: Run server tests
+        run: >-
+          ./gradlew
+          :server:node-registry:test
+          :server:presence-directory:test
+          :server:push:test
+          :server:mailbox:test
+          :server:federation:test
+          :server:gateway:test
+          --no-daemon --stacktrace --console=plain
+
+  publish-images:
+    name: Publish server images
+    needs:
+      - quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    outputs:
+      channel_tag: ${{ steps.tags.outputs.channel_tag }}
+      image_prefix: ${{ steps.tags.outputs.image_prefix }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute image tags
+        id: tags
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          image_prefix="ghcr.io/${owner}/securechat"
+          branch_name="${GITHUB_REF_NAME}"
+          branch_tag="branch-$(printf '%s' "${branch_name}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9_.-]+/-/g')"
+
+          if [[ "${branch_name}" == "master" ]]; then
+            channel_tag="latest"
+          elif [[ "${branch_name}" == "develop" ]]; then
+            channel_tag="develop"
+          else
+            channel_tag="${branch_tag}"
+          fi
+
+          echo "image_prefix=${image_prefix}" >> "${GITHUB_OUTPUT}"
+          echo "channel_tag=${channel_tag}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build and publish server images
+        env:
+          IMAGE_PREFIX: ${{ steps.tags.outputs.image_prefix }}
+          CHANNEL_TAG: ${{ steps.tags.outputs.channel_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          services=(
+            node-registry
+            presence-directory
+            push
+            mailbox
+            federation
+            gateway
+          )
+
+          created_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          immutable_tag="sha-${GITHUB_SHA}"
+
+          for service in "${services[@]}"; do
+            image="${IMAGE_PREFIX}-${service}"
+
+            docker buildx build \
+              --file server/Dockerfile \
+              --platform linux/amd64,linux/arm64 \
+              --build-arg "SERVICE=${service}" \
+              --tag "${image}:${immutable_tag}" \
+              --tag "${image}:${CHANNEL_TAG}" \
+              --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+              --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+              --label "org.opencontainers.image.created=${created_at}" \
+              --cache-from "type=gha,scope=securechat-${service}" \
+              --cache-to "type=gha,mode=max,scope=securechat-${service}" \
+              --provenance=true \
+              --sbom=true \
+              --push \
+              .
+          done
+
+  community-node-bundle:
+    name: Build zero-input community-node bundle
+    needs:
+      - publish-images
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build deployment bundle
+        shell: pwsh
+        env:
+          CONFIGURED_CONTROL_PLANE_URL: ${{ vars.SECURECHAT_CONTROL_PLANE_URL }}
+          IMAGE_PREFIX: ${{ needs.publish-images.outputs.image_prefix }}
+          CHANNEL_TAG: ${{ needs.publish-images.outputs.channel_tag }}
+        run: |
+          $controlPlaneUrl = $env:CONFIGURED_CONTROL_PLANE_URL
+          if ([string]::IsNullOrWhiteSpace($controlPlaneUrl)) {
+              $controlPlaneUrl = "http://192.168.178.60:8390"
+          }
+
+          ./server/scripts/New-CommunityNodeBundle.ps1 `
+              -OutputDirectory "dist" `
+              -ControlPlaneUrl $controlPlaneUrl `
+              -ImagePrefix $env:IMAGE_PREFIX `
+              -ImageTag $env:CHANNEL_TAG
+
+      - name: Upload community-node bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: securechat-community-node-${{ needs.publish-images.outputs.channel_tag }}
+          path: |
+            dist/securechat-community-node.zip
+            dist/securechat-community-node.tar.gz
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
