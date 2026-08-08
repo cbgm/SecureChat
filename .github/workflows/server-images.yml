@@ -35,14 +35,24 @@ concurrency:
 
 jobs:
   publish-images:
-    name: Publish PR server images
+    name: Publish ${{ matrix.service }} image
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
 
     if: >
       github.event_name == 'workflow_dispatch' ||
       github.event.pull_request.head.repo.full_name == github.repository
 
-    runs-on: ubuntu-latest
-    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - node-registry
+          - presence-directory
+          - push
+          - mailbox
+          - federation
+          - gateway
 
     steps:
       - name: Checkout exact feature-branch commit
@@ -66,8 +76,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and publish all server images
+      - name: Build and publish ${{ matrix.service }}
         env:
+          SERVICE: ${{ matrix.service }}
           REQUESTED_IMAGE_TAG: ${{ inputs.image_tag }}
           SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -77,6 +88,7 @@ jobs:
 
           owner="${GITHUB_REPOSITORY_OWNER,,}"
           image_prefix="ghcr.io/${owner}/securechat"
+          image="${image_prefix}-${SERVICE}"
 
           image_tags=(
             "sha-${SOURCE_SHA}"
@@ -95,95 +107,32 @@ jobs:
             image_tags+=("${REQUESTED_IMAGE_TAG}")
           fi
 
-          created_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          tag_arguments=()
 
-          services=(
-            node-registry
-            presence-directory
-            push
-            mailbox
-            federation
-            gateway
-          )
-
-          echo "Publishing images with tags:"
-          printf '  - %s\n' "${image_tags[@]}"
-
-          for service in "${services[@]}"; do
-            image="${image_prefix}-${service}"
-            tag_arguments=()
-
-            for tag in "${image_tags[@]}"; do
-              tag_arguments+=(
-                --tag
-                "${image}:${tag}"
-              )
-            done
-
-            echo ""
-            echo "Building ${image}..."
-
-            docker buildx build \
-              --file server/Dockerfile \
-              --platform linux/amd64,linux/arm64 \
-              --build-arg "SERVICE=${service}" \
-              --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
-              --label "org.opencontainers.image.revision=${SOURCE_SHA}" \
-              --label "org.opencontainers.image.created=${created_at}" \
-              --cache-from "type=gha,scope=securechat-server-images" \
-              --cache-to "type=gha,mode=max,scope=securechat-server-images" \
-              --provenance=true \
-              --sbom=true \
-              --push \
-              "${tag_arguments[@]}" \
-              .
+          for tag in "${image_tags[@]}"; do
+            tag_arguments+=(
+              --tag
+              "${image}:${tag}"
+            )
           done
 
-      - name: Write workflow summary
-        env:
-          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        shell: bash
-        run: |
-          set -euo pipefail
+          created_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 
-          owner="${GITHUB_REPOSITORY_OWNER,,}"
-          image_prefix="ghcr.io/${owner}/securechat"
-
-          {
-            echo "## Server images published"
-            echo ""
-            echo "Source commit:"
-            echo ""
-            echo '```text'
-            echo "${SOURCE_SHA}"
-            echo '```'
-            echo ""
-            echo "Immutable image tag:"
-            echo ""
-            echo '```text'
-            echo "sha-${SOURCE_SHA}"
-            echo '```'
-
-            if [[ -n "${PR_NUMBER}" ]]; then
-              echo ""
-              echo "Movable PR image tag:"
-              echo ""
-              echo '```text'
-              echo "pr-${PR_NUMBER}"
-              echo '```'
-            fi
-
-            echo ""
-            echo "Published images:"
-            echo ""
-            echo "- \`${image_prefix}-node-registry\`"
-            echo "- \`${image_prefix}-presence-directory\`"
-            echo "- \`${image_prefix}-push\`"
-            echo "- \`${image_prefix}-mailbox\`"
-            echo "- \`${image_prefix}-federation\`"
-            echo "- \`${image_prefix}-gateway\`"
-          } >> "${GITHUB_STEP_SUMMARY}"
+          docker buildx build \
+            --file server/Dockerfile \
+            --platform linux/amd64,linux/arm64 \
+            --build-arg "SERVICE=${SERVICE}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${SOURCE_SHA}" \
+            --label "org.opencontainers.image.created=${created_at}" \
+            --cache-from "type=gha,scope=securechat-server-images" \
+            --cache-from "type=gha,scope=securechat-server-images-${SERVICE}" \
+            --cache-to "type=gha,mode=max,scope=securechat-server-images-${SERVICE}" \
+            --provenance=true \
+            --sbom=true \
+            --push \
+            "${tag_arguments[@]}" \
+            .
 
   deployment-bundles:
     name: Create deployment bundles
