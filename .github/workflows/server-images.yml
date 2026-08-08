@@ -24,10 +24,9 @@ concurrency:
 jobs:
   publish-images:
     name: Publish server images
-    needs:
-      - quality
     runs-on: ubuntu-latest
     timeout-minutes: 120
+
     outputs:
       channel_tag: ${{ steps.tags.outputs.channel_tag }}
       image_prefix: ${{ steps.tags.outputs.image_prefix }}
@@ -60,7 +59,10 @@ jobs:
           owner="${GITHUB_REPOSITORY_OWNER,,}"
           image_prefix="ghcr.io/${owner}/securechat"
           branch_name="${GITHUB_REF_NAME}"
-          branch_tag="branch-$(printf '%s' "${branch_name}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9_.-]+/-/g')"
+
+          branch_tag="branch-$(printf '%s' "${branch_name}" \
+            | tr '[:upper:]' '[:lower:]' \
+            | sed -E 's/[^a-z0-9_.-]+/-/g')"
 
           if [[ "${branch_name}" == "master" ]]; then
             channel_tag="latest"
@@ -132,6 +134,7 @@ jobs:
           CHANNEL_TAG: ${{ needs.publish-images.outputs.channel_tag }}
         run: |
           $controlPlaneUrl = $env:CONFIGURED_CONTROL_PLANE_URL
+
           if ([string]::IsNullOrWhiteSpace($controlPlaneUrl)) {
               $controlPlaneUrl = "http://192.168.178.60:8390"
           }
