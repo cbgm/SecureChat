@@ -7,11 +7,18 @@ x-hardened-service: &hardened-service
   security_opt:
     - no-new-privileges:true
 
-x-auto-update: &auto-update
-  labels:
-    com.centurylinklabs.watchtower.enable: "true"
-
 services:
+  caddy:
+    depends_on:
+      mailbox:
+        condition: service_started
+      federation:
+        condition: service_started
+      gateway:
+        condition: service_started
+    networks:
+      - edge
+
   mailbox-database:
     ports: !reset []
     environment:
@@ -23,12 +30,12 @@ services:
       - backend
 
   mailbox:
-    <<:
-      - *hardened-service
-      - *auto-update
+    <<: *hardened-service
     image: ${SECURECHAT_IMAGE_PREFIX:?Missing SECURECHAT_IMAGE_PREFIX}-mailbox:${SECURECHAT_IMAGE_TAG:?Missing SECURECHAT_IMAGE_TAG}
     build: !reset null
+    pull_policy: always
     ports: !reset []
+    healthcheck: !reset null
     environment:
       TRUST_PROXY_HEADERS: "true"
       MAILBOX_DATABASE_PASSWORD: !reset null
@@ -38,6 +45,9 @@ services:
     networks:
       - edge
       - backend
+    depends_on:
+      mailbox-database:
+        condition: service_healthy
 
   federation-database:
     ports: !reset []
@@ -50,12 +60,12 @@ services:
       - backend
 
   federation:
-    <<:
-      - *hardened-service
-      - *auto-update
+    <<: *hardened-service
     image: ${SECURECHAT_IMAGE_PREFIX:?Missing SECURECHAT_IMAGE_PREFIX}-federation:${SECURECHAT_IMAGE_TAG:?Missing SECURECHAT_IMAGE_TAG}
     build: !reset null
+    pull_policy: always
     ports: !reset []
+    healthcheck: !reset null
     environment:
       TRUST_PROXY_HEADERS: "true"
       FEDERATION_DATABASE_PASSWORD: !reset null
@@ -71,14 +81,19 @@ services:
     networks:
       - edge
       - backend
+    depends_on:
+      mailbox:
+        condition: service_started
+      federation-database:
+        condition: service_healthy
 
   gateway:
-    <<:
-      - *hardened-service
-      - *auto-update
+    <<: *hardened-service
     image: ${SECURECHAT_IMAGE_PREFIX:?Missing SECURECHAT_IMAGE_PREFIX}-gateway:${SECURECHAT_IMAGE_TAG:?Missing SECURECHAT_IMAGE_TAG}
     build: !reset null
+    pull_policy: always
     ports: !reset []
+    healthcheck: !reset null
     environment:
       FEDERATION_INTERNAL_API_TOKEN: !reset null
       FEDERATION_INTERNAL_API_TOKEN_FILE: /run/secrets/federation-internal-api-token
@@ -90,19 +105,9 @@ services:
     networks:
       - edge
       - backend
-
-  updater:
-    image: ghcr.io/containrrr/watchtower:1.7.1
-    restart: unless-stopped
-    environment:
-      WATCHTOWER_CLEANUP: "true"
-      WATCHTOWER_LABEL_ENABLE: "true"
-      WATCHTOWER_POLL_INTERVAL: ${SECURECHAT_UPDATE_INTERVAL_SECONDS:-300}
-      WATCHTOWER_ROLLING_RESTART: "true"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - edge
+    depends_on:
+      federation:
+        condition: service_started
 
 networks:
   edge:
@@ -112,9 +117,12 @@ networks:
 secrets:
   mailbox-database-password:
     file: ${MAILBOX_DATABASE_PASSWORD_FILE:?Missing MAILBOX_DATABASE_PASSWORD_FILE}
+
   federation-database-password:
     file: ${FEDERATION_DATABASE_PASSWORD_FILE:?Missing FEDERATION_DATABASE_PASSWORD_FILE}
+
   federation-internal-api-token:
     file: ${FEDERATION_INTERNAL_API_TOKEN_FILE:?Missing FEDERATION_INTERNAL_API_TOKEN_FILE}
+
   gateway-internal-api-token:
     file: ${GATEWAY_INTERNAL_API_TOKEN_FILE:?Missing GATEWAY_INTERNAL_API_TOKEN_FILE}

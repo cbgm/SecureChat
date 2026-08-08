@@ -1,76 +1,98 @@
 [CmdletBinding()]
-param(
-    [switch]$PrepareOnly
-)
+param()
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
 
 $deploymentDirectory = $PSScriptRoot
 $releaseEnvironmentPath = Join-Path $deploymentDirectory "release.env"
 $runtimeEnvironmentPath = Join-Path $deploymentDirectory ".env.runtime"
 $secretsDirectory = Join-Path $deploymentDirectory "secrets"
-$composeFiles = @(
-    (Join-Path $deploymentDirectory "docker-compose.yml"),
-    (Join-Path $deploymentDirectory "docker-compose.release.yml")
-)
-$script:DockerExecutable = $null
+$composePath = Join-Path $deploymentDirectory "docker-compose.yml"
+$releaseComposePath = Join-Path $deploymentDirectory "docker-compose.release.yml"
+$logPath = Join-Path $deploymentDirectory "bootstrap-community-node.log"
 
-function Show-Result {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$Message,
-        [Parameter(Mandatory = $true)]
-        [bool]$IsError
-    )
+$publicPort = 8490
+$script:Docker = $null
 
-    try {
-        Add-Type -AssemblyName PresentationFramework -ErrorAction Stop
-        $icon =
-            if ($IsError) {
-                [System.Windows.MessageBoxImage]::Error
-            } else {
-                [System.Windows.MessageBoxImage]::Information
-            }
+$form = New-Object System.Windows.Forms.Form
+$form.Text = "SecureChat Community Node"
+$form.Size = New-Object System.Drawing.Size(560, 190)
+$form.StartPosition = "CenterScreen"
+$form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+$form.MaximizeBox = $false
+$form.TopMost = $true
 
-        [System.Windows.MessageBox]::Show(
-            $Message,
-            "SecureChat Community Node",
-            [System.Windows.MessageBoxButton]::OK,
-            $icon
-        ) | Out-Null
-    } catch {
-        if ($IsError) {
-            Write-Error $Message
-        } else {
-            Write-Host $Message
-        }
-    }
+$title = New-Object System.Windows.Forms.Label
+$title.Location = New-Object System.Drawing.Point(24, 22)
+$title.Size = New-Object System.Drawing.Size(505, 28)
+$title.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+$title.Text = "Starting SecureChat community node"
+$form.Controls.Add($title)
+
+$status = New-Object System.Windows.Forms.Label
+$status.Location = New-Object System.Drawing.Point(24, 58)
+$status.Size = New-Object System.Drawing.Size(505, 38)
+$status.Text = "Preparing..."
+$form.Controls.Add($status)
+
+$progress = New-Object System.Windows.Forms.ProgressBar
+$progress.Location = New-Object System.Drawing.Point(24, 108)
+$progress.Size = New-Object System.Drawing.Size(505, 20)
+$progress.Style = [System.Windows.Forms.ProgressBarStyle]::Marquee
+$progress.MarqueeAnimationSpeed = 25
+$form.Controls.Add($progress)
+
+$form.Show()
+[System.Windows.Forms.Application]::DoEvents()
+
+function Write-Log {
+    param([Parameter(Mandatory = $true)][string]$Message)
+
+    Add-Content `
+        -LiteralPath $logPath `
+        -Value "[$(Get-Date -Format o)] $Message" `
+        -Encoding UTF8
+}
+
+function Set-Status {
+    param([Parameter(Mandatory = $true)][string]$Message)
+
+    $status.Text = $Message
+    Write-Log $Message
+    [System.Windows.Forms.Application]::DoEvents()
 }
 
 function Read-EnvironmentFile {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$Path
-    )
+    param([Parameter(Mandatory = $true)][string]$Path)
 
     $values = @{}
-    Get-Content -LiteralPath $Path | ForEach-Object {
-        $line = $_.Trim()
-        if ($line.Length -gt 0 -and -not $line.StartsWith("#")) {
-            $separatorIndex = $line.IndexOf("=")
-            if ($separatorIndex -gt 0) {
-                $name = $line.Substring(0, $separatorIndex).Trim()
-                $value = $line.Substring($separatorIndex + 1).Trim()
-                $values[$name] = $value
-            }
+
+    foreach ($line in Get-Content -LiteralPath $Path) {
+        $trimmed = $line.Trim()
+
+        if ($trimmed.Length -eq 0 -or $trimmed.StartsWith("#")) {
+            continue
+        }
+
+        $separator = $trimmed.IndexOf("=")
+
+        if ($separator -gt 0) {
+            $name = $trimmed.Substring(0, $separator).Trim()
+            $value = $trimmed.Substring($separator + 1).Trim()
+            $values[$name] = $value
         }
     }
+
     return $values
 }
 
-function Resolve-DockerExecutable {
+function Find-Docker {
     $command = Get-Command docker -ErrorAction SilentlyContinue
+
     if ($null -ne $command) {
         return $command.Source
     }
@@ -90,12 +112,17 @@ function Resolve-DockerExecutable {
 }
 
 function Test-DockerEngine {
-    & $script:DockerExecutable info *> $null
+    & $script:Docker info *> $null
     return $LASTEXITCODE -eq 0
 }
 
-function Ensure-DockerEngine {
-    $script:DockerExecutable = Resolve-DockerExecutable
+function Ensure-Docker {
+    $script:Docker = Find-Docker
+
+    Remove-Item Env:DOCKER_HOST -ErrorAction SilentlyContinue
+    Remove-Item Env:DOCKER_TLS_VERIFY -ErrorAction SilentlyContinue
+    Remove-Item Env:DOCKER_CERT_PATH -ErrorAction SilentlyContinue
+    Remove-Item Env:DOCKER_CONTEXT -ErrorAction SilentlyContinue
 
     if (Test-DockerEngine) {
         return
@@ -106,19 +133,24 @@ function Ensure-DockerEngine {
         (Join-Path $env:LOCALAPPDATA "Docker\Docker Desktop.exe")
     )
 
-    $desktop = $desktopCandidates | Where-Object {
-        Test-Path -LiteralPath $_ -PathType Leaf
-    } | Select-Object -First 1
+    $desktop = $desktopCandidates |
+        Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } |
+        Select-Object -First 1
 
     if ($null -eq $desktop) {
-        throw "Docker Desktop is installed incompletely or cannot be found."
+        throw "Docker Desktop could not be found."
     }
 
-    Start-Process -FilePath $desktop | Out-Null
+    if ($null -eq (Get-Process -Name "Docker Desktop" -ErrorAction SilentlyContinue)) {
+        Start-Process -FilePath $desktop | Out-Null
+    }
 
-    $deadline = [DateTime]::UtcNow.AddMinutes(3)
+    $deadline = [DateTime]::UtcNow.AddMinutes(5)
+
     while ([DateTime]::UtcNow -lt $deadline) {
         Start-Sleep -Seconds 2
+        [System.Windows.Forms.Application]::DoEvents()
+
         if (Test-DockerEngine) {
             return
         }
@@ -128,7 +160,8 @@ function Ensure-DockerEngine {
 }
 
 function Assert-ComposeVersion {
-    $versionOutput = (& $script:DockerExecutable compose version --short | Out-String).Trim()
+    $versionOutput = (& $script:Docker compose version --short | Out-String).Trim()
+
     if ($LASTEXITCODE -ne 0 -or $versionOutput -notmatch '(\d+\.\d+\.\d+)') {
         throw "Docker Compose is not available."
     }
@@ -138,34 +171,33 @@ function Assert-ComposeVersion {
     }
 }
 
-function Test-ControlPlane {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$Url
+function Get-LocalIpv4Addresses {
+    return @(
+        Get-NetIPConfiguration |
+            Where-Object {
+                $null -ne $_.IPv4Address
+            } |
+            ForEach-Object {
+                $_.IPv4Address.IPAddress
+            } |
+            Where-Object {
+                $_ -and
+                $_ -notlike "127.*" -and
+                $_ -notlike "169.254.*"
+            }
     )
-
-    try {
-        $uri = [Uri]$Url
-        $directoryUri = [Uri]::new($uri, "/v1/nodes")
-        $response = Invoke-RestMethod `
-            -Uri $directoryUri.AbsoluteUri `
-            -Method Get `
-            -TimeoutSec 2
-
-        return $null -ne $response
-    } catch {
-        return $false
-    }
 }
 
-function Get-LocalIpv4Address {
+function Get-PrimaryIpv4Address {
     $addresses = @(
         Get-NetIPConfiguration |
             Where-Object {
                 $null -ne $_.IPv4DefaultGateway -and
                 $null -ne $_.IPv4Address
             } |
-            ForEach-Object { $_.IPv4Address.IPAddress } |
+            ForEach-Object {
+                $_.IPv4Address.IPAddress
+            } |
             Where-Object {
                 $_ -and
                 $_ -notlike "127.*" -and
@@ -177,105 +209,102 @@ function Get-LocalIpv4Address {
         return $addresses[0]
     }
 
-    throw "No usable IPv4 network connection was found."
+    $fallback = Get-LocalIpv4Addresses
+
+    if ($fallback.Count -gt 0) {
+        return $fallback[0]
+    }
+
+    throw "No usable IPv4 address was found."
 }
 
-function Find-ControlPlaneOnLan {
-    $localAddress = Get-LocalIpv4Address
-    $parts = $localAddress.Split(".")
-    if ($parts.Count -ne 4) {
-        return $null
+function Test-IsLocalHostAddress {
+    param([Parameter(Mandatory = $true)][string]$HostName)
+
+    if ($HostName -eq "localhost" -or $HostName -eq "127.0.0.1") {
+        return $true
     }
 
-    $prefix = "$($parts[0]).$($parts[1]).$($parts[2])"
-
-    foreach ($lastOctet in 1..254) {
-        $candidate = "http://$prefix.$lastOctet`:8390"
-
-        $client = [System.Net.Sockets.TcpClient]::new()
-        try {
-            $task = $client.ConnectAsync("$prefix.$lastOctet", 8390)
-            if (-not $task.Wait(120)) {
-                continue
-            }
-
-            if ($client.Connected -and (Test-ControlPlane -Url $candidate)) {
-                return $candidate
-            }
-        } catch {
-        } finally {
-            $client.Dispose()
-        }
-    }
-
-    return $null
+    return (Get-LocalIpv4Addresses) -contains $HostName
 }
 
-function Resolve-ControlPlaneUrl {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$ConfiguredUrl
-    )
+function Test-ControlPlane {
+    param([Parameter(Mandatory = $true)][string]$Url)
 
-    if (Test-ControlPlane -Url $ConfiguredUrl) {
-        return $ConfiguredUrl.TrimEnd("/")
+    try {
+        $base = $Url.TrimEnd("/")
+        $response = Invoke-RestMethod `
+            -Uri "$base/v1/nodes" `
+            -Method Get `
+            -TimeoutSec 3
+
+        return $null -ne $response
+    } catch {
+        return $false
     }
-
-    $discovered = Find-ControlPlaneOnLan
-    if (-not [string]::IsNullOrWhiteSpace($discovered)) {
-        return $discovered.TrimEnd("/")
-    }
-
-    throw "The SecureChat control plane is not reachable and no control plane was found on the local network."
 }
 
-function Get-PrimaryIpv4Address {
-    param(
-        [Parameter(Mandatory = $true)]
-        [Uri]$ControlPlaneUri
-    )
+function Resolve-ControlPlaneUrls {
+    param([Parameter(Mandatory = $true)][string]$ConfiguredUrl)
+
+    $uri = [Uri]$ConfiguredUrl
+
+    if (-not $uri.IsAbsoluteUri -or $uri.Scheme -notin @("http", "https")) {
+        throw "CONTROL_PLANE_URL must be an absolute HTTP or HTTPS URL."
+    }
 
     $port =
-        if ($ControlPlaneUri.IsDefaultPort) {
-            if ($ControlPlaneUri.Scheme -eq "https") { 443 } else { 80 }
+        if ($uri.IsDefaultPort) {
+            if ($uri.Scheme -eq "https") { 443 } else { 80 }
         } else {
-            $ControlPlaneUri.Port
+            $uri.Port
         }
 
-    $routeProbe =
-        Test-NetConnection `
-            -ComputerName $ControlPlaneUri.Host `
-            -Port $port `
-            -InformationLevel Detailed `
-            -WarningAction SilentlyContinue
+    if (Test-IsLocalHostAddress -HostName $uri.Host) {
+        $hostProbeUrl = "$($uri.Scheme)://127.0.0.1`:$port"
 
-    if (
-        $routeProbe.TcpTestSucceeded -and
-        $null -ne $routeProbe.SourceAddress -and
-        $routeProbe.SourceAddress.AddressFamily -eq [System.Net.Sockets.AddressFamily]::InterNetwork
-    ) {
-        return $routeProbe.SourceAddress.IPAddressToString
+        if (-not (Test-ControlPlane -Url $hostProbeUrl)) {
+            throw "The local SecureChat control plane is not reachable at $hostProbeUrl."
+        }
+
+        $containerUrl =
+            if ($uri.Scheme -eq "http") {
+                "http://host.docker.internal`:$port"
+            } else {
+                $ConfiguredUrl.TrimEnd("/")
+            }
+
+        return [PSCustomObject]@{
+            HostProbeUrl = $hostProbeUrl
+            ContainerUrl = $containerUrl
+        }
     }
 
-    return Get-LocalIpv4Address
+    if (-not (Test-ControlPlane -Url $ConfiguredUrl)) {
+        throw "The SecureChat control plane is not reachable at $ConfiguredUrl."
+    }
+
+    return [PSCustomObject]@{
+        HostProbeUrl = $ConfiguredUrl.TrimEnd("/")
+        ContainerUrl = $ConfiguredUrl.TrimEnd("/")
+    }
 }
 
 function New-RandomSecret {
     $bytes = New-Object byte[] 48
     $generator = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+
     try {
         $generator.GetBytes($bytes)
     } finally {
         $generator.Dispose()
     }
+
     return [Convert]::ToBase64String($bytes)
 }
 
 function Ensure-SecretFile {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$Path
-    )
+    param([Parameter(Mandatory = $true)][string]$Path)
 
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
         [System.IO.File]::WriteAllText(
@@ -286,40 +315,255 @@ function Ensure-SecretFile {
     }
 }
 
-function Invoke-Docker {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string[]]$Arguments
-    )
+function Invoke-Compose {
+    param([Parameter(Mandatory = $true)][string[]]$Arguments)
 
-    & $script:DockerExecutable @Arguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "Docker failed while starting the SecureChat node."
+    # Windows PowerShell 5.1 can turn normal native stderr output such as
+    # "Image ... Pulling" into a terminating NativeCommandError when the
+    # script uses ErrorActionPreference=Stop. Docker Compose writes progress
+    # to stderr even on success, so temporarily disable terminating handling
+    # only for the native Docker invocation and decide success from LASTEXITCODE.
+    $previousErrorActionPreference = $ErrorActionPreference
+
+    try {
+        $ErrorActionPreference = "Continue"
+
+        $output = @(
+            & $script:Docker compose `
+                --env-file $runtimeEnvironmentPath `
+                -f $composePath `
+                -f $releaseComposePath `
+                @Arguments 2>&1
+        )
+
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+
+    foreach ($line in $output) {
+        Write-Log "compose: $($line.ToString())"
+    }
+
+    if ($exitCode -ne 0) {
+        $detail = (
+            $output |
+                ForEach-Object { $_.ToString() } |
+                Select-Object -Last 12 |
+                Out-String
+        ).Trim()
+
+        if ([string]::IsNullOrWhiteSpace($detail)) {
+            throw "Docker Compose failed: $($Arguments -join ' ')"
+        }
+
+        throw "Docker Compose failed: $($Arguments -join ' ')`n`n$detail"
     }
 }
 
-try {
-    if (-not (Test-Path -LiteralPath $releaseEnvironmentPath -PathType Leaf)) {
-        throw "The deployment bundle is incomplete: release.env is missing."
+function Wait-ForContainerRunning {
+    param(
+        [Parameter(Mandatory = $true)][string]$Service,
+        [int]$TimeoutSeconds = 60
+    )
+
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+
+    while ([DateTime]::UtcNow -lt $deadline) {
+        $containerId = (
+            & $script:Docker compose `
+                --env-file $runtimeEnvironmentPath `
+                -f $composePath `
+                -f $releaseComposePath `
+                ps -q $Service 2>$null |
+                Select-Object -First 1
+        )
+
+        if (-not [string]::IsNullOrWhiteSpace($containerId)) {
+            $state = (
+                & $script:Docker inspect `
+                    --format "{{.State.Status}}" `
+                    $containerId 2>$null |
+                    Out-String
+            ).Trim()
+
+            if ($state -eq "running") {
+                return
+            }
+        }
+
+        Start-Sleep -Seconds 1
+        [System.Windows.Forms.Application]::DoEvents()
     }
 
-    foreach ($composeFile in $composeFiles) {
-        if (-not (Test-Path -LiteralPath $composeFile -PathType Leaf)) {
-            throw "The deployment bundle is incomplete: $([System.IO.Path]::GetFileName($composeFile)) is missing."
+    throw "$Service did not start."
+}
+
+function Escape-SqlLiteral {
+    param([Parameter(Mandatory = $true)][string]$Value)
+
+    return $Value.Replace("'", "''")
+}
+
+function Synchronize-PostgresPassword {
+    param(
+        [Parameter(Mandatory = $true)][string]$Service,
+        [Parameter(Mandatory = $true)][string]$DatabaseUser,
+        [Parameter(Mandatory = $true)][string]$DatabaseName,
+        [Parameter(Mandatory = $true)][string]$Password
+    )
+
+    Set-Status "Synchronizing $Service credentials..."
+
+    $escapedPassword = Escape-SqlLiteral -Value $Password
+    $sql = "ALTER ROLE `"$DatabaseUser`" WITH PASSWORD '$escapedPassword';"
+
+    $output = & $script:Docker compose `
+        --env-file $runtimeEnvironmentPath `
+        -f $composePath `
+        -f $releaseComposePath `
+        exec -T `
+        $Service `
+        psql `
+        -v ON_ERROR_STOP=1 `
+        -U $DatabaseUser `
+        -d $DatabaseName `
+        -c $sql 2>&1
+
+    $exitCode = $LASTEXITCODE
+
+    foreach ($line in $output) {
+        Write-Log "$Service password sync: $line"
+    }
+
+    if ($exitCode -ne 0) {
+        throw "Could not synchronize the password in $Service."
+    }
+}
+
+function Test-HttpReady {
+    param(
+        [Parameter(Mandatory = $true)][string]$Url,
+        [int]$TimeoutMilliseconds = 1500
+    )
+
+    try {
+        $request = [System.Net.HttpWebRequest]::Create($Url)
+        $request.Method = "GET"
+        $request.Timeout = $TimeoutMilliseconds
+        $request.ReadWriteTimeout = $TimeoutMilliseconds
+        $request.AllowAutoRedirect = $false
+
+        $response = $request.GetResponse()
+
+        try {
+            return [int]$response.StatusCode -ge 200 -and
+                [int]$response.StatusCode -lt 300
+        } finally {
+            $response.Close()
+        }
+    } catch {
+        return $false
+    }
+}
+
+function Wait-ForEndpoint {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][string]$Url,
+        [int]$TimeoutSeconds = 120
+    )
+
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+
+    while ([DateTime]::UtcNow -lt $deadline) {
+        Set-Status "Waiting for $Name..."
+
+        if (Test-HttpReady -Url $Url) {
+            Write-Log "$Name ready: $Url"
+            return
+        }
+
+        Start-Sleep -Seconds 2
+    }
+
+    throw "$Name did not become ready: $Url"
+}
+
+function Collect-Diagnostics {
+    try {
+        Write-Log "----- docker compose ps -----"
+        (& $script:Docker compose `
+            --env-file $runtimeEnvironmentPath `
+            -f $composePath `
+            -f $releaseComposePath `
+            ps --all 2>&1) | ForEach-Object {
+                Write-Log $_.ToString()
+            }
+
+        Write-Log "----- docker compose logs -----"
+        (& $script:Docker compose `
+            --env-file $runtimeEnvironmentPath `
+            -f $composePath `
+            -f $releaseComposePath `
+            logs --tail 180 --no-color 2>&1) | ForEach-Object {
+                Write-Log $_.ToString()
+            }
+    } catch {
+        Write-Log "Could not collect Docker diagnostics: $($_.Exception.Message)"
+    }
+}
+
+function Fail {
+    param([Parameter(Mandatory = $true)][string]$Message)
+
+    Write-Log "FAILED: $Message"
+
+    if ($null -ne $script:Docker) {
+        Push-Location $deploymentDirectory
+        try {
+            Collect-Diagnostics
+        } finally {
+            Pop-Location
         }
     }
 
-    Ensure-DockerEngine
+    [System.Windows.Forms.MessageBox]::Show(
+        "$Message`n`nDiagnostic log:`n$logPath",
+        "SecureChat Community Node",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Error
+    ) | Out-Null
+
+    $form.Close()
+    exit 1
+}
+
+try {
+    Set-Content -LiteralPath $logPath -Value "" -Encoding UTF8
+
+    foreach ($requiredFile in @(
+        $releaseEnvironmentPath,
+        $composePath,
+        $releaseComposePath
+    )) {
+        if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
+            throw "The deployment bundle is incomplete: $([System.IO.Path]::GetFileName($requiredFile)) is missing."
+        }
+    }
+
+    Set-Status "Starting Docker Desktop..."
+    Ensure-Docker
     Assert-ComposeVersion
 
+    Set-Status "Checking SecureChat control plane..."
     $release = Read-EnvironmentFile -Path $releaseEnvironmentPath
-    $requiredReleaseValues = @(
+
+    foreach ($requiredValue in @(
         "CONTROL_PLANE_URL",
         "SECURECHAT_IMAGE_PREFIX",
         "SECURECHAT_IMAGE_TAG"
-    )
-
-    foreach ($requiredValue in $requiredReleaseValues) {
+    )) {
         if (
             -not $release.ContainsKey($requiredValue) -or
             [string]::IsNullOrWhiteSpace($release[$requiredValue])
@@ -328,32 +572,37 @@ try {
         }
     }
 
-    $controlPlaneUrl = Resolve-ControlPlaneUrl -ConfiguredUrl $release["CONTROL_PLANE_URL"]
-    $controlPlaneUri = [Uri]$controlPlaneUrl
-    $hostAddress = Get-PrimaryIpv4Address -ControlPlaneUri $controlPlaneUri
-    $publicPort = 8490
-    $projectName = "securechat-community-node"
+    $controlPlane = Resolve-ControlPlaneUrls `
+        -ConfiguredUrl $release["CONTROL_PLANE_URL"]
 
+    $hostAddress = Get-PrimaryIpv4Address
+
+    Set-Status "Preparing SecureChat node secrets..."
     New-Item -ItemType Directory -Path $secretsDirectory -Force | Out-Null
 
-    $mailboxDatabasePasswordPath = Join-Path $secretsDirectory "mailbox-database-password.txt"
-    $federationDatabasePasswordPath = Join-Path $secretsDirectory "federation-database-password.txt"
-    $federationInternalTokenPath = Join-Path $secretsDirectory "federation-internal-api-token.txt"
-    $gatewayInternalTokenPath = Join-Path $secretsDirectory "gateway-internal-api-token.txt"
+    $mailboxPasswordPath = Join-Path $secretsDirectory "mailbox-database-password.txt"
+    $federationPasswordPath = Join-Path $secretsDirectory "federation-database-password.txt"
+    $federationTokenPath = Join-Path $secretsDirectory "federation-internal-api-token.txt"
+    $gatewayTokenPath = Join-Path $secretsDirectory "gateway-internal-api-token.txt"
 
     @(
-        $mailboxDatabasePasswordPath,
-        $federationDatabasePasswordPath,
-        $federationInternalTokenPath,
-        $gatewayInternalTokenPath
-    ) | ForEach-Object { Ensure-SecretFile -Path $_ }
+        $mailboxPasswordPath,
+        $federationPasswordPath,
+        $federationTokenPath,
+        $gatewayTokenPath
+    ) | ForEach-Object {
+        Ensure-SecretFile -Path $_
+    }
+
+    $mailboxPassword = (Get-Content -LiteralPath $mailboxPasswordPath -Raw).Trim()
+    $federationPassword = (Get-Content -LiteralPath $federationPasswordPath -Raw).Trim()
 
     $runtimeEnvironment = @(
-        "COMMUNITY_NODE_PROJECT_NAME=$projectName",
+        "COMMUNITY_NODE_PROJECT_NAME=securechat-community-node",
         "COMMUNITY_NODE_BIND_ADDRESS=0.0.0.0",
         "COMMUNITY_NODE_HTTP_PORT=$publicPort",
         "COMMUNITY_NODE_SITE_ADDRESS=:80",
-        "CONTROL_PLANE_URL=$controlPlaneUrl",
+        "CONTROL_PLANE_URL=$($controlPlane.ContainerUrl)",
         "CLIENT_ENDPOINT=ws://$hostAddress`:$publicPort/relay",
         "FEDERATION_ENDPOINT=http://$hostAddress`:$publicPort",
         "MAILBOX_ENDPOINT=http://$hostAddress`:$publicPort",
@@ -372,40 +621,86 @@ try {
         [System.Text.UTF8Encoding]::new($false)
     )
 
-    $composeArguments = @("compose", "--env-file", $runtimeEnvironmentPath)
-    foreach ($composeFile in $composeFiles) {
-        $composeArguments += @("-f", $composeFile)
-    }
-
     Push-Location $deploymentDirectory
     try {
-        Invoke-Docker -Arguments ($composeArguments + @("config", "--quiet"))
+        Set-Status "Validating node configuration..."
+        Invoke-Compose -Arguments @("config", "--quiet")
 
-        if (-not $PrepareOnly) {
-            Invoke-Docker -Arguments ($composeArguments + @("pull"))
-            Invoke-Docker -Arguments (
-                $composeArguments + @(
-                    "up",
-                    "-d",
-                    "--remove-orphans",
-                    "--wait",
-                    "--wait-timeout",
-                    "300"
-                )
-            )
-        }
+        Set-Status "Pulling SecureChat node images..."
+        Invoke-Compose -Arguments @("pull")
+
+        Set-Status "Starting node databases..."
+        Invoke-Compose -Arguments @(
+            "up",
+            "-d",
+            "mailbox-database",
+            "federation-database"
+        )
+
+        Wait-ForContainerRunning -Service "mailbox-database"
+        Wait-ForContainerRunning -Service "federation-database"
+
+        Start-Sleep -Seconds 3
+
+        Synchronize-PostgresPassword `
+            -Service "mailbox-database" `
+            -DatabaseUser "securechat_mailbox" `
+            -DatabaseName "securechat_mailbox" `
+            -Password $mailboxPassword
+
+        Synchronize-PostgresPassword `
+            -Service "federation-database" `
+            -DatabaseUser "securechat_federation" `
+            -DatabaseName "securechat_federation" `
+            -Password $federationPassword
+
+        Set-Status "Starting SecureChat node services..."
+        Invoke-Compose -Arguments @(
+            "up",
+            "-d",
+            "--remove-orphans"
+        )
+
+        Set-Status "Reloading community-node routing..."
+        Invoke-Compose -Arguments @(
+            "up",
+            "-d",
+            "--force-recreate",
+            "caddy"
+        )
     } finally {
         Pop-Location
     }
 
-    if (-not $PrepareOnly) {
-        Show-Result `
-            -Message "SecureChat node is running.`n`nhttp://$hostAddress`:$publicPort" `
-            -IsError $false
+    Wait-ForEndpoint `
+        -Name "mailbox" `
+        -Url "http://127.0.0.1:$publicPort/health/mailbox"
+
+    Wait-ForEndpoint `
+        -Name "federation" `
+        -Url "http://127.0.0.1:$publicPort/health/federation"
+
+    Wait-ForEndpoint `
+        -Name "gateway" `
+        -Url "http://127.0.0.1:$publicPort/health/gateway"
+
+    Set-Status "Verifying control-plane registration..."
+
+    if (-not (Test-ControlPlane -Url $controlPlane.HostProbeUrl)) {
+        throw "The SecureChat control plane became unreachable."
     }
 
+    $progress.Style = [System.Windows.Forms.ProgressBarStyle]::Blocks
+    $progress.Value = 100
+    $title.Text = "SecureChat community node is running"
+    $status.Text = "http://$hostAddress`:$publicPort"
+    Write-Log "SUCCESS: http://$hostAddress`:$publicPort"
+
+    [System.Windows.Forms.Application]::DoEvents()
+    Start-Sleep -Seconds 3
+
+    $form.Close()
     exit 0
 } catch {
-    Show-Result -Message $_.Exception.Message -IsError $true
-    exit 1
+    Fail -Message $_.Exception.Message
 }

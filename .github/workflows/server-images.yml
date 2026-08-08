@@ -203,13 +203,20 @@ jobs:
               -ImagePrefix $imagePrefix `
               -ImageTag $imageTag
 
+      - name: Prepare control-plane artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist-control-plane/artifact -Force | Out-Null
+          Expand-Archive `
+              -LiteralPath dist-control-plane/securechat-control-plane.zip `
+              -DestinationPath dist-control-plane/artifact `
+              -Force
+
       - name: Upload control-plane bundle
         uses: actions/upload-artifact@v7
         with:
           name: securechat-control-plane-${{ github.event.pull_request.number || 'manual' }}
-          path: |
-            dist-control-plane/securechat-control-plane.zip
-            dist-control-plane/SHA256SUMS.txt
+          path: dist-control-plane/artifact
           if-no-files-found: error
           retention-days: 14
 
@@ -255,13 +262,19 @@ jobs:
               -ImagePrefix $imagePrefix `
               -ImageTag $imageTag
 
+      - name: Prepare community-node artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist-community/artifact -Force | Out-Null
+          Expand-Archive `
+              -LiteralPath dist-community/securechat-community-node.zip `
+              -DestinationPath dist-community/artifact `
+              -Force
+
       - name: Upload community-node bundle
         uses: actions/upload-artifact@v7
         with:
           name: securechat-community-node-${{ github.event.pull_request.number || 'manual' }}
-          path: |
-            dist-community/securechat-community-node.zip
-            dist-community/securechat-community-node.tar.gz
-            dist-community/SHA256SUMS.txt
+          path: dist-community/artifact
           if-no-files-found: error
           retention-days: 14

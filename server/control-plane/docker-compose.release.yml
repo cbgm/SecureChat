@@ -1,15 +1,37 @@
 services:
+  caddy:
+    depends_on:
+      node-registry:
+        condition: service_started
+      presence-directory:
+        condition: service_started
+      push:
+        condition: service_started
+
   node-registry:
     image: ${SECURECHAT_IMAGE_PREFIX:?Missing SECURECHAT_IMAGE_PREFIX}-node-registry:${SECURECHAT_IMAGE_TAG:?Missing SECURECHAT_IMAGE_TAG}
     build: !reset null
     pull_policy: always
+    healthcheck: !reset null
 
   presence-directory:
     image: ${SECURECHAT_IMAGE_PREFIX:?Missing SECURECHAT_IMAGE_PREFIX}-presence-directory:${SECURECHAT_IMAGE_TAG:?Missing SECURECHAT_IMAGE_TAG}
     build: !reset null
     pull_policy: always
+    healthcheck: !reset null
+    depends_on:
+      node-registry:
+        condition: service_started
+      presence-redis:
+        condition: service_healthy
 
   push:
     image: ${SECURECHAT_IMAGE_PREFIX:?Missing SECURECHAT_IMAGE_PREFIX}-push:${SECURECHAT_IMAGE_TAG:?Missing SECURECHAT_IMAGE_TAG}
     build: !reset null
     pull_policy: always
+    healthcheck: !reset null
+    depends_on:
+      node-registry:
+        condition: service_started
+      push-database:
+        condition: service_healthy

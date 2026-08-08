@@ -13,13 +13,31 @@
         reverse_proxy node-registry:8090
     }
 
+    @registry_health path /health/registry
+    handle @registry_health {
+        rewrite * /health/ready
+        reverse_proxy node-registry:8090
+    }
+
     @presence path /v1/routes /v1/routes/*
     handle @presence {
         reverse_proxy presence-directory:8091
     }
 
+    @presence_health path /health/presence
+    handle @presence_health {
+        rewrite * /health/ready
+        reverse_proxy presence-directory:8091
+    }
+
     @node_push path /v1/node-push /v1/node-push/*
     handle @node_push {
+        reverse_proxy push:8095
+    }
+
+    @push_health path /health/push
+    handle @push_health {
+        rewrite * /health/ready
         reverse_proxy push:8095
     }
 

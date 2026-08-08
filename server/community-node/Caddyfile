@@ -20,13 +20,31 @@
         reverse_proxy gateway:8094
     }
 
+    @gateway_health path /health/gateway
+    handle @gateway_health {
+        rewrite * /health/ready
+        reverse_proxy gateway:8094
+    }
+
     @federation path /v1/federation /v1/federation/*
     handle @federation {
         reverse_proxy federation:8093
     }
 
+    @federation_health path /health/federation
+    handle @federation_health {
+        rewrite * /health/ready
+        reverse_proxy federation:8093
+    }
+
     @mailboxes path /v1/mailboxes /v1/mailboxes/*
     handle @mailboxes {
+        reverse_proxy mailbox:8092
+    }
+
+    @mailbox_health path /health/mailbox
+    handle @mailbox_health {
+        rewrite * /health/ready
         reverse_proxy mailbox:8092
     }
 
