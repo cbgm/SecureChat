@@ -1,15 +1,18 @@
 package com.cbgm.securechat.feature.transport.relay.identity
 
-import com.cbgm.securechat.core.protocol.phone.LocalPhoneNumberProvider
+import com.cbgm.securechat.core.protocol.identity.LocalSigningPublicKeyProvider
 
 class DefaultLocalRelayIdProvider(
-    private val localPhoneNumberProvider: LocalPhoneNumberProvider,
+    private val localSigningPublicKeyProvider: LocalSigningPublicKeyProvider,
     private val relayIdGenerator: RelayIdGenerator
 ) : LocalRelayIdProvider {
     override suspend fun getLocalRelayId(): Result<String> =
         runCatching {
-            val localPhoneNumber = localPhoneNumberProvider.getLocalPhoneNumber().getOrThrow()
+            val signingPublicKey =
+                localSigningPublicKeyProvider.getSigningPublicKey().getOrThrow()
 
-            relayIdGenerator.deriveFromPhoneNumber(phoneNumber = localPhoneNumber).getOrThrow()
+            relayIdGenerator
+                .deriveFromSigningPublicKey(signingPublicKey = signingPublicKey)
+                .getOrThrow()
         }
 }

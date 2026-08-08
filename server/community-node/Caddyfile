@@ -1,0 +1,52 @@
+{$COMMUNITY_NODE_SITE_ADDRESS} {
+    encode zstd gzip
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "no-referrer"
+        -Server
+    }
+
+    @relay path /relay
+    handle @relay {
+        reverse_proxy gateway:8094 {
+            stream_close_delay 5m
+        }
+    }
+
+    @gateway_info path /v1/gateway
+    handle @gateway_info {
+        reverse_proxy gateway:8094
+    }
+
+    @gateway_health path /health/gateway
+    handle @gateway_health {
+        rewrite * /health/ready
+        reverse_proxy gateway:8094
+    }
+
+    @federation path /v1/federation /v1/federation/*
+    handle @federation {
+        reverse_proxy federation:8093
+    }
+
+    @federation_health path /health/federation
+    handle @federation_health {
+        rewrite * /health/ready
+        reverse_proxy federation:8093
+    }
+
+    @mailboxes path /v1/mailboxes /v1/mailboxes/*
+    handle @mailboxes {
+        reverse_proxy mailbox:8092
+    }
+
+    @mailbox_health path /health/mailbox
+    handle @mailbox_health {
+        rewrite * /health/ready
+        reverse_proxy mailbox:8092
+    }
+
+    respond 404
+}

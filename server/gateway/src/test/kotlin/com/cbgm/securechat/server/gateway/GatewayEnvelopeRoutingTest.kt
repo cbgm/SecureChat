@@ -1,0 +1,236 @@
+package com.cbgm.securechat.server.gateway
+
+import com.cbgm.securechat.server.protocol.EnvelopeAcceptanceState
+import com.cbgm.securechat.server.protocol.FederatedEnvelope
+import com.cbgm.securechat.server.protocol.FederatedTypingEvent
+import com.cbgm.securechat.server.protocol.FederationAcknowledgement
+import com.cbgm.securechat.server.protocol.RelayEnvelope
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+class GatewayEnvelopeRoutingTest {
+    @Test
+    fun locallyConnectedRecipientSkipsFederation() =
+        runTest {
+            var federationCalls = 0
+            val accepted =
+                routeFederatedEnvelope(
+                    envelope = testEnvelope(),
+                    localDelivery = { true },
+                    federation =
+                        federationClient { envelope ->
+                            federationCalls += 1
+                            acknowledgement(
+                                envelope = envelope,
+                                state = EnvelopeAcceptanceState.STORED_AT_DESTINATION
+                            )
+                        }
+                )
+
+            assertTrue(accepted)
+            assertEquals(0, federationCalls)
+        }
+
+    @Test
+    fun remoteRecipientIsPassedToFederation() =
+        runTest {
+            var routedEnvelope: FederatedEnvelope? = null
+            val envelope = testEnvelope()
+            val accepted =
+                routeFederatedEnvelope(
+                    envelope = envelope,
+                    localDelivery = { false },
+                    federation =
+                        federationClient { candidate ->
+                            routedEnvelope = candidate
+                            acknowledgement(
+                                envelope = candidate,
+                                state = EnvelopeAcceptanceState.STORED_AT_DESTINATION
+                            )
+                        }
+                )
+
+            assertTrue(accepted)
+            assertEquals(envelope, routedEnvelope)
+        }
+
+    @Test
+    fun legacyEnvelopeIsStoredForPushAndStillRoutedOnline() =
+        runTest {
+            var pushCalls = 0
+            var networkCalls = 0
+            var markedStoredEnvelopeId: String? = null
+            val accepted =
+                storeAndRouteLegacyEnvelope(
+                    envelope = testRelayEnvelope(),
+                    pushStorage = {
+                        pushCalls += 1
+                        true
+                    },
+                    networkDelivery = {
+                        networkCalls += 1
+                        true
+                    },
+                    markFederationStored = {
+                        markedStoredEnvelopeId = it
+                    }
+                )
+
+            assertTrue(accepted)
+            assertEquals(1, pushCalls)
+            assertEquals(1, networkCalls)
+            assertEquals("envelope-1", markedStoredEnvelopeId)
+        }
+
+    @Test
+    fun federatedEnvelopeIsStoredForPushAndStillUsesMailboxRoute() =
+        runTest {
+            var pushedEnvelope: RelayEnvelope? = null
+            var routedEnvelope: FederatedEnvelope? = null
+            var markedStoredEnvelopeId: String? = null
+            val envelope = testEnvelope()
+
+            val accepted =
+                storeAndRouteFederatedEnvelope(
+                    envelope = envelope,
+                    pushStorage = { candidate ->
+                        pushedEnvelope = candidate
+                        true
+                    },
+                    networkDelivery = { candidate ->
+                        routedEnvelope = candidate
+                        true
+                    },
+                    markFederationStored = { envelopeId ->
+                        markedStoredEnvelopeId = envelopeId
+                    }
+                )
+
+            assertTrue(accepted)
+            assertEquals(
+                RelayEnvelope(
+                    envelopeId = envelope.envelopeId,
+                    senderId = envelope.senderRoutingId,
+                    recipientId = envelope.recipientDeviceRoutingId,
+                    payload = envelope.encryptedPayload,
+                    createdAtEpochMilliseconds = envelope.createdAtEpochMilliseconds
+                ),
+                pushedEnvelope
+            )
+            assertEquals(envelope, routedEnvelope)
+            assertEquals(envelope.envelopeId, markedStoredEnvelopeId)
+        }
+
+    @Test
+    fun federatedEnvelopePushFallbackAcceptsOfflineRecipient() =
+        runTest {
+            var markedStoredEnvelopeId: String? = null
+            val accepted =
+                storeAndRouteFederatedEnvelope(
+                    envelope = testEnvelope(),
+                    pushStorage = { true },
+                    networkDelivery = { false },
+                    markFederationStored = { envelopeId ->
+                        markedStoredEnvelopeId = envelopeId
+                    }
+                )
+
+            assertTrue(accepted)
+            assertEquals("envelope-1", markedStoredEnvelopeId)
+        }
+
+    @Test
+    fun durablePushFallbackAcceptsOfflineRecipientAndCompletesQueue() =
+        runTest {
+            var markedStoredEnvelopeId: String? = null
+            val accepted =
+                storeAndRouteLegacyEnvelope(
+                    envelope = testRelayEnvelope(),
+                    pushStorage = { true },
+                    networkDelivery = { false },
+                    markFederationStored = {
+                        markedStoredEnvelopeId = it
+                    }
+                )
+
+            assertTrue(accepted)
+            assertEquals("envelope-1", markedStoredEnvelopeId)
+        }
+
+    @Test
+    fun remoteTypingEventIsPassedToFederation() =
+        runTest {
+            var routedEvent: FederatedTypingEvent? = null
+            val event = testTypingEvent()
+            val delivered =
+                routeFederatedTypingEvent(
+                    event = event,
+                    localDelivery = { false },
+                    federation =
+                        federationClient(
+                            typingDelegate = { candidate ->
+                                routedEvent = candidate
+                                true
+                            }
+                        ) { envelope ->
+                            acknowledgement(
+                                envelope = envelope,
+                                state = EnvelopeAcceptanceState.QUEUED_AT_GATEWAY
+                            )
+                        }
+                )
+
+            assertTrue(delivered)
+            assertEquals(event, routedEvent)
+        }
+
+    private fun federationClient(
+        typingDelegate: suspend (FederatedTypingEvent) -> Boolean = { false },
+        delegate: suspend (FederatedEnvelope) -> FederationAcknowledgement
+    ): FederationClient =
+        object : FederationClient {
+            override suspend fun route(envelope: FederatedEnvelope): FederationAcknowledgement =
+                delegate(envelope)
+
+            override suspend fun routeTyping(event: FederatedTypingEvent): Boolean =
+                typingDelegate(event)
+        }
+
+    private fun acknowledgement(
+        envelope: FederatedEnvelope,
+        state: EnvelopeAcceptanceState
+    ): FederationAcknowledgement =
+        FederationAcknowledgement(
+            envelopeId = envelope.envelopeId,
+            state = state
+        )
+
+    private fun testEnvelope(): FederatedEnvelope =
+        FederatedEnvelope(
+            envelopeId = "envelope-1",
+            senderRoutingId = "sender",
+            recipientDeviceRoutingId = "recipient",
+            mailboxRoute = null,
+            encryptedPayload = "ciphertext",
+            createdAtEpochMilliseconds = 1_000L,
+            expiresAtEpochMilliseconds = 2_000L
+        )
+
+    private fun testRelayEnvelope(): RelayEnvelope =
+        RelayEnvelope(
+            envelopeId = "envelope-1",
+            senderId = "sender",
+            recipientId = "recipient",
+            payload = "ciphertext",
+            createdAtEpochMilliseconds = 1_000L
+        )
+
+    private fun testTypingEvent(): FederatedTypingEvent =
+        FederatedTypingEvent(
+            senderRoutingId = "sender",
+            recipientRoutingId = "recipient",
+            isTyping = true
+        )
+}

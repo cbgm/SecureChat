@@ -47,6 +47,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -816,6 +817,14 @@ private fun MessageList(
     bottomPadding: Dp,
     modifier: Modifier = Modifier
 ) {
+    val newestMessage = messages.firstOrNull()
+
+    LaunchedEffect(newestMessage?.id) {
+        if (newestMessage?.isMine == true) {
+            listState.animateScrollToItem(index = 0)
+        }
+    }
+
     LazyColumn(
         modifier = modifier,
         state = listState,

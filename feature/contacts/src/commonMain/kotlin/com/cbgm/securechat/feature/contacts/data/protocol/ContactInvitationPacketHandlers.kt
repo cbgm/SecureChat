@@ -2,6 +2,8 @@ package com.cbgm.securechat.feature.contacts.data.protocol
 
 import com.cbgm.securechat.core.protocol.handler.IncomingPacketContext
 import com.cbgm.securechat.core.protocol.handler.TypedProtocolPacketHandler
+import com.cbgm.securechat.core.protocol.mailbox.MailboxCapabilityLifecycle
+import com.cbgm.securechat.core.protocol.mailbox.NoOpMailboxCapabilityLifecycle
 import com.cbgm.securechat.core.protocol.packet.ContactInviteAcceptedPacket
 import com.cbgm.securechat.core.protocol.packet.ContactInviteDeclinedPacket
 import com.cbgm.securechat.core.protocol.packet.ContactInvitePacket
@@ -71,7 +73,9 @@ class ContactInviteDeclinedPacketHandler(
 }
 
 class DirectChatAuthorizationRevokedPacketHandler(
-    private val coordinator: IdentityInvitationCoordinator
+    private val coordinator: IdentityInvitationCoordinator,
+    private val mailboxCapabilityLifecycle: MailboxCapabilityLifecycle =
+        NoOpMailboxCapabilityLifecycle
 ) : TypedProtocolPacketHandler {
     override fun canHandle(packet: SecureChatPacket): Boolean = packet is DirectChatAuthorizationRevokedPacket
 
@@ -79,10 +83,18 @@ class DirectChatAuthorizationRevokedPacketHandler(
         context: IncomingPacketContext,
         packet: SecureChatPacket
     ): Result<Unit> =
-        coordinator.receiveDirectChatAuthorizationRevoked(
-            context = context,
-            packet =
-                packet as? DirectChatAuthorizationRevokedPacket
-                    ?: error("Incompatible direct chat authorization revocation packet")
-        )
+        runCatching {
+            val authorizationError =
+                coordinator
+                    .receiveDirectChatAuthorizationRevoked(
+                        context = context,
+                        packet =
+                            packet as? DirectChatAuthorizationRevokedPacket
+                                ?: error("Incompatible direct chat authorization revocation packet")
+                    ).exceptionOrNull()
+            val mailboxError =
+                mailboxCapabilityLifecycle.revokeForContact(context.contactId).exceptionOrNull()
+            authorizationError?.let { throw it }
+            mailboxError?.let { throw it }
+        }
 }

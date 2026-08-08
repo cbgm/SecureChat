@@ -1,5 +1,7 @@
 package com.cbgm.securechat.feature.contacts.data.repository
 
+import com.cbgm.securechat.core.protocol.mailbox.MailboxCapabilityLifecycle
+import com.cbgm.securechat.core.protocol.mailbox.NoOpMailboxCapabilityLifecycle
 import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.data.database.dao.ContactDao
 import com.cbgm.securechat.data.database.entity.ContactPublicIdentityEntity
@@ -10,7 +12,9 @@ import com.cbgm.securechat.feature.contacts.domain.repository.ContactKeyExchange
 import com.cbgm.securechat.feature.contacts.domain.repository.RemoteIdentityOrigin
 
 class DefaultContactKeyExchangeStore(
-    private val contactDao: ContactDao
+    private val contactDao: ContactDao,
+    private val mailboxCapabilityLifecycle: MailboxCapabilityLifecycle =
+        NoOpMailboxCapabilityLifecycle
 ) : ContactKeyExchangeStore {
     override suspend fun storeRemoteIdentity(
         contactId: String,
@@ -52,6 +56,7 @@ class DefaultContactKeyExchangeStore(
                 check(!identityIsPinned) {
                     "Stored mutual or verified identity cannot be replaced without an explicit reset"
                 }
+                mailboxCapabilityLifecycle.revokeForContact(contactId).getOrThrow()
             }
 
             val nextLocallyImported =

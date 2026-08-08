@@ -394,4 +394,62 @@ object DatabaseMigrations {
                 )
             }
         }
+
+    val Migration20To21 =
+        object : Migration(20, 21) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_mailbox_credentials (
+                        contactId TEXT NOT NULL PRIMARY KEY,
+                        routeId TEXT NOT NULL,
+                        nodeId TEXT NOT NULL,
+                        nodeEndpoint TEXT NOT NULL,
+                        mailboxId TEXT NOT NULL,
+                        sendCapability TEXT NOT NULL,
+                        accessEndpoint TEXT NOT NULL,
+                        retrievalCapability TEXT NOT NULL,
+                        sequence INTEGER NOT NULL,
+                        expiresAtEpochMilliseconds INTEGER NOT NULL,
+                        identitySignature BLOB NOT NULL,
+                        FOREIGN KEY(contactId) REFERENCES contacts(id) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                connection.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_local_mailbox_credentials_contactId " +
+                        "ON local_mailbox_credentials(contactId)"
+                )
+                connection.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS remote_mailbox_routes (
+                        contactId TEXT NOT NULL PRIMARY KEY,
+                        routeId TEXT NOT NULL,
+                        nodeId TEXT NOT NULL,
+                        nodeEndpoint TEXT NOT NULL,
+                        mailboxId TEXT NOT NULL,
+                        sendCapability TEXT NOT NULL,
+                        sequence INTEGER NOT NULL,
+                        expiresAtEpochMilliseconds INTEGER NOT NULL,
+                        identitySignature BLOB NOT NULL,
+                        FOREIGN KEY(contactId) REFERENCES contacts(id) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                connection.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_remote_mailbox_routes_contactId " +
+                        "ON remote_mailbox_routes(contactId)"
+                )
+            }
+        }
+
+    val Migration21To22 =
+        object : Migration(21, 22) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    "ALTER TABLE local_mailbox_credentials " +
+                        "ADD COLUMN revocationPending INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
 }

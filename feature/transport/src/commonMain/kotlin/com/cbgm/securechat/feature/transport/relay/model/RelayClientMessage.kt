@@ -11,14 +11,43 @@ sealed interface RelayClientMessage {
     @Serializable
     @SerialName("register")
     data class Register(
-        val relayId: String
+        val relayId: String,
+        val connectionId: String? = null,
+        val generation: Long? = null,
+        val expiresAtEpochMilliseconds: Long? = null,
+        val aliases: List<String>? = null,
+        val clientSigningPublicKey: ByteArray? = null,
+        val clientSignature: ByteArray? = null
     ) : RelayClientMessage {
         init {
             require(relayId.isNotBlank()) {
                 "Relay ID must not be blank"
             }
+            require(connectionId == null || connectionId.isNotBlank()) {
+                "Connection ID must not be blank"
+            }
+
+            val proofFields =
+                listOf(
+                    generation,
+                    expiresAtEpochMilliseconds,
+                    clientSigningPublicKey,
+                    clientSignature
+                )
+            require(proofFields.all { it == null } || proofFields.all { it != null }) {
+                "Route proof fields must either all be present or all be absent"
+            }
+            require(generation == null || connectionId != null) {
+                "A signed route requires a connection ID"
+            }
         }
     }
+
+    @Serializable
+    @SerialName("refresh_route")
+    data class RefreshRoute(
+        val registration: ClientRouteRegistration
+    ) : RelayClientMessage
 
     /**
      * Requests delivery of one opaque envelope.
@@ -27,6 +56,12 @@ sealed interface RelayClientMessage {
     @SerialName("send_envelope")
     data class SendEnvelope(
         val envelope: RelayEnvelope
+    ) : RelayClientMessage
+
+    @Serializable
+    @SerialName("send_federated_envelope")
+    data class SendFederatedEnvelope(
+        val envelope: FederatedEnvelope
     ) : RelayClientMessage
 
     @Serializable

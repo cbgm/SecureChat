@@ -45,6 +45,7 @@ import com.cbgm.securechat.feature.contacts.presentation.screen.details.ContactD
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModel
+import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val contactsModule =
@@ -58,11 +59,17 @@ val contactsModule =
         }
 
         single<ContactKeyExchangeStore> {
-            DefaultContactKeyExchangeStore(contactDao = get())
+            DefaultContactKeyExchangeStore(
+                contactDao = get(),
+                mailboxCapabilityLifecycle = get()
+            )
         }
 
         single<LocalIdentityChangeHandler> {
-            ContactLocalIdentityChangeHandler(contactKeyExchangeStore = get())
+            ContactLocalIdentityChangeHandler(
+                contactKeyExchangeStore = get(),
+                mailboxCapabilityLifecycle = get()
+            )
         }
 
         single {
@@ -136,9 +143,12 @@ val contactsModule =
             bind<TypedProtocolPacketHandler>()
         }
 
-        singleOf(::DirectChatAuthorizationRevokedPacketHandler) {
-            bind<TypedProtocolPacketHandler>()
-        }
+        single {
+            DirectChatAuthorizationRevokedPacketHandler(
+                coordinator = get(),
+                mailboxCapabilityLifecycle = get()
+            )
+        }.bind<TypedProtocolPacketHandler>()
 
         singleOf(::ContactVerificationReceiptPacketHandler) {
             bind<TypedProtocolPacketHandler>()
@@ -213,7 +223,8 @@ val contactsModule =
             BlockContact(
                 blocklistRepository = get(),
                 contactRepository = get(),
-                identityInvitationService = get()
+                identityInvitationService = get(),
+                mailboxCapabilityLifecycle = get()
             )
         }
 

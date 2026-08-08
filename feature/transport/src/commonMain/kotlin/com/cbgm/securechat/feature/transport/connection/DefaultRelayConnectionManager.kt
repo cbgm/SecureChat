@@ -1,6 +1,10 @@
 package com.cbgm.securechat.feature.transport.connection
 
 import com.cbgm.securechat.core.logging.SecureChatLog
+import com.cbgm.securechat.core.time.SystemClock
+import com.cbgm.securechat.feature.transport.discovery.FailedNodeTracker
+import com.cbgm.securechat.feature.transport.discovery.NodeEndpoint
+import com.cbgm.securechat.feature.transport.discovery.NodeEndpointResolver
 import com.cbgm.securechat.feature.transport.relay.config.RelayTransportConfig
 import com.cbgm.securechat.feature.transport.relay.identity.LocalRelayIdProvider
 import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
@@ -10,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -21,13 +26,20 @@ import kotlin.time.Duration.Companion.milliseconds
 class DefaultRelayConnectionManager(
     private val webSocketTransportClient: WebSocketTransportClient,
     private val localRelayIdProvider: LocalRelayIdProvider,
-    private val relayTransportConfig: RelayTransportConfig
+    private val relayTransportConfig: RelayTransportConfig,
+    private val nodeEndpointResolver: NodeEndpointResolver
 ) : RelayConnectionManager {
     private val logger = SecureChatLog.withTag("DefaultRelayConnectionManager")
 
     private val connectionScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private var connectionLoopJob: Job? = null
+
+    private val failedNodeTracker =
+        FailedNodeTracker(
+            cooldownMilliseconds = relayTransportConfig.failedNodeCooldownMilliseconds,
+            now = SystemClock::nowEpochMilliseconds
+        )
 
     override val connectionState: StateFlow<TransportConnectionState> =
         webSocketTransportClient.connectionState
@@ -54,13 +66,22 @@ class DefaultRelayConnectionManager(
         var reconnectDelay = INITIAL_RECONNECT_DELAY_MILLISECONDS
 
         while (connectionScope.isActive) {
+            var selectedEndpoint: NodeEndpoint? = null
             try {
                 val relayId = localRelayIdProvider.getLocalRelayId().getOrThrow()
+                val endpoints = nodeEndpointResolver.resolve(relayId).getOrThrow()
+                val endpoint =
+                    checkNotNull(failedNodeTracker.available(endpoints).firstOrNull()) {
+                        "Every discovered relay node is temporarily unavailable"
+                    }
+                selectedEndpoint = endpoint
 
-                logger.debug { "Connecting to relay as $relayId" }
+                logger.debug {
+                    "Connecting to node ${endpoint.nodeId} as $relayId"
+                }
 
                 webSocketTransportClient.connect(
-                    serverUrl = relayTransportConfig.serverUrl,
+                    serverUrl = endpoint.websocketUrl,
                     localRelayId = relayId
                 )
 
@@ -76,20 +97,22 @@ class DefaultRelayConnectionManager(
 
                 when (connectionResult) {
                     is TransportConnectionState.Connected -> {
-                        logger.info { "Relay connected as ${connectionResult.relayId}" }
+                        failedNodeTracker.recordSuccess(endpoint.nodeId)
+                        logger.info {
+                            "Relay connected through node ${endpoint.nodeId} as ${connectionResult.relayId}"
+                        }
 
                         reconnectDelay = INITIAL_RECONNECT_DELAY_MILLISECONDS
 
                         /*
                          * Wait until the current connection ends.
                          */
-                        webSocketTransportClient.connectionState.first { state ->
-                            state is TransportConnectionState.Disconnected ||
-                                state is TransportConnectionState.Failed
-                        }
+                        waitForConnectionEnd(relayId)
+                        failedNodeTracker.recordFailure(endpoint.nodeId)
                     }
 
                     is TransportConnectionState.Failed -> {
+                        failedNodeTracker.recordFailure(endpoint.nodeId)
                         logger.warn { "Relay connection failed: ${connectionResult.message}" }
                     }
 
@@ -105,6 +128,9 @@ class DefaultRelayConnectionManager(
                 error: Throwable
             ) {
                 logger.error(error) { "Relay connection error" }
+                selectedEndpoint?.let { endpoint ->
+                    failedNodeTracker.recordFailure(endpoint.nodeId)
+                }
             }
 
             /*
@@ -122,6 +148,30 @@ class DefaultRelayConnectionManager(
             reconnectDelay = (reconnectDelay * 2L).coerceAtMost(MAX_RECONNECT_DELAY_MILLISECONDS)
         }
     }
+
+    private suspend fun waitForConnectionEnd(relayId: String) =
+        coroutineScope {
+            val refreshJob =
+                launch {
+                    while (isActive) {
+                        delay(relayTransportConfig.directoryRefreshIntervalMilliseconds.milliseconds)
+                        nodeEndpointResolver.resolve(relayId).onFailure { error ->
+                            logger.warn {
+                                "Signed node directory refresh failed: ${error.message ?: "unknown error"}"
+                            }
+                        }
+                    }
+                }
+
+            try {
+                webSocketTransportClient.connectionState.first { state ->
+                    state is TransportConnectionState.Disconnected ||
+                        state is TransportConnectionState.Failed
+                }
+            } finally {
+                refreshJob.cancelAndJoin()
+            }
+        }
 
     private companion object {
         const val CONNECTION_TIMEOUT_MILLISECONDS = 15_000L

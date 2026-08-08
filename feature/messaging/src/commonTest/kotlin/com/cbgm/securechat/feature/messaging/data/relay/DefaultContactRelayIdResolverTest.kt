@@ -3,11 +3,12 @@ package com.cbgm.securechat.feature.messaging.data.relay
 import com.cbgm.securechat.data.database.dao.ContactRelayIdDao
 import com.cbgm.securechat.data.database.entity.ContactRelayIdEntity
 import com.cbgm.securechat.feature.contacts.domain.model.Contact
-import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumber
-import com.cbgm.securechat.feature.contacts.domain.model.ContactPhoneNumberType
+import com.cbgm.securechat.feature.contacts.domain.model.ContactVerificationStatus
 import com.cbgm.securechat.feature.contacts.domain.model.DeviceContactLinkStatus
 import com.cbgm.securechat.feature.contacts.domain.model.ImportContactRequest
 import com.cbgm.securechat.feature.contacts.domain.model.ImportDeviceContactRequest
+import com.cbgm.securechat.feature.contacts.domain.model.KeyExchangeStatus
+import com.cbgm.securechat.feature.contacts.domain.model.SecureChatIdentity
 import com.cbgm.securechat.feature.contacts.domain.repository.ContactRepository
 import com.cbgm.securechat.feature.contacts.domain.usecase.GetContact
 import com.cbgm.securechat.feature.transport.relay.identity.RelayIdGenerator
@@ -20,14 +21,14 @@ import kotlin.test.assertTrue
 
 class DefaultContactRelayIdResolverTest {
     @Test
-    fun persistedMappingIsReturnedWithoutLoadingContact() =
+    fun currentPersistedMappingIsReturnedAfterCheckingTheSigningIdentity() =
         runTest {
-            val contactRepository = FakeContactRepository(contact = null)
+            val contactRepository = FakeContactRepository(contact = createContact())
             val relayIdDao =
                 FakeContactRelayIdDao(
                     relayIdByContactId = mutableMapOf("contact-1" to "stored-relay-id")
                 )
-            val relayIdGenerator = RecordingRelayIdGenerator()
+            val relayIdGenerator = RecordingRelayIdGenerator(result = "stored-relay-id")
             val resolver =
                 DefaultContactRelayIdResolver(
                     getContact = GetContact(contactRepository),
@@ -38,23 +39,15 @@ class DefaultContactRelayIdResolverTest {
             val relayId = resolver.resolve("contact-1").getOrThrow()
 
             assertEquals("stored-relay-id", relayId)
-            assertEquals(0, contactRepository.getContactCallCount)
-            assertEquals(0, relayIdGenerator.callCount)
+            assertEquals(1, contactRepository.getContactCallCount)
+            assertEquals(1, relayIdGenerator.callCount)
             assertTrue(relayIdDao.upsertedEntities.isEmpty())
         }
 
     @Test
-    fun preferredPhoneNumberIsDerivedAndPersisted() =
+    fun signingIdentityIsDerivedAndPersisted() =
         runTest {
-            val contact =
-                createContact(
-                    phoneNumbers =
-                        listOf(
-                            createPhoneNumber(id = "phone-1", value = "+491701111111"),
-                            createPhoneNumber(id = "phone-2", value = "+491702222222")
-                        ),
-                    preferredPhoneNumberId = "phone-2"
-                )
+            val contact = createContact(signingPublicKey = byteArrayOf(1, 2, 3))
             val relayIdDao = FakeContactRelayIdDao()
             val relayIdGenerator = RecordingRelayIdGenerator()
             val resolver =
@@ -67,7 +60,7 @@ class DefaultContactRelayIdResolverTest {
             val relayId = resolver.resolve("contact-1").getOrThrow()
 
             assertEquals("derived-relay-id", relayId)
-            assertEquals("+491702222222", relayIdGenerator.phoneNumber)
+            assertTrue(byteArrayOf(1, 2, 3).contentEquals(relayIdGenerator.signingPublicKey))
             assertEquals(
                 expected = listOf(ContactRelayIdEntity("contact-1", "derived-relay-id")),
                 actual = relayIdDao.upsertedEntities
@@ -75,33 +68,31 @@ class DefaultContactRelayIdResolverTest {
         }
 
     @Test
-    fun firstPhoneNumberIsUsedWhenPreferredIdDoesNotMatch() =
+    fun stalePhoneDerivedMappingIsReplaced() =
         runTest {
-            val contact =
-                createContact(
-                    phoneNumbers =
-                        listOf(
-                            createPhoneNumber(id = "phone-1", value = "+491701111111"),
-                            createPhoneNumber(id = "phone-2", value = "+491702222222")
-                        ),
-                    preferredPhoneNumberId = "missing-phone"
+            val relayIdDao =
+                FakeContactRelayIdDao(
+                    relayIdByContactId = mutableMapOf("contact-1" to "scphone1_legacy")
                 )
             val relayIdGenerator = RecordingRelayIdGenerator()
             val resolver =
                 DefaultContactRelayIdResolver(
-                    getContact = GetContact(FakeContactRepository(contact)),
-                    contactRelayIdDao = FakeContactRelayIdDao(),
+                    getContact = GetContact(FakeContactRepository(createContact())),
+                    contactRelayIdDao = relayIdDao,
                     relayIdGenerator = relayIdGenerator
                 )
 
-            val result = resolver.resolve("contact-1")
+            val relayId = resolver.resolve("contact-1").getOrThrow()
 
-            assertTrue(result.isSuccess)
-            assertEquals("+491701111111", relayIdGenerator.phoneNumber)
+            assertEquals("derived-relay-id", relayId)
+            assertEquals(
+                listOf(ContactRelayIdEntity("contact-1", "derived-relay-id")),
+                relayIdDao.upsertedEntities
+            )
         }
 
     @Test
-    fun contactWithoutPhoneNumberCannotCreateRelayMapping() =
+    fun contactWithoutSigningIdentityCannotCreateRelayMapping() =
         runTest {
             val relayIdDao = FakeContactRelayIdDao()
             val relayIdGenerator = RecordingRelayIdGenerator()
@@ -110,10 +101,7 @@ class DefaultContactRelayIdResolverTest {
                     getContact =
                         GetContact(
                             FakeContactRepository(
-                                createContact(
-                                    phoneNumbers = emptyList(),
-                                    preferredPhoneNumberId = null
-                                )
+                                createContact(signingPublicKey = null)
                             )
                         ),
                     contactRelayIdDao = relayIdDao,
@@ -128,30 +116,27 @@ class DefaultContactRelayIdResolverTest {
         }
 
     private fun createContact(
-        phoneNumbers: List<ContactPhoneNumber>,
-        preferredPhoneNumberId: String?
+        signingPublicKey: ByteArray? = byteArrayOf(1, 2, 3)
     ): Contact =
         Contact(
             id = "contact-1",
             displayName = "Alice",
-            phoneNumbers = phoneNumbers,
-            preferredPhoneNumberId = preferredPhoneNumberId,
+            phoneNumbers = emptyList(),
+            preferredPhoneNumberId = null,
             deviceContactId = null,
             deviceContactLinkStatus = DeviceContactLinkStatus.NOT_LINKED,
-            secureChatIdentity = null,
+            secureChatIdentity =
+                signingPublicKey?.let { key ->
+                    SecureChatIdentity(
+                        encryptionPublicKey = byteArrayOf(4, 5, 6),
+                        signingPublicKey = key,
+                        verificationStatus = ContactVerificationStatus.UNVERIFIED,
+                        keyExchangeStatus = KeyExchangeStatus.MUTUAL,
+                        updatedAtEpochMilliseconds = 1L
+                    )
+                },
             createdAtEpochMilliseconds = 1L,
             updatedAtEpochMilliseconds = 1L
-        )
-
-    private fun createPhoneNumber(
-        id: String,
-        value: String
-    ): ContactPhoneNumber =
-        ContactPhoneNumber(
-            id = id,
-            value = value,
-            type = ContactPhoneNumberType.MOBILE,
-            label = null
         )
 
     private class FakeContactRelayIdDao(
@@ -171,14 +156,19 @@ class DefaultContactRelayIdResolverTest {
         }
     }
 
-    private class RecordingRelayIdGenerator : RelayIdGenerator {
+    private class RecordingRelayIdGenerator(
+        private val result: String = "derived-relay-id"
+    ) : RelayIdGenerator {
         var callCount: Int = 0
-        var phoneNumber: String? = null
+        var signingPublicKey: ByteArray? = null
 
-        override fun deriveFromPhoneNumber(phoneNumber: String): Result<String> {
+        override fun deriveFromPhoneNumber(phoneNumber: String): Result<String> =
+            Result.success("scphone1_test")
+
+        override fun deriveFromSigningPublicKey(signingPublicKey: ByteArray): Result<String> {
             callCount += 1
-            this.phoneNumber = phoneNumber
-            return Result.success("derived-relay-id")
+            this.signingPublicKey = signingPublicKey
+            return Result.success(result)
         }
     }
 
@@ -187,18 +177,26 @@ class DefaultContactRelayIdResolverTest {
     ) : ContactRepository {
         var getContactCallCount: Int = 0
 
-        override suspend fun importDeviceContact(request: ImportDeviceContactRequest): Result<Contact> = Result.failure(UnsupportedOperationException())
+        override suspend fun importDeviceContact(
+            request: ImportDeviceContactRequest
+        ): Result<Contact> = Result.failure(UnsupportedOperationException())
 
-        override suspend fun importContact(request: ImportContactRequest): Result<Contact> = Result.failure(UnsupportedOperationException())
+        override suspend fun importContact(
+            request: ImportContactRequest
+        ): Result<Contact> = Result.failure(UnsupportedOperationException())
 
         override suspend fun getContact(contactId: String): Result<Contact?> {
             getContactCallCount += 1
             return Result.success(contact?.takeIf { it.id == contactId })
         }
 
-        override suspend fun findBySigningPublicKey(signingPublicKey: ByteArray): Result<Contact?> = Result.success(null)
+        override suspend fun findBySigningPublicKey(
+            signingPublicKey: ByteArray
+        ): Result<Contact?> = Result.success(null)
 
-        override suspend fun findOrCreateByPhoneNumber(phoneNumber: String): Result<Contact> = Result.failure(UnsupportedOperationException())
+        override suspend fun findOrCreateByPhoneNumber(
+            phoneNumber: String
+        ): Result<Contact> = Result.failure(UnsupportedOperationException())
 
         override fun observeContacts(): Flow<List<Contact>> = flowOf(listOfNotNull(contact))
 
@@ -208,11 +206,17 @@ class DefaultContactRelayIdResolverTest {
             phoneNumber: String?
         ): Result<Contact> = Result.failure(UnsupportedOperationException())
 
-        override suspend fun markVerified(contactId: String): Result<Contact> = Result.failure(UnsupportedOperationException())
+        override suspend fun markVerified(
+            contactId: String
+        ): Result<Contact> = Result.failure(UnsupportedOperationException())
 
-        override suspend fun markKeyExchangeMutual(contactId: String): Result<Contact> = Result.failure(UnsupportedOperationException())
+        override suspend fun markKeyExchangeMutual(
+            contactId: String
+        ): Result<Contact> = Result.failure(UnsupportedOperationException())
 
-        override suspend fun resetKeyExchange(contactId: String): Result<Contact> = Result.failure(UnsupportedOperationException())
+        override suspend fun resetKeyExchange(
+            contactId: String
+        ): Result<Contact> = Result.failure(UnsupportedOperationException())
 
         override suspend fun updateDeviceContactLinkStatus(
             deviceContactId: String,

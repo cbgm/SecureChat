@@ -210,7 +210,8 @@ val chatsModule =
                 groupInvitationDao = get(),
                 groupInvitationCoordinator = get(),
                 groupMessageSender = get(),
-                identityInvitationService = get()
+                identityInvitationService = get(),
+                mailboxCapabilityLifecycle = get()
             )
         }
 

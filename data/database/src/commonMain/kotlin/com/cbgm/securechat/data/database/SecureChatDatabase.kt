@@ -10,6 +10,7 @@ import com.cbgm.securechat.data.database.dao.GroupInvitationDao
 import com.cbgm.securechat.data.database.dao.GroupSecurityDao
 import com.cbgm.securechat.data.database.dao.GroupVerificationDao
 import com.cbgm.securechat.data.database.dao.IdentityInvitationDao
+import com.cbgm.securechat.data.database.dao.MailboxRouteDao
 import com.cbgm.securechat.data.database.dao.MessageDeliveryStatusDao
 import com.cbgm.securechat.data.database.dao.MessageRecipientStateDao
 import com.cbgm.securechat.data.database.dao.ProtocolOutboxDao
@@ -24,9 +25,11 @@ import com.cbgm.securechat.data.database.entity.GroupMemberKeyEntity
 import com.cbgm.securechat.data.database.entity.GroupSecurityStateEntity
 import com.cbgm.securechat.data.database.entity.GroupVerificationPairEntity
 import com.cbgm.securechat.data.database.entity.IdentityInvitationEntity
+import com.cbgm.securechat.data.database.entity.LocalMailboxCredentialEntity
 import com.cbgm.securechat.data.database.entity.MessageEntity
 import com.cbgm.securechat.data.database.entity.MessageRecipientStateEntity
 import com.cbgm.securechat.data.database.entity.ProtocolOutboxEntity
+import com.cbgm.securechat.data.database.entity.RemoteMailboxRouteEntity
 
 @Database(
     entities = [
@@ -43,9 +46,11 @@ import com.cbgm.securechat.data.database.entity.ProtocolOutboxEntity
         IdentityInvitationEntity::class,
         MessageEntity::class,
         MessageRecipientStateEntity::class,
-        ProtocolOutboxEntity::class
+        ProtocolOutboxEntity::class,
+        LocalMailboxCredentialEntity::class,
+        RemoteMailboxRouteEntity::class
     ],
-    version = 20,
+    version = 22,
     exportSchema = true
 )
 @ConstructedBy(SecureChatDatabaseConstructor::class)
@@ -69,4 +74,6 @@ abstract class SecureChatDatabase : RoomDatabase() {
     abstract fun messageDeliveryStatusDao(): MessageDeliveryStatusDao
 
     abstract fun messageRecipientStateDao(): MessageRecipientStateDao
+
+    abstract fun mailboxRouteDao(): MailboxRouteDao
 }

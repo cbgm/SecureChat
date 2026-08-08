@@ -63,7 +63,10 @@ val appModule =
         single {
             RelayTransportConfig(
                 serverUrl = BuildConfig.RELAY_WEBSOCKET_URL,
-                httpBaseUrl = BuildConfig.RELAY_HTTP_BASE_URL
+                httpBaseUrl = BuildConfig.RELAY_HTTP_BASE_URL,
+                nodeRegistryBaseUrl = BuildConfig.NODE_REGISTRY_BASE_URL.takeIf(String::isNotBlank),
+                trustedRegistryAuthorityNodeId =
+                    BuildConfig.NODE_REGISTRY_AUTHORITY_NODE_ID.takeIf(String::isNotBlank)
             )
         }
 
@@ -90,7 +93,8 @@ val appModule =
                 incomingRelayRunner = get(),
                 relayConnectionManager = get(),
                 outboxRunner = get(),
-                appVisibilityState = get()
+                appVisibilityState = get(),
+                mailboxCoordinator = get()
             )
         }
     }

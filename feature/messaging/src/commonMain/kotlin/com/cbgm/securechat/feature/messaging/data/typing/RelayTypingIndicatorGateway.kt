@@ -5,29 +5,25 @@ import com.cbgm.securechat.feature.messaging.domain.relay.ContactRelayIdResolver
 import com.cbgm.securechat.feature.transport.websocket.WebSocketTransportClient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.transform
 
 class RelayTypingIndicatorGateway(
     private val webSocketTransportClient: WebSocketTransportClient,
     private val contactRelayIdResolver: ContactRelayIdResolver
 ) : TypingIndicatorGateway {
     override fun observeTyping(contactId: String): Flow<Boolean> =
-        flow {
-            val contactRelayId =
-                contactRelayIdResolver
-                    .resolve(contactId = contactId)
-                    .getOrElse {
-                        return@flow
-                    }
+        webSocketTransportClient.incomingTypingEvents
+            .transform { event ->
+                val contactRelayId =
+                    contactRelayIdResolver
+                        .resolve(contactId = contactId)
+                        .getOrNull()
+                        ?: return@transform
 
-            webSocketTransportClient.incomingTypingEvents
-                .filter { event ->
-                    event.senderId == contactRelayId
-                }.collect { event ->
+                if (event.senderId == contactRelayId) {
                     emit(event.isTyping)
                 }
-        }.distinctUntilChanged()
+            }.distinctUntilChanged()
 
     override suspend fun sendTypingState(
         contactId: String,

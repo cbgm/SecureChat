@@ -6,12 +6,12 @@ Generated automatically by `./gradlew architectureReport`.
 
 | Metric | Count |
 |---|---:|
-| Modules | 24 |
-| Module groups | 11 |
-| Project dependencies | 75 |
-| Kotlin files | 684 |
-| Test Kotlin files | 43 |
-| Resource files | 57 |
+| Modules | 35 |
+| Module groups | 12 |
+| Project dependencies | 102 |
+| Kotlin files | 808 |
+| Test Kotlin files | 71 |
+| Resource files | 58 |
 
 ## Module groups
 
@@ -63,6 +63,20 @@ Generated automatically by `./gradlew architectureReport`.
 ### resources
 
 - [**resources** (`:resources`)](modules/resources.md)
+
+### server
+
+- [**server** (`:server`)](modules/server.md)
+- [**federation** (`:server:federation`)](modules/server-federation.md)
+- [**gateway** (`:server:gateway`)](modules/server-gateway.md)
+- [**mailbox** (`:server:mailbox`)](modules/server-mailbox.md)
+- [**node-registry** (`:server:node-registry`)](modules/server-node-registry.md)
+- [**observability** (`:server:observability`)](modules/server-observability.md)
+- [**persistence** (`:server:persistence`)](modules/server-persistence.md)
+- [**presence-directory** (`:server:presence-directory`)](modules/server-presence-directory.md)
+- [**protocol** (`:server:protocol`)](modules/server-protocol.md)
+- [**push** (`:server:push`)](modules/server-push.md)
+- [**security** (`:server:security`)](modules/server-security.md)
 
 ### shared
 
@@ -126,6 +140,20 @@ graph TD
         module_resources[":resources"]
     end
 
+    subgraph group_server["server"]
+        module_server[":server"]
+        module_server_federation[":server:federation"]
+        module_server_gateway[":server:gateway"]
+        module_server_mailbox[":server:mailbox"]
+        module_server_node_registry[":server:node-registry"]
+        module_server_observability[":server:observability"]
+        module_server_persistence[":server:persistence"]
+        module_server_presence_directory[":server:presence-directory"]
+        module_server_protocol[":server:protocol"]
+        module_server_push[":server:push"]
+        module_server_security[":server:security"]
+    end
+
     subgraph group_shared["shared"]
         module_shared[":shared"]
     end
@@ -187,6 +215,7 @@ graph TD
     module_feature_settings --> module_core
     module_feature_settings --> module_core_ui
     module_feature_transport --> module_core
+    module_feature_transport --> module_core_crypto
     module_feature_transport --> module_core_protocol
     module_navigation --> module_core
     module_navigation --> module_core_ui
@@ -202,6 +231,32 @@ graph TD
     module_notification --> module_feature_chats
     module_notification --> module_feature_messaging
     module_notification --> module_feature_transport
+    module_server_federation --> module_server_observability
+    module_server_federation --> module_server_persistence
+    module_server_federation --> module_server_protocol
+    module_server_federation --> module_server_security
+    module_server_gateway --> module_server_observability
+    module_server_gateway --> module_server_persistence
+    module_server_gateway --> module_server_protocol
+    module_server_gateway --> module_server_security
+    module_server_mailbox --> module_server_observability
+    module_server_mailbox --> module_server_persistence
+    module_server_mailbox --> module_server_protocol
+    module_server_mailbox --> module_server_security
+    module_server_node_registry --> module_server_observability
+    module_server_node_registry --> module_server_persistence
+    module_server_node_registry --> module_server_protocol
+    module_server_node_registry --> module_server_security
+    module_server_persistence --> module_server_protocol
+    module_server_presence_directory --> module_server_observability
+    module_server_presence_directory --> module_server_persistence
+    module_server_presence_directory --> module_server_protocol
+    module_server_presence_directory --> module_server_security
+    module_server_push --> module_server_observability
+    module_server_push --> module_server_persistence
+    module_server_push --> module_server_protocol
+    module_server_push --> module_server_security
+    module_server_security --> module_server_protocol
     module_shared --> module_core
     module_shared --> module_core_ui
     module_shared --> module_feature_settings

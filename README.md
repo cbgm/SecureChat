@@ -201,6 +201,67 @@ page. Never edit generated files manually.
 
 ---
 
+# Federated Server Implementation
+
+The independently deployable registry, presence, gateway, federation, mailbox, and push services are now
+available under [`server/`](server/README.md). The original `relay/` remains available as the migration
+compatibility server. A complete local network can be started with:
+
+```bash
+docker compose -f server/docker-compose.yml up --build
+```
+
+The app automatically signs and refreshes its presence route after connecting to the federated
+gateway, enabling the federation service to locate active clients across nodes. Device routing IDs
+are derived from random signing identities and do not contain or hash phone numbers.
+
+The Android client fetches the signed node directory from the registry, verifies the pinned or
+trust-on-first-use registry authority and every node descriptor, caches the last valid directory,
+and rotates to another compatible gateway when its current node fails. Push continues to use its
+separate HTTP base URL and is not coupled to the selected WebSocket node.
+
+For every mutually authenticated contact, the recipient now provisions a separate expiring mailbox
+capability, signs the route with its identity key, and exchanges it inside the encrypted protocol.
+Senders attach the latest verified route to federated envelopes. Offline ciphertext is retained by
+the selected mailbox, while FCM carries only a wake-up identifier; the receiver retrieves, processes,
+and acknowledges the mailbox envelope after waking. The legacy push inbox remains as a compatibility
+fallback until both contacts have exchanged mailbox routes.
+
+Per-contact mailbox capabilities now rotate automatically before expiry and are revoked when a
+contact is blocked, a direct chat is deleted, or either identity changes. Offline revocation attempts
+are persisted and retried after reconnect, while obsolete remote delivery routes are removed
+immediately.
+
+Public server write endpoints now apply bounded per-client rate limits. Mailbox provisioning also
+uses atomic global and per-client quotas, with only a hash of the client address stored in
+PostgreSQL. Production trusts forwarded client addresses only behind the Caddy-only public edge.
+
+All six Kotlin services now share Prometheus-compatible metrics, liveness and storage-aware
+readiness endpoints, and validated `X-Request-ID` correlation in HTTP responses and structured
+console logs. Docker Compose uses the readiness contract to order application startup.
+
+Node operators can create checksummed, timestamped backups of every PostgreSQL database and signing
+identity, validate them without downtime, and restore them into fresh Docker volumes with an
+explicit disaster-recovery command. Short-lived Redis presence routes are intentionally rebuilt by
+reconnecting clients instead of being restored.
+
+A non-destructive PowerShell smoke test now validates the single-node or two-node Compose topology,
+all storage-aware health checks, expected restored counts, request-ID propagation, and Prometheus
+metrics. Restore failures include the unhealthy service's probe output and recent logs. Pull requests
+that change the server now run the fresh two-node smoke test automatically and retain Compose state
+and service logs as a failure artifact.
+
+The control plane and community-node data plane can also be deployed as completely separate Compose
+projects. Community nodes use their persistent Ed25519 node identity for registry, presence, push,
+and federation requests; operators never receive a shared control-plane token. A second smoke test
+starts two community nodes plus the control plane, verifies two stable registrations, sends an
+encrypted envelope in both directions, and asserts that no project shares a Docker network or volume
+with another.
+
+See the server README for module boundaries, ports, security behavior, and migration limitations.
+
+---
+
 # License
 
 Licensed under the Apache 2.0 License.

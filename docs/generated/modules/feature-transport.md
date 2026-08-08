@@ -10,11 +10,11 @@ Generated automatically by `./gradlew architectureReport`.
 | Group | `feature` |
 | Directory | `feature/transport` |
 | Build file | `feature/transport/build.gradle.kts` |
-| Kotlin files | 28 |
-| Production Kotlin files | 26 |
-| Test Kotlin files | 2 |
+| Kotlin files | 52 |
+| Production Kotlin files | 44 |
+| Test Kotlin files | 8 |
 | Resource files | 1 |
-| Direct dependencies | 2 |
+| Direct dependencies | 3 |
 | Direct dependents | 3 |
 
 ## Source sets
@@ -29,6 +29,7 @@ Generated automatically by `./gradlew architectureReport`.
 ## Dependencies
 
 - [`:core`](../modules/core.md)
+- [`:core:crypto`](../modules/core-crypto.md)
 - [`:core:protocol`](../modules/core-protocol.md)
 
 ## Dependents

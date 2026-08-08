@@ -93,7 +93,8 @@
       ":feature:chats",
       ":feature:contacts",
       ":feature:identity",
-      ":feature:messaging"
+      ":feature:messaging",
+      ":feature:transport"
     ]
   },
   {
@@ -102,9 +103,9 @@
     "group": "core",
     "directory": "core/protocol",
     "buildFile": "core/protocol/build.gradle.kts",
-    "kotlinSourceFileCount": 59,
-    "productionKotlinFileCount": 51,
-    "testKotlinFileCount": 8,
+    "kotlinSourceFileCount": 62,
+    "productionKotlinFileCount": 53,
+    "testKotlinFileCount": 9,
     "resourceFileCount": 1,
     "sourceSets": [
       "androidDeviceTest",
@@ -182,8 +183,8 @@
     "group": "data",
     "directory": "data/database",
     "buildFile": "data/database/build.gradle.kts",
-    "kotlinSourceFileCount": 38,
-    "productionKotlinFileCount": 38,
+    "kotlinSourceFileCount": 41,
+    "productionKotlinFileCount": 41,
     "testKotlinFileCount": 0,
     "resourceFileCount": 1,
     "sourceSets": [
@@ -356,9 +357,9 @@
     "group": "feature",
     "directory": "feature/messaging",
     "buildFile": "feature/messaging/build.gradle.kts",
-    "kotlinSourceFileCount": 21,
-    "productionKotlinFileCount": 16,
-    "testKotlinFileCount": 5,
+    "kotlinSourceFileCount": 27,
+    "productionKotlinFileCount": 21,
+    "testKotlinFileCount": 6,
     "resourceFileCount": 1,
     "sourceSets": [
       "androidMain",
@@ -439,9 +440,9 @@
     "group": "feature",
     "directory": "feature/transport",
     "buildFile": "feature/transport/build.gradle.kts",
-    "kotlinSourceFileCount": 28,
-    "productionKotlinFileCount": 26,
-    "testKotlinFileCount": 2,
+    "kotlinSourceFileCount": 52,
+    "productionKotlinFileCount": 44,
+    "testKotlinFileCount": 8,
     "resourceFileCount": 1,
     "sourceSets": [
       "androidDeviceTest",
@@ -453,6 +454,7 @@
     ],
     "dependencies": [
       ":core",
+      ":core:crypto",
       ":core:protocol"
     ],
     "dependents": [
@@ -598,6 +600,265 @@
     "dependents": [
       ":androidApp",
       ":core:ui"
+    ]
+  },
+  {
+    "name": "server",
+    "path": ":server",
+    "group": "server",
+    "directory": "server",
+    "buildFile": "server/build.gradle",
+    "kotlinSourceFileCount": 0,
+    "productionKotlinFileCount": 0,
+    "testKotlinFileCount": 0,
+    "resourceFileCount": 0,
+    "sourceSets": [
+    ],
+    "dependencies": [
+    ],
+    "dependents": [
+    ]
+  },
+  {
+    "name": "federation",
+    "path": ":server:federation",
+    "group": "server",
+    "directory": "server/federation",
+    "buildFile": "server/federation/build.gradle.kts",
+    "kotlinSourceFileCount": 13,
+    "productionKotlinFileCount": 11,
+    "testKotlinFileCount": 2,
+    "resourceFileCount": 0,
+    "sourceSets": [
+      "main",
+      "test"
+    ],
+    "dependencies": [
+      ":server:observability",
+      ":server:persistence",
+      ":server:protocol",
+      ":server:security"
+    ],
+    "dependents": [
+    ]
+  },
+  {
+    "name": "gateway",
+    "path": ":server:gateway",
+    "group": "server",
+    "directory": "server/gateway",
+    "buildFile": "server/gateway/build.gradle.kts",
+    "kotlinSourceFileCount": 9,
+    "productionKotlinFileCount": 8,
+    "testKotlinFileCount": 1,
+    "resourceFileCount": 0,
+    "sourceSets": [
+      "main",
+      "test"
+    ],
+    "dependencies": [
+      ":server:observability",
+      ":server:persistence",
+      ":server:protocol",
+      ":server:security"
+    ],
+    "dependents": [
+    ]
+  },
+  {
+    "name": "mailbox",
+    "path": ":server:mailbox",
+    "group": "server",
+    "directory": "server/mailbox",
+    "buildFile": "server/mailbox/build.gradle.kts",
+    "kotlinSourceFileCount": 11,
+    "productionKotlinFileCount": 8,
+    "testKotlinFileCount": 3,
+    "resourceFileCount": 0,
+    "sourceSets": [
+      "main",
+      "test"
+    ],
+    "dependencies": [
+      ":server:observability",
+      ":server:persistence",
+      ":server:protocol",
+      ":server:security"
+    ],
+    "dependents": [
+    ]
+  },
+  {
+    "name": "node-registry",
+    "path": ":server:node-registry",
+    "group": "server",
+    "directory": "server/node-registry",
+    "buildFile": "server/node-registry/build.gradle.kts",
+    "kotlinSourceFileCount": 6,
+    "productionKotlinFileCount": 4,
+    "testKotlinFileCount": 2,
+    "resourceFileCount": 0,
+    "sourceSets": [
+      "main",
+      "test"
+    ],
+    "dependencies": [
+      ":server:observability",
+      ":server:persistence",
+      ":server:protocol",
+      ":server:security"
+    ],
+    "dependents": [
+    ]
+  },
+  {
+    "name": "observability",
+    "path": ":server:observability",
+    "group": "server",
+    "directory": "server/observability",
+    "buildFile": "server/observability/build.gradle.kts",
+    "kotlinSourceFileCount": 3,
+    "productionKotlinFileCount": 2,
+    "testKotlinFileCount": 1,
+    "resourceFileCount": 1,
+    "sourceSets": [
+      "main",
+      "test"
+    ],
+    "dependencies": [
+    ],
+    "dependents": [
+      ":server:federation",
+      ":server:gateway",
+      ":server:mailbox",
+      ":server:node-registry",
+      ":server:presence-directory",
+      ":server:push"
+    ]
+  },
+  {
+    "name": "persistence",
+    "path": ":server:persistence",
+    "group": "server",
+    "directory": "server/persistence",
+    "buildFile": "server/persistence/build.gradle.kts",
+    "kotlinSourceFileCount": 3,
+    "productionKotlinFileCount": 2,
+    "testKotlinFileCount": 1,
+    "resourceFileCount": 0,
+    "sourceSets": [
+      "main",
+      "test"
+    ],
+    "dependencies": [
+      ":server:protocol"
+    ],
+    "dependents": [
+      ":server:federation",
+      ":server:gateway",
+      ":server:mailbox",
+      ":server:node-registry",
+      ":server:presence-directory",
+      ":server:push"
+    ]
+  },
+  {
+    "name": "presence-directory",
+    "path": ":server:presence-directory",
+    "group": "server",
+    "directory": "server/presence-directory",
+    "buildFile": "server/presence-directory/build.gradle.kts",
+    "kotlinSourceFileCount": 8,
+    "productionKotlinFileCount": 6,
+    "testKotlinFileCount": 2,
+    "resourceFileCount": 0,
+    "sourceSets": [
+      "main",
+      "test"
+    ],
+    "dependencies": [
+      ":server:observability",
+      ":server:persistence",
+      ":server:protocol",
+      ":server:security"
+    ],
+    "dependents": [
+    ]
+  },
+  {
+    "name": "protocol",
+    "path": ":server:protocol",
+    "group": "server",
+    "directory": "server/protocol",
+    "buildFile": "server/protocol/build.gradle.kts",
+    "kotlinSourceFileCount": 6,
+    "productionKotlinFileCount": 5,
+    "testKotlinFileCount": 1,
+    "resourceFileCount": 0,
+    "sourceSets": [
+      "main",
+      "test"
+    ],
+    "dependencies": [
+    ],
+    "dependents": [
+      ":server:federation",
+      ":server:gateway",
+      ":server:mailbox",
+      ":server:node-registry",
+      ":server:persistence",
+      ":server:presence-directory",
+      ":server:push",
+      ":server:security"
+    ]
+  },
+  {
+    "name": "push",
+    "path": ":server:push",
+    "group": "server",
+    "directory": "server/push",
+    "buildFile": "server/push/build.gradle.kts",
+    "kotlinSourceFileCount": 16,
+    "productionKotlinFileCount": 12,
+    "testKotlinFileCount": 4,
+    "resourceFileCount": 0,
+    "sourceSets": [
+      "main",
+      "test"
+    ],
+    "dependencies": [
+      ":server:observability",
+      ":server:persistence",
+      ":server:protocol",
+      ":server:security"
+    ],
+    "dependents": [
+    ]
+  },
+  {
+    "name": "security",
+    "path": ":server:security",
+    "group": "server",
+    "directory": "server/security",
+    "buildFile": "server/security/build.gradle.kts",
+    "kotlinSourceFileCount": 13,
+    "productionKotlinFileCount": 10,
+    "testKotlinFileCount": 3,
+    "resourceFileCount": 0,
+    "sourceSets": [
+      "main",
+      "test"
+    ],
+    "dependencies": [
+      ":server:protocol"
+    ],
+    "dependents": [
+      ":server:federation",
+      ":server:gateway",
+      ":server:mailbox",
+      ":server:node-registry",
+      ":server:presence-directory",
+      ":server:push"
     ]
   },
   {

@@ -1,0 +1,524 @@
+[CmdletBinding()]
+param()
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+
+$deploymentDirectory = $PSScriptRoot
+$runtimeEnvironmentPath = Join-Path $deploymentDirectory ".env.runtime"
+$releaseEnvironmentPath = Join-Path $deploymentDirectory "release.env"
+$secretsDirectory = Join-Path $deploymentDirectory "secrets"
+$composePath = Join-Path $deploymentDirectory "docker-compose.yml"
+$releaseComposePath = Join-Path $deploymentDirectory "docker-compose.release.yml"
+$logPath = Join-Path $deploymentDirectory "bootstrap-control-plane.log"
+$controlPlanePort = 8390
+
+$script:Docker = $null
+
+$form = New-Object System.Windows.Forms.Form
+$form.Text = "SecureChat Control Plane"
+$form.Size = New-Object System.Drawing.Size(560, 190)
+$form.StartPosition = "CenterScreen"
+$form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+$form.MaximizeBox = $false
+$form.TopMost = $true
+
+$title = New-Object System.Windows.Forms.Label
+$title.Location = New-Object System.Drawing.Point(24, 22)
+$title.Size = New-Object System.Drawing.Size(505, 28)
+$title.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+$title.Text = "Starting SecureChat control plane"
+$form.Controls.Add($title)
+
+$status = New-Object System.Windows.Forms.Label
+$status.Location = New-Object System.Drawing.Point(24, 58)
+$status.Size = New-Object System.Drawing.Size(505, 38)
+$status.Text = "Preparing..."
+$form.Controls.Add($status)
+
+$progress = New-Object System.Windows.Forms.ProgressBar
+$progress.Location = New-Object System.Drawing.Point(24, 108)
+$progress.Size = New-Object System.Drawing.Size(505, 20)
+$progress.Style = [System.Windows.Forms.ProgressBarStyle]::Marquee
+$progress.MarqueeAnimationSpeed = 25
+$form.Controls.Add($progress)
+
+$form.Show()
+[System.Windows.Forms.Application]::DoEvents()
+
+function Write-Log {
+    param([string]$Message)
+
+    Add-Content `
+        -LiteralPath $logPath `
+        -Value "[$(Get-Date -Format o)] $Message" `
+        -Encoding UTF8
+}
+
+function Set-Status {
+    param([string]$Message)
+
+    $status.Text = $Message
+    Write-Log $Message
+    [System.Windows.Forms.Application]::DoEvents()
+}
+
+function Fail {
+    param([string]$Message)
+
+    Write-Log "FAILED: $Message"
+
+    try {
+        Push-Location $deploymentDirectory
+        try {
+            Write-Log "----- docker compose ps -----"
+            (& $script:Docker compose `
+                --env-file $runtimeEnvironmentPath `
+                -f $composePath `
+                -f $releaseComposePath `
+                ps --all 2>&1) | ForEach-Object { Write-Log $_.ToString() }
+
+            Write-Log "----- docker compose logs -----"
+            (& $script:Docker compose `
+                --env-file $runtimeEnvironmentPath `
+                -f $composePath `
+                -f $releaseComposePath `
+                logs --tail 150 --no-color 2>&1) | ForEach-Object { Write-Log $_.ToString() }
+        } finally {
+            Pop-Location
+        }
+    } catch {
+        Write-Log "Could not collect Docker diagnostics: $($_.Exception.Message)"
+    }
+
+    [System.Windows.Forms.MessageBox]::Show(
+        "$Message`n`nDiagnostic log:`n$logPath",
+        "SecureChat Control Plane",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Error
+    ) | Out-Null
+
+    $form.Close()
+    exit 1
+}
+
+function Read-EnvironmentFile {
+    param([string]$Path)
+
+    $values = @{}
+
+    foreach ($line in Get-Content -LiteralPath $Path) {
+        $trimmed = $line.Trim()
+
+        if ($trimmed.Length -eq 0 -or $trimmed.StartsWith("#")) {
+            continue
+        }
+
+        $separator = $trimmed.IndexOf("=")
+
+        if ($separator -gt 0) {
+            $values[$trimmed.Substring(0, $separator).Trim()] =
+                $trimmed.Substring($separator + 1).Trim()
+        }
+    }
+
+    return $values
+}
+
+function New-Secret {
+    $bytes = New-Object byte[] 48
+    $generator = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+
+    try {
+        $generator.GetBytes($bytes)
+    } finally {
+        $generator.Dispose()
+    }
+
+    return [Convert]::ToBase64String($bytes)
+}
+
+function Ensure-Secret {
+    param([string]$Path)
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        [System.IO.File]::WriteAllText(
+            $Path,
+            (New-Secret),
+            [System.Text.UTF8Encoding]::new($false)
+        )
+    }
+}
+
+function Find-Docker {
+    $command = Get-Command docker -ErrorAction SilentlyContinue
+
+    if ($null -ne $command) {
+        return $command.Source
+    }
+
+    $candidate = Join-Path $env:ProgramFiles "Docker\Docker\resources\bin\docker.exe"
+
+    if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+        return $candidate
+    }
+
+    throw "Docker Desktop is not installed."
+}
+
+function Ensure-Docker {
+    $docker = Find-Docker
+
+    & $docker info *> $null
+
+    if ($LASTEXITCODE -eq 0) {
+        return $docker
+    }
+
+    $desktop = Join-Path $env:ProgramFiles "Docker\Docker\Docker Desktop.exe"
+
+    if (-not (Test-Path -LiteralPath $desktop -PathType Leaf)) {
+        throw "Docker Desktop could not be found."
+    }
+
+    Start-Process -FilePath $desktop | Out-Null
+
+    $deadline = [DateTime]::UtcNow.AddMinutes(5)
+
+    while ([DateTime]::UtcNow -lt $deadline) {
+        Start-Sleep -Seconds 2
+        [System.Windows.Forms.Application]::DoEvents()
+
+        & $docker info *> $null
+
+        if ($LASTEXITCODE -eq 0) {
+            return $docker
+        }
+    }
+
+    throw "Docker Desktop did not become ready."
+}
+
+function Find-FirebaseCredentials {
+    $candidate = Join-Path $secretsDirectory "firebase-admin.json"
+
+    if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+        return $candidate
+    }
+
+    throw "firebase-admin.json is missing from the secrets folder."
+}
+
+function Invoke-Compose {
+    param([string[]]$Arguments)
+
+    & $script:Docker compose `
+        --env-file $runtimeEnvironmentPath `
+        -f $composePath `
+        -f $releaseComposePath `
+        @Arguments
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Docker Compose command failed: $($Arguments -join ' ')"
+    }
+}
+
+function Wait-ForContainerRunning {
+    param(
+        [string]$Service,
+        [int]$TimeoutSeconds = 60
+    )
+
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+
+    while ([DateTime]::UtcNow -lt $deadline) {
+        $containerId = (
+            & $script:Docker compose `
+                --env-file $runtimeEnvironmentPath `
+                -f $composePath `
+                -f $releaseComposePath `
+                ps -q $Service 2>$null |
+                Select-Object -First 1
+        )
+
+        if (-not [string]::IsNullOrWhiteSpace($containerId)) {
+            $state = (
+                & $script:Docker inspect `
+                    --format "{{.State.Status}}" `
+                    $containerId 2>$null |
+                    Out-String
+            ).Trim()
+
+            if ($state -eq "running") {
+                return
+            }
+        }
+
+        Start-Sleep -Seconds 1
+        [System.Windows.Forms.Application]::DoEvents()
+    }
+
+    throw "$Service did not start."
+}
+
+function Escape-SqlLiteral {
+    param([string]$Value)
+
+    return $Value.Replace("'", "''")
+}
+
+function Synchronize-PostgresPassword {
+    param(
+        [string]$Service,
+        [string]$DatabaseUser,
+        [string]$DatabaseName,
+        [string]$Password
+    )
+
+    Set-Status "Synchronizing $Service credentials..."
+
+    $escapedPassword = Escape-SqlLiteral -Value $Password
+    $sql = "ALTER ROLE `"$DatabaseUser`" WITH PASSWORD '$escapedPassword';"
+
+    $output = & $script:Docker compose `
+        --env-file $runtimeEnvironmentPath `
+        -f $composePath `
+        -f $releaseComposePath `
+        exec -T `
+        $Service `
+        psql `
+        -v ON_ERROR_STOP=1 `
+        -U $DatabaseUser `
+        -d $DatabaseName `
+        -c $sql 2>&1
+
+    $exitCode = $LASTEXITCODE
+
+    foreach ($line in $output) {
+        Write-Log "$Service password sync: $line"
+    }
+
+    if ($exitCode -ne 0) {
+        throw "Could not synchronize the password in $Service."
+    }
+}
+
+function Test-HttpReady {
+    param(
+        [string]$Url,
+        [int]$TimeoutMilliseconds = 1500
+    )
+
+    try {
+        $request = [System.Net.HttpWebRequest]::Create($Url)
+        $request.Method = "GET"
+        $request.Timeout = $TimeoutMilliseconds
+        $request.ReadWriteTimeout = $TimeoutMilliseconds
+        $request.AllowAutoRedirect = $false
+
+        $response = $request.GetResponse()
+
+        try {
+            return [int]$response.StatusCode -ge 200 -and
+                [int]$response.StatusCode -lt 300
+        } finally {
+            $response.Close()
+        }
+    } catch {
+        return $false
+    }
+}
+
+function Wait-ForEndpoint {
+    param(
+        [string]$Name,
+        [string]$Url,
+        [int]$TimeoutSeconds = 90
+    )
+
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+
+    while ([DateTime]::UtcNow -lt $deadline) {
+        Set-Status "Waiting for $Name..."
+
+        if (Test-HttpReady -Url $Url) {
+            Write-Log "$Name ready: $Url"
+            return
+        }
+
+        Start-Sleep -Seconds 2
+    }
+
+    throw "$Name did not become ready: $Url"
+}
+
+try {
+    Set-Content -LiteralPath $logPath -Value "" -Encoding UTF8
+
+    Set-Status "Starting Docker Desktop..."
+    $script:Docker = Ensure-Docker
+
+    Set-Status "Preparing SecureChat secrets..."
+    New-Item -ItemType Directory -Path $secretsDirectory -Force | Out-Null
+
+    $registryPasswordPath = Join-Path $secretsDirectory "node-registry-database-password.txt"
+    $presencePasswordPath = Join-Path $secretsDirectory "presence-redis-password.txt"
+    $pushPasswordPath = Join-Path $secretsDirectory "push-database-password.txt"
+    $pushTokenPath = Join-Path $secretsDirectory "push-internal-api-token.txt"
+
+    Ensure-Secret $registryPasswordPath
+    Ensure-Secret $presencePasswordPath
+    Ensure-Secret $pushPasswordPath
+    Ensure-Secret $pushTokenPath
+
+    $registryPassword = (Get-Content $registryPasswordPath -Raw).Trim()
+    $presencePassword = (Get-Content $presencePasswordPath -Raw).Trim()
+    $pushPassword = (Get-Content $pushPasswordPath -Raw).Trim()
+    $pushToken = (Get-Content $pushTokenPath -Raw).Trim()
+
+    $firebaseCredentials = Find-FirebaseCredentials
+
+    if (-not (Test-Path -LiteralPath $releaseEnvironmentPath -PathType Leaf)) {
+        throw "release.env is missing."
+    }
+
+    $release = Read-EnvironmentFile $releaseEnvironmentPath
+
+    if (
+        -not $release.ContainsKey("SECURECHAT_IMAGE_PREFIX") -or
+        -not $release.ContainsKey("SECURECHAT_IMAGE_TAG")
+    ) {
+        throw "release.env is incomplete."
+    }
+
+    $runtime = @(
+        "CONTROL_PLANE_PROJECT_NAME=securechat-control-plane",
+        "CONTROL_PLANE_BIND_ADDRESS=0.0.0.0",
+        "CONTROL_PLANE_HTTP_PORT=$controlPlanePort",
+        "CONTROL_PLANE_SITE_ADDRESS=:80",
+        "FIREBASE_ADMIN_CREDENTIALS=$($firebaseCredentials.Replace('\','/'))",
+        "NODE_REGISTRY_DATABASE_PASSWORD=$registryPassword",
+        "PRESENCE_REDIS_PASSWORD=$presencePassword",
+        "PUSH_DATABASE_PASSWORD=$pushPassword",
+        "PUSH_INTERNAL_API_TOKEN=$pushToken",
+        "SECURECHAT_IMAGE_PREFIX=$($release['SECURECHAT_IMAGE_PREFIX'])",
+        "SECURECHAT_IMAGE_TAG=$($release['SECURECHAT_IMAGE_TAG'])"
+    )
+
+    [System.IO.File]::WriteAllLines(
+        $runtimeEnvironmentPath,
+        $runtime,
+        [System.Text.UTF8Encoding]::new($false)
+    )
+
+    Push-Location $deploymentDirectory
+
+    try {
+        Set-Status "Pulling SecureChat images..."
+        Invoke-Compose -Arguments @("pull")
+
+        # Start stateful dependencies first. If their named volumes already
+        # exist, PostgreSQL keeps the original password and ignores a newly
+        # supplied POSTGRES_PASSWORD. We therefore synchronize the role
+        # passwords inside the existing databases before starting apps.
+        Set-Status "Starting SecureChat databases..."
+        Invoke-Compose -Arguments @(
+            "up",
+            "-d",
+            "node-registry-database",
+            "presence-redis",
+            "push-database"
+        )
+
+        Wait-ForContainerRunning -Service "node-registry-database"
+        Wait-ForContainerRunning -Service "presence-redis"
+        Wait-ForContainerRunning -Service "push-database"
+
+        Start-Sleep -Seconds 3
+
+        Synchronize-PostgresPassword `
+            -Service "node-registry-database" `
+            -DatabaseUser "securechat_registry" `
+            -DatabaseName "securechat_registry" `
+            -Password $registryPassword
+
+        Synchronize-PostgresPassword `
+            -Service "push-database" `
+            -DatabaseUser "securechat_push" `
+            -DatabaseName "securechat_push" `
+            -Password $pushPassword
+
+        Set-Status "Starting SecureChat services..."
+        Invoke-Compose -Arguments @(
+            "up",
+            "-d",
+            "--remove-orphans"
+        )
+
+        Set-Status "Reloading control-plane routing..."
+        Invoke-Compose -Arguments @(
+            "up",
+            "-d",
+            "--force-recreate",
+            "caddy"
+        )
+    } finally {
+        Pop-Location
+    }
+
+    Wait-ForEndpoint `
+        -Name "node registry" `
+        -Url "http://127.0.0.1:8391/health/ready"
+
+    Wait-ForEndpoint `
+        -Name "presence directory" `
+        -Url "http://127.0.0.1:8392/health/ready"
+
+    Wait-ForEndpoint `
+        -Name "push service" `
+        -Url "http://127.0.0.1:8395/health/ready"
+
+    Wait-ForEndpoint `
+        -Name "control-plane registry route" `
+        -Url "http://127.0.0.1:8390/health/registry"
+
+    Wait-ForEndpoint `
+        -Name "control-plane presence route" `
+        -Url "http://127.0.0.1:8390/health/presence"
+
+    Wait-ForEndpoint `
+        -Name "control-plane push route" `
+        -Url "http://127.0.0.1:8390/health/push"
+
+    $address = @(
+        Get-NetIPConfiguration |
+            Where-Object {
+                $null -ne $_.IPv4DefaultGateway -and
+                $null -ne $_.IPv4Address
+            } |
+            ForEach-Object { $_.IPv4Address.IPAddress }
+    ) | Select-Object -First 1
+
+    if ([string]::IsNullOrWhiteSpace($address)) {
+        $address = "localhost"
+    }
+
+    $url = "http://$address`:$controlPlanePort"
+
+    $progress.Style = [System.Windows.Forms.ProgressBarStyle]::Blocks
+    $progress.Value = 100
+    $title.Text = "SecureChat control plane is running"
+    $status.Text = $url
+    Write-Log "SUCCESS: $url"
+
+    [System.Windows.Forms.Application]::DoEvents()
+    Start-Sleep -Seconds 3
+
+    $form.Close()
+    exit 0
+} catch {
+    Fail $_.Exception.Message
+}

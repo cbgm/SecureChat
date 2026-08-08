@@ -3,6 +3,8 @@ package com.cbgm.securechat.feature.chats.data.repository
 import com.cbgm.securechat.core.crypto.transport.TransportEncryptionMode
 import com.cbgm.securechat.core.id.IdGenerator
 import com.cbgm.securechat.core.logging.SecureChatLog
+import com.cbgm.securechat.core.protocol.mailbox.MailboxCapabilityLifecycle
+import com.cbgm.securechat.core.protocol.mailbox.NoOpMailboxCapabilityLifecycle
 import com.cbgm.securechat.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.securechat.core.protocol.packet.ChatMessagePacket
 import com.cbgm.securechat.core.protocol.packet.ReadReceiptPacket
@@ -55,7 +57,9 @@ class DefaultChatsRepository(
     private val groupInvitationDao: GroupInvitationDao,
     private val groupInvitationCoordinator: GroupInvitationCoordinator,
     private val groupMessageSender: GroupMessageSender,
-    private val identityInvitationService: IdentityInvitationService
+    private val identityInvitationService: IdentityInvitationService,
+    private val mailboxCapabilityLifecycle: MailboxCapabilityLifecycle =
+        NoOpMailboxCapabilityLifecycle
 ) : ChatsRepository {
     private val logger = SecureChatLog.withTag("DefaultChatsRepository")
 
@@ -134,9 +138,14 @@ class DefaultChatsRepository(
                 groupInvitationCoordinator.deleteGroupConversation(conversationId).getOrThrow()
             } else {
                 val contactId = requireNotNull(conversation.contactId) { "Direct conversation has no contact" }
-                identityInvitationService
-                    .revokeDirectChatAuthorization(contactId)
-                    .getOrThrow()
+                val authorizationError =
+                    identityInvitationService
+                        .revokeDirectChatAuthorization(contactId)
+                        .exceptionOrNull()
+                val mailboxError =
+                    mailboxCapabilityLifecycle.revokeForContact(contactId).exceptionOrNull()
+                authorizationError?.let { throw it }
+                mailboxError?.let { throw it }
                 chatDao.deleteConversation(conversationId)
             }
         }

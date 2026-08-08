@@ -1,0 +1,99 @@
+package com.cbgm.securechat.server.protocol
+
+import kotlinx.serialization.Serializable
+
+@Serializable
+enum class NodeCapability {
+    GATEWAY,
+    FEDERATION,
+    MAILBOX
+}
+
+@Serializable
+data class SecureChatNodeDescriptor(
+    val nodeId: String,
+    val clientEndpoint: String,
+    val federationEndpoint: String,
+    val mailboxEndpoint: String,
+    val identityPublicKey: ByteArray,
+    val protocolVersions: Set<Int>,
+    val capabilities: Set<NodeCapability>,
+    val validUntilEpochMilliseconds: Long,
+    val signature: ByteArray
+) {
+    init {
+        require(nodeId.isNotBlank())
+        require(clientEndpoint.isNotBlank())
+        require(federationEndpoint.isNotBlank())
+        require(mailboxEndpoint.isNotBlank())
+        require(identityPublicKey.isNotEmpty())
+        require(protocolVersions.isNotEmpty() && protocolVersions.all { it > 0 })
+        require(validUntilEpochMilliseconds > 0L)
+    }
+}
+
+@Serializable
+data class UnsignedNodeDescriptor(
+    val nodeId: String,
+    val clientEndpoint: String,
+    val federationEndpoint: String,
+    val mailboxEndpoint: String,
+    val identityPublicKey: ByteArray,
+    val protocolVersions: Set<Int>,
+    val capabilities: Set<NodeCapability>,
+    val validUntilEpochMilliseconds: Long
+)
+
+fun SecureChatNodeDescriptor.unsigned(): UnsignedNodeDescriptor =
+    UnsignedNodeDescriptor(
+        nodeId = nodeId,
+        clientEndpoint = clientEndpoint,
+        federationEndpoint = federationEndpoint,
+        mailboxEndpoint = mailboxEndpoint,
+        identityPublicKey = identityPublicKey,
+        protocolVersions = protocolVersions,
+        capabilities = capabilities,
+        validUntilEpochMilliseconds = validUntilEpochMilliseconds
+    )
+
+@Serializable
+data class NodeRegistrationRequest(
+    val descriptor: SecureChatNodeDescriptor
+)
+
+@Serializable
+data class NodeHeartbeatRequest(
+    val nodeId: String,
+    val timestampEpochMilliseconds: Long,
+    val nonce: String,
+    val signature: ByteArray
+)
+
+@Serializable
+data class UnsignedNodeHeartbeat(
+    val nodeId: String,
+    val timestampEpochMilliseconds: Long,
+    val nonce: String
+)
+
+fun NodeHeartbeatRequest.unsigned(): UnsignedNodeHeartbeat =
+    UnsignedNodeHeartbeat(
+        nodeId = nodeId,
+        timestampEpochMilliseconds = timestampEpochMilliseconds,
+        nonce = nonce
+    )
+
+@Serializable
+data class NodeDirectory(
+    val generatedAtEpochMilliseconds: Long,
+    val validUntilEpochMilliseconds: Long,
+    val nodes: List<SecureChatNodeDescriptor>
+)
+
+@Serializable
+data class SignedNodeDirectory(
+    val directory: NodeDirectory,
+    val authorityNodeId: String,
+    val authorityPublicKey: ByteArray,
+    val signature: ByteArray
+)

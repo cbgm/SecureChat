@@ -1,9 +1,11 @@
 package com.cbgm.securechat.notification.application
 
+import com.cbgm.securechat.core.logging.SecureChatLog
 import com.cbgm.securechat.feature.chats.domain.model.Conversation
 import com.cbgm.securechat.feature.chats.domain.usecase.ObserveConversations
 import com.cbgm.securechat.feature.messaging.application.incoming.IncomingEnvelopeProcessingResult
 import com.cbgm.securechat.feature.messaging.application.incoming.IncomingEnvelopeProcessor
+import com.cbgm.securechat.feature.messaging.application.mailbox.MailboxCoordinator
 import com.cbgm.securechat.feature.transport.relay.inbox.PendingRelayEnvelopeGateway
 import com.cbgm.securechat.notification.model.ConversationNotification
 import com.cbgm.securechat.notification.model.PendingMessageSyncResult
@@ -12,8 +14,11 @@ import kotlinx.coroutines.flow.first
 class SynchronizePendingMessages(
     private val pendingRelayEnvelopeGateway: PendingRelayEnvelopeGateway,
     private val incomingEnvelopeProcessor: IncomingEnvelopeProcessor,
-    private val observeConversations: ObserveConversations
+    private val observeConversations: ObserveConversations,
+    private val mailboxCoordinator: MailboxCoordinator
 ) {
+    private val logger = SecureChatLog.withTag("SynchronizePendingMessages")
+
     suspend operator fun invoke(wakeUpId: String): Result<PendingMessageSyncResult> =
         runCatching {
             require(wakeUpId.isNotBlank()) {
@@ -29,6 +34,14 @@ class SynchronizePendingMessages(
 
             var processedEnvelopeCount = 0
 
+            /*
+             * The FCM wake-up inbox is the authoritative path for a push-triggered
+             * synchronization and must be processed before any node-local mailbox.
+             *
+             * A mailbox credential can temporarily point to an unavailable node after
+             * discovery/failover. That must never prevent the central push inbox from
+             * being downloaded and acknowledged.
+             */
             val envelopes =
                 pendingRelayEnvelopeGateway
                     .getPendingEnvelopes(wakeUpId = wakeUpId)
@@ -57,6 +70,17 @@ class SynchronizePendingMessages(
                 }
             }
 
+            processedEnvelopeCount +=
+                mailboxCoordinator
+                    .synchronizePending()
+                    .getOrElse { error ->
+                        logger.warn(error) {
+                            "Mailbox synchronization failed during push wake-up; " +
+                                "central push synchronization already completed"
+                        }
+                        0
+                    }
+
             val notifications =
                 observeConversations()
                     .first()
@@ -69,6 +93,12 @@ class SynchronizePendingMessages(
                                 current.unreadCount > unreadCountBeforeSync
                             }?.toNotification()
                     }
+
+            logger.info {
+                "Push synchronization completed; " +
+                    "wakeUpId=${wakeUpId.take(LOG_WAKE_UP_ID_LENGTH)}, " +
+                    "processed=$processedEnvelopeCount, notifications=${notifications.size}"
+            }
 
             PendingMessageSyncResult(
                 processedEnvelopeCount = processedEnvelopeCount,
@@ -83,4 +113,8 @@ class SynchronizePendingMessages(
             messagePreview = lastMessage?.text?.takeIf(String::isNotBlank),
             unreadCount = unreadCount
         )
+
+    private companion object {
+        const val LOG_WAKE_UP_ID_LENGTH = 8
+    }
 }

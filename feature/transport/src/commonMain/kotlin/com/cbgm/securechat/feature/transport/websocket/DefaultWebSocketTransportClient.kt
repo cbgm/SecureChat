@@ -1,11 +1,17 @@
 package com.cbgm.securechat.feature.transport.websocket
 
+import com.cbgm.securechat.core.id.IdGenerator
 import com.cbgm.securechat.core.logging.SecureChatLog
+import com.cbgm.securechat.core.time.SystemClock
 import com.cbgm.securechat.feature.transport.connection.TransportConnectionState
+import com.cbgm.securechat.feature.transport.relay.model.ClientRouteRegistration
+import com.cbgm.securechat.feature.transport.relay.model.FederatedEnvelope
 import com.cbgm.securechat.feature.transport.relay.model.RelayClientMessage
 import com.cbgm.securechat.feature.transport.relay.model.RelayEnvelope
 import com.cbgm.securechat.feature.transport.relay.model.RelayServerMessage
 import com.cbgm.securechat.feature.transport.relay.model.RelayTypingEvent
+import com.cbgm.securechat.feature.transport.relay.presence.ClientPresenceRouteManager
+import com.cbgm.securechat.feature.transport.relay.presence.PresenceRouteConnection
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.plugins.websocket.webSocket
@@ -34,9 +40,10 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.milliseconds
 
-class DefaultWebSocketTransportClient(
+class DefaultWebSocketTransportClient internal constructor(
     private val httpClient: HttpClient,
-    private val json: Json
+    private val json: Json,
+    private val presenceRouteManager: ClientPresenceRouteManager
 ) : WebSocketTransportClient {
     private val logger = SecureChatLog.withTag("DefaultWebSocketTransportClient")
 
@@ -128,6 +135,14 @@ class DefaultWebSocketTransportClient(
                     pendingAcknowledgements.remove(envelope.envelopeId)
                 }
             }
+        }
+
+    override suspend fun sendFederatedEnvelopeAndAwaitAcceptance(
+        envelope: FederatedEnvelope,
+        timeoutMilliseconds: Long
+    ): Result<Unit> =
+        awaitEnvelopeAcceptance(envelope.envelopeId, timeoutMilliseconds) {
+            sendFederatedEnvelopeFrame(envelope)
         }
 
     override suspend fun acknowledgeIncomingEnvelope(envelopeId: String): Result<Unit> =
@@ -227,11 +242,15 @@ class DefaultWebSocketTransportClient(
         mutableConnectionState.value = TransportConnectionState.Disconnected
     }
 
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "NestedBlockDepth")
     private suspend fun runConnection(
         serverUrl: String,
         localRelayId: String
     ) {
         mutableConnectionState.value = TransportConnectionState.Connecting
+
+        val connectionId = IdGenerator.generate()
+        val generation = SystemClock.nowEpochMilliseconds()
 
         try {
             httpClient.webSocket(urlString = serverUrl) {
@@ -241,46 +260,132 @@ class DefaultWebSocketTransportClient(
 
                 logger.info { "WebSocket session opened" }
 
-                sendRegistration(
-                    activeSession = this,
-                    localRelayId = localRelayId
-                )
+                val gatewayInformation =
+                    presenceRouteManager
+                        .fetchGatewayInformation(serverUrl = serverUrl)
+                        .onFailure { error ->
+                            logger.warn {
+                                "Gateway information unavailable; using compatible registration: " +
+                                    (error.message ?: "unknown error")
+                            }
+                        }.getOrNull()
 
-                incoming.consumeEach { frame ->
-                    when (frame) {
-                        is Frame.Text -> {
-                            handleTextFrame(
-                                encodedMessage = frame.readText(),
-                                expectedRelayId = localRelayId
-                            )
-                        }
+                val presenceConnection =
+                    PresenceRouteConnection(
+                        serverUrl = serverUrl,
+                        routingId = localRelayId,
+                        connectionId = connectionId,
+                        generation = generation,
+                        initialGatewayInformation = gatewayInformation,
+                        initialRouteEstablished = false,
+                        connectionIdRegistered = gatewayInformation != null
+                    )
+                val routeRegistration =
+                    gatewayInformation?.let { information ->
+                        presenceRouteManager
+                            .createRegistration(
+                                connection = presenceConnection,
+                                gatewayInformation = information
+                            ).onFailure { error ->
+                                logger.warn {
+                                    "Could not sign initial presence route; " +
+                                        "using compatible registration: " +
+                                        (error.message ?: "unknown error")
+                                }
+                            }.getOrNull()
+                    }
 
-                        is Frame.Close -> {
-                            val reason = closeReason.await()
+                val signedRegistrationSent =
+                    sendRegistration(
+                        activeSession = this,
+                        localRelayId = localRelayId,
+                        connectionId = connectionId,
+                        connectionIdRegistered = gatewayInformation != null,
+                        routeRegistration = routeRegistration
+                    )
 
-                            logger.info {
-                                "Received WebSocket close frame: " +
-                                    "code=${reason?.code}, " +
-                                    "message=${reason?.message}"
+                val routeRefreshJob =
+                    launch {
+                        presenceRouteManager.maintain(
+                            connection =
+                                presenceConnection.copy(
+                                    initialRouteEstablished = signedRegistrationSent
+                                ),
+                            sendRefresh = { registration ->
+                                runCatching {
+                                    sendMutex.withLock {
+                                        this@webSocket.send(
+                                            Frame.Text(
+                                                json.encodeToString<RelayClientMessage>(
+                                                    RelayClientMessage.RefreshRoute(registration)
+                                                )
+                                            )
+                                        )
+                                    }
+                                }
+                            },
+                            reconnect = {
+                                this@webSocket.close(
+                                    CloseReason(
+                                        code = CloseReason.Codes.NORMAL,
+                                        message = "Reconnect for signed presence"
+                                    )
+                                )
+                            },
+                            fail = { error ->
+                                mutableConnectionState.value =
+                                    TransportConnectionState.Failed(
+                                        message = error?.message ?: "Presence route refresh failed"
+                                    )
+                                this@webSocket.close(
+                                    CloseReason(
+                                        code = CloseReason.Codes.INTERNAL_ERROR,
+                                        message = "Presence route refresh failed"
+                                    )
+                                )
+                            }
+                        )
+                    }
+
+                try {
+                    incoming.consumeEach { frame ->
+                        when (frame) {
+                            is Frame.Text -> {
+                                handleTextFrame(
+                                    encodedMessage = frame.readText(),
+                                    expectedRelayId = localRelayId
+                                )
+                            }
+
+                            is Frame.Close -> {
+                                val reason = closeReason.await()
+
+                                logger.info {
+                                    "Received WebSocket close frame: " +
+                                        "code=${reason?.code}, " +
+                                        "message=${reason?.message}"
+                                }
+                            }
+
+                            is Frame.Binary -> {
+                                logger.warn { "Ignoring unsupported binary WebSocket frame" }
+                            }
+
+                            is Frame.Ping -> {
+                                /*
+                                 * Ktor handles pong responses internally.
+                                 */
+                            }
+
+                            is Frame.Pong -> {
+                                /*
+                                 * Ktor handles ping/pong internally.
+                                 */
                             }
                         }
-
-                        is Frame.Binary -> {
-                            logger.warn { "Ignoring unsupported binary WebSocket frame" }
-                        }
-
-                        is Frame.Ping -> {
-                            /*
-                             * Ktor handles pong responses internally.
-                             */
-                        }
-
-                        is Frame.Pong -> {
-                            /*
-                             * Ktor handles ping/pong internally.
-                             */
-                        }
                     }
+                } finally {
+                    routeRefreshJob.cancelAndJoin()
                 }
 
                 val reason = closeReason.await()
@@ -292,7 +397,9 @@ class DefaultWebSocketTransportClient(
                 }
             }
 
-            mutableConnectionState.value = TransportConnectionState.Disconnected
+            if (mutableConnectionState.value !is TransportConnectionState.Failed) {
+                mutableConnectionState.value = TransportConnectionState.Disconnected
+            }
         } catch (
             error: CancellationException
         ) {
@@ -321,15 +428,33 @@ class DefaultWebSocketTransportClient(
 
     private suspend fun sendRegistration(
         activeSession: DefaultClientWebSocketSession,
-        localRelayId: String
-    ) {
-        val registration = RelayClientMessage.Register(relayId = localRelayId)
+        localRelayId: String,
+        connectionId: String,
+        connectionIdRegistered: Boolean,
+        routeRegistration: ClientRouteRegistration?
+    ): Boolean {
+        val registration =
+            RelayClientMessage.Register(
+                relayId = localRelayId,
+                connectionId = connectionId.takeIf { connectionIdRegistered },
+                generation = routeRegistration?.route?.generation,
+                expiresAtEpochMilliseconds = routeRegistration?.route?.expiresAtEpochMilliseconds,
+                aliases = routeRegistration?.route?.aliases?.takeIf { it.isNotEmpty() },
+                clientSigningPublicKey = routeRegistration?.clientSigningPublicKey,
+                clientSignature = routeRegistration?.route?.clientSignature
+            )
 
         val encodedRegistration = json.encodeToString<RelayClientMessage>(registration)
 
-        activeSession.send(Frame.Text(encodedRegistration))
+        sendMutex.withLock {
+            activeSession.send(Frame.Text(encodedRegistration))
+        }
 
-        logger.debug { "Relay registration sent for $localRelayId" }
+        logger.debug {
+            "Relay registration sent for $localRelayId; signed=${routeRegistration != null}"
+        }
+
+        return routeRegistration != null
     }
 
     private suspend fun sendEnvelopeFrame(envelope: RelayEnvelope) {
@@ -348,6 +473,46 @@ class DefaultWebSocketTransportClient(
             activeSession.send(Frame.Text(encodedMessage))
         }
     }
+
+    private suspend fun sendFederatedEnvelopeFrame(envelope: FederatedEnvelope) {
+        sendMutex.withLock {
+            val activeSession =
+                sessionMutex.withLock { session }
+                    ?: error("WebSocket session is not available")
+            activeSession.send(
+                Frame.Text(
+                    json.encodeToString<RelayClientMessage>(
+                        RelayClientMessage.SendFederatedEnvelope(envelope)
+                    )
+                )
+            )
+        }
+    }
+
+    private suspend fun awaitEnvelopeAcceptance(
+        envelopeId: String,
+        timeoutMilliseconds: Long,
+        send: suspend () -> Unit
+    ): Result<Unit> =
+        runCatching {
+            require(timeoutMilliseconds > 0L) { "Acknowledgement timeout must be positive" }
+            check(connectionState.value is TransportConnectionState.Connected) {
+                "WebSocket relay is not connected"
+            }
+            val acknowledgement = CompletableDeferred<Unit>()
+            acknowledgementsMutex.withLock {
+                check(!pendingAcknowledgements.containsKey(envelopeId)) {
+                    "Envelope is already awaiting acknowledgement"
+                }
+                pendingAcknowledgements[envelopeId] = acknowledgement
+            }
+            try {
+                send()
+                withTimeout(timeoutMilliseconds.milliseconds) { acknowledgement.await() }
+            } finally {
+                acknowledgementsMutex.withLock { pendingAcknowledgements.remove(envelopeId) }
+            }
+        }
 
     private suspend fun handleTextFrame(
         encodedMessage: String,
@@ -407,6 +572,12 @@ class DefaultWebSocketTransportClient(
             is RelayServerMessage.Error -> {
                 logger.warn { "Relay error ${message.code}: ${message.message}" }
 
+                if (message.code in FATAL_ROUTE_ERROR_CODES) {
+                    throw IllegalStateException(
+                        "Presence route rejected by relay: ${message.code}"
+                    )
+                }
+
                 /*
                  * A relay error does not always mean the underlying
                  * WebSocket connection is broken.
@@ -437,5 +608,11 @@ class DefaultWebSocketTransportClient(
 
     private companion object {
         const val INCOMING_BUFFER_CAPACITY = 64
+
+        val FATAL_ROUTE_ERROR_CODES =
+            setOf(
+                "ROUTE_REJECTED",
+                "INVALID_ROUTE_REFRESH"
+            )
     }
 }
