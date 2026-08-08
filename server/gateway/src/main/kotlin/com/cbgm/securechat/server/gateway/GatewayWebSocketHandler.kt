@@ -72,20 +72,11 @@ class GatewayWebSocketHandler(
                 markFederationStored = federation::markStored
             )
 
-        if (accepted) {
-            sender.send(
-                GatewayServerMessage.EnvelopeAccepted(
-                    envelopeId = envelope.envelopeId
-                )
-            )
-        } else {
-            sender.send(
-                GatewayServerMessage.Error(
-                    code = "ENVELOPE_REJECTED",
-                    message = "Envelope could not be stored"
-                )
-            )
-        }
+        respondToEnvelope(
+            sender = sender,
+            envelopeId = envelope.envelopeId,
+            accepted = accepted
+        )
     }
 
     private suspend fun sendFederatedEnvelope(
@@ -102,19 +93,37 @@ class GatewayWebSocketHandler(
             return
         }
 
-        val accepted = routeEnvelope(envelope)
+        val accepted =
+            storeAndRouteFederatedEnvelope(
+                envelope = envelope,
+                pushStorage = legacyPush::store,
+                networkDelivery = ::routeEnvelope,
+                markFederationStored = federation::markStored
+            )
 
+        respondToEnvelope(
+            sender = sender,
+            envelopeId = envelope.envelopeId,
+            accepted = accepted
+        )
+    }
+
+    private suspend fun respondToEnvelope(
+        sender: GatewayConnection,
+        envelopeId: String,
+        accepted: Boolean
+    ) {
         if (accepted) {
             sender.send(
                 GatewayServerMessage.EnvelopeAccepted(
-                    envelopeId = envelope.envelopeId
+                    envelopeId = envelopeId
                 )
             )
         } else {
             sender.send(
                 GatewayServerMessage.Error(
                     code = "ENVELOPE_REJECTED",
-                    message = "Envelope could not be queued"
+                    message = "Envelope could not be stored or queued"
                 )
             )
         }
@@ -187,8 +196,7 @@ class GatewayWebSocketHandler(
         envelope: FederatedEnvelope,
         recipients: List<GatewayConnection>
     ): Boolean {
-        val relayEnvelope =
-            envelope.toRelayEnvelope()
+        val relayEnvelope = envelope.toRelayEnvelope()
 
         val stored =
             runCatching {
@@ -234,16 +242,49 @@ internal suspend fun storeAndRouteLegacyEnvelope(
     pushStorage: suspend (RelayEnvelope) -> Boolean,
     networkDelivery: suspend (FederatedEnvelope) -> Boolean,
     markFederationStored: suspend (String) -> Unit
+): Boolean =
+    storeAndRouteEnvelope(
+        pushEnvelope = envelope,
+        networkEnvelope = envelope.toFederatedEnvelope(),
+        pushStorage = pushStorage,
+        networkDelivery = networkDelivery,
+        markFederationStored = markFederationStored
+    )
+
+internal suspend fun storeAndRouteFederatedEnvelope(
+    envelope: FederatedEnvelope,
+    pushStorage: suspend (RelayEnvelope) -> Boolean,
+    networkDelivery: suspend (FederatedEnvelope) -> Boolean,
+    markFederationStored: suspend (String) -> Unit
+): Boolean =
+    storeAndRouteEnvelope(
+        pushEnvelope = envelope.toRelayEnvelope(),
+        networkEnvelope = envelope,
+        pushStorage = pushStorage,
+        networkDelivery = networkDelivery,
+        markFederationStored = markFederationStored
+    )
+
+private suspend fun storeAndRouteEnvelope(
+    pushEnvelope: RelayEnvelope,
+    networkEnvelope: FederatedEnvelope,
+    pushStorage: suspend (RelayEnvelope) -> Boolean,
+    networkDelivery: suspend (FederatedEnvelope) -> Boolean,
+    markFederationStored: suspend (String) -> Unit
 ): Boolean {
-    val storedForPush = runCatching { pushStorage(envelope) }.getOrDefault(false)
+    val storedForPush =
+        runCatching {
+            pushStorage(pushEnvelope)
+        }.getOrDefault(false)
+
     val routedOnline =
         runCatching {
-            networkDelivery(envelope.toFederatedEnvelope())
+            networkDelivery(networkEnvelope)
         }.getOrDefault(false)
 
     if (storedForPush) {
         runCatching {
-            markFederationStored(envelope.envelopeId)
+            markFederationStored(networkEnvelope.envelopeId)
         }
     }
 
@@ -259,7 +300,9 @@ internal suspend fun routeFederatedTypingEvent(
         return true
     }
 
-    return runCatching { federation.routeTyping(event) }.getOrDefault(false)
+    return runCatching {
+        federation.routeTyping(event)
+    }.getOrDefault(false)
 }
 
 internal fun RelayEnvelope.toFederatedEnvelope(): FederatedEnvelope =

@@ -85,6 +85,63 @@ class GatewayEnvelopeRoutingTest {
         }
 
     @Test
+    fun federatedEnvelopeIsStoredForPushAndStillUsesMailboxRoute() =
+        runTest {
+            var pushedEnvelope: RelayEnvelope? = null
+            var routedEnvelope: FederatedEnvelope? = null
+            var markedStoredEnvelopeId: String? = null
+            val envelope = testEnvelope()
+
+            val accepted =
+                storeAndRouteFederatedEnvelope(
+                    envelope = envelope,
+                    pushStorage = { candidate ->
+                        pushedEnvelope = candidate
+                        true
+                    },
+                    networkDelivery = { candidate ->
+                        routedEnvelope = candidate
+                        true
+                    },
+                    markFederationStored = { envelopeId ->
+                        markedStoredEnvelopeId = envelopeId
+                    }
+                )
+
+            assertTrue(accepted)
+            assertEquals(
+                RelayEnvelope(
+                    envelopeId = envelope.envelopeId,
+                    senderId = envelope.senderRoutingId,
+                    recipientId = envelope.recipientDeviceRoutingId,
+                    payload = envelope.encryptedPayload,
+                    createdAtEpochMilliseconds = envelope.createdAtEpochMilliseconds
+                ),
+                pushedEnvelope
+            )
+            assertEquals(envelope, routedEnvelope)
+            assertEquals(envelope.envelopeId, markedStoredEnvelopeId)
+        }
+
+    @Test
+    fun federatedEnvelopePushFallbackAcceptsOfflineRecipient() =
+        runTest {
+            var markedStoredEnvelopeId: String? = null
+            val accepted =
+                storeAndRouteFederatedEnvelope(
+                    envelope = testEnvelope(),
+                    pushStorage = { true },
+                    networkDelivery = { false },
+                    markFederationStored = { envelopeId ->
+                        markedStoredEnvelopeId = envelopeId
+                    }
+                )
+
+            assertTrue(accepted)
+            assertEquals("envelope-1", markedStoredEnvelopeId)
+        }
+
+    @Test
     fun durablePushFallbackAcceptsOfflineRecipientAndCompletesQueue() =
         runTest {
             var markedStoredEnvelopeId: String? = null
@@ -134,9 +191,11 @@ class GatewayEnvelopeRoutingTest {
         delegate: suspend (FederatedEnvelope) -> FederationAcknowledgement
     ): FederationClient =
         object : FederationClient {
-            override suspend fun route(envelope: FederatedEnvelope): FederationAcknowledgement = delegate(envelope)
+            override suspend fun route(envelope: FederatedEnvelope): FederationAcknowledgement =
+                delegate(envelope)
 
-            override suspend fun routeTyping(event: FederatedTypingEvent): Boolean = typingDelegate(event)
+            override suspend fun routeTyping(event: FederatedTypingEvent): Boolean =
+                typingDelegate(event)
         }
 
     private fun acknowledgement(
