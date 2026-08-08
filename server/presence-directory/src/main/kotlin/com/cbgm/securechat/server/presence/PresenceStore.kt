@@ -31,7 +31,11 @@ class PresenceStore(
     override suspend fun register(registration: ClientRouteRegistration): PresenceResult {
         val route = registration.route
         val currentTime = now()
-        validatePresenceRegistration(registration, maximumTtlMilliseconds, currentTime)?.let { return it }
+        validatePresenceRegistration(
+            registration,
+            maximumTtlMilliseconds,
+            currentTime
+        )?.let { return it }
 
         val routingIds = listOf(route.routingId) + route.aliases.orEmpty()
         val newestGeneration =
@@ -45,7 +49,11 @@ class PresenceStore(
             else -> {
                 routingIds.forEach { routingId ->
                     val deviceRoutes = routes.computeIfAbsent(routingId) { ConcurrentHashMap() }
-                    if (route.generation > (deviceRoutes.values.maxOfOrNull(ClientRoute::generation) ?: -1L)) {
+                    if (route.generation > (
+                            deviceRoutes.values.maxOfOrNull(ClientRoute::generation)
+                                ?: -1L
+                        )
+                    ) {
                         deviceRoutes.clear()
                     }
                     deviceRoutes[route.connectionId] = route
@@ -100,16 +108,27 @@ internal fun validatePresenceRegistration(
 ): PresenceResult.Rejected? {
     val route = registration.route
     return when {
-        !ClientRoutingIds.matchesSigningPublicKey(route.routingId, registration.clientSigningPublicKey) ->
+        !ClientRoutingIds.matchesSigningPublicKey(
+            route.routingId,
+            registration.clientSigningPublicKey
+        ) ->
             PresenceResult.Rejected("INVALID_ROUTING_ID")
+
         route.aliases.orEmpty().any { alias -> !ClientRoutingIds.isBootstrapRoutingId(alias) } ->
             PresenceResult.Rejected("INVALID_ROUTING_ALIAS")
+
         route.aliases.orEmpty().distinct().size != route.aliases.orEmpty().size ->
             PresenceResult.Rejected("DUPLICATE_ROUTING_ALIAS")
+
         route.expiresAtEpochMilliseconds <= currentTime -> PresenceResult.Rejected("ROUTE_EXPIRED")
-        route.expiresAtEpochMilliseconds - currentTime > maximumTtlMilliseconds -> PresenceResult.Rejected("TTL_TOO_LONG")
+        route.expiresAtEpochMilliseconds - currentTime > maximumTtlMilliseconds ->
+            PresenceResult.Rejected(
+                "TTL_TOO_LONG"
+            )
+
         !ProtocolSignatures.verifyClientRoute(route, registration.clientSigningPublicKey) ->
             PresenceResult.Rejected("INVALID_SIGNATURE")
+
         else -> null
     }
 }
