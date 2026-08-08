@@ -55,7 +55,8 @@ class RelayTypingIndicatorGatewayTest {
                     webSocketTransportClient = client,
                     contactRelayIdResolver =
                         object : ContactRelayIdResolver {
-                            override suspend fun resolve(contactId: String): Result<String> = Result.failure(expectedError)
+                            override suspend fun resolve(contactId: String): Result<String> =
+                                Result.failure(expectedError)
                         }
                 )
 
@@ -122,8 +123,60 @@ class RelayTypingIndicatorGatewayTest {
             )
         }
 
+    @Test
+    fun observationStaysActiveUntilContactRelayIdBecomesAvailable() =
+        runTest {
+            val client = FakeWebSocketTransportClient()
+            val resolver = MutableResolver()
+            val gateway =
+                RelayTypingIndicatorGateway(
+                    webSocketTransportClient = client,
+                    contactRelayIdResolver = resolver
+                )
+            val observedValue =
+                async(start = CoroutineStart.UNDISPATCHED) {
+                    gateway
+                        .observeTyping(contactId = "contact-1")
+                        .first()
+                }
+
+            client.incomingEvents.subscriptionCount.first { count -> count > 0 }
+
+            client.incomingEvents.emit(
+                RelayTypingEvent(
+                    senderId = "contact-relay-id",
+                    isTyping = true
+                )
+            )
+
+            resolver.relayId = "contact-relay-id"
+
+            client.incomingEvents.emit(
+                RelayTypingEvent(
+                    senderId = "contact-relay-id",
+                    isTyping = true
+                )
+            )
+
+            assertTrue(
+                withTimeout(TEST_TIMEOUT_MILLISECONDS) {
+                    observedValue.await()
+                }
+            )
+        }
+
     private class SuccessfulResolver : ContactRelayIdResolver {
-        override suspend fun resolve(contactId: String): Result<String> = Result.success("contact-relay-id")
+        override suspend fun resolve(contactId: String): Result<String> =
+            Result.success("contact-relay-id")
+    }
+
+    private class MutableResolver : ContactRelayIdResolver {
+        var relayId: String? = null
+
+        override suspend fun resolve(contactId: String): Result<String> =
+            relayId
+                ?.let { Result.success(it) }
+                ?: Result.failure(IllegalStateException("relay ID missing"))
     }
 
     private class FakeWebSocketTransportClient : WebSocketTransportClient {
@@ -145,7 +198,8 @@ class RelayTypingIndicatorGatewayTest {
             timeoutMilliseconds: Long
         ): Result<Unit> = Result.success(Unit)
 
-        override suspend fun acknowledgeIncomingEnvelope(envelopeId: String): Result<Unit> = Result.success(Unit)
+        override suspend fun acknowledgeIncomingEnvelope(envelopeId: String): Result<Unit> =
+            Result.success(Unit)
 
         override suspend fun sendTypingState(
             recipientId: String,

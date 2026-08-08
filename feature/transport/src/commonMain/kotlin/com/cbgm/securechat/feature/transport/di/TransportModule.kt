@@ -99,7 +99,6 @@ val transportModule =
             DefaultRelayConnectionManager(
                 webSocketTransportClient = get<WebSocketTransportClient>(),
                 localRelayIdProvider = get<LocalRelayIdProvider>(),
-                localBootstrapRelayIdProvider = get<LocalBootstrapRelayIdProvider>(),
                 relayTransportConfig = get<RelayTransportConfig>(),
                 nodeEndpointResolver = get<NodeEndpointResolver>()
             )
@@ -151,7 +150,8 @@ val transportModule =
                 webSocketTransportClient = get<WebSocketTransportClient>(),
                 localRelayIdProvider = get<LocalRelayIdProvider>(),
                 relayTransportConfig = get<RelayTransportConfig>(),
-                mailboxRouteRepository = get()
+                mailboxRouteRepository = get(),
+                localBootstrapRelayIdProvider = get<LocalBootstrapRelayIdProvider>()
             )
         }
     }

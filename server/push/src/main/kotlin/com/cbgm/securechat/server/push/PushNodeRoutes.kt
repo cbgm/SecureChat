@@ -34,7 +34,7 @@ private fun Route.installNodeEnvelopeRoute(runtime: PushRuntime) {
                 method = "POST",
                 path = NODE_ENVELOPE_PATH,
                 body = body,
-                routingId = envelope.recipientId
+                routingId = envelope.senderId
             ) ->
                 call.respond(HttpStatusCode.Unauthorized)
 
