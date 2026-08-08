@@ -1,9 +1,15 @@
 name: Server Images
 
 on:
-  push:
+  pull_request:
     branches:
-      - "**"
+      - develop
+      - master
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
     paths:
       - "server/**"
       - "build-logic/**"
@@ -11,77 +17,85 @@ on:
       - "gradle.properties"
       - "settings.gradle.kts"
       - ".github/workflows/server-images.yml"
+
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Optional additional Docker image tag
+        required: false
+        type: string
 
 permissions:
   contents: read
   packages: write
 
 concurrency:
-  group: server-images-${{ github.ref }}
+  group: server-images-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   publish-images:
-    name: Publish server images
+    name: Publish PR server images
+
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+
     runs-on: ubuntu-latest
     timeout-minutes: 120
 
-    outputs:
-      channel_tag: ${{ steps.tags.outputs.channel_tag }}
-      image_prefix: ${{ steps.tags.outputs.image_prefix }}
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout exact feature-branch commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
         with:
           platforms: arm64
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Compute image tags
-        id: tags
+      - name: Build and publish all server images
+        env:
+          REQUESTED_IMAGE_TAG: ${{ inputs.image_tag }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         shell: bash
         run: |
           set -euo pipefail
 
           owner="${GITHUB_REPOSITORY_OWNER,,}"
           image_prefix="ghcr.io/${owner}/securechat"
-          branch_name="${GITHUB_REF_NAME}"
 
-          branch_tag="branch-$(printf '%s' "${branch_name}" \
-            | tr '[:upper:]' '[:lower:]' \
-            | sed -E 's/[^a-z0-9_.-]+/-/g')"
+          image_tags=(
+            "sha-${SOURCE_SHA}"
+          )
 
-          if [[ "${branch_name}" == "master" ]]; then
-            channel_tag="latest"
-          elif [[ "${branch_name}" == "develop" ]]; then
-            channel_tag="develop"
-          else
-            channel_tag="${branch_tag}"
+          if [[ -n "${PR_NUMBER}" ]]; then
+            image_tags+=("pr-${PR_NUMBER}")
           fi
 
-          echo "image_prefix=${image_prefix}" >> "${GITHUB_OUTPUT}"
-          echo "channel_tag=${channel_tag}" >> "${GITHUB_OUTPUT}"
+          if [[ -n "${REQUESTED_IMAGE_TAG}" ]]; then
+            if [[ ! "${REQUESTED_IMAGE_TAG}" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]]; then
+              echo "Invalid Docker image tag: ${REQUESTED_IMAGE_TAG}" >&2
+              exit 1
+            fi
 
-      - name: Build and publish server images
-        env:
-          IMAGE_PREFIX: ${{ steps.tags.outputs.image_prefix }}
-          CHANNEL_TAG: ${{ steps.tags.outputs.channel_tag }}
-        shell: bash
-        run: |
-          set -euo pipefail
+            image_tags+=("${REQUESTED_IMAGE_TAG}")
+          fi
+
+          created_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 
           services=(
             node-registry
@@ -92,66 +106,180 @@ jobs:
             gateway
           )
 
-          created_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          immutable_tag="sha-${GITHUB_SHA}"
+          echo "Publishing images with tags:"
+          printf '  - %s\n' "${image_tags[@]}"
 
           for service in "${services[@]}"; do
-            image="${IMAGE_PREFIX}-${service}"
+            image="${image_prefix}-${service}"
+            tag_arguments=()
+
+            for tag in "${image_tags[@]}"; do
+              tag_arguments+=(
+                --tag
+                "${image}:${tag}"
+              )
+            done
+
+            echo ""
+            echo "Building ${image}..."
 
             docker buildx build \
               --file server/Dockerfile \
               --platform linux/amd64,linux/arm64 \
               --build-arg "SERVICE=${service}" \
-              --tag "${image}:${immutable_tag}" \
-              --tag "${image}:${CHANNEL_TAG}" \
               --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
-              --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+              --label "org.opencontainers.image.revision=${SOURCE_SHA}" \
               --label "org.opencontainers.image.created=${created_at}" \
-              --cache-from "type=gha,scope=securechat-${service}" \
-              --cache-to "type=gha,mode=max,scope=securechat-${service}" \
+              --cache-from "type=gha,scope=securechat-server-images" \
+              --cache-to "type=gha,mode=max,scope=securechat-server-images" \
               --provenance=true \
               --sbom=true \
               --push \
+              "${tag_arguments[@]}" \
               .
           done
 
-  community-node-bundle:
-    name: Build zero-input community-node bundle
+      - name: Write workflow summary
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          image_prefix="ghcr.io/${owner}/securechat"
+
+          {
+            echo "## Server images published"
+            echo ""
+            echo "Source commit:"
+            echo ""
+            echo '```text'
+            echo "${SOURCE_SHA}"
+            echo '```'
+            echo ""
+            echo "Immutable image tag:"
+            echo ""
+            echo '```text'
+            echo "sha-${SOURCE_SHA}"
+            echo '```'
+
+            if [[ -n "${PR_NUMBER}" ]]; then
+              echo ""
+              echo "Movable PR image tag:"
+              echo ""
+              echo '```text'
+              echo "pr-${PR_NUMBER}"
+              echo '```'
+            fi
+
+            echo ""
+            echo "Published images:"
+            echo ""
+            echo "- \`${image_prefix}-node-registry\`"
+            echo "- \`${image_prefix}-presence-directory\`"
+            echo "- \`${image_prefix}-push\`"
+            echo "- \`${image_prefix}-mailbox\`"
+            echo "- \`${image_prefix}-federation\`"
+            echo "- \`${image_prefix}-gateway\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+  deployment-bundles:
+    name: Create deployment bundles
     needs:
       - publish-images
+
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout exact feature-branch commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
 
-      - name: Build deployment bundle
+      - name: Create deployment bundles
+        shell: pwsh
+        run: |
+          ./server/scripts/New-DeploymentBundles.ps1 `
+            -OutputDirectory dist
+
+      - name: Write published image tags
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          {
+            echo "SECURECHAT_IMAGE_TAG=sha-${SOURCE_SHA}"
+
+            if [[ -n "${PR_NUMBER}" ]]; then
+              echo "SECURECHAT_PR_IMAGE_TAG=pr-${PR_NUMBER}"
+            fi
+          } > dist/published-image-tags.env
+
+      - name: Upload deployment bundles
+        uses: actions/upload-artifact@v7
+        with:
+          name: securechat-server-deployment-bundles-${{ github.event.pull_request.number || 'manual' }}
+          path: dist
+          if-no-files-found: error
+          retention-days: 14
+
+  community-node-bundle:
+    name: Create community-node bundle
+    needs:
+      - publish-images
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout exact feature-branch commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+
+      - name: Create community-node bundle
         shell: pwsh
         env:
           CONFIGURED_CONTROL_PLANE_URL: ${{ vars.SECURECHAT_CONTROL_PLANE_URL }}
-          IMAGE_PREFIX: ${{ needs.publish-images.outputs.image_prefix }}
-          CHANNEL_TAG: ${{ needs.publish-images.outputs.channel_tag }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
+          $owner = "${{ github.repository_owner }}".ToLowerInvariant()
+          $imagePrefix = "ghcr.io/$owner/securechat"
+
           $controlPlaneUrl = $env:CONFIGURED_CONTROL_PLANE_URL
 
           if ([string]::IsNullOrWhiteSpace($controlPlaneUrl)) {
               $controlPlaneUrl = "http://192.168.178.60:8390"
           }
 
+          if (-not [string]::IsNullOrWhiteSpace($env:PR_NUMBER)) {
+              $imageTag = "pr-$($env:PR_NUMBER)"
+          } else {
+              $imageTag = "sha-$($env:SOURCE_SHA)"
+          }
+
           ./server/scripts/New-CommunityNodeBundle.ps1 `
-              -OutputDirectory "dist" `
+              -OutputDirectory dist-community `
               -ControlPlaneUrl $controlPlaneUrl `
-              -ImagePrefix $env:IMAGE_PREFIX `
-              -ImageTag $env:CHANNEL_TAG
+              -ImagePrefix $imagePrefix `
+              -ImageTag $imageTag
 
       - name: Upload community-node bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: securechat-community-node-${{ needs.publish-images.outputs.channel_tag }}
+          name: securechat-community-node-${{ github.event.pull_request.number || 'manual' }}
           path: |
-            dist/securechat-community-node.zip
-            dist/securechat-community-node.tar.gz
-            dist/SHA256SUMS.txt
+            dist-community/securechat-community-node.zip
+            dist-community/securechat-community-node.tar.gz
+            dist-community/SHA256SUMS.txt
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 14
