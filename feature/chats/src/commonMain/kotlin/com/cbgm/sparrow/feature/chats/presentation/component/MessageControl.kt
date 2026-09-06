@@ -42,7 +42,8 @@ data class MessageInputState(
     val selectedMedia: List<MediaSelection> = emptyList(),
     val isGalleryEnabled: Boolean = true,
     val isCameraEnabled: Boolean = true,
-    val isFileEnabled: Boolean = true
+    val isFileEnabled: Boolean = true,
+    val voiceState: VoiceComposerUiState = VoiceComposerUiState()
 )
 
 data class MessageInputActions(
@@ -55,7 +56,12 @@ data class MessageInputActions(
     val onClickFile: () -> Unit = {},
     val onClickGallery: () -> Unit = {},
     val onClickContact: () -> Unit = {},
-    val onClickLocation: () -> Unit = {}
+    val onClickLocation: () -> Unit = {},
+    val onVoiceRecordClick: () -> Unit = {},
+    val onVoiceStopClick: () -> Unit = {},
+    val onVoicePlayPauseClick: () -> Unit = {},
+    val onVoiceSendClick: () -> Unit = {},
+    val onVoiceCancelClick: () -> Unit = {}
 )
 
 @Composable
@@ -140,8 +146,10 @@ fun MessageControl(
                     onValueChange = actions.onValueChange,
                     onSendClick = actions.onSendClick,
                     onVoiceClick = {
-                        isAttachmentBarVisible = false
-                        isVoiceComposerVisible = true
+                        if (!isEditing) {
+                            isAttachmentBarVisible = false
+                            isVoiceComposerVisible = true
+                        }
                     },
                     inputEnabled = state.isInputEnabled,
                     sendEnabled = state.isSendEnabled,
@@ -154,13 +162,19 @@ fun MessageControl(
                 )
             } else {
                 VoiceMessageInput(
-                    state = VoiceComposerUiState(),
+                    state = state.voiceState,
                     inputEnabled = state.isInputEnabled,
-                    onRecordClick = {},
-                    onStopClick = {},
-                    onPlayPauseClick = {},
-                    onSendClick = {},
-                    onCancelClick = { isVoiceComposerVisible = false },
+                    onRecordClick = actions.onVoiceRecordClick,
+                    onStopClick = actions.onVoiceStopClick,
+                    onPlayPauseClick = actions.onVoicePlayPauseClick,
+                    onSendClick = {
+                        actions.onVoiceSendClick()
+                        isVoiceComposerVisible = false
+                    },
+                    onCancelClick = {
+                        actions.onVoiceCancelClick()
+                        isVoiceComposerVisible = false
+                    },
                     modifier = Modifier.padding(horizontal = basePaddingHorizontal)
                 )
             }

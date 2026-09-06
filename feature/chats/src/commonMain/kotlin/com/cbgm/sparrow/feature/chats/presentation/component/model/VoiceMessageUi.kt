@@ -13,3 +13,10 @@ enum class VoiceComposerPhase {
     RECORDING,
     RECORDED
 }
+
+data class VoicePlaybackUiState(
+    val attachmentId: String? = null,
+    val durationMilliseconds: Long = 0L,
+    val positionMilliseconds: Long = 0L,
+    val isPlaying: Boolean = false
+)

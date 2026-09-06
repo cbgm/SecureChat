@@ -264,7 +264,10 @@ fun GroupConversationScreen(
                         viewerAttachmentId = attachmentId
                         onUiEvent(GroupConversationUiEvent.AttachmentVisible(attachmentId))
                     },
-                    onContactClick = { contact -> pendingSharedContact = contact }
+                    onContactClick = { contact -> pendingSharedContact = contact },
+                    onVoicePlayPauseClick = { attachmentId ->
+                        onUiEvent(GroupConversationUiEvent.VoicePlayPauseClicked(attachmentId))
+                    }
                 )
             }
         }
@@ -426,7 +429,12 @@ private fun BottomBar(
         onLocationCaptureStarted = { onUiEvent(GroupConversationUiEvent.LocationCaptureStarted) },
         onLocationCaptured = { onUiEvent(GroupConversationUiEvent.ShareCurrentLocation(it)) },
         onLocationCaptureFailed = { onUiEvent(GroupConversationUiEvent.LocationCaptureFailed(it)) },
-        onAttachmentError = { onUiEvent(GroupConversationUiEvent.AttachmentError(it)) }
+        onAttachmentError = { onUiEvent(GroupConversationUiEvent.AttachmentError(it)) },
+        onVoiceRecordClick = { onUiEvent(GroupConversationUiEvent.VoiceRecordClicked) },
+        onVoiceStopClick = { onUiEvent(GroupConversationUiEvent.VoiceStopClicked) },
+        onVoicePlayPauseClick = { onUiEvent(GroupConversationUiEvent.VoicePreviewPlayPauseClicked) },
+        onVoiceSendClick = { onUiEvent(GroupConversationUiEvent.VoiceSendClicked) },
+        onVoiceCancelClick = { onUiEvent(GroupConversationUiEvent.VoiceComposerCancelled) }
     )
 }
 
@@ -446,7 +454,8 @@ private fun Content(
     onSafetyWarningClick: (String, String?, MessageSafetyWarningUi) -> Unit,
     onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String, String) -> Unit,
-    onContactClick: (SharedContact) -> Unit
+    onContactClick: (SharedContact) -> Unit,
+    onVoicePlayPauseClick: (String) -> Unit
 ) {
     val fillModifier = Modifier.fillMaxSize().padding(innerPadding)
     val dissolvingMessageState =
@@ -476,6 +485,7 @@ private fun Content(
             onAttachmentVisible = onAttachmentVisible,
             onAttachmentClick = onAttachmentClick,
             onContactClick = onContactClick,
+            onVoicePlayPauseClick = onVoicePlayPauseClick,
             contentPadding = innerPadding,
             historyState = historyState,
             onLoadOlderMessages = onLoadOlderMessages,

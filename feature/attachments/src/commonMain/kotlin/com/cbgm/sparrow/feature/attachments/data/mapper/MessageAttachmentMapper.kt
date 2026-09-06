@@ -35,7 +35,8 @@ private fun MessageAttachmentEntity.toMessageAttachment(
                 MessageAttachmentType.FILE -> localFileName?.let(resolveLocalFilePath)
 
                 MessageAttachmentType.LOCATION,
-                MessageAttachmentType.CONTACT -> null
+                MessageAttachmentType.CONTACT,
+                MessageAttachmentType.VOICE -> null
             }
     )
 }

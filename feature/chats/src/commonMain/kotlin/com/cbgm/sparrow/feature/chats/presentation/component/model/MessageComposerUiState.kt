@@ -11,6 +11,7 @@ data class MessageComposerUiState(
     val selectedMedia: List<MediaSelection> = emptyList(),
     val isSending: Boolean = false,
     val locationShareState: LocationShareState = LocationShareState.IDLE,
+    val voiceState: VoiceComposerUiState = VoiceComposerUiState(),
     val availability: MessageComposerAvailability =
         MessageComposerAvailability(
             isInputEnabled = false,

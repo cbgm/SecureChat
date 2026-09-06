@@ -304,7 +304,7 @@ private fun BubbleBody(
             ) {
                 VoiceMessageBubbleBody(
                     voice = voicePart,
-                    onPlayPauseClick = { onVoicePlayPauseClick(message.id) }
+                    onPlayPauseClick = { onVoicePlayPauseClick(voicePart.id) }
                 )
             }
         }

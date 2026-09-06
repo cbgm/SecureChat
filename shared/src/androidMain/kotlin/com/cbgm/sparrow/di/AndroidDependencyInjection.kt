@@ -8,6 +8,7 @@ import com.cbgm.sparrow.feature.attachments.di.androidAttachmentsModule
 import com.cbgm.sparrow.feature.chats.di.androidChatsModule
 import com.cbgm.sparrow.feature.contacts.di.androidContactsModule
 import com.cbgm.sparrow.feature.identity.di.androidIdentityStorageModule
+import com.cbgm.sparrow.feature.media.di.platformMediaModule
 import com.cbgm.sparrow.feature.settings.di.androidSettingsModule
 import com.cbgm.sparrow.notification.di.notificationAndroidModule
 import org.koin.android.ext.koin.androidContext
@@ -27,6 +28,7 @@ private val androidApplicationModules: List<Module> =
         androidIdentityStorageModule,
         androidContactsModule,
         androidAttachmentsModule,
+        platformMediaModule,
         androidChatsModule,
         notificationAndroidModule,
         androidSettingsModule

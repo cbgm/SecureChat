@@ -13,6 +13,20 @@ sealed interface DirectConversationUiEvent {
 
     data object SendClicked : DirectConversationUiEvent
 
+    data object VoiceRecordClicked : DirectConversationUiEvent
+
+    data object VoiceStopClicked : DirectConversationUiEvent
+
+    data object VoicePreviewPlayPauseClicked : DirectConversationUiEvent
+
+    data object VoiceSendClicked : DirectConversationUiEvent
+
+    data object VoiceComposerCancelled : DirectConversationUiEvent
+
+    data class VoicePlayPauseClicked(
+        val attachmentId: String
+    ) : DirectConversationUiEvent
+
     data object LoadOlderMessages : DirectConversationUiEvent
 
     data class MessageHistoryTargetRequested(

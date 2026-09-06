@@ -13,6 +13,7 @@ import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubble
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessagePartUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageReactionUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageReplyUi
+import com.cbgm.sparrow.feature.chats.presentation.component.model.VoicePlaybackUiState
 import com.cbgm.sparrow.feature.chats.presentation.direct.model.DirectConversationUiState
 import com.cbgm.sparrow.feature.contacts.domain.model.Contact
 import com.cbgm.sparrow.feature.contacts.domain.model.ContactVerificationStatus
@@ -34,9 +35,10 @@ internal fun resolveContactName(
 internal fun DirectMessage.toMessageBubbleUi(
     safetyAssessments: Map<String, MessageSafetyAssessment>,
     attachmentPayloadBytes: Map<String, ByteArray> = emptyMap(),
+    voicePlaybackState: VoicePlaybackUiState = VoicePlaybackUiState(),
     reply: MessageReplyUi? = null
 ): MessageBubbleUi {
-    val partsUi = parts.toMessagePartsUi(attachmentPayloadBytes)
+    val partsUi = parts.toMessagePartsUi(attachmentPayloadBytes, voicePlaybackState)
 
     return MessageBubbleUi(
         id = id,
@@ -59,6 +61,7 @@ internal fun DirectMessage.toMessageBubbleUi(
         fileParts = partsUi.filterIsInstance<MessagePartUi.File>(),
         locationPart = partsUi.filterIsInstance<MessagePartUi.Location>().firstOrNull(),
         contactPart = partsUi.filterIsInstance<MessagePartUi.Contact>().firstOrNull(),
+        voicePart = partsUi.filterIsInstance<MessagePartUi.Voice>().firstOrNull(),
         textPart = partsUi.filterIsInstance<MessagePartUi.Text>().firstOrNull()
     )
 }
@@ -135,7 +138,8 @@ internal fun toDirectConversationUiState(
     handshake: IdentityHandshakeState?,
     setupMode: DirectIdentitySetupMode,
     safetyAssessments: Map<String, MessageSafetyAssessment>,
-    attachmentPayloadBytes: Map<String, ByteArray> = emptyMap()
+    attachmentPayloadBytes: Map<String, ByteArray> = emptyMap(),
+    voicePlaybackState: VoicePlaybackUiState = VoicePlaybackUiState()
 ): DirectConversationUiState {
     val isChatAuthorized = isDirectChatAuthorized(contact, handshake, setupMode)
     val composerState =
@@ -160,6 +164,7 @@ internal fun toDirectConversationUiState(
                         message.toMessageBubbleUi(
                             safetyAssessments = safetyAssessments,
                             attachmentPayloadBytes = attachmentPayloadBytes,
+                            voicePlaybackState = voicePlaybackState,
                             reply = message.replyToMessageId.toDirectReplyPreview(messagesById, contactName)
                         )
                     )

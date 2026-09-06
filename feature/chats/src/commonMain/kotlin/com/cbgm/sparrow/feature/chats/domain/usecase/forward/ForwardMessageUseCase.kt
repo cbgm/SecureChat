@@ -1,4 +1,4 @@
-package com.cbgm.sparrow.feature.chats.domain.usecase
+package com.cbgm.sparrow.feature.chats.domain.usecase.forward
 
 import com.cbgm.sparrow.core.result.safeSuspendCall
 import com.cbgm.sparrow.feature.chats.domain.model.ForwardingTarget

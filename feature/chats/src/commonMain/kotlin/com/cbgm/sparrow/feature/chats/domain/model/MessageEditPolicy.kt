@@ -29,6 +29,7 @@ private fun List<MessagePart>.hasEditableTextOnlyContent(): Boolean {
         part is MessagePart.File ||
             part is MessagePart.ImageVideo ||
             part is MessagePart.Location ||
-            part is MessagePart.Contact
+            part is MessagePart.Contact ||
+            part is MessagePart.Voice
     }
 }

@@ -70,12 +70,17 @@ class MessageAttachmentDataSource(
     ): PreparedMessageAttachmentDto {
         val uploaded = blobTransferDataSource.upload(bytes, retentionMilliseconds)
 
-        val localFileName = try {
-            fileDataSource.write(bytes)
-        } catch (error: Throwable) {
-            blobTransferDataSource.delete(uploaded)
-            throw error
-        }
+        val localFileName =
+            if (type == MessageAttachmentType.VOICE) {
+                null
+            } else {
+                try {
+                    fileDataSource.write(bytes)
+                } catch (error: Throwable) {
+                    blobTransferDataSource.delete(uploaded)
+                    throw error
+                }
+            }
 
         return PreparedMessageAttachmentDto(
             attachment = ProtocolMessageAttachment(
@@ -90,7 +95,8 @@ class MessageAttachmentDataSource(
                 durationMilliseconds = durationMilliseconds
             ),
             deleteCapability = uploaded.deleteCapability,
-            localFileName = localFileName
+            localFileName = localFileName,
+            payloadBytes = bytes.takeIf { type == MessageAttachmentType.VOICE }
         )
     }
 
@@ -111,7 +117,8 @@ class MessageAttachmentDataSource(
                     messageId = messageId,
                     position = index,
                     deleteCapability = null,
-                    localFileName = null
+                    localFileName = null,
+                    payloadBytes = null
                 )
             }
         )
@@ -138,17 +145,33 @@ class MessageAttachmentDataSource(
     suspend fun loadBytes(attachmentId: String): ByteArray =
         withContext(Dispatchers.IO) {
             val entity = attachmentDao.findById(attachmentId) ?: error("Message attachment was not found")
-            val bytes = entity.localFileName?.let(fileDataSource::read) ?: downloadAndCache(entity)
+            val type = MessageAttachmentType.valueOf(entity.type)
+            val bytes =
+                if (type == MessageAttachmentType.VOICE) {
+                    entity.payloadBytes ?: downloadAndPersistPayload(entity)
+                } else {
+                    entity.localFileName?.let(fileDataSource::read) ?: downloadAndCacheFile(entity)
+                }
 
-            localAttachmentDataSource.saveIncomingConversationCopy(entity, bytes)
+            if (type != MessageAttachmentType.VOICE) {
+                localAttachmentDataSource.saveIncomingConversationCopy(entity, bytes)
+            }
             bytes
         }
 
-    private suspend fun downloadAndCache(entity: MessageAttachmentEntity): ByteArray {
+    private suspend fun downloadAndCacheFile(entity: MessageAttachmentEntity): ByteArray {
         val bytes = blobTransferDataSource.download(entity.toEncryptedBlobReference())
         val localFileName = fileDataSource.write(bytes)
         check(attachmentDao.updateLocalFileName(entity.id, localFileName) == 1) {
             "Message attachment disappeared while it was cached"
+        }
+        return bytes
+    }
+
+    private suspend fun downloadAndPersistPayload(entity: MessageAttachmentEntity): ByteArray {
+        val bytes = blobTransferDataSource.download(entity.toEncryptedBlobReference())
+        check(attachmentDao.updatePayloadBytes(entity.id, bytes) == 1) {
+            "Message attachment disappeared while its payload was cached"
         }
         return bytes
     }
@@ -201,7 +224,7 @@ class MessageAttachmentDataSource(
     suspend fun cleanupPrepared(prepared: List<PreparedMessageAttachmentDto>) {
         prepared.forEach { item ->
             try {
-                item.localFileName.let { fileDataSource.delete(it) }
+                item.localFileName?.let(fileDataSource::delete)
                 item.deleteCapability.let { capability ->
                     blobTransferDataSource.delete(
                         UploadedBlob(
@@ -224,14 +247,16 @@ class MessageAttachmentDataSource(
             messageId = messageId,
             position = position,
             deleteCapability = deleteCapability,
-            localFileName = localFileName
+            localFileName = localFileName,
+            payloadBytes = payloadBytes
         )
 
     private fun ProtocolMessageAttachment.toMessageAttachmentEntity(
         messageId: String,
         position: Int,
         deleteCapability: String?,
-        localFileName: String?
+        localFileName: String?,
+        payloadBytes: ByteArray? = null
     ): MessageAttachmentEntity =
         MessageAttachmentEntity(
             id = attachmentId,
@@ -253,7 +278,8 @@ class MessageAttachmentDataSource(
             nonce = blob.nonce.copyOf(),
             ciphertextSha256 = blob.ciphertextSha256.copyOf(),
             deleteCapability = deleteCapability,
-            localFileName = localFileName
+            localFileName = localFileName,
+            payloadBytes = payloadBytes
         )
 
     private fun MessageAttachmentEntity.toProtocolMessageAttachment(): ProtocolMessageAttachment =

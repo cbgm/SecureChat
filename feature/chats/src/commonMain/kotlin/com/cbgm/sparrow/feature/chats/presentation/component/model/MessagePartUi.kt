@@ -40,11 +40,14 @@ sealed interface MessagePartUi {
     ) : MessagePartUi
 
     data class Voice(
+        val id: String = "",
+        val mimeType: String = "audio/wav",
+        val byteSize: Long = 0L,
         val durationMilliseconds: Long,
         val playbackPositionMilliseconds: Long = 0L,
         val isPlaying: Boolean = false,
         val waveform: List<Float> = emptyList()
-    )
+    ) : MessagePartUi
 }
 
 enum class ImageVideoTypeUi {

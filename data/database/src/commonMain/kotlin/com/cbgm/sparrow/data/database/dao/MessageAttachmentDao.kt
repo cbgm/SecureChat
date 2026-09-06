@@ -164,6 +164,18 @@ interface MessageAttachmentDao {
         localFileName: String
     ): Int
 
+    @Query(
+        """
+        UPDATE message_attachments
+        SET payloadBytes = :payloadBytes
+        WHERE id = :attachmentId
+        """
+    )
+    suspend fun updatePayloadBytes(
+        attachmentId: String,
+        payloadBytes: ByteArray
+    ): Int
+
     @Query("DELETE FROM message_attachments WHERE messageId IN (:messageIds)")
     suspend fun deleteByMessageIds(messageIds: List<String>)
 }

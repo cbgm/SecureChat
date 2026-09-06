@@ -13,6 +13,20 @@ sealed interface GroupConversationUiEvent {
 
     data object SendClicked : GroupConversationUiEvent
 
+    data object VoiceRecordClicked : GroupConversationUiEvent
+
+    data object VoiceStopClicked : GroupConversationUiEvent
+
+    data object VoicePreviewPlayPauseClicked : GroupConversationUiEvent
+
+    data object VoiceSendClicked : GroupConversationUiEvent
+
+    data object VoiceComposerCancelled : GroupConversationUiEvent
+
+    data class VoicePlayPauseClicked(
+        val attachmentId: String
+    ) : GroupConversationUiEvent
+
     data object LoadOlderMessages : GroupConversationUiEvent
 
     data class MessageHistoryTargetRequested(

@@ -1,4 +1,4 @@
-package com.cbgm.sparrow.feature.chats.domain.usecase
+package com.cbgm.sparrow.feature.chats.domain.usecase.forward
 
 import com.cbgm.sparrow.core.id.IdGenerator
 import com.cbgm.sparrow.core.protocol.attachment.CONTACT_MIME_TYPE
@@ -83,6 +83,15 @@ class PrepareForwardMessageUseCase(
                     type = MessageAttachmentType.CONTACT,
                     bytes = messageAttachmentRepository.loadBytes(id).getOrThrow(),
                     mimeType = CONTACT_MIME_TYPE
+                )
+
+            is MessagePart.Voice ->
+                OutgoingMessageAttachment(
+                    id = IdGenerator.generate(prefix = "voice"),
+                    type = MessageAttachmentType.VOICE,
+                    bytes = messageAttachmentRepository.loadBytes(id).getOrThrow(),
+                    mimeType = mimeType,
+                    durationMilliseconds = durationMilliseconds
                 )
 
             is MessagePart.Text ->

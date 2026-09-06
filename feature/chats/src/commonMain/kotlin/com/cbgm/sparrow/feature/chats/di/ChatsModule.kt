@@ -97,14 +97,6 @@ import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupMessageReposi
 import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupVerificationActionRepository
 import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupVerificationRepository
 import com.cbgm.sparrow.feature.chats.domain.repository.overview.ConversationOverviewRepository
-import com.cbgm.sparrow.feature.chats.domain.usecase.FindMessageHistoryCursorUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.ForwardDirectMessageUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.ForwardMessageUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.ForwardToContactUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.ForwardToDirectConversationUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.ForwardToGroupConversationUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.LoadOlderMessagesUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.PrepareForwardMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.contact.EncodeContactForSharingUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.DeleteDirectConversationUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.DeleteDirectMessageUseCase
@@ -124,6 +116,14 @@ import com.cbgm.sparrow.feature.chats.domain.usecase.direct.SendDirectMessageUse
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.SendOrQueueDirectMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.SetDirectTypingUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.ToggleDirectMessageReactionUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.forward.FindMessageHistoryCursorUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.forward.ForwardDirectMessageUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.forward.ForwardMessageUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.forward.ForwardToContactUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.forward.ForwardToDirectConversationUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.forward.ForwardToGroupConversationUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.forward.LoadOlderMessagesUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.forward.PrepareForwardMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.AcceptGroupInvitationUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.AddGroupMembersUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.CreateGroupConversationUseCase
@@ -433,7 +433,9 @@ private fun org.koin.core.module.Module.registerViewModels() {
             addDeviceContact = get(),
             forwardMessageUseCase = get(),
             loadOlderMessageHistory = get(),
-            findMessageHistoryCursor = get()
+            findMessageHistoryCursor = get(),
+            voiceMessageRecorder = get(),
+            voiceMessagePlayer = get()
         )
     }
 
@@ -482,7 +484,9 @@ private fun org.koin.core.module.Module.registerViewModels() {
             addDeviceContact = get(),
             forwardMessageUseCase = get(),
             loadOlderMessageHistory = get(),
-            findMessageHistoryCursor = get()
+            findMessageHistoryCursor = get(),
+            voiceMessageRecorder = get(),
+            voiceMessagePlayer = get()
         )
     }
 }

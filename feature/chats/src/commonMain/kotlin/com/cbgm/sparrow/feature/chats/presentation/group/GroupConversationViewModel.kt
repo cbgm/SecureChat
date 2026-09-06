@@ -11,6 +11,8 @@ import com.cbgm.sparrow.feature.attachments.domain.model.OutgoingMessageAttachme
 import com.cbgm.sparrow.feature.attachments.domain.model.SharedContact
 import com.cbgm.sparrow.feature.attachments.domain.usecase.LoadMessageAttachmentUseCase
 import com.cbgm.sparrow.feature.attachments.presentation.mapper.toOutgoingMessageAttachment
+import com.cbgm.sparrow.feature.chats.device.VoiceMessagePlayer
+import com.cbgm.sparrow.feature.chats.device.VoiceMessageRecorder
 import com.cbgm.sparrow.feature.chats.domain.model.ForwardingTarget
 import com.cbgm.sparrow.feature.chats.domain.model.LocationShareEvent
 import com.cbgm.sparrow.feature.chats.domain.model.LocationShareState
@@ -20,9 +22,9 @@ import com.cbgm.sparrow.feature.chats.domain.model.MessageHistoryCursor
 import com.cbgm.sparrow.feature.chats.domain.model.group.ChatMessageType
 import com.cbgm.sparrow.feature.chats.domain.model.group.GroupAdministrationState
 import com.cbgm.sparrow.feature.chats.domain.model.group.GroupChatContext
-import com.cbgm.sparrow.feature.chats.domain.usecase.FindMessageHistoryCursorUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.ForwardMessageUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.LoadOlderMessagesUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.forward.FindMessageHistoryCursorUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.forward.ForwardMessageUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.forward.LoadOlderMessagesUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.AcceptGroupInvitationUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.DeclineGroupInvitationUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.DeleteGroupMessageUseCase
@@ -34,11 +36,13 @@ import com.cbgm.sparrow.feature.chats.domain.usecase.group.RetryGroupMessageUseC
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.SendGroupMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.SetGroupTypingUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.ToggleGroupMessageReactionUseCase
+import com.cbgm.sparrow.feature.chats.presentation.component.VoiceMessageController
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubbleUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageComposerUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageContextUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageHistoryUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.TypingUiState
+import com.cbgm.sparrow.feature.chats.presentation.component.model.VoiceComposerUiState
 import com.cbgm.sparrow.feature.chats.presentation.group.mapper.toGroupConversationUiState
 import com.cbgm.sparrow.feature.chats.presentation.group.mapper.toGroupMembershipUiState
 import com.cbgm.sparrow.feature.chats.presentation.group.mapper.toGroupReplyPreview
@@ -86,7 +90,9 @@ class GroupConversationViewModel(
     private val addDeviceContact: AddDeviceContactUseCase,
     private val forwardMessageUseCase: ForwardMessageUseCase,
     private val loadOlderMessageHistory: LoadOlderMessagesUseCase,
-    private val findMessageHistoryCursor: FindMessageHistoryCursorUseCase
+    private val findMessageHistoryCursor: FindMessageHistoryCursorUseCase,
+    voiceMessageRecorder: VoiceMessageRecorder,
+    voiceMessagePlayer: VoiceMessagePlayer
 ) : BaseViewModel() {
     private val groupId =
         savedStateHandle.requireRouteArgument<String>(AppRoute.GroupConversation::conversationId.name)
@@ -107,6 +113,12 @@ class GroupConversationViewModel(
     private val observedHistoryCursor = MutableStateFlow<MessageHistoryCursor?>(null)
     private val isLoadingOlderMessages = MutableStateFlow(false)
     private val hasMoreMessages = MutableStateFlow(true)
+    private val voiceController =
+        VoiceMessageController(
+            scope = viewModelScope,
+            recorder = voiceMessageRecorder,
+            player = voiceMessagePlayer
+        )
 
     private val typing =
         GroupTypingController(
@@ -145,11 +157,17 @@ class GroupConversationViewModel(
         }
 
     private val composerRuntime =
-        combine(selectedMedia, isSending, locationShareState) { media, sending, locationState ->
+        combine(
+            selectedMedia,
+            isSending,
+            locationShareState,
+            voiceController.composerState
+        ) { media, sending, locationState, voiceState ->
             GroupComposerRuntime(
                 media = media,
                 isSending = sending,
-                locationShareState = locationState
+                locationShareState = locationState,
+                voiceState = voiceState
             )
         }
 
@@ -157,8 +175,9 @@ class GroupConversationViewModel(
         combine(
             presentationContext,
             attachmentPayloadBytes,
-            observeMessageSafetyAssessments()
-        ) { presentation, loadedAttachmentPayloadBytes, safetyAssessments ->
+            observeMessageSafetyAssessments(),
+            voiceController.playbackState
+        ) { presentation, loadedAttachmentPayloadBytes, safetyAssessments, voicePlaybackState ->
             toGroupConversationUiState(
                 conversation = presentation.context?.conversation,
                 contacts = presentation.context?.contacts.orEmpty(),
@@ -166,7 +185,8 @@ class GroupConversationViewModel(
                 avatarBytes = presentation.context?.avatarBytes,
                 isLoading = presentation is GroupContextObservation.Loading,
                 safetyAssessments = safetyAssessments,
-                attachmentPayloadBytes = loadedAttachmentPayloadBytes
+                attachmentPayloadBytes = loadedAttachmentPayloadBytes,
+                voicePlaybackState = voicePlaybackState
             )
         }.stateIn(
             scope = viewModelScope,
@@ -216,6 +236,7 @@ class GroupConversationViewModel(
                 selectedMedia = runtime.media,
                 isSending = runtime.isSending,
                 locationShareState = runtime.locationShareState,
+                voiceState = runtime.voiceState,
                 availability = availability
             )
         }.stateIn(
@@ -284,6 +305,21 @@ class GroupConversationViewModel(
         when (event) {
             is GroupConversationUiEvent.MessageTextChanged -> onMessageTextChanged(event.text)
             GroupConversationUiEvent.SendClicked -> sendCurrentMessage()
+            GroupConversationUiEvent.VoiceRecordClicked ->
+                voiceController.startRecording { error ->
+                    setError(error.message ?: "Voice recording could not be started")
+                }
+            GroupConversationUiEvent.VoiceStopClicked ->
+                voiceController.stopRecording { error ->
+                    setError(error.message ?: "Voice recording could not be stopped")
+                }
+            GroupConversationUiEvent.VoicePreviewPlayPauseClicked ->
+                voiceController.togglePreview { error ->
+                    setError(error.message ?: "Voice message could not be played")
+                }
+            GroupConversationUiEvent.VoiceSendClicked -> sendVoiceMessage()
+            GroupConversationUiEvent.VoiceComposerCancelled -> voiceController.cancelRecording()
+            is GroupConversationUiEvent.VoicePlayPauseClicked -> playVoiceMessage(event.attachmentId)
             GroupConversationUiEvent.LoadOlderMessages -> loadOlderMessages()
             is GroupConversationUiEvent.MessageHistoryTargetRequested -> loadMessageHistoryTarget(event.messageId)
             is GroupConversationUiEvent.ReplyToMessage -> startReply(event.messageId)
@@ -439,6 +475,42 @@ class GroupConversationViewModel(
         )
     }
 
+    private fun sendVoiceMessage() {
+        val attachment = voiceController.outgoingAttachment() ?: return
+        dispatchSend(
+            text = "",
+            attachments = listOf(attachment),
+            clearComposerOnSuccess = false,
+            clearVoiceOnSuccess = true,
+            fallbackError = "Voice message could not be sent"
+        )
+    }
+
+    private fun playVoiceMessage(attachmentId: String) {
+        val voice =
+            conversationState.value.messages
+                .firstNotNullOfOrNull { message ->
+                    message.voicePart?.takeIf { part -> part.id == attachmentId }
+                }
+                ?: return
+
+        viewModelScope.launch {
+            loadMessageAttachment(attachmentId)
+                .onSuccess { bytes ->
+                    voiceController.playMessage(
+                        attachmentId = attachmentId,
+                        bytes = bytes,
+                        durationMilliseconds = voice.durationMilliseconds,
+                        onError = { error ->
+                            setError(error.message ?: "Voice message could not be played")
+                        }
+                    )
+                }.onFailure { error ->
+                    setError(error.message ?: "Voice message could not be loaded")
+                }
+        }
+    }
+
     private fun shareCurrentLocation(attachment: OutgoingMessageAttachment) {
         transitionLocationShare(LocationShareEvent.LOCATION_CAPTURED)
         sendAttachmentOnly(
@@ -467,6 +539,7 @@ class GroupConversationViewModel(
         attachments: List<OutgoingMessageAttachment>,
         clearComposerOnSuccess: Boolean,
         fallbackError: String,
+        clearVoiceOnSuccess: Boolean = false,
         isLocationShare: Boolean = false
     ) {
         val sendAllowed =
@@ -490,7 +563,16 @@ class GroupConversationViewModel(
             isSending.value = true
             try {
                 sendMessage(groupId, text, attachments, replyTo)
-                    .onSuccess { if (clearComposerOnSuccess) clearComposer() else clearReply() }
+                    .onSuccess {
+                        when {
+                            clearComposerOnSuccess -> clearComposer()
+                            clearVoiceOnSuccess -> {
+                                voiceController.resetComposer()
+                                clearReply()
+                            }
+                            else -> clearReply()
+                        }
+                    }
                     .onFailure { error -> setError(error.message ?: fallbackError) }
             } finally {
                 isSending.value = false
@@ -696,7 +778,8 @@ class GroupConversationViewModel(
     private data class GroupComposerRuntime(
         val media: List<MediaSelection>,
         val isSending: Boolean,
-        val locationShareState: LocationShareState
+        val locationShareState: LocationShareState,
+        val voiceState: VoiceComposerUiState
     )
 
     private companion object {
