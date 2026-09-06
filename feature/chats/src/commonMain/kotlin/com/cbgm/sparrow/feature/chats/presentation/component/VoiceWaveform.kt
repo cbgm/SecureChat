@@ -1,5 +1,11 @@
 package com.cbgm.sparrow.feature.chats.presentation.component
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -7,7 +13,9 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.sin
 
 private val PlaceholderWaveform =
     listOf(
@@ -43,8 +51,24 @@ internal fun VoiceWaveform(
     progress: Float,
     playedColor: Color,
     remainingColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    animated: Boolean = false
 ) {
+    val transition = rememberInfiniteTransition()
+    val animationPhase =
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(
+                        durationMillis = RECORDING_ANIMATION_DURATION_MILLISECONDS,
+                        easing = LinearEasing
+                    ),
+                    repeatMode = RepeatMode.Restart
+                )
+        ).value
+
     Canvas(modifier = modifier) {
         val values = waveform.ifEmpty { PlaceholderWaveform }
         if (values.isEmpty() || size.width <= 0f || size.height <= 0f) return@Canvas
@@ -55,7 +79,16 @@ internal fun VoiceWaveform(
         val progressIndex = progress.coerceIn(0f, 1f) * values.size
 
         values.forEachIndexed { index, amplitude ->
-            val barHeight = size.height * amplitude.coerceIn(0.12f, 1f)
+            val animatedAmplitude =
+                if (animated) {
+                    val wave =
+                        ((sin((animationPhase * TWO_PI) + index * BAR_PHASE_OFFSET) + 1f) / 2f)
+                    (amplitude * RECORDING_BASE_AMPLITUDE + wave * RECORDING_ANIMATION_AMPLITUDE)
+                        .coerceIn(MINIMUM_AMPLITUDE, 1f)
+                } else {
+                    amplitude.coerceIn(MINIMUM_AMPLITUDE, 1f)
+                }
+            val barHeight = size.height * animatedAmplitude
             val left = index * slotWidth + (slotWidth - barWidth) / 2f
             val top = (size.height - barHeight) / 2f
 
@@ -75,3 +108,38 @@ internal fun formatVoiceDuration(durationMilliseconds: Long): String {
     val seconds = totalSeconds % 60
     return "$minutes:${seconds.toString().padStart(2, '0')}"
 }
+
+internal fun ByteArray.toVoiceWaveform(barCount: Int = 24): List<Float> {
+    if (size <= WAVE_HEADER_BYTES || barCount <= 0) return emptyList()
+
+    val pcmStart = WAVE_HEADER_BYTES
+    val sampleCount = (size - pcmStart) / PCM_BYTES_PER_SAMPLE
+    if (sampleCount <= 0) return emptyList()
+
+    val samplesPerBar = max(1, sampleCount / barCount)
+    return List(barCount) { barIndex ->
+        val startSample = barIndex * samplesPerBar
+        if (startSample >= sampleCount) return@List 0.12f
+
+        val endSample = minOf(sampleCount, startSample + samplesPerBar)
+        var peak = 0
+        for (sampleIndex in startSample until endSample) {
+            val byteIndex = pcmStart + sampleIndex * PCM_BYTES_PER_SAMPLE
+            val low = this[byteIndex].toInt() and 0xff
+            val high = this[byteIndex + 1].toInt()
+            val sample = (high shl 8) or low
+            peak = max(peak, abs(sample.coerceAtLeast(Short.MIN_VALUE.toInt() + 1)))
+        }
+
+        (peak.toFloat() / Short.MAX_VALUE.toFloat()).coerceIn(0.12f, 1f)
+    }
+}
+
+private const val WAVE_HEADER_BYTES = 44
+private const val PCM_BYTES_PER_SAMPLE = 2
+private const val RECORDING_ANIMATION_DURATION_MILLISECONDS = 900
+private const val TWO_PI = 6.2831855f
+private const val BAR_PHASE_OFFSET = 0.72f
+private const val RECORDING_BASE_AMPLITUDE = 0.45f
+private const val RECORDING_ANIMATION_AMPLITUDE = 0.55f
+private const val MINIMUM_AMPLITUDE = 0.12f

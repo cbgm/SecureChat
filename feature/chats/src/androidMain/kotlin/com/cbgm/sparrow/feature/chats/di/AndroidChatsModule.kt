@@ -21,7 +21,7 @@ val androidChatsModule =
         }
 
         factory<VoiceMessageRecorder> {
-            AndroidVoiceMessageRecorder()
+            AndroidVoiceMessageRecorder(context = androidContext())
         }
 
         factory<VoiceMessagePlayer> {

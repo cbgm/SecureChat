@@ -1,4 +1,4 @@
-package com.cbgm.sparrow.feature.chats.domain.usecase.forward
+package com.cbgm.sparrow.feature.chats.domain.usecase
 
 import com.cbgm.sparrow.feature.chats.domain.model.MessageHistoryCursor
 import com.cbgm.sparrow.feature.chats.domain.repository.MessageHistoryRepository

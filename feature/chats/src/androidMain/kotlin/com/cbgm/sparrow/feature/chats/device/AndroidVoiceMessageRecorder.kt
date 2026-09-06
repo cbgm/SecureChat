@@ -1,8 +1,12 @@
 package com.cbgm.sparrow.feature.chats.device
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -12,7 +16,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 
-class AndroidVoiceMessageRecorder : VoiceMessageRecorder {
+class AndroidVoiceMessageRecorder(
+    private val context: Context
+) : VoiceMessageRecorder {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var audioRecord: AudioRecord? = null
     private var readJob: Job? = null
@@ -21,6 +27,15 @@ class AndroidVoiceMessageRecorder : VoiceMessageRecorder {
 
     override suspend fun start(): Result<Unit> = runCatching {
         check(audioRecord == null) { "Voice recording is already active" }
+
+        if (
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.RECORD_AUDIO
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            throw SecurityException("RECORD_AUDIO permission is required for voice messages")
+        }
 
         val minBufferSize =
             AudioRecord.getMinBufferSize(

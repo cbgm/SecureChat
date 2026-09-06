@@ -150,6 +150,7 @@ private fun VoiceComposerContent(
                 progress = state.playbackProgress,
                 playedColor = MaterialTheme.colorScheme.primary,
                 remainingColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = Alpha.Subtle),
+                animated = state.phase == VoiceComposerPhase.RECORDING,
                 modifier =
                     Modifier
                         .weight(1f)
