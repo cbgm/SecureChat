@@ -1,6 +1,6 @@
 package com.cbgm.sparrow.feature.transport.gateway.model
 
-data class GatewayTypingEvent(
+data class GatewayIndicatorEvent(
     val senderId: String,
-    val isTyping: Boolean
+    val indicatorType: String
 )

@@ -59,11 +59,11 @@ import com.cbgm.sparrow.feature.chats.presentation.component.MessageReactionBurs
 import com.cbgm.sparrow.feature.chats.presentation.component.MessageReactionBurstOverlay
 import com.cbgm.sparrow.feature.chats.presentation.component.mapper.toMessageAttachmentsUi
 import com.cbgm.sparrow.feature.chats.presentation.component.mapper.toSharedContact
+import com.cbgm.sparrow.feature.chats.presentation.component.model.IndicatorUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubbleUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageComposerUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageContextUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageHistoryUiState
-import com.cbgm.sparrow.feature.chats.presentation.component.model.TypingUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.rememberDissolvingMessageListState
 import com.cbgm.sparrow.feature.chats.presentation.direct.component.ErrorMessage
 import com.cbgm.sparrow.feature.chats.presentation.direct.component.IdentitySetupDialog
@@ -85,7 +85,7 @@ fun DirectConversationScreen(
     uiState: DirectConversationUiState,
     composerState: MessageComposerUiState,
     contextState: MessageContextUiState<MessageBubbleUi>,
-    typingState: TypingUiState,
+    indicatorState: IndicatorUiState,
     historyState: MessageHistoryUiState,
     errorMessage: String?,
     onUiEvent: (DirectConversationUiEvent) -> Unit,
@@ -198,7 +198,7 @@ fun DirectConversationScreen(
                 bottomBar = { containerColor ->
                     BottomBar(
                         composerState = composerState,
-                        typingState = typingState,
+                        indicatorState = indicatorState,
                         containerColor = containerColor,
                         onUiEvent = onUiEvent,
                         onContactAttachmentClick = { showContactSelection = true }
@@ -395,14 +395,14 @@ private fun TopBar(
 @Composable
 private fun BottomBar(
     composerState: MessageComposerUiState,
-    typingState: TypingUiState,
+    indicatorState: IndicatorUiState,
     containerColor: Color,
     onUiEvent: (DirectConversationUiEvent) -> Unit,
     onContactAttachmentClick: () -> Unit
 ) {
     ChatComposerBar(
         composerState = composerState,
-        typingState = typingState,
+        indicatorState = indicatorState,
         containerColor = containerColor,
         onMessageTextChanged = { onUiEvent(DirectConversationUiEvent.MessageTextChanged(it)) },
         onSendClick = { onUiEvent(DirectConversationUiEvent.SendClicked) },

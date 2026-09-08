@@ -6,27 +6,27 @@ import com.cbgm.sparrow.feature.contacts.domain.model.IdentityHandshakeState
 enum class DirectComposerState(
     val isInputEnabled: Boolean,
     val isSendActionEnabled: Boolean,
-    val sendsTypingIndicators: Boolean
+    val sendsIndicators: Boolean
 ) {
     READY(
         isInputEnabled = true,
         isSendActionEnabled = true,
-        sendsTypingIndicators = true
+        sendsIndicators = true
     ),
     REINVITE_REQUIRED(
         isInputEnabled = true,
         isSendActionEnabled = true,
-        sendsTypingIndicators = false
+        sendsIndicators = false
     ),
     REINVITE_PENDING(
         isInputEnabled = true,
         isSendActionEnabled = true,
-        sendsTypingIndicators = false
+        sendsIndicators = false
     ),
     DISABLED(
         isInputEnabled = false,
         isSendActionEnabled = false,
-        sendsTypingIndicators = false
+        sendsIndicators = false
     )
 }
 

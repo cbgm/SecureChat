@@ -6,8 +6,8 @@ import com.cbgm.sparrow.core.protocol.outbox.OutboxProcessor
 import com.cbgm.sparrow.core.protocol.outbox.OutboxRunner
 import com.cbgm.sparrow.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.sparrow.core.protocol.transport.OutgoingWireSender
-import com.cbgm.sparrow.feature.chats.domain.repository.direct.DirectTypingRepository
-import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupTypingRepository
+import com.cbgm.sparrow.feature.chats.domain.repository.direct.DirectIndicatorRepository
+import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupIndicatorRepository
 import com.cbgm.sparrow.feature.contacts.domain.usecase.GetContactUseCase
 import com.cbgm.sparrow.feature.messaging.data.datasource.ContactByRoutingIdDataSource
 import com.cbgm.sparrow.feature.messaging.data.datasource.ContactRoutingDataSource
@@ -16,8 +16,8 @@ import com.cbgm.sparrow.feature.messaging.data.datasource.GroupRoutingDataSource
 import com.cbgm.sparrow.feature.messaging.data.datasource.GroupTransportKeyDataSource
 import com.cbgm.sparrow.feature.messaging.data.datasource.MailboxContactDataSource
 import com.cbgm.sparrow.feature.messaging.data.datasource.WebSocketIncomingEnvelopeGateway
-import com.cbgm.sparrow.feature.messaging.data.repository.DirectTypingRepositoryImpl
-import com.cbgm.sparrow.feature.messaging.data.repository.GroupTypingRepositoryImpl
+import com.cbgm.sparrow.feature.messaging.data.repository.DirectIndicatorRepositoryImpl
+import com.cbgm.sparrow.feature.messaging.data.repository.GroupIndicatorRepositoryImpl
 import com.cbgm.sparrow.feature.messaging.runtime.incoming.DefaultIncomingEnvelopeProcessor
 import com.cbgm.sparrow.feature.messaging.runtime.incoming.DefaultIncomingEnvelopeRunner
 import com.cbgm.sparrow.feature.messaging.runtime.incoming.IncomingEnvelopeGateway
@@ -87,14 +87,14 @@ val messagingModule =
             )
         }
 
-        single<DirectTypingRepository> {
-            DirectTypingRepositoryImpl(
+        single<DirectIndicatorRepository> {
+            DirectIndicatorRepositoryImpl(
                 webSocketTransportClient = get<WebSocketTransportClient>(),
                 contactRoutingDataSource = get()
             )
         }
-        single<GroupTypingRepository> {
-            GroupTypingRepositoryImpl(
+        single<GroupIndicatorRepository> {
+            GroupIndicatorRepositoryImpl(
                 webSocketTransportClient = get<WebSocketTransportClient>(),
                 groupRoutingDataSource = get()
             )

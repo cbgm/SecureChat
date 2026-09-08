@@ -14,6 +14,7 @@ import com.cbgm.sparrow.feature.attachments.presentation.mapper.toOutgoingMessag
 import com.cbgm.sparrow.feature.chats.device.VoiceMessagePlayer
 import com.cbgm.sparrow.feature.chats.device.VoiceMessageRecorder
 import com.cbgm.sparrow.feature.chats.domain.model.ForwardingTarget
+import com.cbgm.sparrow.feature.chats.domain.model.IndicatorType
 import com.cbgm.sparrow.feature.chats.domain.model.LocationShareEvent
 import com.cbgm.sparrow.feature.chats.domain.model.LocationShareState
 import com.cbgm.sparrow.feature.chats.domain.model.LocationShareStateMachine
@@ -31,22 +32,23 @@ import com.cbgm.sparrow.feature.chats.domain.usecase.group.DeleteGroupMessageUse
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.EditGroupMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.MarkGroupConversationReadUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupChatContextUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupMemberTypingUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupMemberIndicatorUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.RetryGroupMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.SendGroupMessageUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.group.SetGroupTypingUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.group.SetGroupIndicatorUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.ToggleGroupMessageReactionUseCase
 import com.cbgm.sparrow.feature.chats.presentation.component.VoiceMessageController
+import com.cbgm.sparrow.feature.chats.presentation.component.model.IndicatorUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubbleUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageComposerUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageContextUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageHistoryUiState
-import com.cbgm.sparrow.feature.chats.presentation.component.model.TypingUiState
+import com.cbgm.sparrow.feature.chats.presentation.component.model.VoiceComposerPhase
 import com.cbgm.sparrow.feature.chats.presentation.component.model.VoiceComposerUiState
 import com.cbgm.sparrow.feature.chats.presentation.group.mapper.toGroupConversationUiState
 import com.cbgm.sparrow.feature.chats.presentation.group.mapper.toGroupMembershipUiState
 import com.cbgm.sparrow.feature.chats.presentation.group.mapper.toGroupReplyPreview
-import com.cbgm.sparrow.feature.chats.presentation.group.mapper.toTypingDisplayName
+import com.cbgm.sparrow.feature.chats.presentation.group.mapper.toIndicatorDisplayName
 import com.cbgm.sparrow.feature.chats.presentation.group.model.GroupConversationUiEvent
 import com.cbgm.sparrow.feature.chats.presentation.group.model.GroupConversationUiState
 import com.cbgm.sparrow.feature.chats.presentation.group.model.GroupMembershipUiState
@@ -83,8 +85,8 @@ class GroupConversationViewModel(
     private val editMessageUseCase: EditGroupMessageUseCase,
     private val acceptInvitation: AcceptGroupInvitationUseCase,
     private val declineInvitation: DeclineGroupInvitationUseCase,
-    observeMemberTyping: ObserveGroupMemberTypingUseCase,
-    setGroupTyping: SetGroupTypingUseCase,
+    observeMemberIndicator: ObserveGroupMemberIndicatorUseCase,
+    setGroupIndicator: SetGroupIndicatorUseCase,
     observeMessageSafetyAssessments: ObserveMessageSafetyAssessmentsUseCase,
     private val loadMessageAttachment: LoadMessageAttachmentUseCase,
     private val addDeviceContact: AddDeviceContactUseCase,
@@ -120,11 +122,11 @@ class GroupConversationViewModel(
             player = voiceMessagePlayer
         )
 
-    private val typing =
-        GroupTypingController(
+    private val indicatorController =
+        IndicatorController(
             scope = viewModelScope,
-            observeMemberTyping = { contactId -> observeMemberTyping(groupId, contactId) },
-            sendTypingState = { isTyping -> setGroupTyping(groupId, isTyping) },
+            observeMemberIndicator = { contactId -> observeMemberIndicator(groupId, contactId) },
+            sendIndicatorState = { indicatorType -> setGroupIndicator(groupId, indicatorType) },
             logTag = "GroupConversationViewModel"
         )
 
@@ -258,16 +260,18 @@ class GroupConversationViewModel(
             initialValue = MessageContextUiState()
         )
 
-    val typingState: StateFlow<TypingUiState> =
-        combine(typing.typingContactIds, presentationContext) { typingIds, presentation ->
-            TypingUiState(
-                isTyping = typingIds.isNotEmpty(),
-                displayName = typingIds.toTypingDisplayName(presentation.context?.contacts.orEmpty())
+    val indicatorState: StateFlow<IndicatorUiState> =
+        combine(indicatorController.memberIndicators, presentationContext) { indicators, presentation ->
+            val indicatorType = indicators.preferredIndicatorType()
+            val indicatorContactIds = indicators.filterValues { it == indicatorType }.keys
+            IndicatorUiState(
+                type = indicatorType,
+                displayName = indicatorContactIds.toIndicatorDisplayName(presentation.context?.contacts.orEmpty())
             )
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = TypingUiState()
+            initialValue = IndicatorUiState()
         )
 
     val historyState: StateFlow<MessageHistoryUiState> =
@@ -297,7 +301,15 @@ class GroupConversationViewModel(
         )
 
     init {
-        typing.start(groupContext.map { context -> context.administration.currentMemberContactIds })
+        indicatorController.start(groupContext.map { context -> context.administration.currentMemberContactIds })
+        viewModelScope.launch {
+            voiceController.composerState.collect { voiceState ->
+                indicatorController.onLocalVoiceRecordingChanged(
+                    isRecording = voiceState.phase == VoiceComposerPhase.RECORDING,
+                    sendsIndicators = conversationState.value.composerState.sendsIndicators
+                )
+            }
+        }
         ensureTargetMessageLoaded()
     }
 
@@ -362,7 +374,7 @@ class GroupConversationViewModel(
         }
     }
 
-    fun stopTyping() = typing.stopLocalTyping()
+    fun stopIndicator() = indicatorController.stopLocalIndicator()
 
     fun markConversationRead() {
         viewModelScope.launch {
@@ -450,9 +462,10 @@ class GroupConversationViewModel(
 
         messageText.value = value
         clearError()
-        if (conversationState.value.composerState.sendsTypingIndicators) {
-            typing.onLocalTextChanged(value)
-        }
+        indicatorController.onLocalTextChanged(
+            value = value,
+            sendsIndicators = conversationState.value.composerState.sendsIndicators
+        )
     }
 
     private fun sendCurrentMessage() {
@@ -639,12 +652,12 @@ class GroupConversationViewModel(
             message.locationPart?.id == attachmentId || message.contactPart?.id == attachmentId
         }
 
-    private suspend fun clearComposer() {
+    private fun clearComposer() {
         messageText.value = ""
         replyToMessageId.value = ""
         editingMessageId.value = ""
         selectedMedia.value = emptyList()
-        typing.stopLocalTypingNow()
+        indicatorController.stopLocalIndicator()
     }
 
     private fun startReply(messageId: String) {
@@ -788,3 +801,10 @@ class GroupConversationViewModel(
         const val EDITING_MESSAGE_ID_KEY = "editingMessageId"
     }
 }
+
+private fun Map<String, IndicatorType>.preferredIndicatorType(): IndicatorType =
+    when {
+        values.any { it == IndicatorType.VOICE } -> IndicatorType.VOICE
+        values.any { it == IndicatorType.TYPING } -> IndicatorType.TYPING
+        else -> IndicatorType.NONE
+    }

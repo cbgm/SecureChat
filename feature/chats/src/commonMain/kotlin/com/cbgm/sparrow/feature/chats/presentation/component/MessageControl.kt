@@ -21,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
 import com.cbgm.sparrow.feature.attachments.presentation.component.AttachmentBar
+import com.cbgm.sparrow.feature.chats.domain.model.IndicatorType
 import com.cbgm.sparrow.feature.chats.presentation.component.model.ComposerPreviewUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.VoiceComposerUiState
 import com.cbgm.sparrow.feature.media.presentation.component.MediaSelectionPreview
@@ -28,13 +29,14 @@ import com.cbgm.sparrow.feature.media.presentation.component.previewMediaSelecti
 import com.cbgm.sparrow.feature.media.presentation.model.MediaSelection
 import com.cbgm.sparrow.feature.media.presentation.model.MediaSelectionSource
 import com.cbgm.sparrow.resources.Res
+import com.cbgm.sparrow.resources.feature_chats_chat_recording_voice
 import com.cbgm.sparrow.resources.feature_chats_chat_typing
 import org.jetbrains.compose.resources.stringResource
 
 data class MessageInputState(
     val messageText: String = "",
     val composerPreview: ComposerPreviewUi? = null,
-    val isTyping: Boolean = false,
+    val indicatorType: IndicatorType = IndicatorType.NONE,
     val contactName: String = "",
     val isInputEnabled: Boolean = true,
     val isSendEnabled: Boolean = false,
@@ -103,14 +105,20 @@ fun MessageControl(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = if (state.isTyping) {
-                    stringResource(
-                        Res.string.feature_chats_chat_typing,
-                        state.contactName
-                    )
-                } else {
-                    ""
-                },
+                text =
+                    when (state.indicatorType) {
+                        IndicatorType.VOICE ->
+                            stringResource(
+                                Res.string.feature_chats_chat_recording_voice,
+                                state.contactName
+                            )
+                        IndicatorType.TYPING ->
+                            stringResource(
+                                Res.string.feature_chats_chat_typing,
+                                state.contactName
+                            )
+                        IndicatorType.NONE -> ""
+                    },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
@@ -218,7 +226,7 @@ private fun MessageControlPreview() {
         MessageControl(
             containerColor = MaterialTheme.colorScheme.background,
             state = MessageInputState(
-                isTyping = false,
+                indicatorType = IndicatorType.NONE,
                 contactName = "Chris",
                 messageText = "Here are the files",
                 composerPreview =

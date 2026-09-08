@@ -2,7 +2,7 @@ package com.cbgm.sparrow.server.gateway
 
 import com.cbgm.sparrow.server.protocol.EnvelopeAcceptanceState
 import com.cbgm.sparrow.server.protocol.FederatedEnvelope
-import com.cbgm.sparrow.server.protocol.FederatedTypingEvent
+import com.cbgm.sparrow.server.protocol.FederatedIndicatorEvent
 import com.cbgm.sparrow.server.protocol.FederationAcknowledgement
 import com.cbgm.sparrow.server.protocol.TransportEnvelope
 import kotlinx.coroutines.test.runTest
@@ -200,17 +200,17 @@ class GatewayEnvelopeRoutingTest {
     }
 
     @Test
-    fun remoteTypingEventIsPassedToFederation() =
+    fun remoteIndicatorEventIsPassedToFederation() =
         runTest {
-            var routedEvent: FederatedTypingEvent? = null
-            val event = testTypingEvent()
+            var routedEvent: FederatedIndicatorEvent? = null
+            val event = testIndicatorEvent()
             val delivered =
-                routeFederatedTypingEvent(
+                routeFederatedIndicatorEvent(
                     event = event,
                     localDelivery = { false },
                     federation =
                         federationClient(
-                            typingDelegate = { candidate ->
+                            indicatorDelegate = { candidate ->
                                 routedEvent = candidate
                                 true
                             }
@@ -227,15 +227,15 @@ class GatewayEnvelopeRoutingTest {
         }
 
     private fun federationClient(
-        typingDelegate: suspend (FederatedTypingEvent) -> Boolean = { false },
+        indicatorDelegate: suspend (FederatedIndicatorEvent) -> Boolean = { false },
         delegate: suspend (FederatedEnvelope) -> FederationAcknowledgement
     ): FederationClient =
         object : FederationClient {
             override suspend fun route(envelope: FederatedEnvelope): FederationAcknowledgement =
                 delegate(envelope)
 
-            override suspend fun routeTyping(event: FederatedTypingEvent): Boolean =
-                typingDelegate(event)
+            override suspend fun routeIndicator(event: FederatedIndicatorEvent): Boolean =
+                indicatorDelegate(event)
         }
 
     private fun acknowledgement(
@@ -267,10 +267,10 @@ class GatewayEnvelopeRoutingTest {
             createdAtEpochMilliseconds = 1_000L
         )
 
-    private fun testTypingEvent(): FederatedTypingEvent =
-        FederatedTypingEvent(
+    private fun testIndicatorEvent(): FederatedIndicatorEvent =
+        FederatedIndicatorEvent(
             senderRoutingId = "sender",
             recipientRoutingId = "recipient",
-            isTyping = true
+            indicatorType = "TYPING"
         )
 }

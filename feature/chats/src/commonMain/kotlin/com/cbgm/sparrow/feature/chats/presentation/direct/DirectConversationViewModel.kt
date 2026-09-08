@@ -26,19 +26,20 @@ import com.cbgm.sparrow.feature.chats.domain.usecase.direct.DeleteDirectMessageU
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.EditDirectMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.MarkDirectConversationReadUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.ObserveDirectChatContextUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.direct.ObserveDirectTypingUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.direct.ObserveDirectIndicatorUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.RetryDirectMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.SendOrQueueDirectMessageUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.direct.SetDirectTypingUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.direct.SetDirectIndicatorUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.ToggleDirectMessageReactionUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.forward.ForwardMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.forward.LoadOlderMessagesUseCase
 import com.cbgm.sparrow.feature.chats.presentation.component.VoiceMessageController
+import com.cbgm.sparrow.feature.chats.presentation.component.model.IndicatorUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubbleUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageComposerUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageContextUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageHistoryUiState
-import com.cbgm.sparrow.feature.chats.presentation.component.model.TypingUiState
+import com.cbgm.sparrow.feature.chats.presentation.component.model.VoiceComposerPhase
 import com.cbgm.sparrow.feature.chats.presentation.component.model.VoiceComposerUiState
 import com.cbgm.sparrow.feature.chats.presentation.direct.mapper.toDirectConversationUiState
 import com.cbgm.sparrow.feature.chats.presentation.direct.mapper.toDirectReplyPreview
@@ -73,8 +74,8 @@ class DirectConversationViewModel(
     private val toggleMessageReaction: ToggleDirectMessageReactionUseCase,
     private val deleteMessageUseCase: DeleteDirectMessageUseCase,
     private val editMessageUseCase: EditDirectMessageUseCase,
-    private val observeTyping: ObserveDirectTypingUseCase,
-    private val setTyping: SetDirectTypingUseCase,
+    private val observeIndicator: ObserveDirectIndicatorUseCase,
+    private val setIndicator: SetDirectIndicatorUseCase,
     observeMessageSafetyAssessments: ObserveMessageSafetyAssessmentsUseCase,
     private val loadMessageAttachment: LoadMessageAttachmentUseCase,
     private val addDeviceContact: AddDeviceContactUseCase,
@@ -125,10 +126,10 @@ class DirectConversationViewModel(
             }
         }
 
-    private val typingController =
-        TypingIndicatorController(
+    private val indicatorController =
+        IndicatorController(
             scope = viewModelScope,
-            sendTypingState = { isTyping -> setTyping(contactId, isTyping) },
+            sendIndicatorState = { indicatorType -> setIndicator(contactId, indicatorType) },
             logTag = "DirectConversationViewModel"
         )
 
@@ -235,16 +236,16 @@ class DirectConversationViewModel(
             initialValue = MessageContextUiState()
         )
 
-    val typingState: StateFlow<TypingUiState> =
-        combine(typingController.isContactTyping, conversationState) { isTyping, conversation ->
-            TypingUiState(
-                isTyping = isTyping,
+    val indicatorState: StateFlow<IndicatorUiState> =
+        combine(indicatorController.remoteIndicatorType, conversationState) { indicatorType, conversation ->
+            IndicatorUiState(
+                type = indicatorType,
                 displayName = conversation.contactName
             )
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000L),
-            initialValue = TypingUiState(displayName = fallbackContactName)
+            initialValue = IndicatorUiState(displayName = fallbackContactName)
         )
 
     val historyState: StateFlow<MessageHistoryUiState> =
@@ -268,7 +269,15 @@ class DirectConversationViewModel(
 
     init {
         viewModelScope.launch {
-            observeTyping(contactId).collect(typingController::onIncomingTypingChanged)
+            observeIndicator(contactId).collect(indicatorController::onIncomingIndicatorChanged)
+        }
+        viewModelScope.launch {
+            voiceController.composerState.collect { voiceState ->
+                indicatorController.onLocalVoiceRecordingChanged(
+                    isRecording = voiceState.phase == VoiceComposerPhase.RECORDING,
+                    sendsIndicators = conversationState.value.composerState.sendsIndicators
+                )
+            }
         }
         ensureTargetMessageLoaded()
     }
@@ -331,7 +340,7 @@ class DirectConversationViewModel(
         }
     }
 
-    fun stopTyping() = typingController.stopLocalTyping()
+    fun stopIndicator() = indicatorController.stopLocalIndicator()
 
     fun markConversationRead() {
         viewModelScope.launch {
@@ -419,7 +428,7 @@ class DirectConversationViewModel(
 
         messageText.value = value
         clearError()
-        typingController.onLocalTextChanged(value, sendsIndicators = directComposerState.sendsTypingIndicators)
+        indicatorController.onLocalTextChanged(value, sendsIndicators = directComposerState.sendsIndicators)
     }
 
     private fun sendCurrentMessage() {
@@ -614,12 +623,12 @@ class DirectConversationViewModel(
             message.locationPart?.id == attachmentId || message.contactPart?.id == attachmentId
         }
 
-    private suspend fun clearComposer() {
+    private fun clearComposer() {
         messageText.value = ""
         replyToMessageId.value = ""
         editingMessageId.value = ""
         selectedMedia.value = emptyList()
-        typingController.stopLocalTypingNow()
+        indicatorController.stopLocalIndicator()
     }
 
     private fun startReply(messageId: String) {

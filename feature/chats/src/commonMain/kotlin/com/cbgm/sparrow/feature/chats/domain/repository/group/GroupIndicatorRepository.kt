@@ -1,15 +1,16 @@
 package com.cbgm.sparrow.feature.chats.domain.repository.group
 
+import com.cbgm.sparrow.feature.chats.domain.model.IndicatorType
 import kotlinx.coroutines.flow.Flow
 
-interface GroupTypingRepository {
+interface GroupIndicatorRepository {
     fun observeMember(
         groupId: String,
         contactId: String
-    ): Flow<Boolean>
+    ): Flow<IndicatorType>
 
-    suspend fun setTyping(
+    suspend fun setIndicator(
         groupId: String,
-        isTyping: Boolean
+        indicatorType: IndicatorType
     ): Result<Unit>
 }

@@ -3,22 +3,22 @@ package com.cbgm.sparrow.feature.chats.domain.model.group
 enum class GroupComposerState(
     val isInputEnabled: Boolean,
     val isSendActionEnabled: Boolean,
-    val sendsTypingIndicators: Boolean
+    val sendsIndicators: Boolean
 ) {
     READY(
         isInputEnabled = true,
         isSendActionEnabled = true,
-        sendsTypingIndicators = true
+        sendsIndicators = true
     ),
     QUEUEING(
         isInputEnabled = true,
         isSendActionEnabled = true,
-        sendsTypingIndicators = true
+        sendsIndicators = true
     ),
     DISABLED(
         isInputEnabled = false,
         isSendActionEnabled = false,
-        sendsTypingIndicators = false
+        sendsIndicators = false
     )
 }
 

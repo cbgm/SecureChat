@@ -38,7 +38,7 @@ internal fun toGroupConversationUiState(
     currentError: String?,
     observationError: String?,
     isLoading: Boolean,
-    typingContactIds: Set<String>,
+    indicatorContactIds: Set<String>,
     safetyAssessments: Map<String, MessageSafetyAssessment>,
     attachmentPayloadBytes: Map<String, ByteArray> = emptyMap(),
     voicePlaybackState: VoicePlaybackUiState = VoicePlaybackUiState(),
@@ -180,8 +180,8 @@ internal fun String?.toGroupReplyPreview(
     return toGroupReplyPreview(messagesById, contactsById)
 }
 
-internal fun Set<String>.toTypingDisplayName(contacts: List<Contact>): String =
-    toTypingDisplayName(contacts.associateBy(Contact::id))
+internal fun Set<String>.toIndicatorDisplayName(contacts: List<Contact>): String =
+    toIndicatorDisplayName(contacts.associateBy(Contact::id))
 
 private fun GroupConversation?.toMessageBubbleUi(
     contactsById: Map<String, Contact>,
@@ -264,7 +264,7 @@ private fun GroupConversation?.toGroupMemberProgressUi(
             )
         }
 
-private fun Set<String>.toTypingDisplayName(contactsById: Map<String, Contact>): String =
+private fun Set<String>.toIndicatorDisplayName(contactsById: Map<String, Contact>): String =
     mapNotNull(contactsById::get)
         .map { contact ->
             val isInContacts = contact.deviceContactLinkStatus == DeviceContactLinkStatus.LINKED

@@ -60,6 +60,7 @@
     <string name="feature_chats_chat_no_keys_description">Dieser Kontakt besitzt keine öffentlichen Sparrow-Schlüssel. Nachrichten werden unverschlüsselt übertragen.</string>
     <string name="feature_chats_chat_one_way_keys_description">Du besitzt die öffentlichen Schlüssel dieses Kontakts, aber der Kontakt besitzt deine noch nicht. Nachrichten bleiben unverschlüsselt.</string>
     <string name="feature_chats_chat_typing">%1$s schreibt…</string>
+    <string name="feature_chats_chat_recording_voice">%1$s nimmt eine Sprachnachricht auf…</string>
     <string name="feature_chats_chat_unencrypted_description">Du besitzt keine öffentlichen Sparrow-Schlüssel dieses Kontakts.</string>
     <string name="feature_chats_chat_unencrypted_title">Nachrichten sind nicht Ende-zu-Ende verschlüsselt</string>
     <string name="feature_chats_chat_unverified_description">Vergleiche die Sicherheitsnummer über einen anderen vertrauenswürdigen Kanal.</string>

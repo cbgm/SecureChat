@@ -58,11 +58,11 @@ import com.cbgm.sparrow.feature.chats.presentation.component.MessageReactionBurs
 import com.cbgm.sparrow.feature.chats.presentation.component.MessageReactionBurstOverlay
 import com.cbgm.sparrow.feature.chats.presentation.component.mapper.toMessageAttachmentsUi
 import com.cbgm.sparrow.feature.chats.presentation.component.mapper.toSharedContact
+import com.cbgm.sparrow.feature.chats.presentation.component.model.IndicatorUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubbleUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageComposerUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageContextUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageHistoryUiState
-import com.cbgm.sparrow.feature.chats.presentation.component.model.TypingUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.rememberDissolvingMessageListState
 import com.cbgm.sparrow.feature.chats.presentation.direct.component.ErrorMessage
 import com.cbgm.sparrow.feature.chats.presentation.group.component.StatusHint
@@ -84,7 +84,7 @@ fun GroupConversationScreen(
     uiState: GroupConversationUiState,
     composerState: MessageComposerUiState,
     contextState: MessageContextUiState<MessageBubbleUi>,
-    typingState: TypingUiState,
+    indicatorState: IndicatorUiState,
     membershipState: GroupMembershipUiState,
     historyState: MessageHistoryUiState,
     errorMessage: String?,
@@ -221,7 +221,7 @@ fun GroupConversationScreen(
                 bottomBar = { containerColor ->
                     BottomBar(
                         composerState = composerState,
-                        typingState = typingState,
+                        indicatorState = indicatorState,
                         containerColor = containerColor,
                         onUiEvent = onUiEvent,
                         onContactAttachmentClick = { showContactSelection = true }
@@ -410,14 +410,14 @@ private fun TopBar(
 @Composable
 private fun BottomBar(
     composerState: MessageComposerUiState,
-    typingState: TypingUiState,
+    indicatorState: IndicatorUiState,
     containerColor: Color,
     onUiEvent: (GroupConversationUiEvent) -> Unit,
     onContactAttachmentClick: () -> Unit
 ) {
     ChatComposerBar(
         composerState = composerState,
-        typingState = typingState,
+        indicatorState = indicatorState,
         containerColor = containerColor,
         onMessageTextChanged = { onUiEvent(GroupConversationUiEvent.MessageTextChanged(it)) },
         onSendClick = { onUiEvent(GroupConversationUiEvent.SendClicked) },

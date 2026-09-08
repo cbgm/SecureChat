@@ -60,6 +60,7 @@
     <string name="feature_chats_chat_no_keys_description">This contact has no Sparrow public keys. Messages use plaintext transport.</string>
     <string name="feature_chats_chat_one_way_keys_description">You have this contact's public keys, but they do not have yours yet. Messages remain plaintext.</string>
     <string name="feature_chats_chat_typing">%1$s is typing…</string>
+    <string name="feature_chats_chat_recording_voice">%1$s is recording a voice message…</string>
     <string name="feature_chats_chat_unencrypted_description">You do not have this contact's Sparrow public keys.</string>
     <string name="feature_chats_chat_unencrypted_title">Messages are not end-to-end encrypted</string>
     <string name="feature_chats_chat_unverified_description">Compare the safety number through another trusted channel.</string>

@@ -1,21 +1,22 @@
 package com.cbgm.sparrow.feature.messaging.data.repository
 
 import com.cbgm.sparrow.core.result.safeSuspendCall
-import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupTypingRepository
+import com.cbgm.sparrow.feature.chats.domain.model.IndicatorType
+import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupIndicatorRepository
 import com.cbgm.sparrow.feature.messaging.data.datasource.GroupRoutingDataSource
 import com.cbgm.sparrow.feature.transport.websocket.WebSocketTransportClient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.transform
 
-class GroupTypingRepositoryImpl(
+class GroupIndicatorRepositoryImpl(
     private val webSocketTransportClient: WebSocketTransportClient,
     private val groupRoutingDataSource: GroupRoutingDataSource
-) : GroupTypingRepository {
+) : GroupIndicatorRepository {
     override fun observeMember(
         groupId: String,
         contactId: String
-    ): Flow<Boolean> =
-        webSocketTransportClient.incomingTypingEvents
+    ): Flow<IndicatorType> =
+        webSocketTransportClient.incomingIndicatorEvents
             .transform { event ->
                 val routingId =
                     try {
@@ -24,13 +25,13 @@ class GroupTypingRepositoryImpl(
                         return@transform
                     }
                 if (event.senderId == routingId) {
-                    emit(event.isTyping)
+                    emit(event.indicatorType.toIndicatorType())
                 }
             }
 
-    override suspend fun setTyping(
+    override suspend fun setIndicator(
         groupId: String,
-        isTyping: Boolean
+        indicatorType: IndicatorType
     ): Result<Unit> =
         safeSuspendCall {
             val recipientRoutingIds = groupRoutingDataSource.resolveMembers(groupId).values
@@ -38,9 +39,9 @@ class GroupTypingRepositoryImpl(
             var firstFailure: Throwable? = null
             recipientRoutingIds.forEach { routingId ->
                 webSocketTransportClient
-                    .sendTypingState(
+                    .sendIndicatorState(
                         recipientId = routingId,
-                        isTyping = isTyping
+                        indicatorType = indicatorType.name
                     ).exceptionOrNull()
                     ?.let { error ->
                         if (firstFailure == null) firstFailure = error
@@ -49,3 +50,6 @@ class GroupTypingRepositoryImpl(
             firstFailure?.let { error -> throw error }
         }
 }
+
+private fun String.toIndicatorType(): IndicatorType =
+    IndicatorType.entries.firstOrNull { it.name == this } ?: IndicatorType.NONE

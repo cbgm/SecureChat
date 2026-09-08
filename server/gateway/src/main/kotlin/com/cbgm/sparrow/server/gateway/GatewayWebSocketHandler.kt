@@ -2,7 +2,7 @@ package com.cbgm.sparrow.server.gateway
 
 import com.cbgm.sparrow.server.protocol.EnvelopeAcceptanceState
 import com.cbgm.sparrow.server.protocol.FederatedEnvelope
-import com.cbgm.sparrow.server.protocol.FederatedTypingEvent
+import com.cbgm.sparrow.server.protocol.FederatedIndicatorEvent
 import com.cbgm.sparrow.server.protocol.GatewayServerMessage
 import com.cbgm.sparrow.server.protocol.TransportEnvelope
 import io.ktor.server.websocket.DefaultWebSocketServerSession
@@ -42,11 +42,11 @@ class GatewayWebSocketHandler(
                     sendFederatedEnvelope = { connection, message ->
                         sendFederatedEnvelope(connection, message.envelope)
                     },
-                    deliverTyping = { connection, message ->
-                        deliverTyping(
+                    deliverIndicator = { connection, message ->
+                        deliverIndicator(
                             sender = connection,
                             recipientId = message.recipientId,
-                            isTyping = message.isTyping
+                            indicatorType = message.indicatorType
                         )
                     },
                     issueBlobUploadTicket = { connection, message ->
@@ -159,26 +159,26 @@ class GatewayWebSocketHandler(
         }
     }
 
-    private suspend fun deliverTyping(
+    private suspend fun deliverIndicator(
         sender: GatewayConnection,
         recipientId: String,
-        isTyping: Boolean
+        indicatorType: String
     ) {
         val event =
-            FederatedTypingEvent(
+            FederatedIndicatorEvent(
                 senderRoutingId = sender.routingId,
                 recipientRoutingId = recipientId,
-                isTyping = isTyping
+                indicatorType = indicatorType
             )
 
-        routeFederatedTypingEvent(
+        routeFederatedIndicatorEvent(
             event = event,
-            localDelivery = ::acceptIncomingTyping,
+            localDelivery = ::acceptIncomingIndicator,
             federation = federation
         )
     }
 
-    suspend fun acceptIncomingTyping(event: FederatedTypingEvent): Boolean {
+    suspend fun acceptIncomingIndicator(event: FederatedIndicatorEvent): Boolean {
         val recipients = connections.find(event.recipientRoutingId)
         if (recipients.isEmpty()) {
             return false
@@ -187,9 +187,9 @@ class GatewayWebSocketHandler(
         recipients.forEach { recipient ->
             runCatching {
                 recipient.send(
-                    GatewayServerMessage.TypingState(
+                    GatewayServerMessage.IndicatorState(
                         senderId = event.senderRoutingId,
-                        isTyping = event.isTyping
+                        indicatorType = event.indicatorType
                     )
                 )
             }
@@ -340,9 +340,9 @@ private suspend fun storeAndRouteEnvelope(
     return storedForPush
 }
 
-internal suspend fun routeFederatedTypingEvent(
-    event: FederatedTypingEvent,
-    localDelivery: suspend (FederatedTypingEvent) -> Boolean,
+internal suspend fun routeFederatedIndicatorEvent(
+    event: FederatedIndicatorEvent,
+    localDelivery: suspend (FederatedIndicatorEvent) -> Boolean,
     federation: FederationClient
 ): Boolean {
     if (localDelivery(event)) {
@@ -350,7 +350,7 @@ internal suspend fun routeFederatedTypingEvent(
     }
 
     return runCatching {
-        federation.routeTyping(event)
+        federation.routeIndicator(event)
     }.getOrDefault(false)
 }
 

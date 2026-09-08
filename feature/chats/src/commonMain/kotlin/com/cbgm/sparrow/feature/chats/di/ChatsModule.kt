@@ -110,12 +110,12 @@ import com.cbgm.sparrow.feature.chats.domain.usecase.direct.ObserveAcceptedDirec
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.ObserveDeclinedDirectInvitationsUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.ObserveDirectChatContextUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.ObserveDirectConversationUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.direct.ObserveDirectTypingUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.direct.ObserveDirectIndicatorUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.QueueDirectMessageUntilAuthorizedUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.RetryDirectMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.SendDirectMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.SendOrQueueDirectMessageUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.direct.SetDirectTypingUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.direct.SetDirectIndicatorUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.ToggleDirectMessageReactionUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.forward.ForwardDirectMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.forward.ForwardMessageUseCase
@@ -140,7 +140,7 @@ import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupAvatarsUs
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupChatContextUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupConversationUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupDetailsContextUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupMemberTypingUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupMemberIndicatorUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupVerificationUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.PromoteGroupMemberUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.RemoveGroupAvatarUseCase
@@ -148,7 +148,7 @@ import com.cbgm.sparrow.feature.chats.domain.usecase.group.RemoveGroupMemberUseC
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.RetryGroupMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.SendGroupMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.SetGroupAvatarUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.group.SetGroupTypingUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.group.SetGroupIndicatorUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.SynchronizeGroupVerificationUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.ToggleGroupMessageReactionUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.TransferGroupAdminAndLeaveUseCase
@@ -335,8 +335,8 @@ private fun org.koin.core.module.Module.registerUseCases() {
     singleOf(::RetryDirectMessageUseCase)
     singleOf(::MarkDirectConversationReadUseCase)
     singleOf(::DeleteDirectConversationUseCase)
-    singleOf(::ObserveDirectTypingUseCase)
-    singleOf(::SetDirectTypingUseCase)
+    singleOf(::ObserveDirectIndicatorUseCase)
+    singleOf(::SetDirectIndicatorUseCase)
     singleOf(::ObserveAcceptedDirectInvitationsUseCase)
     singleOf(::ObserveDeclinedDirectInvitationsUseCase)
     singleOf(::HandleAcceptedDirectInvitationUseCase)
@@ -366,8 +366,8 @@ private fun org.koin.core.module.Module.registerUseCases() {
     singleOf(::ObserveGroupAvatarsUseCase)
     singleOf(::SetGroupAvatarUseCase)
     singleOf(::RemoveGroupAvatarUseCase)
-    singleOf(::ObserveGroupMemberTypingUseCase)
-    singleOf(::SetGroupTypingUseCase)
+    singleOf(::ObserveGroupMemberIndicatorUseCase)
+    singleOf(::SetGroupIndicatorUseCase)
     singleOf(::ObserveGroupVerificationUseCase)
     singleOf(::SynchronizeGroupVerificationUseCase)
     singleOf(::VerifyGroupMemberUseCase)
@@ -426,8 +426,8 @@ private fun org.koin.core.module.Module.registerViewModels() {
             editMessageUseCase = get(),
             acceptInvitation = get(),
             declineInvitation = get(),
-            observeMemberTyping = get(),
-            setGroupTyping = get(),
+            observeMemberIndicator = get(),
+            setGroupIndicator = get(),
             observeMessageSafetyAssessments = get(),
             loadMessageAttachment = get(),
             addDeviceContact = get(),
@@ -477,8 +477,8 @@ private fun org.koin.core.module.Module.registerViewModels() {
             toggleMessageReaction = get(),
             deleteMessageUseCase = get(),
             editMessageUseCase = get(),
-            observeTyping = get(),
-            setTyping = get(),
+            observeIndicator = get(),
+            setIndicator = get(),
             observeMessageSafetyAssessments = get(),
             loadMessageAttachment = get(),
             addDeviceContact = get(),

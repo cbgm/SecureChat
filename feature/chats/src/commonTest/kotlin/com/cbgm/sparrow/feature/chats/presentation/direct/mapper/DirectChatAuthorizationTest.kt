@@ -51,7 +51,7 @@ class DirectChatAuthorizationTest {
         assertEquals(DirectComposerState.REINVITE_REQUIRED, state.composerState)
         assertTrue(state.composerState.isInputEnabled)
         assertTrue(state.composerState.isSendActionEnabled)
-        assertFalse(state.composerState.sendsTypingIndicators)
+        assertFalse(state.composerState.sendsIndicators)
     }
 
     @Test
@@ -62,7 +62,7 @@ class DirectChatAuthorizationTest {
         assertEquals(DirectComposerState.REINVITE_PENDING, state.composerState)
         assertTrue(state.composerState.isInputEnabled)
         assertTrue(state.composerState.isSendActionEnabled)
-        assertFalse(state.composerState.sendsTypingIndicators)
+        assertFalse(state.composerState.sendsIndicators)
     }
 
     @Test
@@ -80,7 +80,7 @@ class DirectChatAuthorizationTest {
 
         assertTrue(state.isChatAuthorized)
         assertEquals(DirectComposerState.READY, state.composerState)
-        assertTrue(state.composerState.sendsTypingIndicators)
+        assertTrue(state.composerState.sendsIndicators)
     }
 
     private fun directUiStateFor(handshake: IdentityHandshakeState) =
