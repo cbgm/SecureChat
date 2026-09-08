@@ -52,8 +52,16 @@ class BlobTransferDataSource(
             "Encrypted blob exceeds the supported client size"
         }
         val now = SystemClock.nowEpochMilliseconds()
-        check(retentionMilliseconds <= Long.MAX_VALUE - now) { "Blob retention overflows its expiry" }
-        val expiresAt = now + retentionMilliseconds
+        val effectiveRetentionMilliseconds =
+            if (retentionMilliseconds >= CLOCK_SKEW_MARGIN_THRESHOLD_MILLISECONDS) {
+                retentionMilliseconds - CLOCK_SKEW_MARGIN_MILLISECONDS
+            } else {
+                retentionMilliseconds
+            }
+        check(effectiveRetentionMilliseconds <= Long.MAX_VALUE - now) {
+            "Blob retention overflows its expiry"
+        }
+        val expiresAt = now + effectiveRetentionMilliseconds
         val ticket =
             webSocketTransportClient
                 .requestBlobUploadTicket(
@@ -185,6 +193,8 @@ class BlobTransferDataSource(
         }
 
     private companion object {
+        const val CLOCK_SKEW_MARGIN_MILLISECONDS = 5L * 60L * 1_000L
+        const val CLOCK_SKEW_MARGIN_THRESHOLD_MILLISECONDS = 24L * 60L * 60L * 1_000L
         const val CAPABILITY_BYTES = 32
         const val TICKET_TIMEOUT_MILLISECONDS = 10_000L
         const val HTTP_NOT_FOUND = 404

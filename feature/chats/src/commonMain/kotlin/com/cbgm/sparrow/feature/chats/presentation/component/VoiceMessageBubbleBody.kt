@@ -61,8 +61,15 @@ internal fun VoiceMessageBubbleBody(
                     .padding(horizontal = MaterialTheme.spacing.small)
         )
 
+        val displayedDurationMilliseconds =
+            if (voice.playbackPositionMilliseconds > 0L) {
+                voice.playbackPositionMilliseconds.coerceAtMost(voice.durationMilliseconds)
+            } else {
+                voice.durationMilliseconds
+            }
+
         Text(
-            text = formatVoiceDuration(voice.durationMilliseconds),
+            text = formatVoiceDuration(displayedDurationMilliseconds),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
