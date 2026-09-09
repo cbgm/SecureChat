@@ -5,6 +5,8 @@ import android.media.MediaPlayer
 
 class AndroidVoicePlayer : VoicePlayer {
     private var player: MediaPlayer? = null
+    private var seekInProgress = false
+    private var resumeAfterSeek = false
 
     override fun prepare(bytes: ByteArray): Result<Unit> = runCatching {
         require(bytes.isNotEmpty()) { "Voice message must not be empty" }
@@ -12,6 +14,13 @@ class AndroidVoicePlayer : VoicePlayer {
         player =
             MediaPlayer().apply {
                 setDataSource(ByteArrayMediaDataSource(bytes))
+                setOnSeekCompleteListener { mediaPlayer ->
+                    seekInProgress = false
+                    if (resumeAfterSeek) {
+                        resumeAfterSeek = false
+                        mediaPlayer.start()
+                    }
+                }
                 prepare()
             }
     }
@@ -22,21 +31,31 @@ class AndroidVoicePlayer : VoicePlayer {
         }
 
     override fun pause() {
+        resumeAfterSeek = false
         player?.takeIf(MediaPlayer::isPlaying)?.pause()
     }
 
     override fun resume() {
-        player?.start()
+        val mediaPlayer = player ?: return
+        if (seekInProgress) {
+            resumeAfterSeek = true
+        } else {
+            mediaPlayer.start()
+        }
     }
 
     override fun seekTo(positionMilliseconds: Long) {
-        player?.seekTo(
+        val mediaPlayer = player ?: return
+        seekInProgress = true
+        mediaPlayer.seekTo(
             positionMilliseconds.coerceAtLeast(0L),
             MediaPlayer.SEEK_CLOSEST
         )
     }
 
     override fun stop() {
+        seekInProgress = false
+        resumeAfterSeek = false
         player?.release()
         player = null
     }

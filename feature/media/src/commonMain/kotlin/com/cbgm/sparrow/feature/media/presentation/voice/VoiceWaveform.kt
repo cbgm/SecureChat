@@ -7,7 +7,8 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
@@ -83,8 +84,6 @@ fun VoiceWaveform(
     val scrubbingModifier =
         if (onScrubStart != null && onScrub != null && onScrubEnd != null) {
             Modifier.pointerInput(onScrubStart, onScrub, onScrubEnd) {
-                var lastProgress = progress.coerceIn(0f, 1f)
-
                 fun progressAt(x: Float): Float =
                     if (size.width > 0) {
                         (x / size.width.toFloat()).coerceIn(0f, 1f)
@@ -92,23 +91,38 @@ fun VoiceWaveform(
                         0f
                     }
 
-                detectDragGestures(
-                    onDragStart = { offset ->
-                        lastProgress = progressAt(offset.x)
-                        onScrubStart(lastProgress)
-                    },
-                    onDrag = { change, _ ->
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    var lastProgress = progressAt(down.position.x)
+
+                    // Own the gesture immediately so the parent message bubble cannot
+                    // turn a waveform scrub into its long-press action menu.
+                    down.consume()
+                    onScrubStart(lastProgress)
+                    onScrub(lastProgress)
+
+                    var finished = false
+                    while (!finished) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == down.id }
+
+                        if (change == null) {
+                            onScrubEnd(lastProgress)
+                            finished = true
+                            continue
+                        }
+
                         lastProgress = progressAt(change.position.x)
                         change.consume()
-                        onScrub(lastProgress)
-                    },
-                    onDragEnd = {
-                        onScrubEnd(lastProgress)
-                    },
-                    onDragCancel = {
-                        onScrubEnd(lastProgress)
+
+                        if (change.pressed) {
+                            onScrub(lastProgress)
+                        } else {
+                            onScrubEnd(lastProgress)
+                            finished = true
+                        }
                     }
-                )
+                }
             }
         } else {
             Modifier

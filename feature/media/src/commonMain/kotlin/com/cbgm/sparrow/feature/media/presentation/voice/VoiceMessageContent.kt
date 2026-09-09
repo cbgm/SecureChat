@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -66,33 +67,12 @@ fun VoiceMessageContent(
     onSeekStart: () -> Unit,
     onSeekEnd: (Long) -> Unit
 ) {
-    var scrubPositionMilliseconds by remember { mutableStateOf<Long?>(null) }
-    var isScrubbing by remember { mutableStateOf(false) }
-    val interpolatedPlaybackPositionMilliseconds =
-        rememberDisplayPlaybackPosition(
+    val scrubState =
+        rememberVoiceScrubState(
             playbackPositionMilliseconds = playbackPositionMilliseconds,
             durationMilliseconds = durationMilliseconds,
             isPlaying = isPlaying
         )
-    val displayPlaybackPositionMilliseconds =
-        scrubPositionMilliseconds ?: interpolatedPlaybackPositionMilliseconds
-
-    LaunchedEffect(isScrubbing, playbackPositionMilliseconds, scrubPositionMilliseconds) {
-        val scrubPosition = scrubPositionMilliseconds ?: return@LaunchedEffect
-        if (
-            !isScrubbing &&
-            abs(playbackPositionMilliseconds - scrubPosition) <= SCRUB_SYNC_TOLERANCE_MILLISECONDS
-        ) {
-            scrubPositionMilliseconds = null
-        }
-    }
-
-    val progress =
-        if (durationMilliseconds > 0L) {
-            displayPlaybackPositionMilliseconds.toFloat() / durationMilliseconds.toFloat()
-        } else {
-            0f
-        }
 
     Column(
         modifier = modifier.padding(
@@ -115,33 +95,30 @@ fun VoiceMessageContent(
 
             VoiceWaveform(
                 waveform = waveform,
-                progress = progress,
+                progress = scrubState.progress,
                 playedColor = MaterialTheme.colorScheme.primary,
                 remainingColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = Alpha.Subtle),
                 modifier =
                     Modifier
                         .weight(1f)
                         .height(Dimens.MessageInput.buttonHeight)
-                        .padding(horizontal = MaterialTheme.spacing.small),
+                        .padding(
+                            end = MaterialTheme.spacing.small,
+                            start = MaterialTheme.spacing.base
+                        ),
                 onScrubStart = { scrubProgress ->
-                    isScrubbing = true
-                    scrubPositionMilliseconds = durationMilliseconds.positionAt(scrubProgress)
+                    scrubState.start(scrubProgress)
                     onSeekStart()
                 },
-                onScrub = { scrubProgress ->
-                    scrubPositionMilliseconds = durationMilliseconds.positionAt(scrubProgress)
-                },
+                onScrub = scrubState::update,
                 onScrubEnd = { scrubProgress ->
-                    val positionMilliseconds = durationMilliseconds.positionAt(scrubProgress)
-                    scrubPositionMilliseconds = positionMilliseconds
-                    isScrubbing = false
-                    onSeekEnd(positionMilliseconds)
+                    onSeekEnd(scrubState.end(scrubProgress))
                 }
             )
 
             val displayedDurationMilliseconds =
-                if (displayPlaybackPositionMilliseconds > 0L) {
-                    displayPlaybackPositionMilliseconds.coerceAtMost(durationMilliseconds)
+                if (scrubState.displayPositionMilliseconds > 0L) {
+                    scrubState.displayPositionMilliseconds.coerceAtMost(durationMilliseconds)
                 } else {
                     durationMilliseconds
                 }
@@ -163,7 +140,8 @@ fun VoiceMessageContent(
                     isPlaying = isPlaying,
                     durationMilliseconds = durationMilliseconds,
                     transcriptCues = transcriptCues,
-                    displayPlaybackPositionMilliseconds = displayPlaybackPositionMilliseconds
+                    displayPlaybackPositionMilliseconds = scrubState.displayPositionMilliseconds,
+                    isScrubbing = scrubState.isScrubbing
                 )
 
             else ->
@@ -203,6 +181,7 @@ private fun TranscriptScroll(
     transcriptCues: List<VoiceTranscriptCue>,
     displayPlaybackPositionMilliseconds: Long,
     isPlaying: Boolean,
+    isScrubbing: Boolean,
     durationMilliseconds: Long
 ) {
     val transcriptionScrollState = rememberScrollState()
@@ -239,6 +218,7 @@ private fun TranscriptScroll(
     SyncTranscriptScroll(
         scrollState = transcriptionScrollState,
         isPlaying = isPlaying,
+        isScrubbing = isScrubbing,
         playbackPositionMilliseconds = displayPlaybackPositionMilliseconds,
         finalCueEndMilliseconds = transcriptCues.lastOrNull()?.endMilliseconds
             ?: durationMilliseconds.takeIf { it > 0L },
@@ -283,20 +263,77 @@ private fun TranscriptScroll(
 private fun Long.positionAt(progress: Float): Long =
     (coerceAtLeast(0L).toFloat() * progress.coerceIn(0f, 1f)).roundToInt().toLong()
 
+private class VoiceScrubState {
+    private var durationMilliseconds by mutableLongStateOf(0L)
+    private var interpolatedPlaybackPositionMilliseconds by mutableLongStateOf(0L)
+
+    var scrubPositionMilliseconds by mutableStateOf<Long?>(null)
+        private set
+
+    var isScrubbing by mutableStateOf(false)
+        private set
+
+    val displayPositionMilliseconds: Long
+        get() = scrubPositionMilliseconds ?: interpolatedPlaybackPositionMilliseconds
+
+    val progress: Float
+        get() =
+            if (durationMilliseconds > 0L) {
+                (displayPositionMilliseconds.toFloat() / durationMilliseconds.toFloat())
+                    .coerceIn(0f, 1f)
+            } else {
+                0f
+            }
+
+    fun updateDuration(durationMilliseconds: Long) {
+        this.durationMilliseconds = durationMilliseconds.coerceAtLeast(0L)
+    }
+
+    fun updatePlaybackPosition(positionMilliseconds: Long) {
+        interpolatedPlaybackPositionMilliseconds =
+            positionMilliseconds.coerceIn(0L, durationMilliseconds.coerceAtLeast(0L))
+    }
+
+    fun start(progress: Float) {
+        isScrubbing = true
+        scrubPositionMilliseconds = durationMilliseconds.positionAt(progress)
+    }
+
+    fun update(progress: Float) {
+        if (!isScrubbing) return
+        scrubPositionMilliseconds = durationMilliseconds.positionAt(progress)
+    }
+
+    fun end(progress: Float): Long {
+        val positionMilliseconds = durationMilliseconds.positionAt(progress)
+        scrubPositionMilliseconds = positionMilliseconds
+        isScrubbing = false
+        return positionMilliseconds
+    }
+
+    fun clearScrubPosition() {
+        scrubPositionMilliseconds = null
+    }
+}
+
 @Composable
-private fun rememberDisplayPlaybackPosition(
+private fun rememberVoiceScrubState(
     playbackPositionMilliseconds: Long,
     durationMilliseconds: Long,
     isPlaying: Boolean
-): Long {
-    var displayedPosition by remember { mutableLongStateOf(playbackPositionMilliseconds) }
+): VoiceScrubState {
+    val state = remember { VoiceScrubState() }
     val currentReportedPosition by rememberUpdatedState(playbackPositionMilliseconds)
     val currentDuration by rememberUpdatedState(durationMilliseconds)
     val currentIsPlaying by rememberUpdatedState(isPlaying)
 
+    SideEffect {
+        state.updateDuration(durationMilliseconds)
+    }
+
     LaunchedEffect(isPlaying, playbackPositionMilliseconds) {
         if (!isPlaying) {
-            displayedPosition = playbackPositionMilliseconds
+            state.updatePlaybackPosition(playbackPositionMilliseconds)
         }
     }
 
@@ -318,27 +355,46 @@ private fun rememberDisplayPlaybackPosition(
                     anchorFrameNanos = frameNanos
                 }
 
-                val elapsedMilliseconds = (frameNanos - anchorFrameNanos) / NANOS_PER_MILLISECOND
-                displayedPosition =
+                val elapsedMilliseconds =
+                    (frameNanos - anchorFrameNanos) / NANOS_PER_MILLISECOND
+
+                state.updatePlaybackPosition(
                     (anchorPosition + elapsedMilliseconds)
                         .coerceIn(0L, currentDuration.coerceAtLeast(0L))
+                )
             }
         }
     }
 
-    return displayedPosition
+    LaunchedEffect(
+        state.isScrubbing,
+        playbackPositionMilliseconds,
+        state.scrubPositionMilliseconds
+    ) {
+        val scrubPosition = state.scrubPositionMilliseconds ?: return@LaunchedEffect
+        if (
+            !state.isScrubbing &&
+            abs(playbackPositionMilliseconds - scrubPosition) <= SCRUB_SYNC_TOLERANCE_MILLISECONDS
+        ) {
+            state.clearScrubPosition()
+        }
+    }
+
+    return state
 }
 
 @Composable
 private fun SyncTranscriptScroll(
     scrollState: ScrollState,
     isPlaying: Boolean,
+    isScrubbing: Boolean,
     playbackPositionMilliseconds: Long,
     finalCueEndMilliseconds: Long?,
     targetScroll: Int
 ) {
     val currentTargetScroll by rememberUpdatedState(targetScroll)
     val currentIsPlaying by rememberUpdatedState(isPlaying)
+    val currentIsScrubbing by rememberUpdatedState(isScrubbing)
     val isAtStart = playbackPositionMilliseconds <= 0L
     val isAtEnd =
         finalCueEndMilliseconds != null &&
@@ -351,10 +407,10 @@ private fun SyncTranscriptScroll(
         }
     }
 
-    LaunchedEffect(isPlaying) {
-        if (!isPlaying) return@LaunchedEffect
+    LaunchedEffect(isPlaying, isScrubbing) {
+        if (!isPlaying && !isScrubbing) return@LaunchedEffect
 
-        while (currentIsPlaying) {
+        while (currentIsPlaying || currentIsScrubbing) {
             withFrameNanos { }
             val target = currentTargetScroll.coerceIn(0, scrollState.maxValue)
             if (scrollState.value != target) {
@@ -376,7 +432,10 @@ private fun calculatePlayedCharacterPosition(
     if (cues.isEmpty()) {
         if (durationMilliseconds <= 0L) return 0f
         return transcript.length *
-            (playbackPositionMilliseconds.toFloat() / durationMilliseconds.toFloat()).coerceIn(0f, 1f)
+            (playbackPositionMilliseconds.toFloat() / durationMilliseconds.toFloat()).coerceIn(
+                0f,
+                1f
+            )
     }
 
     var characterOffset = 0
