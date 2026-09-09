@@ -16,6 +16,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessagePartUi
+import com.cbgm.sparrow.feature.linkpreview.presentation.component.LinkPreview
+import com.cbgm.sparrow.feature.linkpreview.presentation.model.TextContentPart
 import com.cbgm.sparrow.feature.safety.presentation.component.MessageSafetyWarning
 import com.cbgm.sparrow.feature.safety.presentation.details.model.MessageSafetyWarningUi
 
@@ -25,22 +27,19 @@ internal fun TextMessageBubbleBody(
     safetyWarning: MessageSafetyWarningUi?,
     onSafetyDetailsClick: () -> Unit
 ) {
-    val annotatedText = rememberLinkAnnotatedString(textPart.text)
-
     val padding = if (safetyWarning != null) MaterialTheme.spacing.base else MaterialTheme.spacing.micro
 
     Column {
         if (textPart.text.isNotBlank() || textPart.isContentFailed) {
-            Row(modifier = Modifier.padding(padding)) {
-                if (textPart.isContentFailed) {
-                    Icon(imageVector = Icons.Default.ErrorOutline, contentDescription = null)
-                    Spacer(modifier = Modifier.width(MaterialTheme.spacing.base))
-                }
-
-                Text(
-                    text = annotatedText,
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodyMedium
+            if (textPart.isContentFailed) {
+                FailedTextContent(
+                    text = textPart.text,
+                    modifier = Modifier.padding(padding)
+                )
+            } else {
+                TextContent(
+                    parts = textPart.contentParts,
+                    modifier = Modifier.padding(padding)
                 )
             }
         }
@@ -54,15 +53,55 @@ internal fun TextMessageBubbleBody(
     }
 }
 
+@Composable
+private fun TextContent(
+    parts: List<TextContentPart>,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        parts.forEach { part ->
+            when (part) {
+                is TextContentPart.Text ->
+                    if (part.text.isNotEmpty()) {
+                        Text(
+                            text = part.text,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                is TextContentPart.LinkPreview ->
+                    LinkPreview(url = part.url)
+            }
+        }
+    }
+}
+
+@Composable
+private fun FailedTextContent(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Row(modifier = modifier) {
+        Icon(imageVector = Icons.Default.ErrorOutline, contentDescription = null)
+        Spacer(modifier = Modifier.width(MaterialTheme.spacing.base))
+        Text(
+            text = text,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
 @Preview
 @Composable
 private fun TextMessageBubbleBodyPreview() {
     SparrowTheme {
         TextMessageBubbleBody(
-            textPart = MessagePartUi.Text(
-                text = "Encrypted message",
-                isContentFailed = false
-            ),
+            textPart =
+                MessagePartUi.Text(
+                    text = "Encrypted message",
+                    isContentFailed = false
+                ),
             safetyWarning = null,
             onSafetyDetailsClick = {}
         )

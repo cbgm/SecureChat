@@ -2,6 +2,8 @@ package com.cbgm.sparrow.feature.chats.presentation.component.model
 
 import com.cbgm.sparrow.feature.attachments.domain.model.CurrentLocation
 import com.cbgm.sparrow.feature.attachments.domain.model.SharedContact
+import com.cbgm.sparrow.feature.linkpreview.presentation.model.TextContentPart
+import com.cbgm.sparrow.feature.linkpreview.presentation.model.toTextContentParts
 import com.cbgm.sparrow.feature.media.domain.model.VoiceTranscriptCue
 
 sealed interface MessagePartUi {
@@ -37,7 +39,8 @@ sealed interface MessagePartUi {
 
     data class Text(
         val text: String,
-        val isContentFailed: Boolean
+        val isContentFailed: Boolean,
+        val contentParts: List<TextContentPart> = text.toTextContentParts()
     ) : MessagePartUi
 
     data class Voice(

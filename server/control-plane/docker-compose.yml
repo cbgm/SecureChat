@@ -32,6 +32,8 @@ services:
         condition: service_healthy
       push:
         condition: service_healthy
+      link-preview:
+        condition: service_healthy
 
   node-registry-database:
     image: postgres:17-alpine
@@ -175,6 +177,20 @@ services:
         condition: service_healthy
       push-database:
         condition: service_healthy
+
+  link-preview:
+    <<: *sparrow-service
+    image: sparrow-link-preview:local
+    build:
+      context: ../..
+      dockerfile: server/Dockerfile
+      args:
+        SERVICE: link-preview
+    environment:
+      PORT: 8096
+      LINK_PREVIEW_CACHE_TTL_MILLISECONDS: ${LINK_PREVIEW_CACHE_TTL_MILLISECONDS:-21600000}
+    ports:
+      - "127.0.0.1:${LINK_PREVIEW_DIAGNOSTIC_PORT:-8396}:8096"
 
 volumes:
   caddy-data:

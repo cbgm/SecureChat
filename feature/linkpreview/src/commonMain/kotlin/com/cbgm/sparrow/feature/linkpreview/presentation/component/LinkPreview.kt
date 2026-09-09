@@ -1,0 +1,165 @@
+package com.cbgm.sparrow.feature.linkpreview.presentation.component
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.cbgm.sparrow.core.ui.component.SparrowImage
+import com.cbgm.sparrow.core.ui.theme.SparrowTheme
+import com.cbgm.sparrow.core.ui.theme.spacing
+import com.cbgm.sparrow.feature.linkpreview.presentation.LinkPreviewViewModel
+import com.cbgm.sparrow.feature.linkpreview.presentation.model.LinkPreviewUi
+import com.cbgm.sparrow.feature.linkpreview.presentation.model.LinkPreviewUiState
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
+
+@Composable
+fun LinkPreview(
+    url: String,
+    modifier: Modifier = Modifier
+) {
+    val viewModel =
+        koinViewModel<LinkPreviewViewModel>(key = "link-preview:$url") {
+            parametersOf(url)
+        }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LinkPreviewContent(
+        url = url,
+        uiState = uiState,
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun LinkPreviewContent(
+    url: String,
+    uiState: LinkPreviewUiState,
+    modifier: Modifier = Modifier
+) {
+    val uriHandler = LocalUriHandler.current
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.micro)
+    ) {
+        Text(
+            text = url,
+            modifier = Modifier.clickable { uriHandler.openUri(url) },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        when (uiState) {
+            LinkPreviewUiState.Loading ->
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+
+            is LinkPreviewUiState.Success ->
+                LinkPreviewCard(
+                    preview = uiState.preview,
+                    onClick = { uriHandler.openUri(url) }
+                )
+
+            is LinkPreviewUiState.Error -> Unit
+        }
+    }
+}
+
+@Composable
+private fun LinkPreviewCard(
+    preview: LinkPreviewUi,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(MaterialTheme.spacing.base),
+        tonalElevation = MaterialTheme.spacing.micro
+    ) {
+        Column {
+            preview.imageUrl?.let { imageUrl ->
+                SparrowImage(
+                    model = imageUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth().height(PREVIEW_IMAGE_HEIGHT),
+                    contentScale = ContentScale.Crop,
+                    memoryCacheKey = "link-preview:$imageUrl"
+                )
+            }
+
+            Column(
+                modifier = Modifier.padding(MaterialTheme.spacing.base),
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.micro)
+            ) {
+                preview.siteName?.takeIf(String::isNotBlank)?.let { siteName ->
+                    Text(
+                        text = siteName,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                preview.title?.takeIf(String::isNotBlank)?.let { title ->
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                preview.description?.takeIf(String::isNotBlank)?.let { description ->
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+    }
+}
+
+private val PREVIEW_IMAGE_HEIGHT = 140.dp
+
+@Preview
+@Composable
+private fun LinkPreviewContentPreview() {
+    SparrowTheme {
+        LinkPreviewContent(
+            url = "https://example.com/article",
+            uiState =
+                LinkPreviewUiState.Success(
+                    LinkPreviewUi(
+                        url = "https://example.com/article",
+                        title = "Example article",
+                        description = "A short description of the linked page.",
+                        siteName = "Example",
+                        imageUrl = null
+                    )
+                )
+        )
+    }
+}
