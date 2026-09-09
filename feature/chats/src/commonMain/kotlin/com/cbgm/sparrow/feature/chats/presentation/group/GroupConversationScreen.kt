@@ -20,10 +20,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,7 +66,6 @@ import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageCompos
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageContextUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageHistoryUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.rememberDissolvingMessageListState
-import com.cbgm.sparrow.feature.chats.presentation.direct.component.ErrorMessage
 import com.cbgm.sparrow.feature.chats.presentation.group.component.StatusHint
 import com.cbgm.sparrow.feature.chats.presentation.group.component.subtitle
 import com.cbgm.sparrow.feature.chats.presentation.group.model.GroupConversationUiEvent
@@ -100,6 +101,13 @@ fun GroupConversationScreen(
     var messageContextAnchor by remember { mutableStateOf<MessageContextAnchor?>(null) }
     var reactionBurst by remember { mutableStateOf<MessageReactionBurst?>(null) }
     var feedbackOverlay by remember { mutableStateOf<FeedbackOverlayData?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
 
     val contextMessage = contextState.message
     val clipboardWriter = rememberClipboardWriter()
@@ -203,6 +211,7 @@ fun GroupConversationScreen(
             SparrowLazyScaffold(
                 modifier = Modifier.fillMaxSize(),
                 barColor = MaterialTheme.colorScheme.background,
+                snackbarHostState = snackbarHostState,
                 background = {
                     PatternBackground(
                         modifier = Modifier.fillMaxSize(),
@@ -214,7 +223,6 @@ fun GroupConversationScreen(
                     TopBar(
                         uiState = uiState,
                         membershipState = membershipState,
-                        errorMessage = errorMessage,
                         containerColor = containerColor,
                         onUiEvent = onUiEvent
                     )
@@ -362,7 +370,6 @@ fun GroupConversationScreen(
 private fun TopBar(
     uiState: GroupConversationUiState,
     membershipState: GroupMembershipUiState,
-    errorMessage: String?,
     containerColor: Color,
     onUiEvent: (GroupConversationUiEvent) -> Unit
 ) {
@@ -413,7 +420,6 @@ private fun TopBar(
             }
         )
 
-        errorMessage?.let { ErrorMessage(message = it) }
         StatusHint(
             uiState = uiState,
             membershipState = membershipState,
