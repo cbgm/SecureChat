@@ -81,6 +81,7 @@ private fun MessagePart.toMessagePartUi(
                     if (isActive) playbackState.positionMilliseconds else 0L,
                 isPlaying = isActive && playbackState.isPlaying,
                 transcript = transcript,
+                transcriptCues = transcriptCues,
                 isTranscribing = voiceState.transcribingAttachmentId == id
             )
         }

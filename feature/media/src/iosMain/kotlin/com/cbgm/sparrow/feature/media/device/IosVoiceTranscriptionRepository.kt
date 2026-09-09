@@ -1,6 +1,8 @@
 package com.cbgm.sparrow.feature.media.device
 
 import com.cbgm.sparrow.core.result.safeSuspendCall
+import com.cbgm.sparrow.feature.media.domain.model.VoiceTranscriptCue
+import com.cbgm.sparrow.feature.media.domain.model.VoiceTranscription
 import com.cbgm.sparrow.feature.media.domain.repository.VoiceTranscriptionRepository
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -16,7 +18,7 @@ import kotlin.coroutines.resumeWithException
 
 @OptIn(ExperimentalForeignApi::class)
 class IosVoiceTranscriptionRepository : VoiceTranscriptionRepository {
-    override suspend fun transcribe(bytes: ByteArray): Result<String> = safeSuspendCall {
+    override suspend fun transcribe(bytes: ByteArray): Result<VoiceTranscription> = safeSuspendCall {
         check(requestSpeechAuthorization()) { "Speech recognition permission is required" }
 
         val wave = bytes.toPcmWaveAudio()
@@ -35,7 +37,7 @@ class IosVoiceTranscriptionRepository : VoiceTranscriptionRepository {
             var task: SFSpeechRecognitionTask? = null
             var finished = false
 
-            fun finish(result: Result<String>) {
+            fun finish(result: Result<VoiceTranscription>) {
                 if (finished) return
                 finished = true
                 task?.cancel()
@@ -55,7 +57,21 @@ class IosVoiceTranscriptionRepository : VoiceTranscriptionRepository {
 
                     val transcript = result?.bestTranscription?.formattedString?.trim().orEmpty()
                     if (transcript.isNotBlank()) {
-                        finish(Result.success(transcript))
+                        finish(
+                            Result.success(
+                                VoiceTranscription(
+                                    text = transcript,
+                                    cues =
+                                        listOf(
+                                            VoiceTranscriptCue(
+                                                text = transcript,
+                                                startMilliseconds = 0L,
+                                                endMilliseconds = wave.durationMilliseconds
+                                            )
+                                        )
+                                )
+                            )
+                        )
                     }
                 }
 
@@ -106,3 +122,6 @@ class IosVoiceTranscriptionRepository : VoiceTranscriptionRepository {
         return buffer
     }
 }
+
+private val PcmWaveAudio.durationMilliseconds: Long
+    get() = ((pcmBytes.size.toLong() / 2L) * 1_000L / sampleRate).coerceAtLeast(1L)

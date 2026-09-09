@@ -1,6 +1,8 @@
 package com.cbgm.sparrow.feature.media.device
 
 import com.cbgm.sparrow.core.result.safeSuspendCall
+import com.cbgm.sparrow.feature.media.domain.model.VoiceTranscriptCue
+import com.cbgm.sparrow.feature.media.domain.model.VoiceTranscription
 import com.cbgm.sparrow.feature.media.domain.repository.VoiceTranscriptionRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -15,7 +17,7 @@ internal class AndroidVoiceTranscriptionRepository(
     private val transcriptionMutex = Mutex()
     private var modelHandle: Long = 0L
 
-    override suspend fun transcribe(bytes: ByteArray): Result<String> = safeSuspendCall {
+    override suspend fun transcribe(bytes: ByteArray): Result<VoiceTranscription> = safeSuspendCall {
         require(bytes.isNotEmpty()) { "Voice message is empty" }
 
         val wave = bytes.toPcmWaveAudio()
@@ -25,12 +27,28 @@ internal class AndroidVoiceTranscriptionRepository(
         withContext(Dispatchers.Default) {
             transcriptionMutex.withLock {
                 val handle = requireModelHandle(modelFile.absolutePath)
-                whisperNative
-                    .transcribe(handle, samples)
-                    .trim()
-                    .also { transcript ->
-                        check(transcript.isNotBlank()) { "No speech could be transcribed" }
-                    }
+                val fallbackText = whisperNative.transcribe(handle, samples).trim()
+                val cues = whisperNative.readTranscriptCues(handle).normalizeEdges()
+                val text = cues.joinToString(separator = "") { cue -> cue.text }
+                val resolvedText = text.ifBlank { fallbackText }
+
+                check(resolvedText.isNotBlank()) { "No speech could be transcribed" }
+
+                VoiceTranscription(
+                    text = resolvedText,
+                    cues =
+                        if (cues.isNotEmpty()) {
+                            cues
+                        } else {
+                            listOf(
+                                VoiceTranscriptCue(
+                                    text = resolvedText,
+                                    startMilliseconds = 0L,
+                                    endMilliseconds = wave.durationMilliseconds
+                                )
+                            )
+                        }
+                )
             }
         }
     }
@@ -43,6 +61,41 @@ internal class AndroidVoiceTranscriptionRepository(
         return modelHandle
     }
 }
+
+private fun WhisperNative.readTranscriptCues(modelHandle: Long): List<VoiceTranscriptCue> =
+    buildList {
+        repeat(segmentCount(modelHandle)) { segmentIndex ->
+            val text = segmentText(modelHandle, segmentIndex)
+            val startMilliseconds = segmentStartMilliseconds(modelHandle, segmentIndex)
+            val endMilliseconds = segmentEndMilliseconds(modelHandle, segmentIndex)
+            if (text.isNotEmpty() && endMilliseconds > startMilliseconds) {
+                add(
+                    VoiceTranscriptCue(
+                        text = text,
+                        startMilliseconds = startMilliseconds.coerceAtLeast(0L),
+                        endMilliseconds = endMilliseconds.coerceAtLeast(startMilliseconds + 1L)
+                    )
+                )
+            }
+        }
+    }
+
+private fun List<VoiceTranscriptCue>.normalizeEdges(): List<VoiceTranscriptCue> =
+    mapIndexedNotNull { index, cue ->
+        val text =
+            when {
+                size == 1 -> cue.text.trim()
+                index == 0 -> cue.text.trimStart()
+                index == lastIndex -> cue.text.trimEnd()
+                else -> cue.text
+            }
+        text.takeIf(String::isNotEmpty)?.let { normalizedText -> cue.copy(text = normalizedText) }
+    }
+
+private val PcmWaveAudio.durationMilliseconds: Long
+    get() =
+        ((pcmBytes.size.toLong() / PCM_BYTES_PER_SAMPLE) * 1_000L / sampleRate)
+            .coerceAtLeast(1L)
 
 private fun PcmWaveAudio.toWhisperSamples(): FloatArray {
     val sourceSampleCount = pcmBytes.size / PCM_BYTES_PER_SAMPLE

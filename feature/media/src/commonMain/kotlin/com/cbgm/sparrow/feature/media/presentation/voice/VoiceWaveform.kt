@@ -20,7 +20,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.sparrow.core.ui.theme.Alpha
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
-import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.sin
 
@@ -116,34 +115,6 @@ fun formatVoiceDuration(durationMilliseconds: Long): String {
     return "$minutes:${seconds.toString().padStart(2, '0')}"
 }
 
-fun ByteArray.toVoiceWaveform(barCount: Int = 24): List<Float> {
-    if (size <= WAVE_HEADER_BYTES || barCount <= 0) return emptyList()
-
-    val pcmStart = WAVE_HEADER_BYTES
-    val sampleCount = (size - pcmStart) / PCM_BYTES_PER_SAMPLE
-    if (sampleCount <= 0) return emptyList()
-
-    val samplesPerBar = max(1, sampleCount / barCount)
-    return List(barCount) { barIndex ->
-        val startSample = barIndex * samplesPerBar
-        if (startSample >= sampleCount) return@List 0.12f
-
-        val endSample = minOf(sampleCount, startSample + samplesPerBar)
-        var peak = 0
-        for (sampleIndex in startSample until endSample) {
-            val byteIndex = pcmStart + sampleIndex * PCM_BYTES_PER_SAMPLE
-            val low = this[byteIndex].toInt() and 0xff
-            val high = this[byteIndex + 1].toInt()
-            val sample = (high shl 8) or low
-            peak = max(peak, abs(sample.coerceAtLeast(Short.MIN_VALUE.toInt() + 1)))
-        }
-
-        (peak.toFloat() / Short.MAX_VALUE.toFloat()).coerceIn(0.12f, 1f)
-    }
-}
-
-private const val WAVE_HEADER_BYTES = 44
-private const val PCM_BYTES_PER_SAMPLE = 2
 private const val RECORDING_ANIMATION_DURATION_MILLISECONDS = 900
 private const val TWO_PI = 6.2831855f
 private const val BAR_PHASE_OFFSET = 0.72f

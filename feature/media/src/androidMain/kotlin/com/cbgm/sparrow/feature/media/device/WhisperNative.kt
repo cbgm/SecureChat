@@ -8,6 +8,23 @@ internal class WhisperNative {
         samples: FloatArray
     ): String
 
+    external fun segmentCount(modelHandle: Long): Int
+
+    external fun segmentText(
+        modelHandle: Long,
+        segmentIndex: Int
+    ): String
+
+    external fun segmentStartMilliseconds(
+        modelHandle: Long,
+        segmentIndex: Int
+    ): Long
+
+    external fun segmentEndMilliseconds(
+        modelHandle: Long,
+        segmentIndex: Int
+    ): Long
+
     external fun freeModel(modelHandle: Long)
 
     private companion object {

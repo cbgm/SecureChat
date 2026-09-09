@@ -111,6 +111,9 @@ Java_com_cbgm_sparrow_feature_media_device_WhisperNative_transcribe(
     params.translate = false;
     params.no_context = true;
     params.single_segment = false;
+    params.token_timestamps = true;
+    params.max_len = 24;
+    params.split_on_word = true;
     params.language = "auto";
     params.n_threads = transcriptionThreadCount();
     params.abort_callback = abortOnDeadline;
@@ -134,4 +137,55 @@ Java_com_cbgm_sparrow_feature_media_device_WhisperNative_transcribe(
     }
 
     return env->NewStringUTF(transcript.c_str());
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_cbgm_sparrow_feature_media_device_WhisperNative_segmentCount(
+    JNIEnv *,
+    jobject,
+    jlong modelHandle
+) {
+    whisper_context *context = asContext(modelHandle);
+    return context == nullptr ? 0 : whisper_full_n_segments(context);
+}
+
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_com_cbgm_sparrow_feature_media_device_WhisperNative_segmentText(
+    JNIEnv *env,
+    jobject,
+    jlong modelHandle,
+    jint segmentIndex
+) {
+    whisper_context *context = asContext(modelHandle);
+    if (context == nullptr) return env->NewStringUTF("");
+    const char *text = whisper_full_get_segment_text(context, segmentIndex);
+    return env->NewStringUTF(text == nullptr ? "" : text);
+}
+
+extern "C"
+JNIEXPORT jlong JNICALL
+Java_com_cbgm_sparrow_feature_media_device_WhisperNative_segmentStartMilliseconds(
+    JNIEnv *,
+    jobject,
+    jlong modelHandle,
+    jint segmentIndex
+) {
+    whisper_context *context = asContext(modelHandle);
+    if (context == nullptr) return 0;
+    return static_cast<jlong>(whisper_full_get_segment_t0(context, segmentIndex) * 10);
+}
+
+extern "C"
+JNIEXPORT jlong JNICALL
+Java_com_cbgm_sparrow_feature_media_device_WhisperNative_segmentEndMilliseconds(
+    JNIEnv *,
+    jobject,
+    jlong modelHandle,
+    jint segmentIndex
+) {
+    whisper_context *context = asContext(modelHandle);
+    if (context == nullptr) return 0;
+    return static_cast<jlong>(whisper_full_get_segment_t1(context, segmentIndex) * 10);
 }

@@ -314,6 +314,7 @@ private fun BubbleBody(
                     isPlaying = voicePart.isPlaying,
                     waveform = voicePart.waveform,
                     transcript = voicePart.transcript,
+                    transcriptCues = voicePart.transcriptCues,
                     isTranscribing = voicePart.isTranscribing,
                     onPlayPauseClick = { onVoicePlayPauseClick(voicePart.id) },
                     onTranscribeClick = { onVoiceTranscribeClick(voicePart.id) }

@@ -498,12 +498,11 @@ class DirectConversationViewModel(
                 loadMessageAttachment(attachmentId)
                     .onSuccess { bytes ->
                         transcribeVoiceAudio(bytes)
-                            .onSuccess { rawTranscript ->
-                                val transcript = rawTranscript.trim()
-                                if (transcript.isBlank()) {
+                            .onSuccess { transcription ->
+                                if (transcription.text.isBlank()) {
                                     setError("No speech could be transcribed")
                                 } else {
-                                    saveMessageAttachmentTranscript(attachmentId, transcript)
+                                    saveMessageAttachmentTranscript(attachmentId, transcription)
                                         .onFailure { error ->
                                             setError(error.message ?: "Voice transcript could not be saved")
                                         }
