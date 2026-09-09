@@ -22,5 +22,5 @@ dependencies {
     implementation(libs.logback.classic)
 
     testImplementation(kotlin("test"))
-    testImplementation(libs.bundles.ktor.server.test.host)
+    testImplementation(libs.ktor.server.test.host)
 }
