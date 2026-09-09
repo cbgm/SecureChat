@@ -31,6 +31,15 @@ sealed interface GroupConversationUiEvent {
         val attachmentId: String
     ) : GroupConversationUiEvent
 
+    data class VoiceSeekStarted(
+        val attachmentId: String
+    ) : GroupConversationUiEvent
+
+    data class VoiceSeekFinished(
+        val attachmentId: String,
+        val positionMilliseconds: Long
+    ) : GroupConversationUiEvent
+
     data object LoadOlderMessages : GroupConversationUiEvent
 
     data class MessageHistoryTargetRequested(

@@ -36,6 +36,9 @@ class VoiceController(
     private var playbackTicker: Job? = null
     private var previewPlaying = false
     private var previewPrepared = false
+    private var preparedMessageAttachmentId: String? = null
+    private var scrubbingAttachmentId: String? = null
+    private var resumeAfterScrub = false
 
     fun startRecording(onError: (Throwable) -> Unit) {
         if (mutableComposerState.value.phase != VoiceComposerPhase.READY) return
@@ -94,6 +97,8 @@ class VoiceController(
         if (mutableMessageState.value.playback.attachmentId != null) {
             updatePlayback(VoicePlaybackUiState())
             player.stop()
+            preparedMessageAttachmentId = null
+            clearMessageScrub()
         }
 
         val startResult =
@@ -120,8 +125,13 @@ class VoiceController(
         durationMilliseconds: Long,
         onError: (Throwable) -> Unit
     ) {
+        clearMessageScrub()
         val current = mutableMessageState.value.playback
-        if (current.attachmentId == attachmentId && player.isPlaying) {
+        if (
+            current.attachmentId == attachmentId &&
+            preparedMessageAttachmentId == attachmentId &&
+            player.isPlaying
+        ) {
             player.pause()
             playbackTicker?.cancel()
             updatePlayback(
@@ -143,17 +153,33 @@ class VoiceController(
                     playbackProgress = 0f
                 )
             player.stop()
+            preparedMessageAttachmentId = null
         }
 
         val result =
-            if (current.attachmentId == attachmentId && player.currentPositionMilliseconds > 0L) {
-                runCatching { player.resume() }
-            } else {
-                player.stop()
-                player.play(bytes)
+            when {
+                current.attachmentId == attachmentId &&
+                    preparedMessageAttachmentId == attachmentId &&
+                    current.positionMilliseconds >= durationMilliseconds &&
+                    durationMilliseconds > 0L ->
+                    runCatching {
+                        player.seekTo(0L)
+                        player.resume()
+                    }
+
+                current.attachmentId == attachmentId &&
+                    preparedMessageAttachmentId == attachmentId ->
+                    runCatching { player.resume() }
+
+                else -> {
+                    player.stop()
+                    preparedMessageAttachmentId = null
+                    player.play(bytes)
+                }
             }
         result
             .onSuccess {
+                preparedMessageAttachmentId = attachmentId
                 updatePlayback(
                     VoicePlaybackUiState(
                         attachmentId = attachmentId,
@@ -165,6 +191,95 @@ class VoiceController(
                 startMessageTicker(attachmentId, durationMilliseconds)
             }
             .onFailure(onError)
+    }
+
+    fun startMessageScrub(attachmentId: String) {
+        playbackTicker?.cancel()
+
+        if (previewPrepared) {
+            previewPrepared = false
+            previewPlaying = false
+            mutableComposerState.value =
+                mutableComposerState.value.copy(
+                    isPlaying = false,
+                    playbackProgress = 0f
+                )
+            player.stop()
+            preparedMessageAttachmentId = null
+        }
+
+        val current = mutableMessageState.value.playback
+        scrubbingAttachmentId = attachmentId
+        resumeAfterScrub =
+            current.attachmentId == attachmentId &&
+            preparedMessageAttachmentId == attachmentId &&
+            current.isPlaying
+
+        if (current.attachmentId == attachmentId && preparedMessageAttachmentId == attachmentId) {
+            player.pause()
+        } else {
+            player.stop()
+            preparedMessageAttachmentId = null
+            updatePlayback(VoicePlaybackUiState())
+        }
+    }
+
+    fun updateMessageScrubPosition(
+        attachmentId: String,
+        durationMilliseconds: Long,
+        positionMilliseconds: Long
+    ) {
+        if (scrubbingAttachmentId != attachmentId) return
+        updatePlayback(
+            VoicePlaybackUiState(
+                attachmentId = attachmentId,
+                durationMilliseconds = durationMilliseconds,
+                positionMilliseconds = positionMilliseconds.coerceIn(0L, durationMilliseconds.coerceAtLeast(0L)),
+                isPlaying = resumeAfterScrub
+            )
+        )
+    }
+
+    fun finishMessageScrub(
+        attachmentId: String,
+        bytes: ByteArray,
+        durationMilliseconds: Long,
+        positionMilliseconds: Long,
+        onError: (Throwable) -> Unit
+    ) {
+        if (scrubbingAttachmentId != attachmentId) return
+        val targetPosition = positionMilliseconds.coerceIn(0L, durationMilliseconds.coerceAtLeast(0L))
+        val shouldResume = resumeAfterScrub && targetPosition < durationMilliseconds
+
+        runCatching {
+            if (preparedMessageAttachmentId != attachmentId) {
+                player.prepare(bytes).getOrThrow()
+                preparedMessageAttachmentId = attachmentId
+            }
+            player.seekTo(targetPosition)
+            if (shouldResume) {
+                player.resume()
+            }
+        }.onSuccess {
+            updatePlayback(
+                VoicePlaybackUiState(
+                    attachmentId = attachmentId,
+                    durationMilliseconds = durationMilliseconds,
+                    positionMilliseconds = targetPosition,
+                    isPlaying = shouldResume
+                )
+            )
+            clearMessageScrub()
+            if (shouldResume) {
+                startMessageTicker(attachmentId, durationMilliseconds)
+            }
+        }.onFailure { error ->
+            player.stop()
+            preparedMessageAttachmentId = null
+            updatePlayback(VoicePlaybackUiState())
+            clearMessageScrub()
+            onError(error)
+        }
     }
 
     fun startTranscribing(attachmentId: String): Boolean {
@@ -200,6 +315,8 @@ class VoiceController(
         playbackTicker?.cancel()
         previewPlaying = false
         previewPrepared = false
+        preparedMessageAttachmentId = null
+        clearMessageScrub()
         player.stop()
         updatePlayback(VoicePlaybackUiState())
         mutableComposerState.value =
@@ -207,6 +324,11 @@ class VoiceController(
                 isPlaying = false,
                 playbackProgress = 0f
             )
+    }
+
+    private fun clearMessageScrub() {
+        scrubbingAttachmentId = null
+        resumeAfterScrub = false
     }
 
     private fun updatePlayback(playback: VoicePlaybackUiState) {
@@ -263,6 +385,7 @@ class VoiceController(
                         )
                     )
                     player.stop()
+                    preparedMessageAttachmentId = null
                     delay(TRANSCRIPT_COMPLETION_HOLD_MILLISECONDS.milliseconds)
 
                     val current = mutableMessageState.value.playback

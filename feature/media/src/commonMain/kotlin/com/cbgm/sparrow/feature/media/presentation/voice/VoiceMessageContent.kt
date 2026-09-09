@@ -38,7 +38,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.cbgm.sparrow.core.ui.theme.Alpha
 import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
@@ -48,6 +47,7 @@ import com.cbgm.sparrow.resources.Res
 import com.cbgm.sparrow.resources.feature_media_voice_transcribe
 import com.cbgm.sparrow.resources.feature_media_voice_transcribing
 import org.jetbrains.compose.resources.stringResource
+import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
@@ -62,14 +62,31 @@ fun VoiceMessageContent(
     transcriptCues: List<VoiceTranscriptCue> = emptyList(),
     isTranscribing: Boolean,
     onPlayPauseClick: () -> Unit,
-    onTranscribeClick: () -> Unit
+    onTranscribeClick: () -> Unit,
+    onSeekStart: () -> Unit,
+    onSeekEnd: (Long) -> Unit
 ) {
-    val displayPlaybackPositionMilliseconds =
+    var scrubPositionMilliseconds by remember { mutableStateOf<Long?>(null) }
+    var isScrubbing by remember { mutableStateOf(false) }
+    val interpolatedPlaybackPositionMilliseconds =
         rememberDisplayPlaybackPosition(
             playbackPositionMilliseconds = playbackPositionMilliseconds,
             durationMilliseconds = durationMilliseconds,
             isPlaying = isPlaying
         )
+    val displayPlaybackPositionMilliseconds =
+        scrubPositionMilliseconds ?: interpolatedPlaybackPositionMilliseconds
+
+    LaunchedEffect(isScrubbing, playbackPositionMilliseconds, scrubPositionMilliseconds) {
+        val scrubPosition = scrubPositionMilliseconds ?: return@LaunchedEffect
+        if (
+            !isScrubbing &&
+            abs(playbackPositionMilliseconds - scrubPosition) <= SCRUB_SYNC_TOLERANCE_MILLISECONDS
+        ) {
+            scrubPositionMilliseconds = null
+        }
+    }
+
     val progress =
         if (durationMilliseconds > 0L) {
             displayPlaybackPositionMilliseconds.toFloat() / durationMilliseconds.toFloat()
@@ -104,11 +121,22 @@ fun VoiceMessageContent(
                 modifier =
                     Modifier
                         .weight(1f)
-                        .height(22.dp)
-                        .padding(
-                            end = MaterialTheme.spacing.small,
-                            start = MaterialTheme.spacing.base
-                        )
+                        .height(Dimens.MessageInput.buttonHeight)
+                        .padding(horizontal = MaterialTheme.spacing.small),
+                onScrubStart = { scrubProgress ->
+                    isScrubbing = true
+                    scrubPositionMilliseconds = durationMilliseconds.positionAt(scrubProgress)
+                    onSeekStart()
+                },
+                onScrub = { scrubProgress ->
+                    scrubPositionMilliseconds = durationMilliseconds.positionAt(scrubProgress)
+                },
+                onScrubEnd = { scrubProgress ->
+                    val positionMilliseconds = durationMilliseconds.positionAt(scrubProgress)
+                    scrubPositionMilliseconds = positionMilliseconds
+                    isScrubbing = false
+                    onSeekEnd(positionMilliseconds)
+                }
             )
 
             val displayedDurationMilliseconds =
@@ -163,7 +191,7 @@ private fun TranscriptionHint() {
         )
         Text(
             text = stringResource(Res.string.feature_media_voice_transcribing),
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -227,7 +255,7 @@ private fun TranscriptScroll(
         Box(modifier = Modifier.horizontalScroll(transcriptionScrollState)) {
             Text(
                 text = text,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = Alpha.Subtle),
                 maxLines = 1,
                 softWrap = false,
@@ -242,7 +270,7 @@ private fun TranscriptScroll(
                             this@drawWithContent.drawContent()
                         }
                     },
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
                 softWrap = false,
@@ -251,6 +279,9 @@ private fun TranscriptScroll(
         }
     }
 }
+
+private fun Long.positionAt(progress: Float): Long =
+    (coerceAtLeast(0L).toFloat() * progress.coerceIn(0f, 1f)).roundToInt().toLong()
 
 @Composable
 private fun rememberDisplayPlaybackPosition(
@@ -345,10 +376,7 @@ private fun calculatePlayedCharacterPosition(
     if (cues.isEmpty()) {
         if (durationMilliseconds <= 0L) return 0f
         return transcript.length *
-            (playbackPositionMilliseconds.toFloat() / durationMilliseconds.toFloat()).coerceIn(
-                0f,
-                1f
-            )
+            (playbackPositionMilliseconds.toFloat() / durationMilliseconds.toFloat()).coerceIn(0f, 1f)
     }
 
     var characterOffset = 0
@@ -400,6 +428,7 @@ private fun calculateTranscriptTargetScroll(
 
 private const val TRANSCRIPT_FOLLOW_POSITION = 0.62f
 private const val NANOS_PER_MILLISECOND = 1_000_000L
+private const val SCRUB_SYNC_TOLERANCE_MILLISECONDS = 150L
 
 @Preview
 @Composable
@@ -413,7 +442,9 @@ private fun VoiceMessageContentPreview() {
             transcript = null,
             isTranscribing = false,
             onPlayPauseClick = {},
-            onTranscribeClick = {}
+            onTranscribeClick = {},
+            onSeekStart = {},
+            onSeekEnd = {}
         )
     }
 }
@@ -436,7 +467,9 @@ private fun VoiceMessageContentTranscriptPreview() {
                 ),
             isTranscribing = false,
             onPlayPauseClick = {},
-            onTranscribeClick = {}
+            onTranscribeClick = {},
+            onSeekStart = {},
+            onSeekEnd = {}
         )
     }
 }
@@ -453,7 +486,9 @@ private fun VoiceMessageContentTranscribingPreview() {
             transcript = null,
             isTranscribing = true,
             onPlayPauseClick = {},
-            onTranscribeClick = {}
+            onTranscribeClick = {},
+            onSeekStart = {},
+            onSeekEnd = {}
         )
     }
 }

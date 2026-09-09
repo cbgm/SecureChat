@@ -7,6 +7,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
@@ -16,6 +17,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.cbgm.sparrow.core.ui.theme.Alpha
@@ -58,7 +60,10 @@ fun VoiceWaveform(
     playedColor: Color,
     remainingColor: Color,
     modifier: Modifier = Modifier,
-    animated: Boolean = false
+    animated: Boolean = false,
+    onScrubStart: ((Float) -> Unit)? = null,
+    onScrub: ((Float) -> Unit)? = null,
+    onScrubEnd: ((Float) -> Unit)? = null
 ) {
     val transition = rememberInfiniteTransition()
     val animationPhase =
@@ -75,7 +80,41 @@ fun VoiceWaveform(
                 )
         ).value
 
-    Canvas(modifier = modifier) {
+    val scrubbingModifier =
+        if (onScrubStart != null && onScrub != null && onScrubEnd != null) {
+            Modifier.pointerInput(onScrubStart, onScrub, onScrubEnd) {
+                var lastProgress = progress.coerceIn(0f, 1f)
+
+                fun progressAt(x: Float): Float =
+                    if (size.width > 0) {
+                        (x / size.width.toFloat()).coerceIn(0f, 1f)
+                    } else {
+                        0f
+                    }
+
+                detectDragGestures(
+                    onDragStart = { offset ->
+                        lastProgress = progressAt(offset.x)
+                        onScrubStart(lastProgress)
+                    },
+                    onDrag = { change, _ ->
+                        lastProgress = progressAt(change.position.x)
+                        change.consume()
+                        onScrub(lastProgress)
+                    },
+                    onDragEnd = {
+                        onScrubEnd(lastProgress)
+                    },
+                    onDragCancel = {
+                        onScrubEnd(lastProgress)
+                    }
+                )
+            }
+        } else {
+            Modifier
+        }
+
+    Canvas(modifier = modifier.then(scrubbingModifier)) {
         val values = waveform.ifEmpty { PlaceholderWaveform }
         if (values.isEmpty() || size.width <= 0f || size.height <= 0f) return@Canvas
 

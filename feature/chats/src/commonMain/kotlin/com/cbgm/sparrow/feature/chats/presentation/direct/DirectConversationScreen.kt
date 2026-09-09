@@ -246,6 +246,17 @@ fun DirectConversationScreen(
                     },
                     onVoiceTranscribeClick = { attachmentId ->
                         onUiEvent(DirectConversationUiEvent.VoiceTranscribeClicked(attachmentId))
+                    },
+                    onVoiceSeekStart = { attachmentId ->
+                        onUiEvent(DirectConversationUiEvent.VoiceSeekStarted(attachmentId))
+                    },
+                    onVoiceSeekEnd = { attachmentId, positionMilliseconds ->
+                        onUiEvent(
+                            DirectConversationUiEvent.VoiceSeekFinished(
+                                attachmentId = attachmentId,
+                                positionMilliseconds = positionMilliseconds
+                            )
+                        )
                     }
                 )
             }
@@ -444,7 +455,9 @@ private fun Content(
     onAttachmentClick: (String, String) -> Unit,
     onContactClick: (SharedContact) -> Unit,
     onVoicePlayPauseClick: (String) -> Unit,
-    onVoiceTranscribeClick: (String) -> Unit
+    onVoiceTranscribeClick: (String) -> Unit,
+    onVoiceSeekStart: (String) -> Unit,
+    onVoiceSeekEnd: (String, Long) -> Unit
 ) {
     val fillModifier = Modifier.fillMaxSize().padding(innerPadding)
     val dissolvingListState =
@@ -477,6 +490,8 @@ private fun Content(
             onContactClick = onContactClick,
             onVoicePlayPauseClick = onVoicePlayPauseClick,
             onVoiceTranscribeClick = onVoiceTranscribeClick,
+            onVoiceSeekStart = onVoiceSeekStart,
+            onVoiceSeekEnd = onVoiceSeekEnd,
             contentPadding = innerPadding,
             historyState = historyState,
             onLoadOlderMessages = onLoadOlderMessages,

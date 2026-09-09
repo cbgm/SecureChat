@@ -11,15 +11,19 @@ import platform.Foundation.NSData
 class IosVoicePlayer : VoicePlayer {
     private var player: AVAudioPlayer? = null
 
-    override fun play(bytes: ByteArray): Result<Unit> = runCatching {
+    override fun prepare(bytes: ByteArray): Result<Unit> = runCatching {
         require(bytes.isNotEmpty()) { "Voice message must not be empty" }
         stop()
 
         val audioPlayer = AVAudioPlayer(data = bytes.toNSData(), error = null)
         check(audioPlayer.prepareToPlay()) { "Voice message could not be prepared" }
-        check(audioPlayer.play()) { "Voice message could not be played" }
         player = audioPlayer
     }
+
+    override fun play(bytes: ByteArray): Result<Unit> =
+        prepare(bytes).mapCatching {
+            check(player?.play() == true) { "Voice message could not be played" }
+        }
 
     override fun pause() {
         player?.pause()
@@ -27,6 +31,10 @@ class IosVoicePlayer : VoicePlayer {
 
     override fun resume() {
         player?.play()
+    }
+
+    override fun seekTo(positionMilliseconds: Long) {
+        player?.currentTime = positionMilliseconds.coerceAtLeast(0L) / 1_000.0
     }
 
     override fun stop() {

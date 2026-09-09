@@ -31,6 +31,15 @@ sealed interface DirectConversationUiEvent {
         val attachmentId: String
     ) : DirectConversationUiEvent
 
+    data class VoiceSeekStarted(
+        val attachmentId: String
+    ) : DirectConversationUiEvent
+
+    data class VoiceSeekFinished(
+        val attachmentId: String,
+        val positionMilliseconds: Long
+    ) : DirectConversationUiEvent
+
     data object LoadOlderMessages : DirectConversationUiEvent
 
     data class MessageHistoryTargetRequested(

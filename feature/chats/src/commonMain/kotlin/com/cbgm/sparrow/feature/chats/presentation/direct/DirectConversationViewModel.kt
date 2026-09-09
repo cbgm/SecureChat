@@ -306,6 +306,12 @@ class DirectConversationViewModel(
             DirectConversationUiEvent.VoiceComposerCancelled -> voiceController.cancelRecording()
             is DirectConversationUiEvent.VoicePlayPauseClicked -> playVoiceMessage(event.attachmentId)
             is DirectConversationUiEvent.VoiceTranscribeClicked -> transcribeVoiceAttachment(event.attachmentId)
+            is DirectConversationUiEvent.VoiceSeekStarted -> voiceController.startMessageScrub(event.attachmentId)
+            is DirectConversationUiEvent.VoiceSeekFinished ->
+                seekVoiceMessage(
+                    attachmentId = event.attachmentId,
+                    positionMilliseconds = event.positionMilliseconds
+                )
             DirectConversationUiEvent.LoadOlderMessages -> loadOlderMessages()
             is DirectConversationUiEvent.MessageHistoryTargetRequested -> loadMessageHistoryTarget(event.messageId)
             is DirectConversationUiEvent.ReplyToMessage -> startReply(event.messageId)
@@ -482,6 +488,43 @@ class DirectConversationViewModel(
                         durationMilliseconds = voice.durationMilliseconds,
                         onError = { error ->
                             setError(error.message ?: "Voice message could not be played")
+                        }
+                    )
+                }.onFailure { error ->
+                    setError(error.message ?: "Voice message could not be loaded")
+                }
+        }
+    }
+
+    private fun seekVoiceMessage(
+        attachmentId: String,
+        positionMilliseconds: Long
+    ) {
+        val voice =
+            conversationState.value.messages
+                .firstNotNullOfOrNull { message ->
+                    message.voicePart?.takeIf { part -> part.id == attachmentId }
+                }
+                ?: return
+
+        val targetPosition =
+            positionMilliseconds.coerceIn(0L, voice.durationMilliseconds.coerceAtLeast(0L))
+        voiceController.updateMessageScrubPosition(
+            attachmentId = attachmentId,
+            durationMilliseconds = voice.durationMilliseconds,
+            positionMilliseconds = targetPosition
+        )
+
+        viewModelScope.launch {
+            loadMessageAttachment(attachmentId)
+                .onSuccess { bytes ->
+                    voiceController.finishMessageScrub(
+                        attachmentId = attachmentId,
+                        bytes = bytes,
+                        durationMilliseconds = voice.durationMilliseconds,
+                        positionMilliseconds = targetPosition,
+                        onError = { error ->
+                            setError(error.message ?: "Voice message could not be seeked")
                         }
                     )
                 }.onFailure { error ->

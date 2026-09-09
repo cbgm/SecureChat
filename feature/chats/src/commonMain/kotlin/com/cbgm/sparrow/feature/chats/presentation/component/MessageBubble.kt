@@ -89,6 +89,8 @@ internal fun MessageBubble(
     onContactClick: (SharedContact) -> Unit = {},
     onVoicePlayPauseClick: (String) -> Unit = {},
     onVoiceTranscribeClick: (String) -> Unit = {},
+    onVoiceSeekStart: (String) -> Unit = {},
+    onVoiceSeekEnd: (String, Long) -> Unit = { _, _ -> },
     onReplyPreviewClick: (String) -> Unit = {},
     onContextMessageRequested: (MessageContextAnchor) -> Unit = {},
     onReactionsClick: (SparrowOverlayAnchor) -> Unit = {},
@@ -123,6 +125,8 @@ internal fun MessageBubble(
             onContactClick = onContactClick,
             onVoicePlayPauseClick = onVoicePlayPauseClick,
             onVoiceTranscribeClick = onVoiceTranscribeClick,
+            onVoiceSeekStart = onVoiceSeekStart,
+            onVoiceSeekEnd = onVoiceSeekEnd,
             onReplyPreviewClick = onReplyPreviewClick,
             onLongPress = onLongPress,
             onReactionsClick = onReactionsClick,
@@ -155,6 +159,8 @@ private fun MessageBubbleContent(
     onContactClick: (SharedContact) -> Unit,
     onVoicePlayPauseClick: (String) -> Unit,
     onVoiceTranscribeClick: (String) -> Unit,
+    onVoiceSeekStart: (String) -> Unit,
+    onVoiceSeekEnd: (String, Long) -> Unit,
     onReplyPreviewClick: (String) -> Unit,
     onLongPress: () -> Unit,
     onReactionsClick: (SparrowOverlayAnchor) -> Unit,
@@ -193,6 +199,8 @@ private fun MessageBubbleContent(
                     onContactClick = onContactClick,
                     onVoicePlayPauseClick = onVoicePlayPauseClick,
                     onVoiceTranscribeClick = onVoiceTranscribeClick,
+                    onVoiceSeekStart = onVoiceSeekStart,
+                    onVoiceSeekEnd = onVoiceSeekEnd,
                     onReplyPreviewClick = onReplyPreviewClick,
                     onLongPress = onLongPress,
                     onSafetyDetailsClick = {
@@ -280,6 +288,8 @@ private fun BubbleBody(
     onContactClick: (SharedContact) -> Unit = {},
     onVoicePlayPauseClick: (String) -> Unit = {},
     onVoiceTranscribeClick: (String) -> Unit = {},
+    onVoiceSeekStart: (String) -> Unit = {},
+    onVoiceSeekEnd: (String, Long) -> Unit = { _, _ -> },
     onReplyPreviewClick: (String) -> Unit = {},
     onLongPress: () -> Unit = {},
     onSafetyDetailsClick: () -> Unit = {}
@@ -317,7 +327,11 @@ private fun BubbleBody(
                     transcriptCues = voicePart.transcriptCues,
                     isTranscribing = voicePart.isTranscribing,
                     onPlayPauseClick = { onVoicePlayPauseClick(voicePart.id) },
-                    onTranscribeClick = { onVoiceTranscribeClick(voicePart.id) }
+                    onTranscribeClick = { onVoiceTranscribeClick(voicePart.id) },
+                    onSeekStart = { onVoiceSeekStart(voicePart.id) },
+                    onSeekEnd = { positionMilliseconds ->
+                        onVoiceSeekEnd(voicePart.id, positionMilliseconds)
+                    }
                 )
             }
         }

@@ -6,16 +6,20 @@ import android.media.MediaPlayer
 class AndroidVoicePlayer : VoicePlayer {
     private var player: MediaPlayer? = null
 
-    override fun play(bytes: ByteArray): Result<Unit> = runCatching {
+    override fun prepare(bytes: ByteArray): Result<Unit> = runCatching {
         require(bytes.isNotEmpty()) { "Voice message must not be empty" }
         stop()
         player =
             MediaPlayer().apply {
                 setDataSource(ByteArrayMediaDataSource(bytes))
                 prepare()
-                start()
             }
     }
+
+    override fun play(bytes: ByteArray): Result<Unit> =
+        prepare(bytes).mapCatching {
+            resume()
+        }
 
     override fun pause() {
         player?.takeIf(MediaPlayer::isPlaying)?.pause()
@@ -23,6 +27,13 @@ class AndroidVoicePlayer : VoicePlayer {
 
     override fun resume() {
         player?.start()
+    }
+
+    override fun seekTo(positionMilliseconds: Long) {
+        player?.seekTo(
+            positionMilliseconds.coerceAtLeast(0L),
+            MediaPlayer.SEEK_CLOSEST
+        )
     }
 
     override fun stop() {

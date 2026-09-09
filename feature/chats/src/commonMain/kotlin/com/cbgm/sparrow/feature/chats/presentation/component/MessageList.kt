@@ -53,6 +53,8 @@ internal fun MessageList(
     onContactClick: (SharedContact) -> Unit,
     onVoicePlayPauseClick: (String) -> Unit,
     onVoiceTranscribeClick: (String) -> Unit,
+    onVoiceSeekStart: (String) -> Unit,
+    onVoiceSeekEnd: (String, Long) -> Unit,
     contentPadding: PaddingValues,
     historyState: MessageHistoryUiState,
     onLoadOlderMessages: () -> Unit,
@@ -133,6 +135,8 @@ internal fun MessageList(
                         onContactClick = onContactClick,
                         onVoicePlayPauseClick = onVoicePlayPauseClick,
                         onVoiceTranscribeClick = onVoiceTranscribeClick,
+                        onVoiceSeekStart = onVoiceSeekStart,
+                        onVoiceSeekEnd = onVoiceSeekEnd,
                         onReplyPreviewClick = replyJumpState.jumpTo,
                         onContextMessageRequested = onContextMessageRequested,
                         onReactionsClick = { anchor ->
@@ -320,6 +324,8 @@ private fun MessageListPreview() {
             onContactClick = {},
             onVoicePlayPauseClick = {},
             onVoiceTranscribeClick = {},
+            onVoiceSeekStart = {},
+            onVoiceSeekEnd = { _, _ -> },
             contentPadding = PaddingValues(),
             historyState = MessageHistoryUiState(
                 isLoadingOlder = true,
