@@ -1,6 +1,11 @@
-package com.cbgm.sparrow.feature.linkpreview.domain.model
+package com.cbgm.sparrow.data.database.entity
 
-data class LinkPreview(
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "link_previews")
+data class LinkPreviewEntity(
+    @PrimaryKey
     val url: String,
     val title: String?,
     val description: String?,
@@ -11,7 +16,7 @@ data class LinkPreview(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as LinkPreview
+        other as LinkPreviewEntity
 
         if (url != other.url) return false
         if (title != other.title) return false

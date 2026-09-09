@@ -14,7 +14,6 @@ RUN --mount=type=cache,target=/home/gradle/.gradle,sharing=locked \
     :server:federation:installDist \
     :server:gateway:installDist \
     :server:push:installDist \
-    :server:link-preview:installDist \
     --no-daemon \
     --no-configuration-cache \
     --no-parallel \

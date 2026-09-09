@@ -1,17 +1,10 @@
 package com.cbgm.sparrow.server.linkpreview
 
-import com.cbgm.sparrow.server.observability.installServerObservability
-import com.cbgm.sparrow.server.protocol.serverJson
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopped
-import io.ktor.server.application.install
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receive
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
@@ -21,33 +14,16 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.CancellationException
 
-private const val DEFAULT_LINK_PREVIEW_PORT = 8096
 private const val DEFAULT_CACHE_TTL_MILLISECONDS = 6L * 60L * 60L * 1_000L
 
-fun main() {
-    embeddedServer(
-        factory = Netty,
-        host = "0.0.0.0",
-        port = System.getenv("PORT")?.toIntOrNull() ?: DEFAULT_LINK_PREVIEW_PORT,
-        module = { linkPreviewModule() }
-    ).start(wait = true)
-}
-
-fun Application.linkPreviewModule(
-    fetcher: LinkPreviewFetcher = LinkPreviewFetcher(),
-    cacheTtlMilliseconds: Long =
-        System.getenv("LINK_PREVIEW_CACHE_TTL_MILLISECONDS")?.toLongOrNull()
-            ?: DEFAULT_CACHE_TTL_MILLISECONDS
+fun Application.installLinkPreviewRoutes(
+    cacheTtlMilliseconds: Long = DEFAULT_CACHE_TTL_MILLISECONDS
 ) {
+    val fetcher = LinkPreviewFetcher()
     val service = LinkPreviewService(fetcher, cacheTtlMilliseconds)
 
     monitor.subscribe(ApplicationStopped) {
         fetcher.close()
-    }
-
-    installServerObservability("link-preview")
-    install(ContentNegotiation) {
-        json(serverJson)
     }
 
     routing {
@@ -99,7 +75,7 @@ fun Application.linkPreviewModule(
                 return@get
             }
 
-            call.response.header(HttpHeaders.CacheControl, "public, max-age=21600")
+            call.response.header(HttpHeaders.CacheControl, "no-store")
             call.respondBytes(
                 bytes = image.bytes,
                 contentType = ContentType.parse(image.contentType)

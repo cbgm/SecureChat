@@ -8,7 +8,7 @@ internal class LinkPreviewService(
     private val cacheTtlMilliseconds: Long
 ) {
     private val previews = ConcurrentHashMap<String, CachedPreview>()
-    private val images = ConcurrentHashMap<String, CachedImage>()
+    private val imageSources = ConcurrentHashMap<String, CachedImageSource>()
 
     suspend fun getPreview(url: String): LinkPreviewResponse {
         val now = System.currentTimeMillis()
@@ -29,11 +29,10 @@ internal class LinkPreviewService(
             )
 
         previews[url] = CachedPreview(preview, expiresAt)
-        if (imageId != null && fetched.imageUrl != null) {
-            images[imageId] =
-                CachedImage(
+        if (imageId != null) {
+            imageSources[imageId] =
+                CachedImageSource(
                     sourceUrl = fetched.imageUrl,
-                    image = null,
                     expiresAtEpochMilliseconds = expiresAt
                 )
         }
@@ -44,21 +43,17 @@ internal class LinkPreviewService(
 
     suspend fun getImage(imageId: String): LinkPreviewImage? {
         val now = System.currentTimeMillis()
-        val cached =
-            images[imageId]
-                ?.takeIf { image -> image.expiresAtEpochMilliseconds > now }
+        val source =
+            imageSources[imageId]
+                ?.takeIf { cached -> cached.expiresAtEpochMilliseconds > now }
                 ?: return null
 
-        cached.image?.let { image -> return image }
-
-        val image = fetcher.fetchImage(cached.sourceUrl)
-        images[imageId] = cached.copy(image = image)
-        return image
+        return fetcher.fetchImage(source.sourceUrl)
     }
 
     private fun cleanupExpired(now: Long) {
         previews.entries.removeIf { it.value.expiresAtEpochMilliseconds <= now }
-        images.entries.removeIf { it.value.expiresAtEpochMilliseconds <= now }
+        imageSources.entries.removeIf { it.value.expiresAtEpochMilliseconds <= now }
     }
 
     private fun imageId(url: String): String =
@@ -72,9 +67,8 @@ internal class LinkPreviewService(
         val expiresAtEpochMilliseconds: Long
     )
 
-    private data class CachedImage(
+    private data class CachedImageSource(
         val sourceUrl: String,
-        val image: LinkPreviewImage?,
         val expiresAtEpochMilliseconds: Long
     )
 }

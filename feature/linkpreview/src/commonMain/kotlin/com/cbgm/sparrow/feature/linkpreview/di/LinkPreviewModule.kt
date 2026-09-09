@@ -1,6 +1,8 @@
 package com.cbgm.sparrow.feature.linkpreview.di
 
-import com.cbgm.sparrow.feature.linkpreview.data.datasource.LinkPreviewDataSource
+import com.cbgm.sparrow.core.transport.TransportDiagnosticsProvider
+import com.cbgm.sparrow.feature.linkpreview.data.datasource.LocalLinkPreviewDataSource
+import com.cbgm.sparrow.feature.linkpreview.data.datasource.RemoteLinkPreviewDataSource
 import com.cbgm.sparrow.feature.linkpreview.data.repository.LinkPreviewRepositoryImpl
 import com.cbgm.sparrow.feature.linkpreview.domain.repository.LinkPreviewRepository
 import com.cbgm.sparrow.feature.linkpreview.domain.usecase.GetLinkPreviewUseCase
@@ -11,14 +13,23 @@ import org.koin.dsl.module
 val linkPreviewModule =
     module {
         single {
-            LinkPreviewDataSource(
+            RemoteLinkPreviewDataSource(
                 httpClient = get(),
-                controlPlaneConfiguration = get()
+                transportDiagnosticsProvider = get<TransportDiagnosticsProvider>()
+            )
+        }
+
+        single {
+            LocalLinkPreviewDataSource(
+                linkPreviewDao = get()
             )
         }
 
         single<LinkPreviewRepository> {
-            LinkPreviewRepositoryImpl(dataSource = get())
+            LinkPreviewRepositoryImpl(
+                remoteLinkPreviewDataSource = get(),
+                localLinkPreviewDataSource = get()
+            )
         }
 
         factory {

@@ -9,5 +9,5 @@ fun LinkPreview.toUi(): LinkPreviewUi =
         title = title,
         description = description,
         siteName = siteName,
-        imageUrl = imageUrl
+        imageBytes = imageBytes
     )

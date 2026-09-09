@@ -58,11 +58,6 @@
         reverse_proxy push:8095
     }
 
-    @link_preview path /v1/link-preview /v1/link-preview/*
-    handle @link_preview {
-        reverse_proxy link-preview:8096
-    }
-
     respond 404
 }
 

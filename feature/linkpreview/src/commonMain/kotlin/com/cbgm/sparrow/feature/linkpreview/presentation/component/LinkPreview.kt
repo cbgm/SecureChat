@@ -95,13 +95,13 @@ private fun LinkPreviewCard(
         tonalElevation = MaterialTheme.spacing.micro
     ) {
         Column {
-            preview.imageUrl?.let { imageUrl ->
+            preview.imageBytes?.let { imageBytes ->
                 SparrowImage(
-                    model = imageUrl,
+                    model = imageBytes,
                     contentDescription = null,
                     modifier = Modifier.fillMaxWidth().height(PREVIEW_IMAGE_HEIGHT),
                     contentScale = ContentScale.Crop,
-                    memoryCacheKey = "link-preview:$imageUrl"
+                    memoryCacheKey = "link-preview:${preview.url}"
                 )
             }
 
@@ -157,7 +157,7 @@ private fun LinkPreviewContentPreview() {
                         title = "Example article",
                         description = "A short description of the linked page.",
                         siteName = "Example",
-                        imageUrl = null
+                        imageBytes = null
                     )
                 )
         )

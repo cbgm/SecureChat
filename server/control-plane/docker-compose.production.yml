@@ -90,11 +90,6 @@ services:
       - edge
       - backend
 
-  link-preview:
-    ports: !reset []
-    networks:
-      - edge
-
 networks:
   edge:
   backend:
