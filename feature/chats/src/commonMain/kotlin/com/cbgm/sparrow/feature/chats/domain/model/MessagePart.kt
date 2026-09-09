@@ -37,7 +37,8 @@ sealed interface MessagePart {
         val id: String,
         val mimeType: String,
         val byteSize: Long,
-        val durationMilliseconds: Long
+        val durationMilliseconds: Long,
+        val transcript: String? = null
     ) : MessagePart
 }
 

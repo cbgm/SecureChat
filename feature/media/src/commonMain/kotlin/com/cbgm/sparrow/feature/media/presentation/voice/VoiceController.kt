@@ -1,14 +1,12 @@
-package com.cbgm.sparrow.feature.chats.presentation.component
+package com.cbgm.sparrow.feature.media.presentation.voice
 
-import com.cbgm.sparrow.core.id.IdGenerator
-import com.cbgm.sparrow.core.protocol.attachment.MessageAttachmentType
-import com.cbgm.sparrow.feature.attachments.domain.model.OutgoingMessageAttachment
-import com.cbgm.sparrow.feature.chats.device.VoiceMessagePlayer
-import com.cbgm.sparrow.feature.chats.device.VoiceMessageRecorder
-import com.cbgm.sparrow.feature.chats.device.VoiceRecording
-import com.cbgm.sparrow.feature.chats.presentation.component.model.VoiceComposerPhase
-import com.cbgm.sparrow.feature.chats.presentation.component.model.VoiceComposerUiState
-import com.cbgm.sparrow.feature.chats.presentation.component.model.VoicePlaybackUiState
+import com.cbgm.sparrow.feature.media.device.VoicePlayer
+import com.cbgm.sparrow.feature.media.device.VoiceRecorder
+import com.cbgm.sparrow.feature.media.device.VoiceRecording
+import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerPhase
+import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerUiState
+import com.cbgm.sparrow.feature.media.presentation.model.VoiceMessageUiState
+import com.cbgm.sparrow.feature.media.presentation.model.VoicePlaybackUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -20,16 +18,17 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
-class VoiceMessageController(
+@OptIn(kotlin.time.ExperimentalTime::class)
+class VoiceController(
     private val scope: CoroutineScope,
-    private val recorder: VoiceMessageRecorder,
-    private val player: VoiceMessagePlayer
+    private val recorder: VoiceRecorder,
+    private val player: VoicePlayer
 ) {
     private val mutableComposerState = MutableStateFlow(VoiceComposerUiState())
     val composerState: StateFlow<VoiceComposerUiState> = mutableComposerState.asStateFlow()
 
-    private val mutablePlaybackState = MutableStateFlow(VoicePlaybackUiState())
-    val playbackState: StateFlow<VoicePlaybackUiState> = mutablePlaybackState.asStateFlow()
+    private val mutableMessageState = MutableStateFlow(VoiceMessageUiState())
+    val messageState: StateFlow<VoiceMessageUiState> = mutableMessageState.asStateFlow()
 
     private var recording: VoiceRecording? = null
     private var recordingStartedAt: TimeMark? = null
@@ -92,8 +91,8 @@ class VoiceMessageController(
             return
         }
 
-        if (mutablePlaybackState.value.attachmentId != null) {
-            mutablePlaybackState.value = VoicePlaybackUiState()
+        if (mutableMessageState.value.playback.attachmentId != null) {
+            updatePlayback(VoicePlaybackUiState())
             player.stop()
         }
 
@@ -113,16 +112,7 @@ class VoiceMessageController(
             .onFailure(onError)
     }
 
-    fun outgoingAttachment(): OutgoingMessageAttachment? =
-        recording?.let { current ->
-            OutgoingMessageAttachment(
-                id = IdGenerator.generate(prefix = "voice"),
-                type = MessageAttachmentType.VOICE,
-                bytes = current.bytes,
-                mimeType = current.mimeType,
-                durationMilliseconds = current.durationMilliseconds
-            )
-        }
+    fun recordedVoice(): VoiceRecording? = recording
 
     fun playMessage(
         attachmentId: String,
@@ -130,15 +120,16 @@ class VoiceMessageController(
         durationMilliseconds: Long,
         onError: (Throwable) -> Unit
     ) {
-        val current = mutablePlaybackState.value
+        val current = mutableMessageState.value.playback
         if (current.attachmentId == attachmentId && player.isPlaying) {
             player.pause()
             playbackTicker?.cancel()
-            mutablePlaybackState.value =
+            updatePlayback(
                 current.copy(
                     positionMilliseconds = player.currentPositionMilliseconds,
                     isPlaying = false
                 )
+            )
             return
         }
 
@@ -163,16 +154,28 @@ class VoiceMessageController(
             }
         result
             .onSuccess {
-                mutablePlaybackState.value =
+                updatePlayback(
                     VoicePlaybackUiState(
                         attachmentId = attachmentId,
                         durationMilliseconds = durationMilliseconds,
                         positionMilliseconds = player.currentPositionMilliseconds,
                         isPlaying = true
                     )
+                )
                 startMessageTicker(attachmentId, durationMilliseconds)
             }
             .onFailure(onError)
+    }
+
+    fun startTranscribing(attachmentId: String): Boolean {
+        if (mutableMessageState.value.transcribingAttachmentId != null) return false
+        mutableMessageState.value = mutableMessageState.value.copy(transcribingAttachmentId = attachmentId)
+        return true
+    }
+
+    fun stopTranscribing(attachmentId: String) {
+        if (mutableMessageState.value.transcribingAttachmentId != attachmentId) return
+        mutableMessageState.value = mutableMessageState.value.copy(transcribingAttachmentId = null)
     }
 
     fun resetComposer() {
@@ -198,12 +201,16 @@ class VoiceMessageController(
         previewPlaying = false
         previewPrepared = false
         player.stop()
-        mutablePlaybackState.value = VoicePlaybackUiState()
+        updatePlayback(VoicePlaybackUiState())
         mutableComposerState.value =
             mutableComposerState.value.copy(
                 isPlaying = false,
                 playbackProgress = 0f
             )
+    }
+
+    private fun updatePlayback(playback: VoicePlaybackUiState) {
+        mutableMessageState.value = mutableMessageState.value.copy(playback = playback)
     }
 
     private fun startPreviewTicker(durationMilliseconds: Long) {
@@ -242,27 +249,47 @@ class VoiceMessageController(
     ) {
         playbackTicker?.cancel()
         playbackTicker = scope.launch {
-            while (mutablePlaybackState.value.attachmentId == attachmentId) {
+            while (mutableMessageState.value.playback.attachmentId == attachmentId) {
                 delay(PROGRESS_INTERVAL_MILLISECONDS.milliseconds)
                 val position = player.currentPositionMilliseconds
                 val playing = player.isPlaying
-                mutablePlaybackState.value =
+                if (!playing) {
+                    updatePlayback(
+                        VoicePlaybackUiState(
+                            attachmentId = attachmentId,
+                            durationMilliseconds = durationMilliseconds,
+                            positionMilliseconds = durationMilliseconds,
+                            isPlaying = false
+                        )
+                    )
+                    player.stop()
+                    delay(TRANSCRIPT_COMPLETION_HOLD_MILLISECONDS.milliseconds)
+
+                    val current = mutableMessageState.value.playback
+                    if (
+                        current.attachmentId == attachmentId &&
+                        !current.isPlaying &&
+                        current.positionMilliseconds >= durationMilliseconds
+                    ) {
+                        updatePlayback(VoicePlaybackUiState())
+                    }
+                    break
+                }
+
+                updatePlayback(
                     VoicePlaybackUiState(
                         attachmentId = attachmentId,
                         durationMilliseconds = durationMilliseconds,
                         positionMilliseconds = position,
-                        isPlaying = playing
+                        isPlaying = true
                     )
-                if (!playing) {
-                    player.stop()
-                    mutablePlaybackState.value = VoicePlaybackUiState()
-                    break
-                }
+                )
             }
         }
     }
 
     private companion object {
         const val PROGRESS_INTERVAL_MILLISECONDS = 100L
+        const val TRANSCRIPT_COMPLETION_HOLD_MILLISECONDS = 300L
     }
 }

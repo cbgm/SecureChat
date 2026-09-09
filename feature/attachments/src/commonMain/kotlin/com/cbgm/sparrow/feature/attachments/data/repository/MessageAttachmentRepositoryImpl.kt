@@ -16,6 +16,10 @@ class MessageAttachmentRepositoryImpl(
         messageAttachmentDataSource.loadBytes(attachmentId)
     }
 
+    override suspend fun saveTranscript(attachmentId: String, transcript: String): Result<Unit> = safeSuspendCall {
+        messageAttachmentDataSource.updateTranscript(attachmentId, transcript)
+    }
+
     override fun observeLocalAttachments(conversationId: String): Flow<List<LocalAttachment>> =
         localAttachmentDataSource.observeByConversation(conversationId)
 

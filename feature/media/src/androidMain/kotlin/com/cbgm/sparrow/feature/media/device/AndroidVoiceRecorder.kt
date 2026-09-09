@@ -1,4 +1,4 @@
-package com.cbgm.sparrow.feature.chats.device
+package com.cbgm.sparrow.feature.media.device
 
 import android.Manifest
 import android.content.Context
@@ -16,9 +16,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 
-class AndroidVoiceMessageRecorder(
+class AndroidVoiceRecorder(
     private val context: Context
-) : VoiceMessageRecorder {
+) : VoiceRecorder {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var audioRecord: AudioRecord? = null
     private var readJob: Job? = null

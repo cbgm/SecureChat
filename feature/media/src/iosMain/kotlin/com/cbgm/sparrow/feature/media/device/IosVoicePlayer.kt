@@ -1,4 +1,4 @@
-package com.cbgm.sparrow.feature.chats.device
+package com.cbgm.sparrow.feature.media.device
 
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -8,7 +8,7 @@ import platform.AVFAudio.AVAudioPlayer
 import platform.Foundation.NSData
 
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
-class IosVoiceMessagePlayer : VoiceMessagePlayer {
+class IosVoicePlayer : VoicePlayer {
     private var player: AVAudioPlayer? = null
 
     override fun play(bytes: ByteArray): Result<Unit> = runCatching {

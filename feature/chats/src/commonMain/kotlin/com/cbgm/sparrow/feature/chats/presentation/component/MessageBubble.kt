@@ -58,6 +58,7 @@ import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubble
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessagePartUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageReactionUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageReplyUi
+import com.cbgm.sparrow.feature.media.presentation.voice.VoiceMessageContent
 import com.cbgm.sparrow.feature.safety.presentation.details.model.MessageSafetyWarningUi
 import com.cbgm.sparrow.resources.Res
 import com.cbgm.sparrow.resources.feature_chats_delivered
@@ -87,6 +88,7 @@ internal fun MessageBubble(
     onAttachmentClick: (String) -> Unit = {},
     onContactClick: (SharedContact) -> Unit = {},
     onVoicePlayPauseClick: (String) -> Unit = {},
+    onVoiceTranscribeClick: (String) -> Unit = {},
     onReplyPreviewClick: (String) -> Unit = {},
     onContextMessageRequested: (MessageContextAnchor) -> Unit = {},
     onReactionsClick: (SparrowOverlayAnchor) -> Unit = {},
@@ -120,6 +122,7 @@ internal fun MessageBubble(
             onAttachmentClick = onAttachmentClick,
             onContactClick = onContactClick,
             onVoicePlayPauseClick = onVoicePlayPauseClick,
+            onVoiceTranscribeClick = onVoiceTranscribeClick,
             onReplyPreviewClick = onReplyPreviewClick,
             onLongPress = onLongPress,
             onReactionsClick = onReactionsClick,
@@ -151,6 +154,7 @@ private fun MessageBubbleContent(
     onAttachmentClick: (String) -> Unit,
     onContactClick: (SharedContact) -> Unit,
     onVoicePlayPauseClick: (String) -> Unit,
+    onVoiceTranscribeClick: (String) -> Unit,
     onReplyPreviewClick: (String) -> Unit,
     onLongPress: () -> Unit,
     onReactionsClick: (SparrowOverlayAnchor) -> Unit,
@@ -188,6 +192,7 @@ private fun MessageBubbleContent(
                     onAttachmentClick = onAttachmentClick,
                     onContactClick = onContactClick,
                     onVoicePlayPauseClick = onVoicePlayPauseClick,
+                    onVoiceTranscribeClick = onVoiceTranscribeClick,
                     onReplyPreviewClick = onReplyPreviewClick,
                     onLongPress = onLongPress,
                     onSafetyDetailsClick = {
@@ -274,6 +279,7 @@ private fun BubbleBody(
     onAttachmentClick: (String) -> Unit = {},
     onContactClick: (SharedContact) -> Unit = {},
     onVoicePlayPauseClick: (String) -> Unit = {},
+    onVoiceTranscribeClick: (String) -> Unit = {},
     onReplyPreviewClick: (String) -> Unit = {},
     onLongPress: () -> Unit = {},
     onSafetyDetailsClick: () -> Unit = {}
@@ -302,9 +308,15 @@ private fun BubbleBody(
                 onReplyPreviewClick = onReplyPreviewClick,
                 onLongPress = onLongPress
             ) {
-                VoiceMessageBubbleBody(
-                    voice = voicePart,
-                    onPlayPauseClick = { onVoicePlayPauseClick(voicePart.id) }
+                VoiceMessageContent(
+                    durationMilliseconds = voicePart.durationMilliseconds,
+                    playbackPositionMilliseconds = voicePart.playbackPositionMilliseconds,
+                    isPlaying = voicePart.isPlaying,
+                    waveform = voicePart.waveform,
+                    transcript = voicePart.transcript,
+                    isTranscribing = voicePart.isTranscribing,
+                    onPlayPauseClick = { onVoicePlayPauseClick(voicePart.id) },
+                    onTranscribeClick = { onVoiceTranscribeClick(voicePart.id) }
                 )
             }
         }

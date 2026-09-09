@@ -1,9 +1,9 @@
-package com.cbgm.sparrow.feature.chats.device
+package com.cbgm.sparrow.feature.media.device
 
 import android.media.MediaDataSource
 import android.media.MediaPlayer
 
-class AndroidVoiceMessagePlayer : VoiceMessagePlayer {
+class AndroidVoicePlayer : VoicePlayer {
     private var player: MediaPlayer? = null
 
     override fun play(bytes: ByteArray): Result<Unit> = runCatching {

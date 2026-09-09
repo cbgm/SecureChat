@@ -1,4 +1,4 @@
-package com.cbgm.sparrow.feature.chats.presentation.component.model
+package com.cbgm.sparrow.feature.media.presentation.model
 
 data class VoiceComposerUiState(
     val phase: VoiceComposerPhase = VoiceComposerPhase.READY,
@@ -13,6 +13,11 @@ enum class VoiceComposerPhase {
     RECORDING,
     RECORDED
 }
+
+data class VoiceMessageUiState(
+    val playback: VoicePlaybackUiState = VoicePlaybackUiState(),
+    val transcribingAttachmentId: String? = null
+)
 
 data class VoicePlaybackUiState(
     val attachmentId: String? = null,

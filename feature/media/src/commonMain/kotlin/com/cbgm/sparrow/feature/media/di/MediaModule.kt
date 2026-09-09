@@ -7,6 +7,7 @@ import com.cbgm.sparrow.feature.media.domain.usecase.CheckFileBrowserAccessUseCa
 import com.cbgm.sparrow.feature.media.domain.usecase.GetFileBrowserRootUseCase
 import com.cbgm.sparrow.feature.media.domain.usecase.ReadFileBrowserEntryUseCase
 import com.cbgm.sparrow.feature.media.domain.usecase.SetFileBrowserRootUseCase
+import com.cbgm.sparrow.feature.media.domain.usecase.TranscribeVoiceAudioUseCase
 import com.cbgm.sparrow.feature.media.presentation.filepicker.FilePickerLauncher
 import com.cbgm.sparrow.feature.media.presentation.filepicker.FilePickerSessionController
 import com.cbgm.sparrow.feature.media.presentation.filepicker.FilePickerViewModel
@@ -27,6 +28,7 @@ val mediaModule =
         factory { ReadFileBrowserEntryUseCase(repository = get()) }
         singleOf(::FilePickerSessionController)
         singleOf(::FilePickerLauncher)
+        factory { TranscribeVoiceAudioUseCase(repository = get()) }
         viewModel {
             FilePickerViewModel(
                 savedStateHandle = get(),

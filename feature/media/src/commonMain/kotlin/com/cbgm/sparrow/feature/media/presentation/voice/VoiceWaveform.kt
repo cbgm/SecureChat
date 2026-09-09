@@ -1,4 +1,4 @@
-package com.cbgm.sparrow.feature.chats.presentation.component
+package com.cbgm.sparrow.feature.media.presentation.voice
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -7,12 +7,19 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.cbgm.sparrow.core.ui.theme.Alpha
+import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.sin
@@ -46,7 +53,7 @@ private val PlaceholderWaveform =
     )
 
 @Composable
-internal fun VoiceWaveform(
+fun VoiceWaveform(
     waveform: List<Float>,
     progress: Float,
     playedColor: Color,
@@ -102,14 +109,14 @@ internal fun VoiceWaveform(
     }
 }
 
-internal fun formatVoiceDuration(durationMilliseconds: Long): String {
+fun formatVoiceDuration(durationMilliseconds: Long): String {
     val totalSeconds = (durationMilliseconds.coerceAtLeast(0L) / 1_000L).toInt()
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
     return "$minutes:${seconds.toString().padStart(2, '0')}"
 }
 
-internal fun ByteArray.toVoiceWaveform(barCount: Int = 24): List<Float> {
+fun ByteArray.toVoiceWaveform(barCount: Int = 24): List<Float> {
     if (size <= WAVE_HEADER_BYTES || barCount <= 0) return emptyList()
 
     val pcmStart = WAVE_HEADER_BYTES
@@ -143,3 +150,17 @@ private const val BAR_PHASE_OFFSET = 0.72f
 private const val RECORDING_BASE_AMPLITUDE = 0.45f
 private const val RECORDING_ANIMATION_AMPLITUDE = 0.55f
 private const val MINIMUM_AMPLITUDE = 0.12f
+
+@Preview
+@Composable
+private fun VoiceWaveformPreview() {
+    SparrowTheme {
+        VoiceWaveform(
+            waveform = PlaceholderWaveform,
+            progress = 0.45f,
+            playedColor = MaterialTheme.colorScheme.primary,
+            remainingColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = Alpha.Subtle),
+            modifier = Modifier.fillMaxWidth().height(40.dp)
+        )
+    }
+}

@@ -12,11 +12,11 @@ import com.cbgm.sparrow.feature.media.domain.usecase.CheckFileBrowserAccessUseCa
 import com.cbgm.sparrow.feature.media.domain.usecase.GetFileBrowserRootUseCase
 import com.cbgm.sparrow.feature.media.domain.usecase.ReadFileBrowserEntryUseCase
 import com.cbgm.sparrow.feature.media.domain.usecase.SetFileBrowserRootUseCase
+import com.cbgm.sparrow.feature.media.presentation.filepicker.mapper.toFileBrowserEntryUi
 import com.cbgm.sparrow.feature.media.presentation.filepicker.model.FilePickerBreadcrumbUi
 import com.cbgm.sparrow.feature.media.presentation.filepicker.model.FilePickerSortMode
 import com.cbgm.sparrow.feature.media.presentation.filepicker.model.FilePickerUiEvent
 import com.cbgm.sparrow.feature.media.presentation.filepicker.model.FilePickerUiState
-import com.cbgm.sparrow.feature.media.presentation.mapper.toFileBrowserEntryUi
 import com.cbgm.sparrow.feature.media.presentation.mapper.toMediaSelection
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.Flow
 interface MessageAttachmentRepository {
     suspend fun loadBytes(attachmentId: String): Result<ByteArray>
 
+    suspend fun saveTranscript(attachmentId: String, transcript: String): Result<Unit>
+
     fun observeLocalAttachments(conversationId: String): Flow<List<LocalAttachment>>
 
     fun observeStorageSummaries(): Flow<List<AttachmentStorageSummary>>

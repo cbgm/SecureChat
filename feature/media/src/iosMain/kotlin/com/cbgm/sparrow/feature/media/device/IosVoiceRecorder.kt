@@ -1,4 +1,4 @@
-package com.cbgm.sparrow.feature.chats.device
+package com.cbgm.sparrow.feature.media.device
 
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -8,7 +8,7 @@ import platform.AVFAudio.AVAudioSessionCategoryPlayAndRecord
 import kotlin.coroutines.resume
 
 @OptIn(ExperimentalForeignApi::class)
-class IosVoiceMessageRecorder : VoiceMessageRecorder {
+class IosVoiceRecorder : VoiceRecorder {
     private var audioEngine: AVAudioEngine? = null
     private var pcmChunks = mutableListOf<ByteArray>()
     private var recordedPcmBytes = 0L

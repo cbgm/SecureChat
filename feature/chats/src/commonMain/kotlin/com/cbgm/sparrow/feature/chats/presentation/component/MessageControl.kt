@@ -1,10 +1,16 @@
 package com.cbgm.sparrow.feature.chats.presentation.component
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -14,20 +20,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
 import com.cbgm.sparrow.feature.attachments.presentation.component.AttachmentBar
 import com.cbgm.sparrow.feature.chats.domain.model.IndicatorType
 import com.cbgm.sparrow.feature.chats.presentation.component.model.ComposerPreviewUi
-import com.cbgm.sparrow.feature.chats.presentation.component.model.VoiceComposerUiState
 import com.cbgm.sparrow.feature.media.presentation.component.MediaSelectionPreview
 import com.cbgm.sparrow.feature.media.presentation.component.previewMediaSelections
 import com.cbgm.sparrow.feature.media.presentation.model.MediaSelection
 import com.cbgm.sparrow.feature.media.presentation.model.MediaSelectionSource
+import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerPhase
+import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerUiState
+import com.cbgm.sparrow.feature.media.presentation.voice.VoiceComposer
 import com.cbgm.sparrow.resources.Res
 import com.cbgm.sparrow.resources.feature_chats_chat_recording_voice
 import com.cbgm.sparrow.resources.feature_chats_chat_typing
@@ -112,11 +122,13 @@ fun MessageControl(
                                 Res.string.feature_chats_chat_recording_voice,
                                 state.contactName
                             )
+
                         IndicatorType.TYPING ->
                             stringResource(
                                 Res.string.feature_chats_chat_typing,
                                 state.contactName
                             )
+
                         IndicatorType.NONE -> ""
                     },
                 modifier = Modifier
@@ -169,20 +181,10 @@ fun MessageControl(
                     modifier = Modifier.padding(horizontal = basePaddingHorizontal)
                 )
             } else {
-                VoiceMessageInput(
-                    state = state.voiceState,
-                    inputEnabled = state.isInputEnabled,
-                    onRecordClick = actions.onVoiceRecordClick,
-                    onStopClick = actions.onVoiceStopClick,
-                    onPlayPauseClick = actions.onVoicePlayPauseClick,
-                    onSendClick = {
-                        actions.onVoiceSendClick()
-                        isVoiceComposerVisible = false
-                    },
-                    onCancelClick = {
-                        actions.onVoiceCancelClick()
-                        isVoiceComposerVisible = false
-                    },
+                VoiceComposerContent(
+                    state = state,
+                    actions = actions,
+                    onDismiss = { isVoiceComposerVisible = false },
                     modifier = Modifier.padding(horizontal = basePaddingHorizontal)
                 )
             }
@@ -216,6 +218,59 @@ fun MessageControl(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun VoiceComposerContent(
+    state: MessageInputState,
+    actions: MessageInputActions,
+    onDismiss: () -> Unit,
+    modifier: Modifier
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .imePadding(),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        VoiceComposer(
+            state = state.voiceState,
+            inputEnabled = state.isInputEnabled,
+            onRecordClick = actions.onVoiceRecordClick,
+            onStopClick = actions.onVoiceStopClick,
+            onPlayPauseClick = actions.onVoicePlayPauseClick,
+            modifier = Modifier.weight(1f)
+        )
+
+        SendButton(
+            buttonWidth = Dimens.MessageInput.sendButtonWidth,
+            buttonHeight = Dimens.MessageInput.buttonHeight,
+            isRound = false,
+            onSendClick = {
+                actions.onVoiceSendClick()
+                onDismiss()
+            },
+            enabled =
+                state.isInputEnabled &&
+                    state.voiceState.phase == VoiceComposerPhase.RECORDED,
+            isEditing = false,
+            modifier = Modifier.align(Alignment.CenterVertically)
+        )
+
+        RoundedInputButton(
+            modifier =
+                Modifier
+                    .padding(start = MaterialTheme.spacing.base)
+                    .align(Alignment.CenterVertically),
+            onClick = {
+                actions.onVoiceCancelClick()
+                onDismiss()
+            },
+            icon = Icons.Default.Close
+        )
     }
 }
 

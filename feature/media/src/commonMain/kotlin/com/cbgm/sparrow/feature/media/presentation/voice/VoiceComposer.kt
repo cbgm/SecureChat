@@ -1,18 +1,12 @@
-package com.cbgm.sparrow.feature.chats.presentation.component
+package com.cbgm.sparrow.feature.media.presentation.voice
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -29,62 +23,14 @@ import com.cbgm.sparrow.core.ui.theme.Alpha
 import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
-import com.cbgm.sparrow.feature.chats.presentation.component.model.VoiceComposerPhase
-import com.cbgm.sparrow.feature.chats.presentation.component.model.VoiceComposerUiState
+import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerPhase
+import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerUiState
 import com.cbgm.sparrow.resources.Res
-import com.cbgm.sparrow.resources.feature_chats_voice_tap_to_record
+import com.cbgm.sparrow.resources.feature_media_voice_tap_to_record
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-internal fun VoiceMessageInput(
-    state: VoiceComposerUiState,
-    inputEnabled: Boolean,
-    onRecordClick: () -> Unit,
-    onStopClick: () -> Unit,
-    onPlayPauseClick: () -> Unit,
-    onSendClick: () -> Unit,
-    onCancelClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .imePadding(),
-        verticalAlignment = Alignment.Bottom
-    ) {
-        VoiceComposerContent(
-            state = state,
-            inputEnabled = inputEnabled,
-            onRecordClick = onRecordClick,
-            onStopClick = onStopClick,
-            onPlayPauseClick = onPlayPauseClick,
-            modifier = Modifier.weight(1f)
-        )
-
-        SendButton(
-            buttonWidth = Dimens.MessageInput.sendButtonWidth,
-            buttonHeight = Dimens.MessageInput.buttonHeight,
-            isRound = false,
-            onSendClick = onSendClick,
-            enabled = inputEnabled && state.phase == VoiceComposerPhase.RECORDED,
-            isEditing = false,
-            modifier = Modifier.align(Alignment.CenterVertically)
-        )
-
-        RoundedInputButton(
-            modifier = Modifier
-                .padding(start = MaterialTheme.spacing.base)
-                .align(Alignment.CenterVertically),
-            onClick = onCancelClick,
-            icon = Icons.Default.Close
-        )
-    }
-}
-
-@Composable
-private fun VoiceComposerContent(
+fun VoiceComposer(
     state: VoiceComposerUiState,
     inputEnabled: Boolean,
     onRecordClick: () -> Unit,
@@ -105,8 +51,7 @@ private fun VoiceComposerContent(
             when (state.phase) {
                 VoiceComposerPhase.READY -> VoiceAction.Record
                 VoiceComposerPhase.RECORDING -> VoiceAction.Stop
-                VoiceComposerPhase.RECORDED ->
-                    if (state.isPlaying) VoiceAction.Pause else VoiceAction.Play
+                VoiceComposerPhase.RECORDED -> if (state.isPlaying) VoiceAction.Pause else VoiceAction.Play
             }
 
         Icon(
@@ -139,7 +84,7 @@ private fun VoiceComposerContent(
 
         if (state.phase == VoiceComposerPhase.READY) {
             Text(
-                text = stringResource(Res.string.feature_chats_voice_tap_to_record),
+                text = stringResource(Res.string.feature_media_voice_tap_to_record),
                 modifier = Modifier.padding(start = MaterialTheme.spacing.small),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -176,9 +121,41 @@ private enum class VoiceAction {
 
 @Preview
 @Composable
-private fun VoiceMessageInputRecordedPreview() {
+private fun VoiceComposerReadyPreview() {
     SparrowTheme {
-        VoiceMessageInput(
+        VoiceComposer(
+            state = VoiceComposerUiState(),
+            inputEnabled = true,
+            onRecordClick = {},
+            onStopClick = {},
+            onPlayPauseClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun VoiceComposerRecordingPreview() {
+    SparrowTheme {
+        VoiceComposer(
+            state =
+                VoiceComposerUiState(
+                    phase = VoiceComposerPhase.RECORDING,
+                    durationMilliseconds = 12_000L
+                ),
+            inputEnabled = true,
+            onRecordClick = {},
+            onStopClick = {},
+            onPlayPauseClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun VoiceComposerRecordedPreview() {
+    SparrowTheme {
+        VoiceComposer(
             state =
                 VoiceComposerUiState(
                     phase = VoiceComposerPhase.RECORDED,
@@ -188,9 +165,7 @@ private fun VoiceMessageInputRecordedPreview() {
             inputEnabled = true,
             onRecordClick = {},
             onStopClick = {},
-            onPlayPauseClick = {},
-            onSendClick = {},
-            onCancelClick = {}
+            onPlayPauseClick = {}
         )
     }
 }

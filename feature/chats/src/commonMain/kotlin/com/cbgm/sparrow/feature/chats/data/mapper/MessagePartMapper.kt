@@ -51,7 +51,8 @@ private fun MessageAttachment.toMessagePartDto(): MessagePartDto =
                 id = id,
                 mimeType = mimeType,
                 byteSize = byteSize,
-                durationMilliseconds = requireNotNull(durationMilliseconds)
+                durationMilliseconds = requireNotNull(durationMilliseconds),
+                transcript = transcript
             )
     }
 
@@ -97,6 +98,7 @@ internal fun MessagePartDto.toMessagePart(): MessagePart =
                 id = id,
                 mimeType = mimeType,
                 byteSize = byteSize,
-                durationMilliseconds = durationMilliseconds
+                durationMilliseconds = durationMilliseconds,
+                transcript = transcript
             )
     }

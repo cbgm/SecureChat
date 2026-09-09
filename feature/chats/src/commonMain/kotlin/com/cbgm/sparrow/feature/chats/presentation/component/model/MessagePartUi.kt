@@ -46,7 +46,9 @@ sealed interface MessagePartUi {
         val durationMilliseconds: Long,
         val playbackPositionMilliseconds: Long = 0L,
         val isPlaying: Boolean = false,
-        val waveform: List<Float> = emptyList()
+        val waveform: List<Float> = emptyList(),
+        val transcript: String? = null,
+        val isTranscribing: Boolean = false
     ) : MessagePartUi
 }
 

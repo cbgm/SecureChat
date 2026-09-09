@@ -7,19 +7,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Attachment
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
@@ -102,11 +95,11 @@ internal fun MessageInput(
                 }
             )
         )
-        VoiceButton(
-            buttonHeight = buttonHeight,
-            onVoiceClick = onVoiceClick,
+        RoundedInputButton(
+            onClick = onVoiceClick,
             enabled = !isEditing,
-            modifier = Modifier.align(Alignment.Bottom)
+            icon = Icons.Default.Mic,
+            modifier = Modifier.padding(start = MaterialTheme.spacing.base)
         )
     }
 }
@@ -147,33 +140,6 @@ private fun MessageField(
             innerTextField()
         }
     )
-}
-
-@Composable
-internal fun VoiceButton(
-    buttonHeight: Dp,
-    onVoiceClick: () -> Unit,
-    enabled: Boolean,
-    modifier: Modifier = Modifier
-) {
-    FilledIconButton(
-        onClick = onVoiceClick,
-        enabled = enabled,
-        modifier = modifier
-            .padding(start = MaterialTheme.spacing.base)
-            .requiredSize(buttonHeight),
-        shape = CircleShape,
-        colors = IconButtonDefaults.filledIconButtonColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
-    ) {
-        Icon(
-            imageVector = Icons.Default.Mic,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(Dimens.MessageInput.iconSize)
-        )
-    }
 }
 
 @Preview

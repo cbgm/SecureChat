@@ -434,8 +434,10 @@ private fun org.koin.core.module.Module.registerViewModels() {
             forwardMessageUseCase = get(),
             loadOlderMessageHistory = get(),
             findMessageHistoryCursor = get(),
-            voiceMessageRecorder = get(),
-            voiceMessagePlayer = get()
+            transcribeVoiceAudio = get(),
+            saveMessageAttachmentTranscript = get(),
+            voiceRecorder = get(),
+            voicePlayer = get()
         )
     }
 
@@ -485,8 +487,10 @@ private fun org.koin.core.module.Module.registerViewModels() {
             forwardMessageUseCase = get(),
             loadOlderMessageHistory = get(),
             findMessageHistoryCursor = get(),
-            voiceMessageRecorder = get(),
-            voiceMessagePlayer = get()
+            transcribeVoiceAudio = get(),
+            saveMessageAttachmentTranscript = get(),
+            voiceRecorder = get(),
+            voicePlayer = get()
         )
     }
 }

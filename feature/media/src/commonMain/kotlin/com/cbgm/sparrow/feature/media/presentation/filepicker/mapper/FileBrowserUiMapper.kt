@@ -1,4 +1,4 @@
-package com.cbgm.sparrow.feature.media.presentation.mapper
+package com.cbgm.sparrow.feature.media.presentation.filepicker.mapper
 
 import com.cbgm.sparrow.feature.media.domain.model.FileBrowserEntry
 import com.cbgm.sparrow.feature.media.presentation.filepicker.model.FileBrowserEntryKind

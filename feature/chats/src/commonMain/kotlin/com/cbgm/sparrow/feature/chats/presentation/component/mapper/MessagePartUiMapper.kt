@@ -9,21 +9,21 @@ import com.cbgm.sparrow.feature.chats.domain.model.MessagePart
 import com.cbgm.sparrow.feature.chats.presentation.component.model.ImageVideoTypeUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubbleUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessagePartUi
-import com.cbgm.sparrow.feature.chats.presentation.component.model.VoicePlaybackUiState
 import com.cbgm.sparrow.feature.media.presentation.model.MediaItem
 import com.cbgm.sparrow.feature.media.presentation.model.MediaType
+import com.cbgm.sparrow.feature.media.presentation.model.VoiceMessageUiState
 
 internal fun List<MessagePart>.toMessagePartsUi(
     attachmentPayloadBytes: Map<String, ByteArray>,
-    voicePlaybackState: VoicePlaybackUiState = VoicePlaybackUiState()
+    voiceState: VoiceMessageUiState = VoiceMessageUiState()
 ): List<MessagePartUi> =
     map { part ->
-        part.toMessagePartUi(attachmentPayloadBytes, voicePlaybackState)
+        part.toMessagePartUi(attachmentPayloadBytes, voiceState)
     }
 
 private fun MessagePart.toMessagePartUi(
     attachmentPayloadBytes: Map<String, ByteArray>,
-    voicePlaybackState: VoicePlaybackUiState
+    voiceState: VoiceMessageUiState
 ): MessagePartUi =
     when (this) {
         is MessagePart.Text ->
@@ -70,15 +70,18 @@ private fun MessagePart.toMessagePartUi(
                 contact = attachmentPayloadBytes[id]?.let(ContactAttachmentPayload::decode)
             )
         is MessagePart.Voice -> {
-            val isActive = voicePlaybackState.attachmentId == id
+            val playbackState = voiceState.playback
+            val isActive = playbackState.attachmentId == id
             MessagePartUi.Voice(
                 id = id,
                 mimeType = mimeType,
                 byteSize = byteSize,
                 durationMilliseconds = durationMilliseconds,
                 playbackPositionMilliseconds =
-                    if (isActive) voicePlaybackState.positionMilliseconds else 0L,
-                isPlaying = isActive && voicePlaybackState.isPlaying
+                    if (isActive) playbackState.positionMilliseconds else 0L,
+                isPlaying = isActive && playbackState.isPlaying,
+                transcript = transcript,
+                isTranscribing = voiceState.transcribingAttachmentId == id
             )
         }
     }

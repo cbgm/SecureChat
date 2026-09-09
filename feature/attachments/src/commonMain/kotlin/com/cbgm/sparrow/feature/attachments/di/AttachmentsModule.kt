@@ -14,6 +14,7 @@ import com.cbgm.sparrow.feature.attachments.domain.usecase.DownloadBlobUseCase
 import com.cbgm.sparrow.feature.attachments.domain.usecase.LoadMessageAttachmentUseCase
 import com.cbgm.sparrow.feature.attachments.domain.usecase.ObserveAttachmentStorageSummariesUseCase
 import com.cbgm.sparrow.feature.attachments.domain.usecase.ObserveLocalAttachmentsUseCase
+import com.cbgm.sparrow.feature.attachments.domain.usecase.SaveMessageAttachmentTranscriptUseCase
 import com.cbgm.sparrow.feature.attachments.domain.usecase.UploadBlobUseCase
 import com.cbgm.sparrow.feature.attachments.presentation.management.AttachmentManagementViewModel
 import com.cbgm.sparrow.feature.attachments.presentation.storage.AttachmentStorageViewModel
@@ -47,6 +48,9 @@ val attachmentsModule =
         }
         factory {
             LoadMessageAttachmentUseCase(repository = get<MessageAttachmentRepository>())
+        }
+        factory {
+            SaveMessageAttachmentTranscriptUseCase(repository = get<MessageAttachmentRepository>())
         }
         factory {
             ObserveLocalAttachmentsUseCase(repository = get<MessageAttachmentRepository>())

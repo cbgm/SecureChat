@@ -243,6 +243,9 @@ fun DirectConversationScreen(
                     onContactClick = { contact -> pendingSharedContact = contact },
                     onVoicePlayPauseClick = { attachmentId ->
                         onUiEvent(DirectConversationUiEvent.VoicePlayPauseClicked(attachmentId))
+                    },
+                    onVoiceTranscribeClick = { attachmentId ->
+                        onUiEvent(DirectConversationUiEvent.VoiceTranscribeClicked(attachmentId))
                     }
                 )
             }
@@ -440,7 +443,8 @@ private fun Content(
     onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String, String) -> Unit,
     onContactClick: (SharedContact) -> Unit,
-    onVoicePlayPauseClick: (String) -> Unit
+    onVoicePlayPauseClick: (String) -> Unit,
+    onVoiceTranscribeClick: (String) -> Unit
 ) {
     val fillModifier = Modifier.fillMaxSize().padding(innerPadding)
     val dissolvingListState =
@@ -472,6 +476,7 @@ private fun Content(
             onAttachmentClick = onAttachmentClick,
             onContactClick = onContactClick,
             onVoicePlayPauseClick = onVoicePlayPauseClick,
+            onVoiceTranscribeClick = onVoiceTranscribeClick,
             contentPadding = innerPadding,
             historyState = historyState,
             onLoadOlderMessages = onLoadOlderMessages,

@@ -37,6 +37,7 @@ private fun MessageAttachmentEntity.toMessageAttachment(
                 MessageAttachmentType.LOCATION,
                 MessageAttachmentType.CONTACT,
                 MessageAttachmentType.VOICE -> null
-            }
+            },
+        transcript = transcript
     )
 }

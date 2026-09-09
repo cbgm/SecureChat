@@ -11,5 +11,6 @@ data class MessageAttachment(
     val width: Int? = null,
     val height: Int? = null,
     val durationMilliseconds: Long? = null,
-    val localFilePath: String? = null
+    val localFilePath: String? = null,
+    val transcript: String? = null
 )

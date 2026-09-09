@@ -142,6 +142,12 @@ class MessageAttachmentDataSource(
         }
     }
 
+    suspend fun updateTranscript(attachmentId: String, transcript: String) {
+        check(attachmentDao.updateTranscript(attachmentId, transcript) == 1) {
+            "Message attachment disappeared while its transcript was saved"
+        }
+    }
+
     suspend fun loadBytes(attachmentId: String): ByteArray =
         withContext(Dispatchers.IO) {
             val entity = attachmentDao.findById(attachmentId) ?: error("Message attachment was not found")
@@ -279,7 +285,8 @@ class MessageAttachmentDataSource(
             ciphertextSha256 = blob.ciphertextSha256.copyOf(),
             deleteCapability = deleteCapability,
             localFileName = localFileName,
-            payloadBytes = payloadBytes
+            payloadBytes = payloadBytes,
+            transcript = null
         )
 
     private fun MessageAttachmentEntity.toProtocolMessageAttachment(): ProtocolMessageAttachment =

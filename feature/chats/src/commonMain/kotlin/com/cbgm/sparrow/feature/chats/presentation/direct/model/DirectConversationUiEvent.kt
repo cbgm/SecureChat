@@ -27,6 +27,10 @@ sealed interface DirectConversationUiEvent {
         val attachmentId: String
     ) : DirectConversationUiEvent
 
+    data class VoiceTranscribeClicked(
+        val attachmentId: String
+    ) : DirectConversationUiEvent
+
     data object LoadOlderMessages : DirectConversationUiEvent
 
     data class MessageHistoryTargetRequested(

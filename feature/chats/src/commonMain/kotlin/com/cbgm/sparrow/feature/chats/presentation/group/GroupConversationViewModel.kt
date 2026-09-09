@@ -10,9 +10,8 @@ import com.cbgm.sparrow.feature.attachments.domain.model.MessageAttachmentPolicy
 import com.cbgm.sparrow.feature.attachments.domain.model.OutgoingMessageAttachment
 import com.cbgm.sparrow.feature.attachments.domain.model.SharedContact
 import com.cbgm.sparrow.feature.attachments.domain.usecase.LoadMessageAttachmentUseCase
+import com.cbgm.sparrow.feature.attachments.domain.usecase.SaveMessageAttachmentTranscriptUseCase
 import com.cbgm.sparrow.feature.attachments.presentation.mapper.toOutgoingMessageAttachment
-import com.cbgm.sparrow.feature.chats.device.VoiceMessagePlayer
-import com.cbgm.sparrow.feature.chats.device.VoiceMessageRecorder
 import com.cbgm.sparrow.feature.chats.domain.model.ForwardingTarget
 import com.cbgm.sparrow.feature.chats.domain.model.IndicatorType
 import com.cbgm.sparrow.feature.chats.domain.model.LocationShareEvent
@@ -37,14 +36,11 @@ import com.cbgm.sparrow.feature.chats.domain.usecase.group.RetryGroupMessageUseC
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.SendGroupMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.SetGroupIndicatorUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.ToggleGroupMessageReactionUseCase
-import com.cbgm.sparrow.feature.chats.presentation.component.VoiceMessageController
 import com.cbgm.sparrow.feature.chats.presentation.component.model.IndicatorUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubbleUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageComposerUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageContextUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageHistoryUiState
-import com.cbgm.sparrow.feature.chats.presentation.component.model.VoiceComposerPhase
-import com.cbgm.sparrow.feature.chats.presentation.component.model.VoiceComposerUiState
 import com.cbgm.sparrow.feature.chats.presentation.group.mapper.toGroupConversationUiState
 import com.cbgm.sparrow.feature.chats.presentation.group.mapper.toGroupMembershipUiState
 import com.cbgm.sparrow.feature.chats.presentation.group.mapper.toGroupReplyPreview
@@ -54,7 +50,13 @@ import com.cbgm.sparrow.feature.chats.presentation.group.model.GroupConversation
 import com.cbgm.sparrow.feature.chats.presentation.group.model.GroupMembershipUiState
 import com.cbgm.sparrow.feature.contacts.domain.model.device.AddDeviceContactResult
 import com.cbgm.sparrow.feature.contacts.domain.usecase.AddDeviceContactUseCase
+import com.cbgm.sparrow.feature.media.device.VoicePlayer
+import com.cbgm.sparrow.feature.media.device.VoiceRecorder
+import com.cbgm.sparrow.feature.media.domain.usecase.TranscribeVoiceAudioUseCase
 import com.cbgm.sparrow.feature.media.presentation.model.MediaSelection
+import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerPhase
+import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerUiState
+import com.cbgm.sparrow.feature.media.presentation.voice.VoiceController
 import com.cbgm.sparrow.feature.safety.domain.usecase.ObserveMessageSafetyAssessmentsUseCase
 import com.cbgm.sparrow.feature.safety.presentation.details.mapper.toMessageSafetyDetails
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -93,8 +95,10 @@ class GroupConversationViewModel(
     private val forwardMessageUseCase: ForwardMessageUseCase,
     private val loadOlderMessageHistory: LoadOlderMessagesUseCase,
     private val findMessageHistoryCursor: FindMessageHistoryCursorUseCase,
-    voiceMessageRecorder: VoiceMessageRecorder,
-    voiceMessagePlayer: VoiceMessagePlayer
+    private val transcribeVoiceAudio: TranscribeVoiceAudioUseCase,
+    private val saveMessageAttachmentTranscript: SaveMessageAttachmentTranscriptUseCase,
+    voiceRecorder: VoiceRecorder,
+    voicePlayer: VoicePlayer
 ) : BaseViewModel() {
     private val groupId =
         savedStateHandle.requireRouteArgument<String>(AppRoute.GroupConversation::conversationId.name)
@@ -116,10 +120,10 @@ class GroupConversationViewModel(
     private val isLoadingOlderMessages = MutableStateFlow(false)
     private val hasMoreMessages = MutableStateFlow(true)
     private val voiceController =
-        VoiceMessageController(
+        VoiceController(
             scope = viewModelScope,
-            recorder = voiceMessageRecorder,
-            player = voiceMessagePlayer
+            recorder = voiceRecorder,
+            player = voicePlayer
         )
 
     private val indicatorController =
@@ -178,8 +182,8 @@ class GroupConversationViewModel(
             presentationContext,
             attachmentPayloadBytes,
             observeMessageSafetyAssessments(),
-            voiceController.playbackState
-        ) { presentation, loadedAttachmentPayloadBytes, safetyAssessments, voicePlaybackState ->
+            voiceController.messageState
+        ) { presentation, loadedAttachmentPayloadBytes, safetyAssessments, voiceState ->
             toGroupConversationUiState(
                 conversation = presentation.context?.conversation,
                 contacts = presentation.context?.contacts.orEmpty(),
@@ -188,7 +192,7 @@ class GroupConversationViewModel(
                 isLoading = presentation is GroupContextObservation.Loading,
                 safetyAssessments = safetyAssessments,
                 attachmentPayloadBytes = loadedAttachmentPayloadBytes,
-                voicePlaybackState = voicePlaybackState
+                voiceState = voiceState
             )
         }.stateIn(
             scope = viewModelScope,
@@ -332,6 +336,7 @@ class GroupConversationViewModel(
             GroupConversationUiEvent.VoiceSendClicked -> sendVoiceMessage()
             GroupConversationUiEvent.VoiceComposerCancelled -> voiceController.cancelRecording()
             is GroupConversationUiEvent.VoicePlayPauseClicked -> playVoiceMessage(event.attachmentId)
+            is GroupConversationUiEvent.VoiceTranscribeClicked -> transcribeVoiceAttachment(event.attachmentId)
             GroupConversationUiEvent.LoadOlderMessages -> loadOlderMessages()
             is GroupConversationUiEvent.MessageHistoryTargetRequested -> loadMessageHistoryTarget(event.messageId)
             is GroupConversationUiEvent.ReplyToMessage -> startReply(event.messageId)
@@ -489,7 +494,7 @@ class GroupConversationViewModel(
     }
 
     private fun sendVoiceMessage() {
-        val attachment = voiceController.outgoingAttachment() ?: return
+        val attachment = voiceController.recordedVoice()?.toOutgoingMessageAttachment() ?: return
         dispatchSend(
             text = "",
             attachments = listOf(attachment),
@@ -521,6 +526,36 @@ class GroupConversationViewModel(
                 }.onFailure { error ->
                     setError(error.message ?: "Voice message could not be loaded")
                 }
+        }
+    }
+
+    private fun transcribeVoiceAttachment(attachmentId: String) {
+        if (!voiceController.startTranscribing(attachmentId)) return
+
+        viewModelScope.launch {
+            try {
+                loadMessageAttachment(attachmentId)
+                    .onSuccess { bytes ->
+                        transcribeVoiceAudio(bytes)
+                            .onSuccess { rawTranscript ->
+                                val transcript = rawTranscript.trim()
+                                if (transcript.isBlank()) {
+                                    setError("No speech could be transcribed")
+                                } else {
+                                    saveMessageAttachmentTranscript(attachmentId, transcript)
+                                        .onFailure { error ->
+                                            setError(error.message ?: "Voice transcript could not be saved")
+                                        }
+                                }
+                            }.onFailure { error ->
+                                setError(error.message ?: "Voice message could not be transcribed")
+                            }
+                    }.onFailure { error ->
+                        setError(error.message ?: "Voice message could not be loaded")
+                    }
+            } finally {
+                voiceController.stopTranscribing(attachmentId)
+            }
         }
     }
 

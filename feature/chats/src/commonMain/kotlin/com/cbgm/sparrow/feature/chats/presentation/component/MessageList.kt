@@ -52,6 +52,7 @@ internal fun MessageList(
     onAttachmentClick: (String, String) -> Unit,
     onContactClick: (SharedContact) -> Unit,
     onVoicePlayPauseClick: (String) -> Unit,
+    onVoiceTranscribeClick: (String) -> Unit,
     contentPadding: PaddingValues,
     historyState: MessageHistoryUiState,
     onLoadOlderMessages: () -> Unit,
@@ -131,6 +132,7 @@ internal fun MessageList(
                         },
                         onContactClick = onContactClick,
                         onVoicePlayPauseClick = onVoicePlayPauseClick,
+                        onVoiceTranscribeClick = onVoiceTranscribeClick,
                         onReplyPreviewClick = replyJumpState.jumpTo,
                         onContextMessageRequested = onContextMessageRequested,
                         onReactionsClick = { anchor ->
@@ -317,6 +319,7 @@ private fun MessageListPreview() {
             onAttachmentClick = { _, _ -> },
             onContactClick = {},
             onVoicePlayPauseClick = {},
+            onVoiceTranscribeClick = {},
             contentPadding = PaddingValues(),
             historyState = MessageHistoryUiState(
                 isLoadingOlder = true,
