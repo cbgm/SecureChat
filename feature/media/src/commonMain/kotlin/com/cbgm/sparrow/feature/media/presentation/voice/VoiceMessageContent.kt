@@ -38,6 +38,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.cbgm.sparrow.core.ui.theme.Alpha
 import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
@@ -76,44 +77,11 @@ fun VoiceMessageContent(
             0f
         }
 
-    val playedWaveformColor = MaterialTheme.colorScheme.primary
-    val remainingWaveformColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = Alpha.Subtle)
-    val transcriptionScrollState = rememberScrollState()
-    val transcriptionViewportWidth = remember { mutableIntStateOf(0) }
-    var transcriptionLayout by remember(transcript) { mutableStateOf<TextLayoutResult?>(null) }
-
-    val playedCharacterPosition =
-        remember(transcript, transcriptCues, displayPlaybackPositionMilliseconds, durationMilliseconds) {
-            calculatePlayedCharacterPosition(
-                transcript = transcript.orEmpty(),
-                cues = transcriptCues,
-                playbackPositionMilliseconds = displayPlaybackPositionMilliseconds,
-                durationMilliseconds = durationMilliseconds
-            )
-        }
-    val playedTextX =
-        calculatePlayedTextX(
-            transcript = transcript.orEmpty(),
-            characterPosition = playedCharacterPosition,
-            textLayout = transcriptionLayout
-        )
-    val transcriptionTargetScroll =
-        calculateTranscriptTargetScroll(
-            playbackHeadX = playedTextX,
-            maxScroll = transcriptionScrollState.maxValue,
-            viewportWidth = transcriptionViewportWidth.intValue
-        )
-
-    SyncTranscriptScroll(
-        scrollState = transcriptionScrollState,
-        isPlaying = isPlaying,
-        playbackPositionMilliseconds = displayPlaybackPositionMilliseconds,
-        finalCueEndMilliseconds = transcriptCues.lastOrNull()?.endMilliseconds ?: durationMilliseconds.takeIf { it > 0L },
-        targetScroll = transcriptionTargetScroll
-    )
-
     Column(
-        modifier = modifier.padding(horizontal = MaterialTheme.spacing.small),
+        modifier = modifier.padding(
+            end = MaterialTheme.spacing.base,
+            bottom = MaterialTheme.spacing.base
+        ),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.micro)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -124,20 +92,23 @@ fun VoiceMessageContent(
                 Icon(
                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                     contentDescription = null,
-                    tint = playedWaveformColor
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
 
             VoiceWaveform(
                 waveform = waveform,
                 progress = progress,
-                playedColor = playedWaveformColor,
-                remainingColor = remainingWaveformColor,
+                playedColor = MaterialTheme.colorScheme.primary,
+                remainingColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = Alpha.Subtle),
                 modifier =
                     Modifier
                         .weight(1f)
-                        .height(Dimens.MessageInput.buttonHeight)
-                        .padding(horizontal = MaterialTheme.spacing.small)
+                        .height(22.dp)
+                        .padding(
+                            end = MaterialTheme.spacing.small,
+                            start = MaterialTheme.spacing.base
+                        )
             )
 
             val displayedDurationMilliseconds =
@@ -156,62 +127,127 @@ fun VoiceMessageContent(
 
         when {
             isTranscribing ->
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(Dimens.MessageBubble.progressSize),
-                        strokeWidth = Dimens.MessageBubble.progressStrokeWidth
-                    )
-                    Text(
-                        text = stringResource(Res.string.feature_media_voice_transcribing),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                TranscriptionHint()
 
             !transcript.isNullOrBlank() ->
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .onSizeChanged { transcriptionViewportWidth.intValue = it.width }
-                ) {
-                    Box(modifier = Modifier.horizontalScroll(transcriptionScrollState)) {
-                        Text(
-                            text = transcript,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = remainingWaveformColor,
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Clip,
-                            onTextLayout = { transcriptionLayout = it }
-                        )
-                        Text(
-                            text = transcript,
-                            modifier =
-                                Modifier.drawWithContent {
-                                    clipRect(right = playedTextX.coerceIn(0f, size.width)) {
-                                        this@drawWithContent.drawContent()
-                                    }
-                                },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = playedWaveformColor,
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Clip
-                        )
-                    }
-                }
+                TranscriptScroll(
+                    text = transcript,
+                    isPlaying = isPlaying,
+                    durationMilliseconds = durationMilliseconds,
+                    transcriptCues = transcriptCues,
+                    displayPlaybackPositionMilliseconds = displayPlaybackPositionMilliseconds
+                )
 
             else ->
                 Text(
                     text = stringResource(Res.string.feature_media_voice_transcribe),
-                    modifier = Modifier.clickable(onClick = onTranscribeClick),
+                    modifier = Modifier.padding(start = MaterialTheme.spacing.base)
+                        .clickable(onClick = onTranscribeClick),
                     style = MaterialTheme.typography.labelMedium,
-                    color = playedWaveformColor
+                    color = MaterialTheme.colorScheme.primary
                 )
+        }
+    }
+}
+
+@Composable
+private fun TranscriptionHint() {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(start = MaterialTheme.spacing.base)
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(Dimens.MessageBubble.progressSize),
+            strokeWidth = Dimens.MessageBubble.progressStrokeWidth
+        )
+        Text(
+            text = stringResource(Res.string.feature_media_voice_transcribing),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun TranscriptScroll(
+    text: String,
+    transcriptCues: List<VoiceTranscriptCue>,
+    displayPlaybackPositionMilliseconds: Long,
+    isPlaying: Boolean,
+    durationMilliseconds: Long
+) {
+    val transcriptionScrollState = rememberScrollState()
+    val transcriptionViewportWidth = remember { mutableIntStateOf(0) }
+    var transcriptionLayout by remember(text) { mutableStateOf<TextLayoutResult?>(null) }
+
+    val playedCharacterPosition =
+        remember(
+            text,
+            transcriptCues,
+            displayPlaybackPositionMilliseconds,
+            durationMilliseconds
+        ) {
+            calculatePlayedCharacterPosition(
+                transcript = text,
+                cues = transcriptCues,
+                playbackPositionMilliseconds = displayPlaybackPositionMilliseconds,
+                durationMilliseconds = durationMilliseconds
+            )
+        }
+    val playedTextX =
+        calculatePlayedTextX(
+            transcript = text,
+            characterPosition = playedCharacterPosition,
+            textLayout = transcriptionLayout
+        )
+    val transcriptionTargetScroll =
+        calculateTranscriptTargetScroll(
+            playbackHeadX = playedTextX,
+            maxScroll = transcriptionScrollState.maxValue,
+            viewportWidth = transcriptionViewportWidth.intValue
+        )
+
+    SyncTranscriptScroll(
+        scrollState = transcriptionScrollState,
+        isPlaying = isPlaying,
+        playbackPositionMilliseconds = displayPlaybackPositionMilliseconds,
+        finalCueEndMilliseconds = transcriptCues.lastOrNull()?.endMilliseconds
+            ?: durationMilliseconds.takeIf { it > 0L },
+        targetScroll = transcriptionTargetScroll
+    )
+
+    Box(
+        modifier =
+            Modifier
+                .padding(start = MaterialTheme.spacing.base)
+                .fillMaxWidth()
+                .onSizeChanged { transcriptionViewportWidth.intValue = it.width }
+    ) {
+        Box(modifier = Modifier.horizontalScroll(transcriptionScrollState)) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = Alpha.Subtle),
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Clip,
+                onTextLayout = { transcriptionLayout = it }
+            )
+            Text(
+                text = text,
+                modifier =
+                    Modifier.drawWithContent {
+                        clipRect(right = playedTextX.coerceIn(0f, size.width)) {
+                            this@drawWithContent.drawContent()
+                        }
+                    },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Clip
+            )
         }
     }
 }
@@ -309,7 +345,10 @@ private fun calculatePlayedCharacterPosition(
     if (cues.isEmpty()) {
         if (durationMilliseconds <= 0L) return 0f
         return transcript.length *
-            (playbackPositionMilliseconds.toFloat() / durationMilliseconds.toFloat()).coerceIn(0f, 1f)
+            (playbackPositionMilliseconds.toFloat() / durationMilliseconds.toFloat()).coerceIn(
+                0f,
+                1f
+            )
     }
 
     var characterOffset = 0
