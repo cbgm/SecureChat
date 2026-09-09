@@ -181,7 +181,7 @@ fun VoiceMessageContent(
                     Box(modifier = Modifier.horizontalScroll(transcriptionScrollState)) {
                         Text(
                             text = transcript,
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodySmall,
                             color = remainingWaveformColor,
                             maxLines = 1,
                             softWrap = false,

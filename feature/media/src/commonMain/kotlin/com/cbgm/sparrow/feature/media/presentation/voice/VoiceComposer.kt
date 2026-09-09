@@ -47,39 +47,12 @@ fun VoiceComposer(
                 .padding(horizontal = MaterialTheme.spacing.small),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val action =
-            when (state.phase) {
-                VoiceComposerPhase.READY -> VoiceAction.Record
-                VoiceComposerPhase.RECORDING -> VoiceAction.Stop
-                VoiceComposerPhase.RECORDED -> if (state.isPlaying) VoiceAction.Pause else VoiceAction.Play
-            }
-
-        Icon(
-            imageVector =
-                when (action) {
-                    VoiceAction.Record -> Icons.Default.Mic
-                    VoiceAction.Stop -> Icons.Default.Stop
-                    VoiceAction.Play -> Icons.Default.PlayArrow
-                    VoiceAction.Pause -> Icons.Default.Pause
-                },
-            contentDescription = null,
-            tint =
-                if (inputEnabled) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.primary.copy(alpha = Alpha.Disabled)
-                },
-            modifier =
-                Modifier
-                    .size(Dimens.MessageInput.iconSize)
-                    .clickable(enabled = inputEnabled) {
-                        when (action) {
-                            VoiceAction.Record -> onRecordClick()
-                            VoiceAction.Stop -> onStopClick()
-                            VoiceAction.Play,
-                            VoiceAction.Pause -> onPlayPauseClick()
-                        }
-                    }
+        SwitchButton(
+            isEnabled = inputEnabled,
+            state = state,
+            onPlayPauseClick = onPlayPauseClick,
+            onStopClick = onStopClick,
+            onRecordClick = onRecordClick
         )
 
         if (state.phase == VoiceComposerPhase.READY) {
@@ -110,6 +83,50 @@ fun VoiceComposer(
             )
         }
     }
+}
+
+@Composable
+private fun SwitchButton(
+    state: VoiceComposerUiState,
+    isEnabled: Boolean,
+    onStopClick: () -> Unit,
+    onRecordClick: () -> Unit,
+    onPlayPauseClick: () -> Unit
+) {
+    val action =
+        when (state.phase) {
+            VoiceComposerPhase.READY -> VoiceAction.Record
+            VoiceComposerPhase.RECORDING -> VoiceAction.Stop
+            VoiceComposerPhase.RECORDED -> if (state.isPlaying) VoiceAction.Pause else VoiceAction.Play
+        }
+
+    Icon(
+        imageVector =
+            when (action) {
+                VoiceAction.Record -> Icons.Default.Mic
+                VoiceAction.Stop -> Icons.Default.Stop
+                VoiceAction.Play -> Icons.Default.PlayArrow
+                VoiceAction.Pause -> Icons.Default.Pause
+            },
+        contentDescription = null,
+        tint =
+            if (isEnabled) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.primary.copy(alpha = Alpha.Disabled)
+            },
+        modifier =
+            Modifier
+                .size(Dimens.MessageInput.iconSize)
+                .clickable(enabled = isEnabled) {
+                    when (action) {
+                        VoiceAction.Record -> onRecordClick()
+                        VoiceAction.Stop -> onStopClick()
+                        VoiceAction.Play,
+                        VoiceAction.Pause -> onPlayPauseClick()
+                    }
+                }
+    )
 }
 
 private enum class VoiceAction {
