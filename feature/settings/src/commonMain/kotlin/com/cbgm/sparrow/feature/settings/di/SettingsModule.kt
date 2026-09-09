@@ -165,7 +165,9 @@ val settingsModule =
                 setDirectIdentitySetupMode = get(),
                 setBlockUnknownContactInvites = get(),
                 setSemanticSearchEnabled = get(),
-                setLocalEmbeddingFeatureEnabled = get()
+                setLocalEmbeddingFeatureEnabled = get(),
+                observeVoiceTranscriptionEnabled = get(),
+                setVoiceTranscriptionEnabled = get()
             )
         }
 

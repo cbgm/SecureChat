@@ -20,10 +20,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,13 +61,12 @@ import com.cbgm.sparrow.feature.chats.presentation.component.MessageReactionBurs
 import com.cbgm.sparrow.feature.chats.presentation.component.MessageReactionBurstOverlay
 import com.cbgm.sparrow.feature.chats.presentation.component.mapper.toMessageAttachmentsUi
 import com.cbgm.sparrow.feature.chats.presentation.component.mapper.toSharedContact
+import com.cbgm.sparrow.feature.chats.presentation.component.model.IndicatorUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubbleUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageComposerUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageContextUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageHistoryUiState
-import com.cbgm.sparrow.feature.chats.presentation.component.model.TypingUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.rememberDissolvingMessageListState
-import com.cbgm.sparrow.feature.chats.presentation.direct.component.ErrorMessage
 import com.cbgm.sparrow.feature.chats.presentation.direct.component.IdentitySetupDialog
 import com.cbgm.sparrow.feature.chats.presentation.direct.component.SecurityBanner
 import com.cbgm.sparrow.feature.chats.presentation.direct.component.securityDescription
@@ -85,7 +86,7 @@ fun DirectConversationScreen(
     uiState: DirectConversationUiState,
     composerState: MessageComposerUiState,
     contextState: MessageContextUiState<MessageBubbleUi>,
-    typingState: TypingUiState,
+    indicatorState: IndicatorUiState,
     historyState: MessageHistoryUiState,
     errorMessage: String?,
     onUiEvent: (DirectConversationUiEvent) -> Unit,
@@ -101,6 +102,13 @@ fun DirectConversationScreen(
     var messageContextAnchor by remember { mutableStateOf<MessageContextAnchor?>(null) }
     var reactionBurst by remember { mutableStateOf<MessageReactionBurst?>(null) }
     var feedbackOverlay by remember { mutableStateOf<FeedbackOverlayData?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
 
     val clipboardWriter = rememberClipboardWriter()
     val copiedText = stringResource(Res.string.common_copied)
@@ -169,6 +177,7 @@ fun DirectConversationScreen(
                         onAttachmentVisible = {},
                         onAttachmentClick = {},
                         onContactClick = {},
+                        voiceTranscriptionEnabled = uiState.voiceTranscriptionEnabled,
                         onReplyPreviewClick = {},
                         isSearchHighlighted = false,
                         showMetadata = false
@@ -179,6 +188,7 @@ fun DirectConversationScreen(
             SparrowLazyScaffold(
                 modifier = Modifier.fillMaxSize(),
                 barColor = MaterialTheme.colorScheme.background,
+                snackbarHostState = snackbarHostState,
                 background = {
                     PatternBackground(
                         modifier = Modifier.fillMaxSize(),
@@ -190,7 +200,6 @@ fun DirectConversationScreen(
                     TopBar(
                         uiState = uiState,
                         containerColor = containerColor,
-                        errorMessage = errorMessage,
                         onUiEvent = onUiEvent,
                         onManualIdentitySetup = { showIdentitySetupDialog = true }
                     )
@@ -198,7 +207,7 @@ fun DirectConversationScreen(
                 bottomBar = { containerColor ->
                     BottomBar(
                         composerState = composerState,
-                        typingState = typingState,
+                        indicatorState = indicatorState,
                         containerColor = containerColor,
                         onUiEvent = onUiEvent,
                         onContactAttachmentClick = { showContactSelection = true }
@@ -240,7 +249,24 @@ fun DirectConversationScreen(
                         viewerAttachmentId = attachmentId
                         onUiEvent(DirectConversationUiEvent.AttachmentVisible(attachmentId))
                     },
-                    onContactClick = { contact -> pendingSharedContact = contact }
+                    onContactClick = { contact -> pendingSharedContact = contact },
+                    onVoicePlayPauseClick = { attachmentId ->
+                        onUiEvent(DirectConversationUiEvent.VoicePlayPauseClicked(attachmentId))
+                    },
+                    onVoiceTranscribeClick = { attachmentId ->
+                        onUiEvent(DirectConversationUiEvent.VoiceTranscribeClicked(attachmentId))
+                    },
+                    onVoiceSeekStart = { attachmentId ->
+                        onUiEvent(DirectConversationUiEvent.VoiceSeekStarted(attachmentId))
+                    },
+                    onVoiceSeekEnd = { attachmentId, positionMilliseconds ->
+                        onUiEvent(
+                            DirectConversationUiEvent.VoiceSeekFinished(
+                                attachmentId = attachmentId,
+                                positionMilliseconds = positionMilliseconds
+                            )
+                        )
+                    }
                 )
             }
         }
@@ -333,7 +359,6 @@ fun DirectConversationScreen(
 private fun TopBar(
     uiState: DirectConversationUiState,
     containerColor: Color,
-    errorMessage: String?,
     onUiEvent: (DirectConversationUiEvent) -> Unit,
     onManualIdentitySetup: () -> Unit
 ) {
@@ -384,22 +409,20 @@ private fun TopBar(
                 onManualIdentitySetup = onManualIdentitySetup
             )
         }
-
-        errorMessage?.let { message -> ErrorMessage(message = message) }
     }
 }
 
 @Composable
 private fun BottomBar(
     composerState: MessageComposerUiState,
-    typingState: TypingUiState,
+    indicatorState: IndicatorUiState,
     containerColor: Color,
     onUiEvent: (DirectConversationUiEvent) -> Unit,
     onContactAttachmentClick: () -> Unit
 ) {
     ChatComposerBar(
         composerState = composerState,
-        typingState = typingState,
+        indicatorState = indicatorState,
         containerColor = containerColor,
         onMessageTextChanged = { onUiEvent(DirectConversationUiEvent.MessageTextChanged(it)) },
         onSendClick = { onUiEvent(DirectConversationUiEvent.SendClicked) },
@@ -411,7 +434,12 @@ private fun BottomBar(
         onLocationCaptureStarted = { onUiEvent(DirectConversationUiEvent.LocationCaptureStarted) },
         onLocationCaptured = { onUiEvent(DirectConversationUiEvent.ShareCurrentLocation(it)) },
         onLocationCaptureFailed = { onUiEvent(DirectConversationUiEvent.LocationCaptureFailed(it)) },
-        onAttachmentError = { onUiEvent(DirectConversationUiEvent.AttachmentError(it)) }
+        onAttachmentError = { onUiEvent(DirectConversationUiEvent.AttachmentError(it)) },
+        onVoiceRecordClick = { onUiEvent(DirectConversationUiEvent.VoiceRecordClicked) },
+        onVoiceStopClick = { onUiEvent(DirectConversationUiEvent.VoiceStopClicked) },
+        onVoicePlayPauseClick = { onUiEvent(DirectConversationUiEvent.VoicePreviewPlayPauseClicked) },
+        onVoiceSendClick = { onUiEvent(DirectConversationUiEvent.VoiceSendClicked) },
+        onVoiceCancelClick = { onUiEvent(DirectConversationUiEvent.VoiceComposerCancelled) }
     )
 }
 
@@ -431,7 +459,11 @@ private fun Content(
     onSafetyWarningClick: (String, MessageSafetyWarningUi) -> Unit,
     onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String, String) -> Unit,
-    onContactClick: (SharedContact) -> Unit
+    onContactClick: (SharedContact) -> Unit,
+    onVoicePlayPauseClick: (String) -> Unit,
+    onVoiceTranscribeClick: (String) -> Unit,
+    onVoiceSeekStart: (String) -> Unit,
+    onVoiceSeekEnd: (String, Long) -> Unit
 ) {
     val fillModifier = Modifier.fillMaxSize().padding(innerPadding)
     val dissolvingListState =
@@ -462,6 +494,11 @@ private fun Content(
             onAttachmentVisible = onAttachmentVisible,
             onAttachmentClick = onAttachmentClick,
             onContactClick = onContactClick,
+            onVoicePlayPauseClick = onVoicePlayPauseClick,
+            onVoiceTranscribeClick = onVoiceTranscribeClick,
+            voiceTranscriptionEnabled = uiState.voiceTranscriptionEnabled,
+            onVoiceSeekStart = onVoiceSeekStart,
+            onVoiceSeekEnd = onVoiceSeekEnd,
             contentPadding = innerPadding,
             historyState = historyState,
             onLoadOlderMessages = onLoadOlderMessages,

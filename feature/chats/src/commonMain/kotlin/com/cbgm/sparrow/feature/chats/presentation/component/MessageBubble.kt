@@ -58,6 +58,7 @@ import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubble
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessagePartUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageReactionUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageReplyUi
+import com.cbgm.sparrow.feature.media.presentation.voice.VoiceMessageContent
 import com.cbgm.sparrow.feature.safety.presentation.details.model.MessageSafetyWarningUi
 import com.cbgm.sparrow.resources.Res
 import com.cbgm.sparrow.resources.feature_chats_delivered
@@ -86,6 +87,11 @@ internal fun MessageBubble(
     onAttachmentVisible: (String) -> Unit = {},
     onAttachmentClick: (String) -> Unit = {},
     onContactClick: (SharedContact) -> Unit = {},
+    onVoicePlayPauseClick: (String) -> Unit = {},
+    onVoiceTranscribeClick: (String) -> Unit = {},
+    voiceTranscriptionEnabled: Boolean = false,
+    onVoiceSeekStart: (String) -> Unit = {},
+    onVoiceSeekEnd: (String, Long) -> Unit = { _, _ -> },
     onReplyPreviewClick: (String) -> Unit = {},
     onContextMessageRequested: (MessageContextAnchor) -> Unit = {},
     onReactionsClick: (SparrowOverlayAnchor) -> Unit = {},
@@ -118,6 +124,11 @@ internal fun MessageBubble(
             onAttachmentVisible = onAttachmentVisible,
             onAttachmentClick = onAttachmentClick,
             onContactClick = onContactClick,
+            onVoicePlayPauseClick = onVoicePlayPauseClick,
+            onVoiceTranscribeClick = onVoiceTranscribeClick,
+            voiceTranscriptionEnabled = voiceTranscriptionEnabled,
+            onVoiceSeekStart = onVoiceSeekStart,
+            onVoiceSeekEnd = onVoiceSeekEnd,
             onReplyPreviewClick = onReplyPreviewClick,
             onLongPress = onLongPress,
             onReactionsClick = onReactionsClick,
@@ -148,6 +159,11 @@ private fun MessageBubbleContent(
     onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String) -> Unit,
     onContactClick: (SharedContact) -> Unit,
+    onVoicePlayPauseClick: (String) -> Unit,
+    onVoiceTranscribeClick: (String) -> Unit,
+    voiceTranscriptionEnabled: Boolean,
+    onVoiceSeekStart: (String) -> Unit,
+    onVoiceSeekEnd: (String, Long) -> Unit,
     onReplyPreviewClick: (String) -> Unit,
     onLongPress: () -> Unit,
     onReactionsClick: (SparrowOverlayAnchor) -> Unit,
@@ -184,6 +200,11 @@ private fun MessageBubbleContent(
                     onAttachmentVisible = onAttachmentVisible,
                     onAttachmentClick = onAttachmentClick,
                     onContactClick = onContactClick,
+                    onVoicePlayPauseClick = onVoicePlayPauseClick,
+                    onVoiceTranscribeClick = onVoiceTranscribeClick,
+                    voiceTranscriptionEnabled = voiceTranscriptionEnabled,
+                    onVoiceSeekStart = onVoiceSeekStart,
+                    onVoiceSeekEnd = onVoiceSeekEnd,
                     onReplyPreviewClick = onReplyPreviewClick,
                     onLongPress = onLongPress,
                     onSafetyDetailsClick = {
@@ -248,9 +269,10 @@ private fun SenderLabel(message: MessageBubbleUi) {
     )
 }
 
-private enum class PrimaryContent { CONTACT, LOCATION, IMAGE_VIDEO, FILE, TEXT, NONE }
+private enum class PrimaryContent { VOICE, CONTACT, LOCATION, IMAGE_VIDEO, FILE, TEXT, NONE }
 
 private fun MessageBubbleUi.primaryContent(showTextBubble: Boolean): PrimaryContent = when {
+    voicePart != null -> PrimaryContent.VOICE
     contactPart != null -> PrimaryContent.CONTACT
     locationPart != null -> PrimaryContent.LOCATION
     imageVideoParts.isNotEmpty() -> PrimaryContent.IMAGE_VIDEO
@@ -268,12 +290,18 @@ private fun BubbleBody(
     onAttachmentVisible: (String) -> Unit = {},
     onAttachmentClick: (String) -> Unit = {},
     onContactClick: (SharedContact) -> Unit = {},
+    onVoicePlayPauseClick: (String) -> Unit = {},
+    onVoiceTranscribeClick: (String) -> Unit = {},
+    voiceTranscriptionEnabled: Boolean = false,
+    onVoiceSeekStart: (String) -> Unit = {},
+    onVoiceSeekEnd: (String, Long) -> Unit = { _, _ -> },
     onReplyPreviewClick: (String) -> Unit = {},
     onLongPress: () -> Unit = {},
     onSafetyDetailsClick: () -> Unit = {}
 ) {
     val showTextBubble =
-        message.locationPart == null &&
+        message.voicePart == null &&
+            message.locationPart == null &&
             message.contactPart == null &&
             (state.text.isNotBlank() || state.isContentFailed || safetyWarning != null)
 
@@ -286,6 +314,34 @@ private fun BubbleBody(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.micro),
         horizontalAlignment = if (message.isMine) Alignment.End else Alignment.Start
     ) {
+        message.voicePart?.let { voicePart ->
+            MessageBubbleSurface(
+                message = message,
+                state = state,
+                isSearchHighlighted = isSearchHighlighted,
+                reply = replyFor(PrimaryContent.VOICE),
+                onReplyPreviewClick = onReplyPreviewClick,
+                onLongPress = onLongPress
+            ) {
+                VoiceMessageContent(
+                    durationMilliseconds = voicePart.durationMilliseconds,
+                    playbackPositionMilliseconds = voicePart.playbackPositionMilliseconds,
+                    isPlaying = voicePart.isPlaying,
+                    waveform = voicePart.waveform,
+                    transcript = voicePart.transcript,
+                    transcriptCues = voicePart.transcriptCues,
+                    isTranscribing = voicePart.isTranscribing,
+                    transcriptionEnabled = voiceTranscriptionEnabled,
+                    onPlayPauseClick = { onVoicePlayPauseClick(voicePart.id) },
+                    onTranscribeClick = { onVoiceTranscribeClick(voicePart.id) },
+                    onSeekStart = { onVoiceSeekStart(voicePart.id) },
+                    onSeekEnd = { positionMilliseconds ->
+                        onVoiceSeekEnd(voicePart.id, positionMilliseconds)
+                    }
+                )
+            }
+        }
+
         message.contactPart?.let { contactPart ->
             MessageBubbleSurface(
                 message = message,

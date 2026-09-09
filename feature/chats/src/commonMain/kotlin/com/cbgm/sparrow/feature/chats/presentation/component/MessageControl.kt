@@ -1,10 +1,16 @@
 package com.cbgm.sparrow.feature.chats.presentation.component
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -14,26 +20,33 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
 import com.cbgm.sparrow.feature.attachments.presentation.component.AttachmentBar
+import com.cbgm.sparrow.feature.chats.domain.model.IndicatorType
 import com.cbgm.sparrow.feature.chats.presentation.component.model.ComposerPreviewUi
 import com.cbgm.sparrow.feature.media.presentation.component.MediaSelectionPreview
 import com.cbgm.sparrow.feature.media.presentation.component.previewMediaSelections
 import com.cbgm.sparrow.feature.media.presentation.model.MediaSelection
 import com.cbgm.sparrow.feature.media.presentation.model.MediaSelectionSource
+import com.cbgm.sparrow.feature.media.presentation.voice.VoiceComposer
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceComposerPhase
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceComposerUiState
 import com.cbgm.sparrow.resources.Res
+import com.cbgm.sparrow.resources.feature_chats_chat_recording_voice
 import com.cbgm.sparrow.resources.feature_chats_chat_typing
 import org.jetbrains.compose.resources.stringResource
 
 data class MessageInputState(
     val messageText: String = "",
     val composerPreview: ComposerPreviewUi? = null,
-    val isTyping: Boolean = false,
+    val indicatorType: IndicatorType = IndicatorType.NONE,
     val contactName: String = "",
     val isInputEnabled: Boolean = true,
     val isSendEnabled: Boolean = false,
@@ -41,7 +54,8 @@ data class MessageInputState(
     val selectedMedia: List<MediaSelection> = emptyList(),
     val isGalleryEnabled: Boolean = true,
     val isCameraEnabled: Boolean = true,
-    val isFileEnabled: Boolean = true
+    val isFileEnabled: Boolean = true,
+    val voiceState: VoiceComposerUiState = VoiceComposerUiState()
 )
 
 data class MessageInputActions(
@@ -54,7 +68,12 @@ data class MessageInputActions(
     val onClickFile: () -> Unit = {},
     val onClickGallery: () -> Unit = {},
     val onClickContact: () -> Unit = {},
-    val onClickLocation: () -> Unit = {}
+    val onClickLocation: () -> Unit = {},
+    val onVoiceRecordClick: () -> Unit = {},
+    val onVoiceStopClick: () -> Unit = {},
+    val onVoicePlayPauseClick: () -> Unit = {},
+    val onVoiceSendClick: () -> Unit = {},
+    val onVoiceCancelClick: () -> Unit = {}
 )
 
 @Composable
@@ -66,12 +85,14 @@ fun MessageControl(
 ) {
     var isAttachmentBarVisible by remember { mutableStateOf(false) }
     var locationProgressWasVisible by remember { mutableStateOf(false) }
+    var isVoiceComposerVisible by remember { mutableStateOf(false) }
 
     val isEditing = state.composerPreview?.type == ComposerPreviewUi.Type.EDIT
 
     LaunchedEffect(isEditing) {
         if (isEditing) {
             isAttachmentBarVisible = false
+            isVoiceComposerVisible = false
         }
     }
 
@@ -94,14 +115,22 @@ fun MessageControl(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = if (state.isTyping) {
-                    stringResource(
-                        Res.string.feature_chats_chat_typing,
-                        state.contactName
-                    )
-                } else {
-                    ""
-                },
+                text =
+                    when (state.indicatorType) {
+                        IndicatorType.VOICE ->
+                            stringResource(
+                                Res.string.feature_chats_chat_recording_voice,
+                                state.contactName
+                            )
+
+                        IndicatorType.TYPING ->
+                            stringResource(
+                                Res.string.feature_chats_chat_typing,
+                                state.contactName
+                            )
+
+                        IndicatorType.NONE -> ""
+                    },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
@@ -120,31 +149,47 @@ fun MessageControl(
                     modifier = Modifier.padding(bottom = MaterialTheme.spacing.base)
                 )
             }
-            MediaSelectionPreview(
-                media = state.selectedMedia,
-                onClick = actions.onSelectionClick,
-                onRemove = actions.onMediaRemove,
-                modifier = Modifier.padding(
-                    start = basePaddingHorizontal,
-                    end = basePaddingHorizontal,
-                    bottom = MaterialTheme.spacing.base
+            if (!isVoiceComposerVisible) {
+                MediaSelectionPreview(
+                    media = state.selectedMedia,
+                    onClick = actions.onSelectionClick,
+                    onRemove = actions.onMediaRemove,
+                    modifier = Modifier.padding(
+                        start = basePaddingHorizontal,
+                        end = basePaddingHorizontal,
+                        bottom = MaterialTheme.spacing.base
+                    )
                 )
-            )
-            MessageInput(
-                value = state.messageText,
-                onValueChange = actions.onValueChange,
-                onSendClick = actions.onSendClick,
-                inputEnabled = state.isInputEnabled,
-                sendEnabled = state.isSendEnabled,
-                hasAttachments = state.selectedMedia.isNotEmpty(),
-                attachmentsEnabled = !isEditing,
-                isEditing = isEditing,
-                onAttachmentClick = { isAttachmentBarVisible = !isAttachmentBarVisible },
-                isAttachmentVisible = isAttachmentBarVisible,
-                modifier = Modifier.padding(horizontal = basePaddingHorizontal)
-            )
 
-            if (isAttachmentBarVisible) {
+                MessageInput(
+                    value = state.messageText,
+                    onValueChange = actions.onValueChange,
+                    onSendClick = actions.onSendClick,
+                    onVoiceClick = {
+                        if (!isEditing) {
+                            isAttachmentBarVisible = false
+                            isVoiceComposerVisible = true
+                        }
+                    },
+                    inputEnabled = state.isInputEnabled,
+                    sendEnabled = state.isSendEnabled,
+                    hasAttachments = state.selectedMedia.isNotEmpty(),
+                    attachmentsEnabled = !isEditing,
+                    isEditing = isEditing,
+                    onAttachmentClick = { isAttachmentBarVisible = !isAttachmentBarVisible },
+                    isAttachmentVisible = isAttachmentBarVisible,
+                    modifier = Modifier.padding(horizontal = basePaddingHorizontal)
+                )
+            } else {
+                VoiceComposerContent(
+                    state = state,
+                    actions = actions,
+                    onDismiss = { isVoiceComposerVisible = false },
+                    modifier = Modifier.padding(horizontal = basePaddingHorizontal)
+                )
+            }
+
+            if (isAttachmentBarVisible && !isVoiceComposerVisible) {
                 AttachmentBar(
                     onClickCamera = {
                         isAttachmentBarVisible = false
@@ -176,6 +221,59 @@ fun MessageControl(
     }
 }
 
+@Composable
+private fun VoiceComposerContent(
+    state: MessageInputState,
+    actions: MessageInputActions,
+    onDismiss: () -> Unit,
+    modifier: Modifier
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .imePadding(),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        VoiceComposer(
+            state = state.voiceState,
+            inputEnabled = state.isInputEnabled,
+            onRecordClick = actions.onVoiceRecordClick,
+            onStopClick = actions.onVoiceStopClick,
+            onPlayPauseClick = actions.onVoicePlayPauseClick,
+            modifier = Modifier.weight(1f)
+        )
+
+        SendButton(
+            buttonWidth = Dimens.MessageInput.sendButtonWidth,
+            buttonHeight = Dimens.MessageInput.buttonHeight,
+            isRound = false,
+            onSendClick = {
+                actions.onVoiceSendClick()
+                onDismiss()
+            },
+            enabled =
+                state.isInputEnabled &&
+                    state.voiceState.phase == VoiceComposerPhase.RECORDED,
+            isEditing = false,
+            modifier = Modifier.align(Alignment.CenterVertically)
+        )
+
+        RoundedInputButton(
+            modifier =
+                Modifier
+                    .padding(start = MaterialTheme.spacing.base)
+                    .align(Alignment.CenterVertically),
+            onClick = {
+                actions.onVoiceCancelClick()
+                onDismiss()
+            },
+            icon = Icons.Default.Close
+        )
+    }
+}
+
 @Preview
 @Composable
 private fun MessageControlPreview() {
@@ -183,7 +281,7 @@ private fun MessageControlPreview() {
         MessageControl(
             containerColor = MaterialTheme.colorScheme.background,
             state = MessageInputState(
-                isTyping = false,
+                indicatorType = IndicatorType.NONE,
                 contactName = "Chris",
                 messageText = "Here are the files",
                 composerPreview =

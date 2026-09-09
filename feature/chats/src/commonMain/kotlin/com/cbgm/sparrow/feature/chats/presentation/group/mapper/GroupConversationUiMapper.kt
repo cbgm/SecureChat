@@ -21,6 +21,7 @@ import com.cbgm.sparrow.feature.chats.presentation.group.model.GroupMembershipUi
 import com.cbgm.sparrow.feature.chats.presentation.group.model.GroupMessageUi
 import com.cbgm.sparrow.feature.contacts.domain.model.Contact
 import com.cbgm.sparrow.feature.contacts.domain.model.DeviceContactLinkStatus
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceMessageUiState
 import com.cbgm.sparrow.feature.safety.domain.model.MessageSafetyAssessment
 import com.cbgm.sparrow.feature.safety.presentation.details.mapper.toMessageSafetyWarningUi
 import kotlin.collections.component1
@@ -37,9 +38,10 @@ internal fun toGroupConversationUiState(
     currentError: String?,
     observationError: String?,
     isLoading: Boolean,
-    typingContactIds: Set<String>,
+    indicatorContactIds: Set<String>,
     safetyAssessments: Map<String, MessageSafetyAssessment>,
     attachmentPayloadBytes: Map<String, ByteArray> = emptyMap(),
+    voiceState: VoiceMessageUiState = VoiceMessageUiState(),
     currentReplyToMessageId: String? = null
 ): GroupConversationUiState =
     toGroupConversationUiState(
@@ -49,7 +51,8 @@ internal fun toGroupConversationUiState(
         avatarBytes = avatarBytes,
         isLoading = isLoading,
         safetyAssessments = safetyAssessments,
-        attachmentPayloadBytes = attachmentPayloadBytes
+        attachmentPayloadBytes = attachmentPayloadBytes,
+        voiceState = voiceState
     )
 
 internal fun toGroupConversationUiState(
@@ -59,7 +62,8 @@ internal fun toGroupConversationUiState(
     avatarBytes: ByteArray?,
     isLoading: Boolean,
     safetyAssessments: Map<String, MessageSafetyAssessment>,
-    attachmentPayloadBytes: Map<String, ByteArray> = emptyMap()
+    attachmentPayloadBytes: Map<String, ByteArray> = emptyMap(),
+    voiceState: VoiceMessageUiState = VoiceMessageUiState()
 ): GroupConversationUiState {
     val contactsById = contacts.associateBy(Contact::id)
 
@@ -70,7 +74,8 @@ internal fun toGroupConversationUiState(
             contactsById = contactsById,
             profilePictures = profilePictures,
             safetyAssessments = safetyAssessments,
-            attachmentPayloadBytes = attachmentPayloadBytes
+            attachmentPayloadBytes = attachmentPayloadBytes,
+            voiceState = voiceState
         ),
         isLoading = isLoading,
         state = conversation?.state ?: GroupConversationState.READY,
@@ -100,9 +105,14 @@ internal fun GroupMessage.toMessageBubbleUi(
     senderProfilePictureBytes: ByteArray?,
     safetyAssessments: Map<String, MessageSafetyAssessment>,
     attachmentPayloadBytes: Map<String, ByteArray> = emptyMap(),
+    voiceState: VoiceMessageUiState = VoiceMessageUiState(),
     reply: MessageReplyUi? = null
 ): MessageBubbleUi {
-    val partsUi = parts.toMessagePartsUi(attachmentPayloadBytes)
+    val partsUi =
+        parts.toMessagePartsUi(
+            attachmentPayloadBytes = attachmentPayloadBytes,
+            voiceState = voiceState
+        )
 
     return MessageBubbleUi(
         id = id,
@@ -141,6 +151,7 @@ internal fun GroupMessage.toMessageBubbleUi(
         fileParts = partsUi.filterIsInstance<MessagePartUi.File>(),
         locationPart = partsUi.filterIsInstance<MessagePartUi.Location>().firstOrNull(),
         contactPart = partsUi.filterIsInstance<MessagePartUi.Contact>().firstOrNull(),
+        voicePart = partsUi.filterIsInstance<MessagePartUi.Voice>().firstOrNull(),
         textPart = partsUi.filterIsInstance<MessagePartUi.Text>().firstOrNull(),
         groupExtension = GroupMessageUi(
             type = type,
@@ -173,14 +184,15 @@ internal fun String?.toGroupReplyPreview(
     return toGroupReplyPreview(messagesById, contactsById)
 }
 
-internal fun Set<String>.toTypingDisplayName(contacts: List<Contact>): String =
-    toTypingDisplayName(contacts.associateBy(Contact::id))
+internal fun Set<String>.toIndicatorDisplayName(contacts: List<Contact>): String =
+    toIndicatorDisplayName(contacts.associateBy(Contact::id))
 
 private fun GroupConversation?.toMessageBubbleUi(
     contactsById: Map<String, Contact>,
     profilePictures: Map<String, ByteArray?>,
     safetyAssessments: Map<String, MessageSafetyAssessment>,
-    attachmentPayloadBytes: Map<String, ByteArray>
+    attachmentPayloadBytes: Map<String, ByteArray>,
+    voiceState: VoiceMessageUiState
 ): List<MessageBubbleUi> {
     val messages = this?.messages.orEmpty()
     val messagesById = messages.associateBy(GroupMessage::id)
@@ -198,6 +210,7 @@ private fun GroupConversation?.toMessageBubbleUi(
                     senderProfilePictureBytes = senderContactId?.let(profilePictures::get),
                     safetyAssessments = safetyAssessments,
                     attachmentPayloadBytes = attachmentPayloadBytes,
+                    voiceState = voiceState,
                     reply = message.replyToMessageId.toGroupReplyPreview(messagesById, contactsById)
                 )
             )
@@ -255,7 +268,7 @@ private fun GroupConversation?.toGroupMemberProgressUi(
             )
         }
 
-private fun Set<String>.toTypingDisplayName(contactsById: Map<String, Contact>): String =
+private fun Set<String>.toIndicatorDisplayName(contactsById: Map<String, Contact>): String =
     mapNotNull(contactsById::get)
         .map { contact ->
             val isInContacts = contact.deviceContactLinkStatus == DeviceContactLinkStatus.LINKED

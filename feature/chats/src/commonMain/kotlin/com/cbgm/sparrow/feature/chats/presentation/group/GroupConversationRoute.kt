@@ -28,7 +28,7 @@ fun GroupConversationRoute(
     val conversationState by viewModel.conversationState.collectAsStateWithLifecycle()
     val composerState by viewModel.composerState.collectAsStateWithLifecycle()
     val contextState by viewModel.contextState.collectAsStateWithLifecycle()
-    val typingState by viewModel.typingState.collectAsStateWithLifecycle()
+    val indicatorState by viewModel.indicatorState.collectAsStateWithLifecycle()
     val membershipState by viewModel.membershipState.collectAsStateWithLifecycle()
     val historyState by viewModel.historyState.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
@@ -39,7 +39,7 @@ fun GroupConversationRoute(
     }
 
     DisposableEffect(conversationId) {
-        onDispose(viewModel::stopTyping)
+        onDispose(viewModel::stopIndicator)
     }
 
     var forwardingMessageId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -49,7 +49,7 @@ fun GroupConversationRoute(
             uiState = conversationState,
             composerState = composerState,
             contextState = contextState,
-            typingState = typingState,
+            indicatorState = indicatorState,
             membershipState = membershipState,
             historyState = historyState,
             errorMessage = errorMessage,

@@ -19,6 +19,8 @@ private fun MessageAttachmentEntity.toMessageAttachment(
 ): MessageAttachment {
     val attachmentType = MessageAttachmentType.valueOf(type)
 
+    val voiceTranscription = transcript?.toVoiceTranscription()
+
     return MessageAttachment(
         id = id,
         type = attachmentType,
@@ -35,7 +37,10 @@ private fun MessageAttachmentEntity.toMessageAttachment(
                 MessageAttachmentType.FILE -> localFileName?.let(resolveLocalFilePath)
 
                 MessageAttachmentType.LOCATION,
-                MessageAttachmentType.CONTACT -> null
-            }
+                MessageAttachmentType.CONTACT,
+                MessageAttachmentType.VOICE -> null
+            },
+        transcript = voiceTranscription?.text,
+        transcriptCues = voiceTranscription?.cues.orEmpty()
     )
 }

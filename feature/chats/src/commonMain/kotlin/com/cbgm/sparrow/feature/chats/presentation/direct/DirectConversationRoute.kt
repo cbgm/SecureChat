@@ -28,7 +28,7 @@ fun DirectConversationRoute(
     val conversationState by viewModel.conversationState.collectAsStateWithLifecycle()
     val composerState by viewModel.composerState.collectAsStateWithLifecycle()
     val contextState by viewModel.contextState.collectAsStateWithLifecycle()
-    val typingState by viewModel.typingState.collectAsStateWithLifecycle()
+    val indicatorState by viewModel.indicatorState.collectAsStateWithLifecycle()
     val historyState by viewModel.historyState.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
 
@@ -37,7 +37,7 @@ fun DirectConversationRoute(
     }
 
     DisposableEffect(contactId) {
-        onDispose(viewModel::stopTyping)
+        onDispose(viewModel::stopIndicator)
     }
 
     val incomingMessageIds =
@@ -60,7 +60,7 @@ fun DirectConversationRoute(
             uiState = conversationState,
             composerState = composerState,
             contextState = contextState,
-            typingState = typingState,
+            indicatorState = indicatorState,
             historyState = historyState,
             errorMessage = errorMessage,
             onUiEvent = viewModel::onUiEvent,

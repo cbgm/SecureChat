@@ -2,7 +2,7 @@ package com.cbgm.sparrow.server.gateway
 
 import com.cbgm.sparrow.server.protocol.EnvelopeAcceptanceState
 import com.cbgm.sparrow.server.protocol.FederatedEnvelope
-import com.cbgm.sparrow.server.protocol.FederatedTypingEvent
+import com.cbgm.sparrow.server.protocol.FederatedIndicatorEvent
 import com.cbgm.sparrow.server.protocol.FederationAcknowledgement
 import com.cbgm.sparrow.server.protocol.GatewayLoad
 import com.cbgm.sparrow.server.protocol.GatewayNodeInformation
@@ -33,7 +33,7 @@ internal fun Application.installGatewayRoutes(
         installGatewayWebSocketRoute(runtime)
         installBlobRoutes(runtime.blobStore, runtime.blobUploadPermitStore)
         installIncomingEnvelopeRoute(runtime, config)
-        installIncomingTypingRoute(runtime, config)
+        installIncomingIndicatorRoute(runtime, config)
         installInternalLoadRoute(runtime, config)
         installInternalRouteResolution(runtime, config)
     }
@@ -95,15 +95,15 @@ private fun Route.installIncomingEnvelopeRoute(
     }
 }
 
-private fun Route.installIncomingTypingRoute(
+private fun Route.installIncomingIndicatorRoute(
     runtime: GatewayRuntime,
     config: GatewayConfig
 ) {
-    post("/internal/v1/typing-events") {
+    post("/internal/v1/indicator-events") {
         if (call.hasInternalAccess(config.gatewayInternalApiToken)) {
             val delivered =
-                runtime.handler.acceptIncomingTyping(
-                    call.receive<FederatedTypingEvent>()
+                runtime.handler.acceptIncomingIndicator(
+                    call.receive<FederatedIndicatorEvent>()
                 )
             call.respond(
                 if (delivered) {

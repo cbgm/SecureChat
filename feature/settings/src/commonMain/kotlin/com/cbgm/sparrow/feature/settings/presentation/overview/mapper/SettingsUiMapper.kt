@@ -16,6 +16,7 @@ internal fun BuildInfo.toSettingsUiState(
     localEmbeddingState: LocalEmbeddingState,
     semanticSearchState: SemanticSearchState,
     messageSafetyState: MessageSafetyState,
+    voiceTranscriptionEnabled: Boolean,
     isDeveloperModeEnabled: Boolean,
     developerModeTapCount: Int,
     showLanguagePicker: Boolean
@@ -28,6 +29,7 @@ internal fun BuildInfo.toSettingsUiState(
         localEmbeddingState = localEmbeddingState,
         semanticSearchState = semanticSearchState,
         messageSafetyState = messageSafetyState,
+        voiceTranscriptionEnabled = voiceTranscriptionEnabled,
         buildInfo = this,
         isDeveloperModeEnabled = isDeveloperModeEnabled,
         developerModeTapCount = developerModeTapCount,

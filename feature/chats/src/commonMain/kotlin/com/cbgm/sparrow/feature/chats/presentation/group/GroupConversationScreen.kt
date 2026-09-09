@@ -20,10 +20,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,13 +60,12 @@ import com.cbgm.sparrow.feature.chats.presentation.component.MessageReactionBurs
 import com.cbgm.sparrow.feature.chats.presentation.component.MessageReactionBurstOverlay
 import com.cbgm.sparrow.feature.chats.presentation.component.mapper.toMessageAttachmentsUi
 import com.cbgm.sparrow.feature.chats.presentation.component.mapper.toSharedContact
+import com.cbgm.sparrow.feature.chats.presentation.component.model.IndicatorUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubbleUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageComposerUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageContextUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageHistoryUiState
-import com.cbgm.sparrow.feature.chats.presentation.component.model.TypingUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.rememberDissolvingMessageListState
-import com.cbgm.sparrow.feature.chats.presentation.direct.component.ErrorMessage
 import com.cbgm.sparrow.feature.chats.presentation.group.component.StatusHint
 import com.cbgm.sparrow.feature.chats.presentation.group.component.subtitle
 import com.cbgm.sparrow.feature.chats.presentation.group.model.GroupConversationUiEvent
@@ -84,7 +85,7 @@ fun GroupConversationScreen(
     uiState: GroupConversationUiState,
     composerState: MessageComposerUiState,
     contextState: MessageContextUiState<MessageBubbleUi>,
-    typingState: TypingUiState,
+    indicatorState: IndicatorUiState,
     membershipState: GroupMembershipUiState,
     historyState: MessageHistoryUiState,
     errorMessage: String?,
@@ -100,6 +101,13 @@ fun GroupConversationScreen(
     var messageContextAnchor by remember { mutableStateOf<MessageContextAnchor?>(null) }
     var reactionBurst by remember { mutableStateOf<MessageReactionBurst?>(null) }
     var feedbackOverlay by remember { mutableStateOf<FeedbackOverlayData?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
 
     val contextMessage = contextState.message
     val clipboardWriter = rememberClipboardWriter()
@@ -170,6 +178,7 @@ fun GroupConversationScreen(
                         onAttachmentVisible = {},
                         onAttachmentClick = { },
                         onContactClick = {},
+                        voiceTranscriptionEnabled = uiState.voiceTranscriptionEnabled,
                         onReplyPreviewClick = {},
                         onContextMessageRequested = {},
                         onReactionsClick = {},
@@ -202,6 +211,7 @@ fun GroupConversationScreen(
             SparrowLazyScaffold(
                 modifier = Modifier.fillMaxSize(),
                 barColor = MaterialTheme.colorScheme.background,
+                snackbarHostState = snackbarHostState,
                 background = {
                     PatternBackground(
                         modifier = Modifier.fillMaxSize(),
@@ -213,7 +223,6 @@ fun GroupConversationScreen(
                     TopBar(
                         uiState = uiState,
                         membershipState = membershipState,
-                        errorMessage = errorMessage,
                         containerColor = containerColor,
                         onUiEvent = onUiEvent
                     )
@@ -221,7 +230,7 @@ fun GroupConversationScreen(
                 bottomBar = { containerColor ->
                     BottomBar(
                         composerState = composerState,
-                        typingState = typingState,
+                        indicatorState = indicatorState,
                         containerColor = containerColor,
                         onUiEvent = onUiEvent,
                         onContactAttachmentClick = { showContactSelection = true }
@@ -264,7 +273,24 @@ fun GroupConversationScreen(
                         viewerAttachmentId = attachmentId
                         onUiEvent(GroupConversationUiEvent.AttachmentVisible(attachmentId))
                     },
-                    onContactClick = { contact -> pendingSharedContact = contact }
+                    onContactClick = { contact -> pendingSharedContact = contact },
+                    onVoicePlayPauseClick = { attachmentId ->
+                        onUiEvent(GroupConversationUiEvent.VoicePlayPauseClicked(attachmentId))
+                    },
+                    onVoiceTranscribeClick = { attachmentId ->
+                        onUiEvent(GroupConversationUiEvent.VoiceTranscribeClicked(attachmentId))
+                    },
+                    onVoiceSeekStart = { attachmentId ->
+                        onUiEvent(GroupConversationUiEvent.VoiceSeekStarted(attachmentId))
+                    },
+                    onVoiceSeekEnd = { attachmentId, positionMilliseconds ->
+                        onUiEvent(
+                            GroupConversationUiEvent.VoiceSeekFinished(
+                                attachmentId = attachmentId,
+                                positionMilliseconds = positionMilliseconds
+                            )
+                        )
+                    }
                 )
             }
         }
@@ -344,7 +370,6 @@ fun GroupConversationScreen(
 private fun TopBar(
     uiState: GroupConversationUiState,
     membershipState: GroupMembershipUiState,
-    errorMessage: String?,
     containerColor: Color,
     onUiEvent: (GroupConversationUiEvent) -> Unit
 ) {
@@ -395,7 +420,6 @@ private fun TopBar(
             }
         )
 
-        errorMessage?.let { ErrorMessage(message = it) }
         StatusHint(
             uiState = uiState,
             membershipState = membershipState,
@@ -407,14 +431,14 @@ private fun TopBar(
 @Composable
 private fun BottomBar(
     composerState: MessageComposerUiState,
-    typingState: TypingUiState,
+    indicatorState: IndicatorUiState,
     containerColor: Color,
     onUiEvent: (GroupConversationUiEvent) -> Unit,
     onContactAttachmentClick: () -> Unit
 ) {
     ChatComposerBar(
         composerState = composerState,
-        typingState = typingState,
+        indicatorState = indicatorState,
         containerColor = containerColor,
         onMessageTextChanged = { onUiEvent(GroupConversationUiEvent.MessageTextChanged(it)) },
         onSendClick = { onUiEvent(GroupConversationUiEvent.SendClicked) },
@@ -426,7 +450,12 @@ private fun BottomBar(
         onLocationCaptureStarted = { onUiEvent(GroupConversationUiEvent.LocationCaptureStarted) },
         onLocationCaptured = { onUiEvent(GroupConversationUiEvent.ShareCurrentLocation(it)) },
         onLocationCaptureFailed = { onUiEvent(GroupConversationUiEvent.LocationCaptureFailed(it)) },
-        onAttachmentError = { onUiEvent(GroupConversationUiEvent.AttachmentError(it)) }
+        onAttachmentError = { onUiEvent(GroupConversationUiEvent.AttachmentError(it)) },
+        onVoiceRecordClick = { onUiEvent(GroupConversationUiEvent.VoiceRecordClicked) },
+        onVoiceStopClick = { onUiEvent(GroupConversationUiEvent.VoiceStopClicked) },
+        onVoicePlayPauseClick = { onUiEvent(GroupConversationUiEvent.VoicePreviewPlayPauseClicked) },
+        onVoiceSendClick = { onUiEvent(GroupConversationUiEvent.VoiceSendClicked) },
+        onVoiceCancelClick = { onUiEvent(GroupConversationUiEvent.VoiceComposerCancelled) }
     )
 }
 
@@ -446,7 +475,11 @@ private fun Content(
     onSafetyWarningClick: (String, String?, MessageSafetyWarningUi) -> Unit,
     onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String, String) -> Unit,
-    onContactClick: (SharedContact) -> Unit
+    onContactClick: (SharedContact) -> Unit,
+    onVoicePlayPauseClick: (String) -> Unit,
+    onVoiceTranscribeClick: (String) -> Unit,
+    onVoiceSeekStart: (String) -> Unit,
+    onVoiceSeekEnd: (String, Long) -> Unit
 ) {
     val fillModifier = Modifier.fillMaxSize().padding(innerPadding)
     val dissolvingMessageState =
@@ -476,6 +509,11 @@ private fun Content(
             onAttachmentVisible = onAttachmentVisible,
             onAttachmentClick = onAttachmentClick,
             onContactClick = onContactClick,
+            onVoicePlayPauseClick = onVoicePlayPauseClick,
+            onVoiceTranscribeClick = onVoiceTranscribeClick,
+            voiceTranscriptionEnabled = uiState.voiceTranscriptionEnabled,
+            onVoiceSeekStart = onVoiceSeekStart,
+            onVoiceSeekEnd = onVoiceSeekEnd,
             contentPadding = innerPadding,
             historyState = historyState,
             onLoadOlderMessages = onLoadOlderMessages,

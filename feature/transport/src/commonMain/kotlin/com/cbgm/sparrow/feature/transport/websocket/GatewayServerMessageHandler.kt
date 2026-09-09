@@ -3,8 +3,8 @@ package com.cbgm.sparrow.feature.transport.websocket
 import com.cbgm.sparrow.core.logging.SparrowLog
 import com.cbgm.sparrow.feature.transport.gateway.model.GatewayBlobUploadTicket
 import com.cbgm.sparrow.feature.transport.gateway.model.GatewayEnvelopeAcceptance
+import com.cbgm.sparrow.feature.transport.gateway.model.GatewayIndicatorEvent
 import com.cbgm.sparrow.feature.transport.gateway.model.GatewayServerMessage
-import com.cbgm.sparrow.feature.transport.gateway.model.GatewayTypingEvent
 import com.cbgm.sparrow.feature.transport.gateway.model.TransportEnvelope
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.json.Json
@@ -23,7 +23,7 @@ internal class GatewayServerMessageHandler(
         onRouteRegistered: (Set<String>) -> Unit,
         onRouteRejected: (Throwable) -> Unit,
         onIncomingEnvelope: suspend (TransportEnvelope) -> Unit,
-        onTypingEvent: suspend (GatewayTypingEvent) -> Unit
+        onIndicatorEvent: suspend (GatewayIndicatorEvent) -> Unit
     ) {
         val message =
             runCatching {
@@ -50,11 +50,11 @@ internal class GatewayServerMessageHandler(
                 onIncomingEnvelope(message.envelope)
             }
 
-            is GatewayServerMessage.TypingState -> {
-                onTypingEvent(
-                    GatewayTypingEvent(
+            is GatewayServerMessage.IndicatorState -> {
+                onIndicatorEvent(
+                    GatewayIndicatorEvent(
                         senderId = message.senderId,
-                        isTyping = message.isTyping
+                        indicatorType = message.indicatorType
                     )
                 )
             }

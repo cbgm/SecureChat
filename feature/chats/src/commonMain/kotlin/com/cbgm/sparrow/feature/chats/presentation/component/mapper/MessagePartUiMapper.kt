@@ -11,16 +11,19 @@ import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubble
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessagePartUi
 import com.cbgm.sparrow.feature.media.presentation.model.MediaItem
 import com.cbgm.sparrow.feature.media.presentation.model.MediaType
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceMessageUiState
 
 internal fun List<MessagePart>.toMessagePartsUi(
-    attachmentPayloadBytes: Map<String, ByteArray>
+    attachmentPayloadBytes: Map<String, ByteArray>,
+    voiceState: VoiceMessageUiState = VoiceMessageUiState()
 ): List<MessagePartUi> =
     map { part ->
-        part.toMessagePartUi(attachmentPayloadBytes)
+        part.toMessagePartUi(attachmentPayloadBytes, voiceState)
     }
 
 private fun MessagePart.toMessagePartUi(
-    attachmentPayloadBytes: Map<String, ByteArray>
+    attachmentPayloadBytes: Map<String, ByteArray>,
+    voiceState: VoiceMessageUiState
 ): MessagePartUi =
     when (this) {
         is MessagePart.Text ->
@@ -66,6 +69,22 @@ private fun MessagePart.toMessagePartUi(
                 id = id,
                 contact = attachmentPayloadBytes[id]?.let(ContactAttachmentPayload::decode)
             )
+        is MessagePart.Voice -> {
+            val playbackState = voiceState.playback
+            val isActive = playbackState.attachmentId == id
+            MessagePartUi.Voice(
+                id = id,
+                mimeType = mimeType,
+                byteSize = byteSize,
+                durationMilliseconds = durationMilliseconds,
+                playbackPositionMilliseconds =
+                    if (isActive) playbackState.positionMilliseconds else 0L,
+                isPlaying = isActive && playbackState.isPlaying,
+                transcript = transcript,
+                transcriptCues = transcriptCues,
+                isTranscribing = voiceState.transcribingAttachmentId == id
+            )
+        }
     }
 
 fun MessagePartUi.ImageVideo.toMediaItem(): MediaItem =

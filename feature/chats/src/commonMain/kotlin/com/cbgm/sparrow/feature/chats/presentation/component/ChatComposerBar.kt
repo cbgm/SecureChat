@@ -9,8 +9,8 @@ import com.cbgm.sparrow.feature.attachments.device.rememberCurrentLocationLaunch
 import com.cbgm.sparrow.feature.attachments.domain.model.CurrentLocation
 import com.cbgm.sparrow.feature.attachments.domain.model.MessageAttachmentPolicy
 import com.cbgm.sparrow.feature.chats.presentation.component.model.ComposerPreviewUi
+import com.cbgm.sparrow.feature.chats.presentation.component.model.IndicatorUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageComposerUiState
-import com.cbgm.sparrow.feature.chats.presentation.component.model.TypingUiState
 import com.cbgm.sparrow.feature.media.presentation.model.MediaSelection
 import com.cbgm.sparrow.feature.media.presentation.model.MediaSelectionResult
 import com.cbgm.sparrow.feature.media.presentation.model.MediaSelectionSource
@@ -23,7 +23,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun ChatComposerBar(
     composerState: MessageComposerUiState,
-    typingState: TypingUiState,
+    indicatorState: IndicatorUiState,
     containerColor: Color,
     onMessageTextChanged: (String) -> Unit,
     onSendClick: () -> Unit,
@@ -35,7 +35,12 @@ fun ChatComposerBar(
     onLocationCaptureStarted: () -> Unit,
     onLocationCaptured: (CurrentLocation) -> Unit,
     onLocationCaptureFailed: (String) -> Unit,
-    onAttachmentError: (String) -> Unit
+    onAttachmentError: (String) -> Unit,
+    onVoiceRecordClick: () -> Unit,
+    onVoiceStopClick: () -> Unit,
+    onVoicePlayPauseClick: () -> Unit,
+    onVoiceSendClick: () -> Unit,
+    onVoiceCancelClick: () -> Unit
 ) {
     val currentLocationLauncher =
         rememberCurrentLocationLauncher(
@@ -89,15 +94,16 @@ fun ChatComposerBar(
             MessageInputState(
                 messageText = composerState.messageText,
                 composerPreview = composerPreview,
-                isTyping = typingState.isTyping,
-                contactName = typingState.displayName,
+                indicatorType = indicatorState.type,
+                contactName = indicatorState.displayName,
                 isInputEnabled = composerState.availability.isInputEnabled,
                 isSendEnabled = composerState.availability.isSendEnabled,
                 isLocationInProgress = composerState.locationShareState.isInProgress,
                 selectedMedia = composerState.selectedMedia,
                 isGalleryEnabled = composerState.availability.canAddAttachment,
                 isCameraEnabled = composerState.availability.canAddAttachment,
-                isFileEnabled = composerState.availability.canAddAttachment
+                isFileEnabled = composerState.availability.canAddAttachment,
+                voiceState = composerState.voiceState
             ),
         actions =
             MessageInputActions(
@@ -121,7 +127,12 @@ fun ChatComposerBar(
                 onClickLocation = {
                     onLocationCaptureStarted()
                     currentLocationLauncher.launch()
-                }
+                },
+                onVoiceRecordClick = onVoiceRecordClick,
+                onVoiceStopClick = onVoiceStopClick,
+                onVoicePlayPauseClick = onVoicePlayPauseClick,
+                onVoiceSendClick = onVoiceSendClick,
+                onVoiceCancelClick = onVoiceCancelClick
             )
     )
 }

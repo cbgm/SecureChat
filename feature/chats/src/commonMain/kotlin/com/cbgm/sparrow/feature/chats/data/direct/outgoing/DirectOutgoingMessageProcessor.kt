@@ -4,6 +4,7 @@ import com.cbgm.sparrow.core.crypto.transport.TransportEncryptionMode
 import com.cbgm.sparrow.core.id.IdGenerator
 import com.cbgm.sparrow.core.logging.SparrowLog
 import com.cbgm.sparrow.core.protocol.attachment.MessageAttachment
+import com.cbgm.sparrow.core.protocol.attachment.MessageAttachmentType
 import com.cbgm.sparrow.core.protocol.message.MessageReactionPayload
 import com.cbgm.sparrow.core.protocol.outbox.ProtocolOutbox
 import com.cbgm.sparrow.core.protocol.packet.ChatMessagePacket
@@ -437,6 +438,9 @@ class DirectOutgoingMessageProcessor(
         return text.trim().also { normalizedText ->
             require(normalizedText.isNotEmpty() || attachments.isNotEmpty()) {
                 "Message must contain text or attachments"
+            }
+            require(attachments.none { it.type == MessageAttachmentType.VOICE } || normalizedText.isEmpty()) {
+                "A voice message cannot contain text"
             }
         }
     }

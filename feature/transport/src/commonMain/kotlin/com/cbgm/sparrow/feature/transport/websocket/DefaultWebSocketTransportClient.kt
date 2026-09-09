@@ -9,7 +9,7 @@ import com.cbgm.sparrow.feature.transport.gateway.model.GatewayBlobUploadTicket
 import com.cbgm.sparrow.feature.transport.gateway.model.GatewayBlobUploadTicketRequest
 import com.cbgm.sparrow.feature.transport.gateway.model.GatewayClientMessage
 import com.cbgm.sparrow.feature.transport.gateway.model.GatewayEnvelopeAcceptance
-import com.cbgm.sparrow.feature.transport.gateway.model.GatewayTypingEvent
+import com.cbgm.sparrow.feature.transport.gateway.model.GatewayIndicatorEvent
 import com.cbgm.sparrow.feature.transport.gateway.model.TransportEnvelope
 import com.cbgm.sparrow.feature.transport.presence.ClientPresenceRouteCoordinator
 import com.cbgm.sparrow.feature.transport.presence.PresenceRouteConnection
@@ -64,10 +64,10 @@ class DefaultWebSocketTransportClient internal constructor(
         MutableSharedFlow<TransportEnvelope>(extraBufferCapacity = INCOMING_BUFFER_CAPACITY)
     override val incomingEnvelopes: Flow<TransportEnvelope> = mutableIncomingEnvelopes.asSharedFlow()
 
-    private val mutableIncomingTypingEvents =
-        MutableSharedFlow<GatewayTypingEvent>(extraBufferCapacity = INCOMING_BUFFER_CAPACITY)
-    override val incomingTypingEvents: Flow<GatewayTypingEvent> =
-        mutableIncomingTypingEvents.asSharedFlow()
+    private val mutableIncomingIndicatorEvents =
+        MutableSharedFlow<GatewayIndicatorEvent>(extraBufferCapacity = INCOMING_BUFFER_CAPACITY)
+    override val incomingIndicatorEvents: Flow<GatewayIndicatorEvent> =
+        mutableIncomingIndicatorEvents.asSharedFlow()
 
     private val sessionMutex = Mutex()
     private val sendMutex = Mutex()
@@ -181,9 +181,9 @@ class DefaultWebSocketTransportClient internal constructor(
             )
         }
 
-    override suspend fun sendTypingState(
+    override suspend fun sendIndicatorState(
         recipientId: String,
-        isTyping: Boolean
+        indicatorType: String
     ): Result<Unit> =
         runCatching {
             require(recipientId.isNotBlank()) {
@@ -193,9 +193,9 @@ class DefaultWebSocketTransportClient internal constructor(
                 "WebSocket transport is not connected"
             }
             sendClientMessage(
-                GatewayClientMessage.TypingState(
+                GatewayClientMessage.IndicatorState(
                     recipientId = recipientId,
-                    isTyping = isTyping
+                    indicatorType = indicatorType
                 )
             )
         }
@@ -343,7 +343,7 @@ class DefaultWebSocketTransportClient internal constructor(
                         onRouteRegistered = onRouteRegistered,
                         onRouteRejected = onRouteRejected,
                         onIncomingEnvelope = mutableIncomingEnvelopes::emit,
-                        onTypingEvent = mutableIncomingTypingEvents::emit
+                        onIndicatorEvent = mutableIncomingIndicatorEvents::emit
                     )
 
                 is Frame.Close -> logCloseFrame()

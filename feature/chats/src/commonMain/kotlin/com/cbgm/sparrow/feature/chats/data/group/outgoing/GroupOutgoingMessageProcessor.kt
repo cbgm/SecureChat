@@ -2,6 +2,7 @@ package com.cbgm.sparrow.feature.chats.data.group.outgoing
 
 import com.cbgm.sparrow.core.id.IdGenerator
 import com.cbgm.sparrow.core.logging.SparrowLog
+import com.cbgm.sparrow.core.protocol.attachment.MessageAttachmentType
 import com.cbgm.sparrow.core.protocol.identity.LocalSigningKeyPairProvider
 import com.cbgm.sparrow.core.protocol.message.GroupMessageContent
 import com.cbgm.sparrow.core.protocol.message.GroupMessageContentCodec
@@ -538,6 +539,9 @@ class GroupOutgoingMessageProcessor(
         return text.trim().also { normalizedText ->
             require(normalizedText.isNotEmpty() || attachments.isNotEmpty()) {
                 "Message must contain text or attachments"
+            }
+            require(attachments.none { it.type == MessageAttachmentType.VOICE } || normalizedText.isEmpty()) {
+                "A voice message cannot contain text"
             }
         }
     }

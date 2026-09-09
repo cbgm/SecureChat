@@ -15,6 +15,7 @@ data class SettingsUiState(
     val localEmbeddingState: LocalEmbeddingState = LocalEmbeddingState(),
     val semanticSearchState: SemanticSearchState = SemanticSearchState.Disabled,
     val messageSafetyState: MessageSafetyState = MessageSafetyState.Disabled,
+    val voiceTranscriptionEnabled: Boolean = false,
     val buildInfo: BuildInfo = BuildInfo("1.0.0", 1, "release", null),
     val isDeveloperModeEnabled: Boolean = false,
     val developerModeTapCount: Int = 0,

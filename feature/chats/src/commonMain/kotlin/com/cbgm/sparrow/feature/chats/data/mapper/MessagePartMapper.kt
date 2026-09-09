@@ -45,6 +45,16 @@ private fun MessageAttachment.toMessagePartDto(): MessagePartDto =
 
         MessageAttachmentType.CONTACT ->
             MessagePartDto.ContactDto(id = id)
+
+        MessageAttachmentType.VOICE ->
+            MessagePartDto.VoiceDto(
+                id = id,
+                mimeType = mimeType,
+                byteSize = byteSize,
+                durationMilliseconds = requireNotNull(durationMilliseconds),
+                transcript = transcript,
+                transcriptCues = transcriptCues
+            )
     }
 
 internal fun MessagePartDto.toMessagePart(): MessagePart =
@@ -83,4 +93,14 @@ internal fun MessagePartDto.toMessagePart(): MessagePart =
 
         is MessagePartDto.ContactDto ->
             MessagePart.Contact(id = id)
+
+        is MessagePartDto.VoiceDto ->
+            MessagePart.Voice(
+                id = id,
+                mimeType = mimeType,
+                byteSize = byteSize,
+                durationMilliseconds = durationMilliseconds,
+                transcript = transcript,
+                transcriptCues = transcriptCues
+            )
     }

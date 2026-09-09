@@ -10,6 +10,7 @@ import com.cbgm.sparrow.feature.attachments.domain.model.MessageAttachmentPolicy
 import com.cbgm.sparrow.feature.attachments.domain.model.OutgoingMessageAttachment
 import com.cbgm.sparrow.feature.attachments.domain.model.SharedContact
 import com.cbgm.sparrow.feature.attachments.domain.usecase.LoadMessageAttachmentUseCase
+import com.cbgm.sparrow.feature.attachments.domain.usecase.SaveMessageAttachmentTranscriptUseCase
 import com.cbgm.sparrow.feature.attachments.presentation.mapper.toOutgoingMessageAttachment
 import com.cbgm.sparrow.feature.chats.domain.model.ForwardingTarget
 import com.cbgm.sparrow.feature.chats.domain.model.LocationShareEvent
@@ -20,22 +21,22 @@ import com.cbgm.sparrow.feature.chats.domain.model.MessageHistoryCursor
 import com.cbgm.sparrow.feature.chats.domain.model.direct.DirectComposerState
 import com.cbgm.sparrow.feature.chats.domain.model.direct.DirectMessageDispatchResult
 import com.cbgm.sparrow.feature.chats.domain.usecase.FindMessageHistoryCursorUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.ForwardMessageUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.LoadOlderMessagesUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.DeleteDirectMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.EditDirectMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.MarkDirectConversationReadUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.ObserveDirectChatContextUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.direct.ObserveDirectTypingUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.direct.ObserveDirectIndicatorUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.RetryDirectMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.SendOrQueueDirectMessageUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.direct.SetDirectTypingUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.direct.SetDirectIndicatorUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.ToggleDirectMessageReactionUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.forward.ForwardMessageUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.forward.LoadOlderMessagesUseCase
+import com.cbgm.sparrow.feature.chats.presentation.component.model.IndicatorUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubbleUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageComposerUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageContextUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageHistoryUiState
-import com.cbgm.sparrow.feature.chats.presentation.component.model.TypingUiState
 import com.cbgm.sparrow.feature.chats.presentation.direct.mapper.toDirectConversationUiState
 import com.cbgm.sparrow.feature.chats.presentation.direct.mapper.toDirectReplyPreview
 import com.cbgm.sparrow.feature.chats.presentation.direct.mapper.withProfilePicture
@@ -43,7 +44,14 @@ import com.cbgm.sparrow.feature.chats.presentation.direct.model.DirectConversati
 import com.cbgm.sparrow.feature.chats.presentation.direct.model.DirectConversationUiState
 import com.cbgm.sparrow.feature.contacts.domain.model.device.AddDeviceContactResult
 import com.cbgm.sparrow.feature.contacts.domain.usecase.AddDeviceContactUseCase
+import com.cbgm.sparrow.feature.media.device.VoicePlayer
+import com.cbgm.sparrow.feature.media.device.VoiceRecorder
+import com.cbgm.sparrow.feature.media.domain.usecase.ObserveVoiceTranscriptionEnabledUseCase
+import com.cbgm.sparrow.feature.media.domain.usecase.TranscribeVoiceAudioUseCase
 import com.cbgm.sparrow.feature.media.presentation.model.MediaSelection
+import com.cbgm.sparrow.feature.media.presentation.voice.VoiceController
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceComposerPhase
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceComposerUiState
 import com.cbgm.sparrow.feature.safety.domain.usecase.ObserveMessageSafetyAssessmentsUseCase
 import com.cbgm.sparrow.feature.safety.presentation.details.mapper.toMessageSafetyDetails
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -69,14 +77,19 @@ class DirectConversationViewModel(
     private val toggleMessageReaction: ToggleDirectMessageReactionUseCase,
     private val deleteMessageUseCase: DeleteDirectMessageUseCase,
     private val editMessageUseCase: EditDirectMessageUseCase,
-    private val observeTyping: ObserveDirectTypingUseCase,
-    private val setTyping: SetDirectTypingUseCase,
+    private val observeIndicator: ObserveDirectIndicatorUseCase,
+    private val setIndicator: SetDirectIndicatorUseCase,
     observeMessageSafetyAssessments: ObserveMessageSafetyAssessmentsUseCase,
     private val loadMessageAttachment: LoadMessageAttachmentUseCase,
     private val addDeviceContact: AddDeviceContactUseCase,
     private val forwardMessageUseCase: ForwardMessageUseCase,
     private val loadOlderMessageHistory: LoadOlderMessagesUseCase,
-    private val findMessageHistoryCursor: FindMessageHistoryCursorUseCase
+    private val findMessageHistoryCursor: FindMessageHistoryCursorUseCase,
+    private val transcribeVoiceAudio: TranscribeVoiceAudioUseCase,
+    observeVoiceTranscriptionEnabled: ObserveVoiceTranscriptionEnabledUseCase,
+    private val saveMessageAttachmentTranscript: SaveMessageAttachmentTranscriptUseCase,
+    voiceRecorder: VoiceRecorder,
+    voicePlayer: VoicePlayer
 ) : BaseViewModel() {
     private val conversationId =
         savedStateHandle.requireRouteArgument<String>(AppRoute.Chat::conversationId.name)
@@ -101,6 +114,19 @@ class DirectConversationViewModel(
     private val observedHistoryCursor = MutableStateFlow<MessageHistoryCursor?>(null)
     private val isLoadingOlderMessages = MutableStateFlow(false)
     private val hasMoreMessages = MutableStateFlow(true)
+    private val voiceController =
+        VoiceController(
+            scope = viewModelScope,
+            recorder = voiceRecorder,
+            player = voicePlayer
+        )
+    private val voiceTranscriptionEnabled =
+        observeVoiceTranscriptionEnabled()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.Eagerly,
+                initialValue = false
+            )
 
     private val conversationContext =
         historyCursor.flatMapLatest { cursor ->
@@ -113,10 +139,10 @@ class DirectConversationViewModel(
             }
         }
 
-    private val typingController =
-        TypingIndicatorController(
+    private val indicatorController =
+        IndicatorController(
             scope = viewModelScope,
-            sendTypingState = { isTyping -> setTyping(contactId, isTyping) },
+            sendIndicatorState = { indicatorType -> setIndicator(contactId, indicatorType) },
             logTag = "DirectConversationViewModel"
         )
 
@@ -130,11 +156,17 @@ class DirectConversationViewModel(
         }
 
     private val composerRuntime =
-        combine(selectedMedia, isSending, locationShareState) { media, sending, locationState ->
+        combine(
+            selectedMedia,
+            isSending,
+            locationShareState,
+            voiceController.composerState
+        ) { media, sending, locationState, voiceState ->
             ComposerRuntime(
                 media = media,
                 isSending = sending,
-                locationShareState = locationState
+                locationShareState = locationState,
+                voiceState = voiceState
             )
         }
 
@@ -142,8 +174,10 @@ class DirectConversationViewModel(
         combine(
             conversationContext,
             attachmentPayloadBytes,
-            observeMessageSafetyAssessments()
-        ) { context, loadedAttachmentPayloadBytes, safetyAssessments ->
+            observeMessageSafetyAssessments(),
+            voiceController.messageState,
+            voiceTranscriptionEnabled
+        ) { context, loadedAttachmentPayloadBytes, safetyAssessments, voiceState, transcriptionEnabled ->
             toDirectConversationUiState(
                 contactId = contactId,
                 fallbackContactName = fallbackContactName,
@@ -152,8 +186,10 @@ class DirectConversationViewModel(
                 handshake = context.handshake,
                 setupMode = context.setupMode,
                 safetyAssessments = safetyAssessments,
-                attachmentPayloadBytes = loadedAttachmentPayloadBytes
+                attachmentPayloadBytes = loadedAttachmentPayloadBytes,
+                voiceState = voiceState
             ).withProfilePicture(context.profilePictureBytes)
+                .copy(voiceTranscriptionEnabled = transcriptionEnabled)
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000L),
@@ -193,6 +229,7 @@ class DirectConversationViewModel(
                 selectedMedia = runtime.media,
                 isSending = runtime.isSending,
                 locationShareState = runtime.locationShareState,
+                voiceState = runtime.voiceState,
                 availability = availability
             )
         }.stateIn(
@@ -214,16 +251,16 @@ class DirectConversationViewModel(
             initialValue = MessageContextUiState()
         )
 
-    val typingState: StateFlow<TypingUiState> =
-        combine(typingController.isContactTyping, conversationState) { isTyping, conversation ->
-            TypingUiState(
-                isTyping = isTyping,
+    val indicatorState: StateFlow<IndicatorUiState> =
+        combine(indicatorController.remoteIndicatorType, conversationState) { indicatorType, conversation ->
+            IndicatorUiState(
+                type = indicatorType,
                 displayName = conversation.contactName
             )
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000L),
-            initialValue = TypingUiState(displayName = fallbackContactName)
+            initialValue = IndicatorUiState(displayName = fallbackContactName)
         )
 
     val historyState: StateFlow<MessageHistoryUiState> =
@@ -247,7 +284,15 @@ class DirectConversationViewModel(
 
     init {
         viewModelScope.launch {
-            observeTyping(contactId).collect(typingController::onIncomingTypingChanged)
+            observeIndicator(contactId).collect(indicatorController::onIncomingIndicatorChanged)
+        }
+        viewModelScope.launch {
+            voiceController.composerState.collect { voiceState ->
+                indicatorController.onLocalVoiceRecordingChanged(
+                    isRecording = voiceState.phase == VoiceComposerPhase.RECORDING,
+                    sendsIndicators = conversationState.value.composerState.sendsIndicators
+                )
+            }
         }
         ensureTargetMessageLoaded()
     }
@@ -256,6 +301,28 @@ class DirectConversationViewModel(
         when (event) {
             is DirectConversationUiEvent.MessageTextChanged -> onMessageTextChanged(event.text)
             DirectConversationUiEvent.SendClicked -> sendCurrentMessage()
+            DirectConversationUiEvent.VoiceRecordClicked ->
+                voiceController.startRecording { error ->
+                    setError(error.message ?: "Voice recording could not be started")
+                }
+            DirectConversationUiEvent.VoiceStopClicked ->
+                voiceController.stopRecording { error ->
+                    setError(error.message ?: "Voice recording could not be stopped")
+                }
+            DirectConversationUiEvent.VoicePreviewPlayPauseClicked ->
+                voiceController.togglePreview { error ->
+                    setError(error.message ?: "Voice message could not be played")
+                }
+            DirectConversationUiEvent.VoiceSendClicked -> sendVoiceMessage()
+            DirectConversationUiEvent.VoiceComposerCancelled -> voiceController.cancelRecording()
+            is DirectConversationUiEvent.VoicePlayPauseClicked -> playVoiceMessage(event.attachmentId)
+            is DirectConversationUiEvent.VoiceTranscribeClicked -> transcribeVoiceAttachment(event.attachmentId)
+            is DirectConversationUiEvent.VoiceSeekStarted -> voiceController.startMessageScrub(event.attachmentId)
+            is DirectConversationUiEvent.VoiceSeekFinished ->
+                seekVoiceMessage(
+                    attachmentId = event.attachmentId,
+                    positionMilliseconds = event.positionMilliseconds
+                )
             DirectConversationUiEvent.LoadOlderMessages -> loadOlderMessages()
             is DirectConversationUiEvent.MessageHistoryTargetRequested -> loadMessageHistoryTarget(event.messageId)
             is DirectConversationUiEvent.ReplyToMessage -> startReply(event.messageId)
@@ -295,7 +362,7 @@ class DirectConversationViewModel(
         }
     }
 
-    fun stopTyping() = typingController.stopLocalTyping()
+    fun stopIndicator() = indicatorController.stopLocalIndicator()
 
     fun markConversationRead() {
         viewModelScope.launch {
@@ -383,7 +450,7 @@ class DirectConversationViewModel(
 
         messageText.value = value
         clearError()
-        typingController.onLocalTextChanged(value, sendsIndicators = directComposerState.sendsTypingIndicators)
+        indicatorController.onLocalTextChanged(value, sendsIndicators = directComposerState.sendsIndicators)
     }
 
     private fun sendCurrentMessage() {
@@ -403,6 +470,107 @@ class DirectConversationViewModel(
             attachments = selections.map(MediaSelection::toOutgoingMessageAttachment),
             clearComposerOnSuccess = true
         )
+    }
+
+    private fun sendVoiceMessage() {
+        val attachment = voiceController.recordedVoice()?.toOutgoingMessageAttachment() ?: return
+        dispatchSend(
+            text = "",
+            attachments = listOf(attachment),
+            clearComposerOnSuccess = false,
+            clearVoiceOnSuccess = true
+        )
+    }
+
+    private fun playVoiceMessage(attachmentId: String) {
+        val voice =
+            conversationState.value.messages
+                .firstNotNullOfOrNull { message ->
+                    message.voicePart?.takeIf { part -> part.id == attachmentId }
+                }
+                ?: return
+
+        viewModelScope.launch {
+            loadMessageAttachment(attachmentId)
+                .onSuccess { bytes ->
+                    voiceController.playMessage(
+                        attachmentId = attachmentId,
+                        bytes = bytes,
+                        durationMilliseconds = voice.durationMilliseconds,
+                        onError = { error ->
+                            setError(error.message ?: "Voice message could not be played")
+                        }
+                    )
+                }.onFailure { error ->
+                    setError(error.message ?: "Voice message could not be loaded")
+                }
+        }
+    }
+
+    private fun seekVoiceMessage(
+        attachmentId: String,
+        positionMilliseconds: Long
+    ) {
+        val voice =
+            conversationState.value.messages
+                .firstNotNullOfOrNull { message ->
+                    message.voicePart?.takeIf { part -> part.id == attachmentId }
+                }
+                ?: return
+
+        val targetPosition =
+            positionMilliseconds.coerceIn(0L, voice.durationMilliseconds.coerceAtLeast(0L))
+        voiceController.updateMessageScrubPosition(
+            attachmentId = attachmentId,
+            durationMilliseconds = voice.durationMilliseconds,
+            positionMilliseconds = targetPosition
+        )
+
+        viewModelScope.launch {
+            loadMessageAttachment(attachmentId)
+                .onSuccess { bytes ->
+                    voiceController.finishMessageScrub(
+                        attachmentId = attachmentId,
+                        bytes = bytes,
+                        durationMilliseconds = voice.durationMilliseconds,
+                        positionMilliseconds = targetPosition,
+                        onError = { error ->
+                            setError(error.message ?: "Voice message could not be seeked")
+                        }
+                    )
+                }.onFailure { error ->
+                    setError(error.message ?: "Voice message could not be loaded")
+                }
+        }
+    }
+
+    private fun transcribeVoiceAttachment(attachmentId: String) {
+        if (!voiceController.startTranscribing(attachmentId)) return
+
+        viewModelScope.launch {
+            try {
+                loadMessageAttachment(attachmentId)
+                    .onSuccess { bytes ->
+                        transcribeVoiceAudio(bytes)
+                            .onSuccess { transcription ->
+                                if (transcription.text.isBlank()) {
+                                    setError("No speech could be transcribed")
+                                } else {
+                                    saveMessageAttachmentTranscript(attachmentId, transcription)
+                                        .onFailure { error ->
+                                            setError(error.message ?: "Voice transcript could not be saved")
+                                        }
+                                }
+                            }.onFailure { error ->
+                                setError(error.message ?: "Voice message could not be transcribed")
+                            }
+                    }.onFailure { error ->
+                        setError(error.message ?: "Voice message could not be loaded")
+                    }
+            } finally {
+                voiceController.stopTranscribing(attachmentId)
+            }
+        }
     }
 
     private fun shareCurrentLocation(attachment: OutgoingMessageAttachment) {
@@ -426,6 +594,7 @@ class DirectConversationViewModel(
         text: String,
         attachments: List<OutgoingMessageAttachment>,
         clearComposerOnSuccess: Boolean,
+        clearVoiceOnSuccess: Boolean = false,
         isLocationShare: Boolean = false
     ) {
         val directComposerState = conversationState.value.composerState
@@ -454,7 +623,14 @@ class DirectConversationViewModel(
                     attachments = attachments,
                     replyToMessageId = replyTo
                 ).onSuccess { result ->
-                    if (clearComposerOnSuccess) clearComposer() else clearReply()
+                    when {
+                        clearComposerOnSuccess -> clearComposer()
+                        clearVoiceOnSuccess -> {
+                            voiceController.resetComposer()
+                            clearReply()
+                        }
+                        else -> clearReply()
+                    }
                     if (result is DirectMessageDispatchResult.QueuedWithIdentityExchangeFailure) {
                         setError(
                             result.throwable.message
@@ -535,12 +711,12 @@ class DirectConversationViewModel(
             message.locationPart?.id == attachmentId || message.contactPart?.id == attachmentId
         }
 
-    private suspend fun clearComposer() {
+    private fun clearComposer() {
         messageText.value = ""
         replyToMessageId.value = ""
         editingMessageId.value = ""
         selectedMedia.value = emptyList()
-        typingController.stopLocalTypingNow()
+        indicatorController.stopLocalIndicator()
     }
 
     private fun startReply(messageId: String) {
@@ -645,7 +821,8 @@ class DirectConversationViewModel(
     private data class ComposerRuntime(
         val media: List<MediaSelection>,
         val isSending: Boolean,
-        val locationShareState: LocationShareState
+        val locationShareState: LocationShareState,
+        val voiceState: VoiceComposerUiState
     )
 
     private companion object {

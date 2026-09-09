@@ -42,6 +42,7 @@ internal fun List<LocalAttachment>.toMessageAttachmentsUi(
                         )
                     }
 
-            MessageAttachmentType.CONTACT -> null
+            MessageAttachmentType.CONTACT,
+            MessageAttachmentType.VOICE -> null
         }
     }
