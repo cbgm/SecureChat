@@ -46,11 +46,12 @@ import com.cbgm.sparrow.feature.contacts.domain.model.device.AddDeviceContactRes
 import com.cbgm.sparrow.feature.contacts.domain.usecase.AddDeviceContactUseCase
 import com.cbgm.sparrow.feature.media.device.VoicePlayer
 import com.cbgm.sparrow.feature.media.device.VoiceRecorder
+import com.cbgm.sparrow.feature.media.domain.usecase.ObserveVoiceTranscriptionEnabledUseCase
 import com.cbgm.sparrow.feature.media.domain.usecase.TranscribeVoiceAudioUseCase
 import com.cbgm.sparrow.feature.media.presentation.model.MediaSelection
-import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerPhase
-import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerUiState
 import com.cbgm.sparrow.feature.media.presentation.voice.VoiceController
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceComposerPhase
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceComposerUiState
 import com.cbgm.sparrow.feature.safety.domain.usecase.ObserveMessageSafetyAssessmentsUseCase
 import com.cbgm.sparrow.feature.safety.presentation.details.mapper.toMessageSafetyDetails
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -85,6 +86,7 @@ class DirectConversationViewModel(
     private val loadOlderMessageHistory: LoadOlderMessagesUseCase,
     private val findMessageHistoryCursor: FindMessageHistoryCursorUseCase,
     private val transcribeVoiceAudio: TranscribeVoiceAudioUseCase,
+    observeVoiceTranscriptionEnabled: ObserveVoiceTranscriptionEnabledUseCase,
     private val saveMessageAttachmentTranscript: SaveMessageAttachmentTranscriptUseCase,
     voiceRecorder: VoiceRecorder,
     voicePlayer: VoicePlayer
@@ -118,6 +120,13 @@ class DirectConversationViewModel(
             recorder = voiceRecorder,
             player = voicePlayer
         )
+    private val voiceTranscriptionEnabled =
+        observeVoiceTranscriptionEnabled()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.Eagerly,
+                initialValue = false
+            )
 
     private val conversationContext =
         historyCursor.flatMapLatest { cursor ->
@@ -166,8 +175,9 @@ class DirectConversationViewModel(
             conversationContext,
             attachmentPayloadBytes,
             observeMessageSafetyAssessments(),
-            voiceController.messageState
-        ) { context, loadedAttachmentPayloadBytes, safetyAssessments, voiceState ->
+            voiceController.messageState,
+            voiceTranscriptionEnabled
+        ) { context, loadedAttachmentPayloadBytes, safetyAssessments, voiceState, transcriptionEnabled ->
             toDirectConversationUiState(
                 contactId = contactId,
                 fallbackContactName = fallbackContactName,
@@ -179,6 +189,7 @@ class DirectConversationViewModel(
                 attachmentPayloadBytes = loadedAttachmentPayloadBytes,
                 voiceState = voiceState
             ).withProfilePicture(context.profilePictureBytes)
+                .copy(voiceTranscriptionEnabled = transcriptionEnabled)
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000L),

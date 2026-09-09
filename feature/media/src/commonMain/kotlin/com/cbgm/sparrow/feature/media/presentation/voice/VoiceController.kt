@@ -3,10 +3,10 @@ package com.cbgm.sparrow.feature.media.presentation.voice
 import com.cbgm.sparrow.feature.media.device.VoicePlayer
 import com.cbgm.sparrow.feature.media.device.VoiceRecorder
 import com.cbgm.sparrow.feature.media.device.VoiceRecording
-import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerPhase
-import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerUiState
-import com.cbgm.sparrow.feature.media.presentation.model.VoiceMessageUiState
-import com.cbgm.sparrow.feature.media.presentation.model.VoicePlaybackUiState
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceComposerPhase
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceComposerUiState
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceMessageUiState
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoicePlaybackUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay

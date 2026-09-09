@@ -1,4 +1,4 @@
-package com.cbgm.sparrow.feature.media.presentation.model
+package com.cbgm.sparrow.feature.media.presentation.voice.model
 
 data class VoiceComposerUiState(
     val phase: VoiceComposerPhase = VoiceComposerPhase.READY,

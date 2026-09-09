@@ -11,7 +11,7 @@ import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubble
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessagePartUi
 import com.cbgm.sparrow.feature.media.presentation.model.MediaItem
 import com.cbgm.sparrow.feature.media.presentation.model.MediaType
-import com.cbgm.sparrow.feature.media.presentation.model.VoiceMessageUiState
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceMessageUiState
 
 internal fun List<MessagePart>.toMessagePartsUi(
     attachmentPayloadBytes: Map<String, ByteArray>,

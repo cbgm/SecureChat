@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.material.icons.filled.PrivacyTip
@@ -102,6 +103,8 @@ import com.cbgm.sparrow.resources.feature_settings_semantic_search_failed
 import com.cbgm.sparrow.resources.feature_settings_semantic_search_ready
 import com.cbgm.sparrow.resources.feature_settings_semantic_search_subtitle
 import com.cbgm.sparrow.resources.feature_settings_storage
+import com.cbgm.sparrow.resources.feature_settings_voice_transcription
+import com.cbgm.sparrow.resources.feature_settings_voice_transcription_subtitle
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -224,6 +227,18 @@ fun SettingsScreen(
                 checked = uiState.localEmbeddingState.messageSafetyEnabled,
                 onCheckedChange = { enabled ->
                     onUiEvent(SettingsUiEvent.MessageSafetyEnabledChanged(enabled))
+                }
+            )
+
+            SettingsDivider()
+
+            SettingsSwitchRow(
+                icon = Icons.Default.Mic,
+                title = stringResource(Res.string.feature_settings_voice_transcription),
+                subtitle = stringResource(Res.string.feature_settings_voice_transcription_subtitle),
+                checked = uiState.voiceTranscriptionEnabled,
+                onCheckedChange = { enabled ->
+                    onUiEvent(SettingsUiEvent.VoiceTranscriptionEnabledChanged(enabled))
                 }
             )
         }

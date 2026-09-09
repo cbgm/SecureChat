@@ -14,7 +14,8 @@ data class DirectConversationUiState(
     val identitySetupMode: DirectIdentitySetupMode = DirectIdentitySetupMode.MANUAL_IDENTITY_SHARING,
     val isLoading: Boolean = true,
     val isChatAuthorized: Boolean = false,
-    val composerState: DirectComposerState = DirectComposerState.DISABLED
+    val composerState: DirectComposerState = DirectComposerState.DISABLED,
+    val voiceTranscriptionEnabled: Boolean = false
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -28,7 +29,8 @@ data class DirectConversationUiState(
             identitySetupMode == other.identitySetupMode &&
             isLoading == other.isLoading &&
             isChatAuthorized == other.isChatAuthorized &&
-            composerState == other.composerState
+            composerState == other.composerState &&
+            voiceTranscriptionEnabled == other.voiceTranscriptionEnabled
     }
 
     override fun hashCode(): Int {
@@ -41,6 +43,7 @@ data class DirectConversationUiState(
         result = 31 * result + isLoading.hashCode()
         result = 31 * result + isChatAuthorized.hashCode()
         result = 31 * result + composerState.hashCode()
+        result = 31 * result + voiceTranscriptionEnabled.hashCode()
         return result
     }
 }

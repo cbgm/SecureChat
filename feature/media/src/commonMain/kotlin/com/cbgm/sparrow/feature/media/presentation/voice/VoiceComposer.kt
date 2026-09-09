@@ -23,8 +23,8 @@ import com.cbgm.sparrow.core.ui.theme.Alpha
 import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
-import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerPhase
-import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerUiState
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceComposerPhase
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceComposerUiState
 import com.cbgm.sparrow.resources.Res
 import com.cbgm.sparrow.resources.feature_media_voice_tap_to_record
 import org.jetbrains.compose.resources.stringResource

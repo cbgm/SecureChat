@@ -35,9 +35,9 @@ import com.cbgm.sparrow.feature.media.presentation.component.MediaSelectionPrevi
 import com.cbgm.sparrow.feature.media.presentation.component.previewMediaSelections
 import com.cbgm.sparrow.feature.media.presentation.model.MediaSelection
 import com.cbgm.sparrow.feature.media.presentation.model.MediaSelectionSource
-import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerPhase
-import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerUiState
 import com.cbgm.sparrow.feature.media.presentation.voice.VoiceComposer
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceComposerPhase
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceComposerUiState
 import com.cbgm.sparrow.resources.Res
 import com.cbgm.sparrow.resources.feature_chats_chat_recording_voice
 import com.cbgm.sparrow.resources.feature_chats_chat_typing

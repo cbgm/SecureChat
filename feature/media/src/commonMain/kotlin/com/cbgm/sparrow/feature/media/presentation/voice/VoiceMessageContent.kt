@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -59,13 +60,14 @@ fun VoiceMessageContent(
     isPlaying: Boolean,
     waveform: List<Float>,
     transcript: String?,
-    modifier: Modifier = Modifier,
-    transcriptCues: List<VoiceTranscriptCue> = emptyList(),
+    transcriptionEnabled: Boolean,
     isTranscribing: Boolean,
     onPlayPauseClick: () -> Unit,
     onTranscribeClick: () -> Unit,
     onSeekStart: () -> Unit,
-    onSeekEnd: (Long) -> Unit
+    onSeekEnd: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+    transcriptCues: List<VoiceTranscriptCue> = emptyList()
 ) {
     val scrubState =
         rememberVoiceScrubState(
@@ -76,8 +78,7 @@ fun VoiceMessageContent(
 
     Column(
         modifier = modifier.padding(
-            end = MaterialTheme.spacing.base,
-            bottom = MaterialTheme.spacing.base
+            end = MaterialTheme.spacing.base
         ),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.micro)
     ) {
@@ -130,28 +131,31 @@ fun VoiceMessageContent(
             )
         }
 
-        when {
-            isTranscribing ->
-                TranscriptionHint()
+        if (transcriptionEnabled) {
+            when {
+                isTranscribing ->
+                    TranscriptionHint()
 
-            !transcript.isNullOrBlank() ->
-                TranscriptScroll(
-                    text = transcript,
-                    isPlaying = isPlaying,
-                    durationMilliseconds = durationMilliseconds,
-                    transcriptCues = transcriptCues,
-                    displayPlaybackPositionMilliseconds = scrubState.displayPositionMilliseconds,
-                    isScrubbing = scrubState.isScrubbing
-                )
+                !transcript.isNullOrBlank() ->
+                    TranscriptScroll(
+                        text = transcript,
+                        isPlaying = isPlaying,
+                        durationMilliseconds = durationMilliseconds,
+                        transcriptCues = transcriptCues,
+                        displayPlaybackPositionMilliseconds = scrubState.displayPositionMilliseconds,
+                        isScrubbing = scrubState.isScrubbing
+                    )
 
-            else ->
-                Text(
-                    text = stringResource(Res.string.feature_media_voice_transcribe),
-                    modifier = Modifier.padding(start = MaterialTheme.spacing.base)
-                        .clickable(onClick = onTranscribeClick),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                else ->
+                    Text(
+                        text = stringResource(Res.string.feature_media_voice_transcribe),
+                        modifier = Modifier.padding(start = MaterialTheme.spacing.base)
+                            .clickable(onClick = onTranscribeClick),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+            }
+            Spacer(Modifier.height(MaterialTheme.spacing.micro))
         }
     }
 }
@@ -331,7 +335,7 @@ private fun rememberVoiceScrubState(
         state.updateDuration(durationMilliseconds)
     }
 
-    LaunchedEffect(isPlaying, playbackPositionMilliseconds) {
+    SideEffect {
         if (!isPlaying) {
             state.updatePlaybackPosition(playbackPositionMilliseconds)
         }
@@ -366,13 +370,10 @@ private fun rememberVoiceScrubState(
         }
     }
 
-    LaunchedEffect(
-        state.isScrubbing,
-        playbackPositionMilliseconds,
-        state.scrubPositionMilliseconds
-    ) {
-        val scrubPosition = state.scrubPositionMilliseconds ?: return@LaunchedEffect
+    SideEffect {
+        val scrubPosition = state.scrubPositionMilliseconds
         if (
+            scrubPosition != null &&
             !state.isScrubbing &&
             abs(playbackPositionMilliseconds - scrubPosition) <= SCRUB_SYNC_TOLERANCE_MILLISECONDS
         ) {
@@ -499,6 +500,7 @@ private fun VoiceMessageContentPreview() {
             isPlaying = true,
             waveform = emptyList(),
             transcript = null,
+            transcriptionEnabled = false,
             isTranscribing = false,
             onPlayPauseClick = {},
             onTranscribeClick = {},
@@ -524,6 +526,7 @@ private fun VoiceMessageContentTranscriptPreview() {
                     VoiceTranscriptCue("of a longer transcribed ", 6_000L, 16_000L),
                     VoiceTranscriptCue("voice message in Sparrow.", 17_000L, 26_000L)
                 ),
+            transcriptionEnabled = true,
             isTranscribing = false,
             onPlayPauseClick = {},
             onTranscribeClick = {},
@@ -543,6 +546,7 @@ private fun VoiceMessageContentTranscribingPreview() {
             isPlaying = false,
             waveform = emptyList(),
             transcript = null,
+            transcriptionEnabled = true,
             isTranscribing = true,
             onPlayPauseClick = {},
             onTranscribeClick = {},

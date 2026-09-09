@@ -21,7 +21,7 @@ import com.cbgm.sparrow.feature.chats.presentation.group.model.GroupMembershipUi
 import com.cbgm.sparrow.feature.chats.presentation.group.model.GroupMessageUi
 import com.cbgm.sparrow.feature.contacts.domain.model.Contact
 import com.cbgm.sparrow.feature.contacts.domain.model.DeviceContactLinkStatus
-import com.cbgm.sparrow.feature.media.presentation.model.VoiceMessageUiState
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceMessageUiState
 import com.cbgm.sparrow.feature.safety.domain.model.MessageSafetyAssessment
 import com.cbgm.sparrow.feature.safety.presentation.details.mapper.toMessageSafetyWarningUi
 import kotlin.collections.component1

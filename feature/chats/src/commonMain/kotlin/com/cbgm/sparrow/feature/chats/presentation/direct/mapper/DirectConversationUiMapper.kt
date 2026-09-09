@@ -18,7 +18,7 @@ import com.cbgm.sparrow.feature.contacts.domain.model.Contact
 import com.cbgm.sparrow.feature.contacts.domain.model.ContactVerificationStatus
 import com.cbgm.sparrow.feature.contacts.domain.model.IdentityHandshakeState
 import com.cbgm.sparrow.feature.contacts.domain.model.KeyExchangeStatus
-import com.cbgm.sparrow.feature.media.presentation.model.VoiceMessageUiState
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceMessageUiState
 import com.cbgm.sparrow.feature.safety.domain.model.MessageSafetyAssessment
 import com.cbgm.sparrow.feature.safety.presentation.details.mapper.toMessageSafetyWarningUi
 

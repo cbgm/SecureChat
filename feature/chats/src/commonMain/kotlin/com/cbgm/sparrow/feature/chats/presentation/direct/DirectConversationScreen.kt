@@ -169,6 +169,7 @@ fun DirectConversationScreen(
                         onAttachmentVisible = {},
                         onAttachmentClick = {},
                         onContactClick = {},
+                        voiceTranscriptionEnabled = uiState.voiceTranscriptionEnabled,
                         onReplyPreviewClick = {},
                         isSearchHighlighted = false,
                         showMetadata = false
@@ -490,6 +491,7 @@ private fun Content(
             onContactClick = onContactClick,
             onVoicePlayPauseClick = onVoicePlayPauseClick,
             onVoiceTranscribeClick = onVoiceTranscribeClick,
+            voiceTranscriptionEnabled = uiState.voiceTranscriptionEnabled,
             onVoiceSeekStart = onVoiceSeekStart,
             onVoiceSeekEnd = onVoiceSeekEnd,
             contentPadding = innerPadding,

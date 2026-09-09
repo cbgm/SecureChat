@@ -10,7 +10,8 @@ data class GroupConversationUiState(
     val messages: List<MessageBubbleUi> = emptyList(),
     val isLoading: Boolean = true,
     val state: GroupConversationState = GroupConversationState.READY,
-    val composerState: GroupComposerState = GroupComposerState.DISABLED
+    val composerState: GroupComposerState = GroupComposerState.DISABLED,
+    val voiceTranscriptionEnabled: Boolean = false
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -21,7 +22,8 @@ data class GroupConversationUiState(
             messages == other.messages &&
             isLoading == other.isLoading &&
             state == other.state &&
-            composerState == other.composerState
+            composerState == other.composerState &&
+            voiceTranscriptionEnabled == other.voiceTranscriptionEnabled
     }
 
     override fun hashCode(): Int {
@@ -31,6 +33,7 @@ data class GroupConversationUiState(
         result = 31 * result + isLoading.hashCode()
         result = 31 * result + state.hashCode()
         result = 31 * result + composerState.hashCode()
+        result = 31 * result + voiceTranscriptionEnabled.hashCode()
         return result
     }
 }

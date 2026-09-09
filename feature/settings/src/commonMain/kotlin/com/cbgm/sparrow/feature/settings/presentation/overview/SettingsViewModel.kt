@@ -7,6 +7,8 @@ import com.cbgm.sparrow.core.security.DirectIdentitySetupMode
 import com.cbgm.sparrow.core.ui.locale.AppLanguage
 import com.cbgm.sparrow.core.ui.navigation.AppRoute
 import com.cbgm.sparrow.core.ui.presentation.BaseViewModel
+import com.cbgm.sparrow.feature.media.domain.usecase.ObserveVoiceTranscriptionEnabledUseCase
+import com.cbgm.sparrow.feature.media.domain.usecase.SetVoiceTranscriptionEnabledUseCase
 import com.cbgm.sparrow.feature.search.domain.usecase.SetSemanticSearchEnabledUseCase
 import com.cbgm.sparrow.feature.settings.domain.usecase.GetAppLanguageUseCase
 import com.cbgm.sparrow.feature.settings.domain.usecase.GetBuildInfoUseCase
@@ -41,7 +43,9 @@ class SettingsViewModel(
     private val setDirectIdentitySetupMode: SetDirectIdentitySetupModeUseCase,
     private val setBlockUnknownContactInvites: SetBlockUnknownContactInvitesUseCase,
     private val setSemanticSearchEnabled: SetSemanticSearchEnabledUseCase,
-    private val setLocalEmbeddingFeatureEnabled: SetLocalEmbeddingFeatureEnabledUseCase
+    private val setLocalEmbeddingFeatureEnabled: SetLocalEmbeddingFeatureEnabledUseCase,
+    private val observeVoiceTranscriptionEnabled: ObserveVoiceTranscriptionEnabledUseCase,
+    private val setVoiceTranscriptionEnabled: SetVoiceTranscriptionEnabledUseCase
 ) : BaseViewModel() {
     private val buildInfo = getBuildInfoUseCase()
     private val localState = MutableStateFlow(SettingsLocalState())
@@ -49,8 +53,9 @@ class SettingsViewModel(
     val uiState: StateFlow<SettingsUiState> =
         combine(
             observeSettingsDomainContext(),
-            localState
-        ) { domain, local ->
+            localState,
+            observeVoiceTranscriptionEnabled()
+        ) { domain, local, voiceTranscriptionEnabled ->
             buildInfo.toSettingsUiState(
                 currentLanguage = local.currentLanguage,
                 identitySetupMode = domain.identitySetupMode,
@@ -59,6 +64,7 @@ class SettingsViewModel(
                 localEmbeddingState = domain.localEmbeddingState,
                 semanticSearchState = domain.semanticSearchState,
                 messageSafetyState = domain.messageSafetyState,
+                voiceTranscriptionEnabled = voiceTranscriptionEnabled,
                 isDeveloperModeEnabled = local.isDeveloperModeEnabled,
                 developerModeTapCount = local.developerModeTapCount,
                 showLanguagePicker = local.showLanguagePicker
@@ -87,6 +93,7 @@ class SettingsViewModel(
             is SettingsUiEvent.BlockUnknownContactInvitesChanged -> changeBlockUnknownContactInvites(event.enabled)
             is SettingsUiEvent.SemanticSearchEnabledChanged -> changeSemanticSearchEnabled(event.enabled)
             is SettingsUiEvent.MessageSafetyEnabledChanged -> changeMessageSafetyEnabled(event.enabled)
+            is SettingsUiEvent.VoiceTranscriptionEnabledChanged -> changeVoiceTranscriptionEnabled(event.enabled)
             SettingsUiEvent.PrivacyPolicyClicked -> navigator.navigateTo(AppRoute.PrivacyPolicy)
             SettingsUiEvent.DataDisclaimerClicked -> navigator.navigateTo(AppRoute.DataDisclaimer)
             SettingsUiEvent.LicensesClicked -> navigator.navigateTo(AppRoute.Licenses)
@@ -119,6 +126,20 @@ class SettingsViewModel(
     private fun changeMessageSafetyEnabled(enabled: Boolean) {
         viewModelScope.launch {
             setLocalEmbeddingFeatureEnabled(LocalEmbeddingFeature.MESSAGE_SAFETY, enabled)
+        }
+    }
+
+    private fun changeVoiceTranscriptionEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            val result = setVoiceTranscriptionEnabled(enabled)
+            if (result.isFailure) {
+                _effects.send(
+                    SettingsEffect.ShowSnackbar(
+                        result.exceptionOrNull()?.message
+                            ?: "Voice transcription setting could not be changed"
+                    )
+                )
+            }
         }
     }
 

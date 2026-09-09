@@ -52,11 +52,12 @@ import com.cbgm.sparrow.feature.contacts.domain.model.device.AddDeviceContactRes
 import com.cbgm.sparrow.feature.contacts.domain.usecase.AddDeviceContactUseCase
 import com.cbgm.sparrow.feature.media.device.VoicePlayer
 import com.cbgm.sparrow.feature.media.device.VoiceRecorder
+import com.cbgm.sparrow.feature.media.domain.usecase.ObserveVoiceTranscriptionEnabledUseCase
 import com.cbgm.sparrow.feature.media.domain.usecase.TranscribeVoiceAudioUseCase
 import com.cbgm.sparrow.feature.media.presentation.model.MediaSelection
-import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerPhase
-import com.cbgm.sparrow.feature.media.presentation.model.VoiceComposerUiState
 import com.cbgm.sparrow.feature.media.presentation.voice.VoiceController
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceComposerPhase
+import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceComposerUiState
 import com.cbgm.sparrow.feature.safety.domain.usecase.ObserveMessageSafetyAssessmentsUseCase
 import com.cbgm.sparrow.feature.safety.presentation.details.mapper.toMessageSafetyDetails
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -96,6 +97,7 @@ class GroupConversationViewModel(
     private val loadOlderMessageHistory: LoadOlderMessagesUseCase,
     private val findMessageHistoryCursor: FindMessageHistoryCursorUseCase,
     private val transcribeVoiceAudio: TranscribeVoiceAudioUseCase,
+    observeVoiceTranscriptionEnabled: ObserveVoiceTranscriptionEnabledUseCase,
     private val saveMessageAttachmentTranscript: SaveMessageAttachmentTranscriptUseCase,
     voiceRecorder: VoiceRecorder,
     voicePlayer: VoicePlayer
@@ -125,6 +127,13 @@ class GroupConversationViewModel(
             recorder = voiceRecorder,
             player = voicePlayer
         )
+    private val voiceTranscriptionEnabled =
+        observeVoiceTranscriptionEnabled()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.Eagerly,
+                initialValue = false
+            )
 
     private val indicatorController =
         IndicatorController(
@@ -182,8 +191,9 @@ class GroupConversationViewModel(
             presentationContext,
             attachmentPayloadBytes,
             observeMessageSafetyAssessments(),
-            voiceController.messageState
-        ) { presentation, loadedAttachmentPayloadBytes, safetyAssessments, voiceState ->
+            voiceController.messageState,
+            voiceTranscriptionEnabled
+        ) { presentation, loadedAttachmentPayloadBytes, safetyAssessments, voiceState, transcriptionEnabled ->
             toGroupConversationUiState(
                 conversation = presentation.context?.conversation,
                 contacts = presentation.context?.contacts.orEmpty(),
@@ -193,7 +203,7 @@ class GroupConversationViewModel(
                 safetyAssessments = safetyAssessments,
                 attachmentPayloadBytes = loadedAttachmentPayloadBytes,
                 voiceState = voiceState
-            )
+            ).copy(voiceTranscriptionEnabled = transcriptionEnabled)
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
