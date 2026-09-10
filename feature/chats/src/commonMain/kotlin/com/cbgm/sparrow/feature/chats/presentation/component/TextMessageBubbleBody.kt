@@ -1,5 +1,6 @@
 package com.cbgm.sparrow.feature.chats.presentation.component
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,7 +28,8 @@ internal fun TextMessageBubbleBody(
     safetyWarning: MessageSafetyWarningUi?,
     onSafetyDetailsClick: () -> Unit
 ) {
-    val padding = if (safetyWarning != null) MaterialTheme.spacing.base else MaterialTheme.spacing.micro
+    val padding =
+        if (safetyWarning != null) MaterialTheme.spacing.base else MaterialTheme.spacing.micro
 
     Column {
         if (textPart.text.isNotBlank() || textPart.isContentFailed) {
@@ -58,7 +60,10 @@ private fun TextContent(
     parts: List<TextContentPart>,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+    ) {
         parts.forEach { part ->
             when (part) {
                 is TextContentPart.Text ->

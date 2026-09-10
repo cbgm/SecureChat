@@ -5,10 +5,16 @@ import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.parameter
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
@@ -22,6 +28,36 @@ internal class LinkPreviewFetcher(
     private val httpClient: HttpClient = createLinkPreviewHttpClient()
 ) : AutoCloseable {
     suspend fun fetch(url: String): FetchedLinkPreview {
+        val youtubeThumbnailUrl = url.youtubeThumbnailUrlOrNull() ?: return fetchHtmlPreview(url)
+
+        val htmlPreview =
+            try {
+                fetchHtmlPreview(url)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                null
+            }
+
+        val youtubeMetadata =
+            try {
+                fetchYouTubeMetadata(url)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                null
+            }
+
+        return FetchedLinkPreview(
+            url = htmlPreview?.url ?: url,
+            title = youtubeMetadata?.title ?: htmlPreview?.title,
+            description = htmlPreview?.description,
+            siteName = "YouTube",
+            imageUrl = youtubeMetadata?.thumbnailUrl ?: htmlPreview?.imageUrl ?: youtubeThumbnailUrl
+        )
+    }
+
+    private suspend fun fetchHtmlPreview(url: String): FetchedLinkPreview {
         val response = requestFollowingSafeRedirects(url)
         val contentType = response.headers[HttpHeaders.ContentType].orEmpty().lowercase()
         require(contentType.startsWith("text/html") || contentType.startsWith("application/xhtml+xml")) {
@@ -35,6 +71,27 @@ internal class LinkPreviewFetcher(
         }
         return parseLinkPreviewHtml(response.call.request.url.toString(), html)
     }
+
+    private suspend fun fetchYouTubeMetadata(url: String): YouTubeMetadata =
+        withTimeout(REQUEST_TIMEOUT_MILLISECONDS.milliseconds) {
+            val response =
+                httpClient.get(YOUTUBE_OEMBED_URL) {
+                    parameter("url", url)
+                    parameter("format", "json")
+                    header(HttpHeaders.UserAgent, USER_AGENT)
+                    header(HttpHeaders.Accept, "application/json")
+                }
+
+            require(response.status.value in 200..299) {
+                "YouTube oEmbed returned HTTP ${response.status.value}"
+            }
+
+            val json = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            YouTubeMetadata(
+                title = json["title"]?.jsonPrimitive?.contentOrNull,
+                thumbnailUrl = json["thumbnail_url"]?.jsonPrimitive?.contentOrNull
+            )
+        }
 
     suspend fun fetchImage(url: String): LinkPreviewImage {
         val response = requestFollowingSafeRedirects(url)
@@ -188,3 +245,9 @@ private const val MIN_JPEG_QUALITY = 0.35f
 private val JPEG_QUALITIES = floatArrayOf(0.72f, 0.62f, 0.52f, 0.42f)
 private const val REQUEST_TIMEOUT_MILLISECONDS = 8_000L
 private const val USER_AGENT = "Sparrow-LinkPreview/1.0"
+private const val YOUTUBE_OEMBED_URL = "https://www.youtube.com/oembed"
+
+private data class YouTubeMetadata(
+    val title: String?,
+    val thumbnailUrl: String?
+)
