@@ -22,16 +22,6 @@ internal class LinkPreviewFetcher(
     private val httpClient: HttpClient = createLinkPreviewHttpClient()
 ) : AutoCloseable {
     suspend fun fetch(url: String): FetchedLinkPreview {
-        url.youtubeThumbnailUrlOrNull()?.let { thumbnailUrl ->
-            return FetchedLinkPreview(
-                url = url,
-                title = null,
-                description = null,
-                siteName = "YouTube",
-                imageUrl = thumbnailUrl
-            )
-        }
-
         val response = requestFollowingSafeRedirects(url)
         val contentType = response.headers[HttpHeaders.ContentType].orEmpty().lowercase()
         require(contentType.startsWith("text/html") || contentType.startsWith("application/xhtml+xml")) {
