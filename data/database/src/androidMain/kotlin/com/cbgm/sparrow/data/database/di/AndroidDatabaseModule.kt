@@ -86,6 +86,10 @@ val androidDatabaseModule =
             get<SparrowDatabase>().mailboxRouteDao()
         }
 
+        single {
+            get<SparrowDatabase>().linkPreviewDao()
+        }
+
         single<MailboxRouteRepository> {
             RoomMailboxRouteRepository(dao = get())
         }

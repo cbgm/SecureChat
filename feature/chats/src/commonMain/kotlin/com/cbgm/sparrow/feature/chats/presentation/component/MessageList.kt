@@ -91,89 +91,102 @@ internal fun MessageList(
         onLoadOlderMessages = onLoadOlderMessages
     )
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        state = listState,
-        reverseLayout = true,
-        contentPadding =
-            PaddingValues(
-                start = MaterialTheme.spacing.messageList.horizontalPadding,
-                top = contentPadding.calculateTopPadding() + MaterialTheme.spacing.small,
-                end = MaterialTheme.spacing.messageList.horizontalPadding,
-                bottom = contentPadding.calculateBottomPadding() + MaterialTheme.spacing.small
-            ),
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
-    ) {
-        items(items = messages, key = MessageBubbleUi::id) { message ->
-            MessageDissolve(
-                messageId = message.id,
-                state = dissolvingListState
-            ) {
-                val systemType = message.groupExtension?.type
-                if (systemType != null && systemType != ChatMessageType.USER) {
-                    MembershipSystemMessage(
-                        type = systemType,
-                        memberName = message.senderName
-                    )
-                } else {
-                    MessageBubble(
-                        message = message,
-                        onRetryClick = { onRetryMessage(message.id) },
-                        onSafetyDetailsClick = { warning ->
-                            onSafetyWarningClick(
-                                message.id,
-                                message.groupExtension?.senderContactId,
-                                warning
-                            )
-                        },
-                        onAttachmentVisible = onAttachmentVisible,
-                        onAttachmentClick = { attachmentId ->
-                            onAttachmentClick(
-                                message.id,
-                                attachmentId
-                            )
-                        },
-                        onContactClick = onContactClick,
-                        onVoicePlayPauseClick = onVoicePlayPauseClick,
-                        onVoiceTranscribeClick = onVoiceTranscribeClick,
-                        voiceTranscriptionEnabled = voiceTranscriptionEnabled,
-                        onVoiceSeekStart = onVoiceSeekStart,
-                        onVoiceSeekEnd = onVoiceSeekEnd,
-                        onReplyPreviewClick = replyJumpState.jumpTo,
-                        onContextMessageRequested = onContextMessageRequested,
-                        onReactionsClick = { anchor ->
-                            onReactionBurstRequested(
-                                MessageReactionBurst(reactions = message.reactions, anchor = anchor)
-                            )
-                        },
-                        isContextSelected = selectedContextMessageId == message.id,
-                        isSearchHighlighted =
-                            message.id == searchTargetState.highlightedMessageId ||
-                                message.id == replyJumpState.highlightedMessageId,
-                        leadingContent = {
-                            if (!message.isMine) {
-                                itemLeadingContent?.invoke(message)
-                            }
-                        }
-                    )
-                }
-            }
-        }
-        if (historyState.isLoadingOlder) {
-            item(key = "history-loading") {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = MaterialTheme.spacing.micro),
-                    contentAlignment = Alignment.Center
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            state = listState,
+            reverseLayout = true,
+            contentPadding =
+                PaddingValues(
+                    start = MaterialTheme.spacing.messageList.horizontalPadding,
+                    top = contentPadding.calculateTopPadding() + MaterialTheme.spacing.small,
+                    end = MaterialTheme.spacing.messageList.horizontalPadding,
+                    bottom = contentPadding.calculateBottomPadding() + MaterialTheme.spacing.small
+                ),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+        ) {
+            items(items = messages, key = MessageBubbleUi::id) { message ->
+                MessageDissolve(
+                    messageId = message.id,
+                    state = dissolvingListState
                 ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(Dimens.MessageList.loadingSize),
-                        strokeWidth = Dimens.MessageList.loadingStroke
-                    )
+                    val systemType = message.groupExtension?.type
+                    if (systemType != null && systemType != ChatMessageType.USER) {
+                        MembershipSystemMessage(
+                            type = systemType,
+                            memberName = message.senderName
+                        )
+                    } else {
+                        MessageBubble(
+                            message = message,
+                            onRetryClick = { onRetryMessage(message.id) },
+                            onSafetyDetailsClick = { warning ->
+                                onSafetyWarningClick(
+                                    message.id,
+                                    message.groupExtension?.senderContactId,
+                                    warning
+                                )
+                            },
+                            onAttachmentVisible = onAttachmentVisible,
+                            onAttachmentClick = { attachmentId ->
+                                onAttachmentClick(
+                                    message.id,
+                                    attachmentId
+                                )
+                            },
+                            onContactClick = onContactClick,
+                            onVoicePlayPauseClick = onVoicePlayPauseClick,
+                            onVoiceTranscribeClick = onVoiceTranscribeClick,
+                            voiceTranscriptionEnabled = voiceTranscriptionEnabled,
+                            onVoiceSeekStart = onVoiceSeekStart,
+                            onVoiceSeekEnd = onVoiceSeekEnd,
+                            onReplyPreviewClick = replyJumpState.jumpTo,
+                            onContextMessageRequested = onContextMessageRequested,
+                            onReactionsClick = { anchor ->
+                                onReactionBurstRequested(
+                                    MessageReactionBurst(reactions = message.reactions, anchor = anchor)
+                                )
+                            },
+                            isContextSelected = selectedContextMessageId == message.id,
+                            isSearchHighlighted =
+                                message.id == searchTargetState.highlightedMessageId ||
+                                    message.id == replyJumpState.highlightedMessageId,
+                            leadingContent = {
+                                if (!message.isMine) {
+                                    itemLeadingContent?.invoke(message)
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+            if (historyState.isLoadingOlder) {
+                item(key = "history-loading") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = MaterialTheme.spacing.micro),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(Dimens.MessageList.loadingSize),
+                            strokeWidth = Dimens.MessageList.loadingStroke
+                        )
+                    }
                 }
             }
         }
+
+        ScrollToBottomButton(
+            listState = listState,
+            reverseLayout = true,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(
+                    end = MaterialTheme.spacing.base,
+                    bottom = contentPadding.calculateBottomPadding() + MaterialTheme.spacing.base
+                )
+        )
     }
 }
 

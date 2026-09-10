@@ -19,6 +19,7 @@ import com.cbgm.sparrow.feature.attachments.data.datasource.MessageAttachmentDat
 import com.cbgm.sparrow.feature.attachments.runtime.MessageAttachmentCacheCoordinator
 import com.cbgm.sparrow.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.sparrow.feature.chats.domain.model.MessageDeliveryStatus
+import com.cbgm.sparrow.feature.linkpreview.domain.usecase.PrefetchLinkPreviewsUseCase
 
 /** Direct-only incoming chat-message handler. */
 class DirectMessagePacketHandler(
@@ -28,7 +29,8 @@ class DirectMessagePacketHandler(
     private val protocolOutbox: ProtocolOutbox,
     private val remoteProfilePictureMetadataProcessor: RemoteProfilePictureMetadataProcessor,
     private val attachmentTransfer: MessageAttachmentDataSource,
-    private val attachmentCacheCoordinator: MessageAttachmentCacheCoordinator
+    private val attachmentCacheCoordinator: MessageAttachmentCacheCoordinator,
+    private val prefetchLinkPreviews: PrefetchLinkPreviewsUseCase
 ) {
     private val logger = SparrowLog.withTag("DirectMessagePacketHandler")
 
@@ -59,6 +61,7 @@ class DirectMessagePacketHandler(
 
             val conversation = getOrCreateConversation(context)
             storeMessage(conversation, context, packet)
+            prefetchLinkPreviews(packet.text)
             attachmentTransfer.persistIncoming(packet.messageId, packet.attachments)
             sendDeliveryReceipt(context.contactId, packet.messageId)
             attachmentCacheCoordinator.cache(packet.messageId)

@@ -11,6 +11,7 @@ import com.cbgm.sparrow.data.database.dao.GroupInvitationDao
 import com.cbgm.sparrow.data.database.dao.GroupSecurityDao
 import com.cbgm.sparrow.data.database.dao.GroupVerificationDao
 import com.cbgm.sparrow.data.database.dao.IdentityInvitationDao
+import com.cbgm.sparrow.data.database.dao.LinkPreviewDao
 import com.cbgm.sparrow.data.database.dao.MailboxRouteDao
 import com.cbgm.sparrow.data.database.dao.MessageAttachmentDao
 import com.cbgm.sparrow.data.database.dao.MessageDeliveryStatusDao
@@ -30,6 +31,7 @@ import com.cbgm.sparrow.data.database.entity.GroupMemberKeyEntity
 import com.cbgm.sparrow.data.database.entity.GroupSecurityStateEntity
 import com.cbgm.sparrow.data.database.entity.GroupVerificationPairEntity
 import com.cbgm.sparrow.data.database.entity.IdentityInvitationEntity
+import com.cbgm.sparrow.data.database.entity.LinkPreviewEntity
 import com.cbgm.sparrow.data.database.entity.LocalMailboxCredentialEntity
 import com.cbgm.sparrow.data.database.entity.MessageAttachmentEntity
 import com.cbgm.sparrow.data.database.entity.MessageEntity
@@ -61,9 +63,10 @@ import com.cbgm.sparrow.data.database.entity.RemoteMailboxRouteEntity
         MessageReactionEntity::class,
         ProtocolOutboxEntity::class,
         LocalMailboxCredentialEntity::class,
-        RemoteMailboxRouteEntity::class
+        RemoteMailboxRouteEntity::class,
+        LinkPreviewEntity::class
     ],
-    version = 36,
+    version = 37,
     autoMigrations = [
         AutoMigration(from = 26, to = 27),
         AutoMigration(from = 27, to = 28),
@@ -74,7 +77,8 @@ import com.cbgm.sparrow.data.database.entity.RemoteMailboxRouteEntity
         AutoMigration(from = 32, to = 33),
         AutoMigration(from = 33, to = 34),
         AutoMigration(from = 34, to = 35),
-        AutoMigration(from = 35, to = 36)
+        AutoMigration(from = 35, to = 36),
+        AutoMigration(from = 36, to = 37)
     ],
     exportSchema = true
 )
@@ -109,4 +113,6 @@ abstract class SparrowDatabase : RoomDatabase() {
     abstract fun messageSafetyDao(): MessageSafetyDao
 
     abstract fun mailboxRouteDao(): MailboxRouteDao
+
+    abstract fun linkPreviewDao(): LinkPreviewDao
 }

@@ -38,6 +38,7 @@ import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.circle
 import com.cbgm.sparrow.core.ui.theme.spacing
+import com.cbgm.sparrow.feature.chats.presentation.component.ScrollToBottomButton
 import com.cbgm.sparrow.feature.chats.presentation.overview.model.ConversationListItem
 import com.cbgm.sparrow.feature.chats.presentation.overview.model.OverviewUiEvent
 import com.cbgm.sparrow.feature.chats.presentation.overview.model.OverviewUiState
@@ -89,51 +90,64 @@ private fun Content(
             )
 
         is OverviewUiState.Content ->
-            LazyColumn(
-                modifier = modifier.fillMaxSize(),
-                contentPadding = innerPadding,
-                state = listState
-            ) {
-                items(
-                    items = uiState.conversations,
-                    key = { conversation -> conversation.conversationId }
-                ) { conversation ->
-                    SparrowSwipeRevealItem(
-                        actions =
-                            listOf(
-                                SwipeRevealAction(
-                                    backgroundColor = MaterialTheme.colorScheme.error,
-                                    contentColor = MaterialTheme.colorScheme.onError,
-                                    onClick = {
-                                        onUiEvent(
-                                            OverviewUiEvent.DeleteConversation(
-                                                conversation.conversationId
+            Box(modifier = modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = innerPadding,
+                    state = listState
+                ) {
+                    items(
+                        items = uiState.conversations,
+                        key = { conversation -> conversation.conversationId }
+                    ) { conversation ->
+                        SparrowSwipeRevealItem(
+                            actions =
+                                listOf(
+                                    SwipeRevealAction(
+                                        backgroundColor = MaterialTheme.colorScheme.error,
+                                        contentColor = MaterialTheme.colorScheme.onError,
+                                        onClick = {
+                                            onUiEvent(
+                                                OverviewUiEvent.DeleteConversation(
+                                                    conversation.conversationId
+                                                )
                                             )
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.DeleteOutline,
+                                            contentDescription = stringResource(Res.string.feature_chats_delete_conversation)
                                         )
                                     }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.DeleteOutline,
-                                        contentDescription = stringResource(Res.string.feature_chats_delete_conversation)
-                                    )
+                                )
+                        ) {
+                            ConversationItem(
+                                conversation = conversation,
+                                onClick = {
+                                    onUiEvent(OverviewUiEvent.ChatClicked(conversation))
                                 }
                             )
-                    ) {
-                        ConversationItem(
-                            conversation = conversation,
-                            onClick = {
-                                onUiEvent(OverviewUiEvent.ChatClicked(conversation))
-                            }
+                        }
+
+                        HorizontalDivider(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = MaterialTheme.spacing.listDividerStart),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = Alpha.itemDivider)
                         )
                     }
-
-                    HorizontalDivider(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = MaterialTheme.spacing.listDividerStart),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = Alpha.itemDivider)
-                    )
                 }
+
+                ScrollToBottomButton(
+                    listState = listState,
+                    reverseLayout = false,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(
+                            end = MaterialTheme.spacing.base,
+                            bottom = innerPadding.calculateBottomPadding() + MaterialTheme.spacing.base
+                        )
+                )
             }
 
         is OverviewUiState.Error -> Unit
