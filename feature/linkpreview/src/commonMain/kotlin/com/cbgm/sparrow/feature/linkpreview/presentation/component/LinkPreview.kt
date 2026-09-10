@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -89,56 +88,20 @@ private fun LinkPreviewCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val imageBytes = preview.imageBytes ?: return
+
     Surface(
         modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(MaterialTheme.spacing.base),
         tonalElevation = MaterialTheme.spacing.micro
     ) {
-        Column {
-            preview.imageBytes?.let { imageBytes ->
-                SparrowImage(
-                    model = imageBytes,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxWidth().height(PREVIEW_IMAGE_HEIGHT),
-                    contentScale = ContentScale.Crop,
-                    memoryCacheKey = "link-preview:${preview.url}"
-                )
-            }
-
-            Column(
-                modifier = Modifier.padding(MaterialTheme.spacing.base),
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.micro)
-            ) {
-                preview.siteName?.takeIf(String::isNotBlank)?.let { siteName ->
-                    Text(
-                        text = siteName,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                preview.title?.takeIf(String::isNotBlank)?.let { title ->
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleSmall,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                preview.description?.takeIf(String::isNotBlank)?.let { description ->
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
+        SparrowImage(
+            model = imageBytes,
+            contentDescription = null,
+            modifier = Modifier.fillMaxWidth().height(PREVIEW_IMAGE_HEIGHT),
+            contentScale = ContentScale.Crop,
+            memoryCacheKey = "link-preview:${preview.url}"
+        )
     }
 }
 

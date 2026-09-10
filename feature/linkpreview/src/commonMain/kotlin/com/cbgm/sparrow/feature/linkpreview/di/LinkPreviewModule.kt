@@ -6,6 +6,7 @@ import com.cbgm.sparrow.feature.linkpreview.data.datasource.RemoteLinkPreviewDat
 import com.cbgm.sparrow.feature.linkpreview.data.repository.LinkPreviewRepositoryImpl
 import com.cbgm.sparrow.feature.linkpreview.domain.repository.LinkPreviewRepository
 import com.cbgm.sparrow.feature.linkpreview.domain.usecase.GetLinkPreviewUseCase
+import com.cbgm.sparrow.feature.linkpreview.domain.usecase.PrefetchLinkPreviewsUseCase
 import com.cbgm.sparrow.feature.linkpreview.presentation.LinkPreviewViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -28,12 +29,19 @@ val linkPreviewModule =
         single<LinkPreviewRepository> {
             LinkPreviewRepositoryImpl(
                 remoteLinkPreviewDataSource = get(),
-                localLinkPreviewDataSource = get()
+                localLinkPreviewDataSource = get(),
+                applicationScope = get()
             )
         }
 
         factory {
             GetLinkPreviewUseCase(repository = get())
+        }
+
+        factory {
+            PrefetchLinkPreviewsUseCase(
+                repository = get()
+            )
         }
 
         viewModel { parameters ->

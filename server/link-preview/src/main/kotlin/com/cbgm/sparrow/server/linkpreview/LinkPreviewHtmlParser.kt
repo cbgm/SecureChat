@@ -16,6 +16,7 @@ internal fun parseLinkPreviewHtml(
         rawImage
             ?.takeIf(String::isNotBlank)
             ?.let { image -> pageUrl.resolveUrlOrNull(image) }
+            ?: pageUrl.youtubeThumbnailUrlOrNull()
 
     return FetchedLinkPreview(
         url = pageUrl,
@@ -77,6 +78,37 @@ private fun decodeHtmlEntities(value: String): String =
                 ?: match.value
         }
 
+internal fun String.youtubeThumbnailUrlOrNull(): String? {
+    return try {
+        val uri = URI(this)
+        val host = uri.host?.lowercase()?.removePrefix("www.") ?: return null
+        val videoId =
+            when {
+                host == "youtu.be" -> uri.path.trim('/').substringBefore('/').takeIf(String::isNotBlank)
+                host == "youtube.com" || host == "m.youtube.com" ->
+                    when {
+                        uri.path == "/watch" -> uri.rawQuery.queryParameter("v")
+                        uri.path.startsWith("/shorts/") -> uri.path.removePrefix("/shorts/").substringBefore('/')
+                        uri.path.startsWith("/embed/") -> uri.path.removePrefix("/embed/").substringBefore('/')
+                        else -> null
+                    }
+                else -> null
+            }
+        videoId
+            ?.takeIf(YOUTUBE_VIDEO_ID_REGEX::matches)
+            ?.let { id -> "https://i.ytimg.com/vi/$id/hqdefault.jpg" }
+    } catch (_: URISyntaxException) {
+        null
+    }
+}
+
+private fun String?.queryParameter(name: String): String? =
+    this
+        ?.split('&')
+        ?.firstOrNull { parameter -> parameter.substringBefore('=') == name }
+        ?.substringAfter('=', missingDelimiterValue = "")
+        ?.takeIf(String::isNotBlank)
+
 private fun String.hostOrNull(): String? =
     try {
         URI(this).host
@@ -96,4 +128,5 @@ private val ATTRIBUTE_REGEX = Regex("([A-Za-z_:.-]+)\\s*=\\s*(\"([^\"]*)\"|'([^'
 private val TITLE_REGEX = Regex("<title\\b[^>]*>(.*?)</title>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
 private val NUMERIC_ENTITY_REGEX = Regex("&#(\\d+);")
 private val WHITESPACE_REGEX = Regex("\\s+")
+private val YOUTUBE_VIDEO_ID_REGEX = Regex("[A-Za-z0-9_-]{6,}")
 private const val MAX_METADATA_LENGTH = 2_000

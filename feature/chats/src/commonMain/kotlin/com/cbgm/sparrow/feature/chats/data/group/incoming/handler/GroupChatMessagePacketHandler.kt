@@ -19,6 +19,7 @@ import com.cbgm.sparrow.feature.chats.data.group.security.GROUP_END_TO_END_ENCRY
 import com.cbgm.sparrow.feature.chats.data.group.security.GroupSecurityManager
 import com.cbgm.sparrow.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.sparrow.feature.chats.domain.model.MessageDeliveryStatus
+import com.cbgm.sparrow.feature.linkpreview.domain.usecase.PrefetchLinkPreviewsUseCase
 
 class GroupChatMessagePacketHandler(
     private val chatDao: ChatDao,
@@ -28,7 +29,8 @@ class GroupChatMessagePacketHandler(
     private val remoteProfilePictureMetadataProcessor: RemoteProfilePictureMetadataProcessor,
     private val groupMessageContentCodec: GroupMessageContentCodec,
     private val attachmentTransfer: MessageAttachmentDataSource,
-    private val attachmentCacheCoordinator: MessageAttachmentCacheCoordinator
+    private val attachmentCacheCoordinator: MessageAttachmentCacheCoordinator,
+    private val prefetchLinkPreviews: PrefetchLinkPreviewsUseCase
 ) : GroupPacketHandler {
     private val logger = SparrowLog.withTag("GroupChatMessagePacketHandler")
 
@@ -79,6 +81,7 @@ class GroupChatMessagePacketHandler(
             }
 
             if (existingMessage != null) {
+                prefetchLinkPreviews(content.text)
                 attachmentTransfer.persistIncoming(groupPacket.messageId, content.attachments)
                 queueDeliveryReceipt(groupPacket, context.contactId)
                 attachmentCacheCoordinator.cache(groupPacket.messageId)
@@ -107,6 +110,7 @@ class GroupChatMessagePacketHandler(
                     createdAtEpochMilliseconds = groupPacket.sentAtEpochMilliseconds
                 )
             )
+            prefetchLinkPreviews(content.text)
             attachmentTransfer.persistIncoming(groupPacket.messageId, content.attachments)
             chatDao.updateConversationTimestamp(groupPacket.groupId, context.receivedAtEpochMilliseconds)
 
