@@ -5,7 +5,8 @@ sealed interface GroupDetailsUiState {
 
     data class Content(
         val summary: GroupVerificationSummaryUiState,
-        val groupAvatar: GroupAvatarUiState = GroupAvatarUiState()
+        val groupAvatar: GroupAvatarUiState = GroupAvatarUiState(),
+        val groupDescription: GroupDescriptionUiState = GroupDescriptionUiState()
     ) : GroupDetailsUiState
 
     data class Error(

@@ -5,6 +5,7 @@ import com.cbgm.sparrow.core.protocol.packet.GroupAvatarUpdatedPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupChatMessagePacket
 import com.cbgm.sparrow.core.protocol.packet.GroupConversationDeletedPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupCreatedPacket
+import com.cbgm.sparrow.core.protocol.packet.GroupDescriptionUpdatedPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupInvitePacket
 import com.cbgm.sparrow.core.protocol.packet.GroupJoinRequestPacket
@@ -68,6 +69,7 @@ class GroupTransportKeyDataSource(
     private fun SparrowPacket.groupIdOrNull(): String? =
         when (this) {
             is GroupAvatarUpdatedPacket -> groupId
+            is GroupDescriptionUpdatedPacket -> groupId
             is GroupChatMessagePacket -> groupId
             is GroupMessageDeletionPacket -> groupId
             is GroupMessageEditPacket -> groupId

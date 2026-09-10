@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -48,12 +49,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import com.cbgm.sparrow.core.ui.component.SparrowAlertDialog
 import com.cbgm.sparrow.core.ui.component.SparrowApprovalButton
 import com.cbgm.sparrow.core.ui.component.SparrowAvatar
 import com.cbgm.sparrow.core.ui.component.SparrowCardNoAnimation
+import com.cbgm.sparrow.core.ui.component.SparrowInputField
 import com.cbgm.sparrow.core.ui.component.SparrowLazyScaffold
 import com.cbgm.sparrow.core.ui.component.SparrowOutlinedButton
 import com.cbgm.sparrow.core.ui.component.SparrowSecondaryButton
@@ -62,7 +67,9 @@ import com.cbgm.sparrow.core.ui.theme.Alpha
 import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
+import com.cbgm.sparrow.feature.chats.domain.model.group.GroupDescription
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupAvatarUiState
+import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupDescriptionUiState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupDetailsUiEvent
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupDetailsUiState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupMemberVerificationState
@@ -82,9 +89,14 @@ import com.cbgm.sparrow.resources.feature_chats_group_avatar_add
 import com.cbgm.sparrow.resources.feature_chats_group_avatar_change
 import com.cbgm.sparrow.resources.feature_chats_group_avatar_choose_gallery
 import com.cbgm.sparrow.resources.feature_chats_group_avatar_crop
-import com.cbgm.sparrow.resources.feature_chats_group_avatar_description
 import com.cbgm.sparrow.resources.feature_chats_group_avatar_remove
 import com.cbgm.sparrow.resources.feature_chats_group_avatar_take_photo
+import com.cbgm.sparrow.resources.feature_chats_group_description
+import com.cbgm.sparrow.resources.feature_chats_group_description_add
+import com.cbgm.sparrow.resources.feature_chats_group_description_edit
+import com.cbgm.sparrow.resources.feature_chats_group_description_empty
+import com.cbgm.sparrow.resources.feature_chats_group_description_placeholder
+import com.cbgm.sparrow.resources.feature_chats_group_description_save
 import com.cbgm.sparrow.resources.feature_chats_group_details_accepted
 import com.cbgm.sparrow.resources.feature_chats_group_details_description
 import com.cbgm.sparrow.resources.feature_chats_group_details_members
@@ -113,6 +125,8 @@ fun GroupDetailsScreen(
     modifier: Modifier = Modifier
 ) {
     var showAvatarEditor by remember { mutableStateOf(false) }
+    var showDescriptionEditor by remember { mutableStateOf(false) }
+    var descriptionDraft by remember { mutableStateOf("") }
 
     Box(modifier = modifier.fillMaxSize()) {
         SparrowLazyScaffold(
@@ -131,7 +145,14 @@ fun GroupDetailsScreen(
                 listState = listState,
                 onUiEvent = onUiEvent,
                 onEditGroupAvatar = { showAvatarEditor = true },
-                onRemoveGroupAvatar = { onUiEvent(GroupDetailsUiEvent.RemoveGroupAvatarClicked) }
+                onRemoveGroupAvatar = { onUiEvent(GroupDetailsUiEvent.RemoveGroupAvatarClicked) },
+                onEditGroupDescription = {
+                    val content = uiState as? GroupDetailsUiState.Content
+                    if (content?.groupDescription?.canEdit == true) {
+                        descriptionDraft = content.groupDescription.description
+                        showDescriptionEditor = true
+                    }
+                }
             )
         }
 
@@ -151,6 +172,26 @@ fun GroupDetailsScreen(
                 },
                 onDismiss = { showAvatarEditor = false }
             )
+        }
+
+        if (showDescriptionEditor) {
+            val descriptionState = (uiState as? GroupDetailsUiState.Content)?.groupDescription
+            if (descriptionState?.canEdit == true) {
+                GroupDescriptionEditorDialog(
+                    description = descriptionDraft,
+                    isSaving = descriptionState.isSaving,
+                    onDescriptionChanged = { value ->
+                        if (value.length <= GroupDescription.MAX_LENGTH) {
+                            descriptionDraft = value
+                        }
+                    },
+                    onSave = {
+                        showDescriptionEditor = false
+                        onUiEvent(GroupDetailsUiEvent.SaveGroupDescriptionClicked(descriptionDraft))
+                    },
+                    onDismiss = { showDescriptionEditor = false }
+                )
+            }
         }
     }
 }
@@ -195,7 +236,8 @@ private fun Content(
     listState: LazyListState,
     onUiEvent: (GroupDetailsUiEvent) -> Unit,
     onEditGroupAvatar: () -> Unit,
-    onRemoveGroupAvatar: () -> Unit
+    onRemoveGroupAvatar: () -> Unit,
+    onEditGroupDescription: () -> Unit
 ) {
     when (uiState) {
         GroupDetailsUiState.Loading ->
@@ -207,6 +249,7 @@ private fun Content(
             MemberList(
                 summary = uiState.summary,
                 groupAvatarState = uiState.groupAvatar,
+                groupDescriptionState = uiState.groupDescription,
                 innerPadding = innerPadding,
                 listState = listState,
                 onVerifyMember = { contactId ->
@@ -222,7 +265,8 @@ private fun Content(
                 },
                 onLeaveGroup = { onUiEvent(GroupDetailsUiEvent.LeaveGroupClicked) },
                 onEditGroupAvatar = onEditGroupAvatar,
-                onRemoveGroupAvatar = onRemoveGroupAvatar
+                onRemoveGroupAvatar = onRemoveGroupAvatar,
+                onEditGroupDescription = onEditGroupDescription
             )
 
         is GroupDetailsUiState.Error ->
@@ -399,14 +443,6 @@ private fun GroupAvatarSection(
             }
         }
 
-        Text(
-            text = stringResource(Res.string.feature_chats_group_avatar_description),
-            modifier = Modifier.padding(top = MaterialTheme.spacing.small),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
         if (state.canEdit) {
             SparrowSecondaryButton(
                 onClick = onEdit,
@@ -457,9 +493,115 @@ private fun GroupAvatarSectionPreview() {
 }
 
 @Composable
+private fun GroupDescriptionSection(
+    state: GroupDescriptionUiState,
+    onEdit: () -> Unit
+) {
+    SparrowCardNoAnimation(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.medium)) {
+            Text(
+                text = stringResource(Res.string.feature_chats_group_description),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Text(
+                text =
+                    state.description.takeIf(String::isNotBlank)
+                        ?: stringResource(Res.string.feature_chats_group_description_empty),
+                modifier = Modifier.padding(top = MaterialTheme.spacing.small),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            if (state.canEdit) {
+                SparrowSecondaryButton(
+                    onClick = onEdit,
+                    enabled = !state.isSaving,
+                    modifier = Modifier.fillMaxWidth().padding(top = MaterialTheme.spacing.medium),
+                    text =
+                        stringResource(
+                            if (state.description.isBlank()) {
+                                Res.string.feature_chats_group_description_add
+                            } else {
+                                Res.string.feature_chats_group_description_edit
+                            }
+                        )
+                )
+            }
+
+            state.errorMessage?.let { error ->
+                Text(
+                    text = error,
+                    modifier = Modifier.padding(top = MaterialTheme.spacing.small),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GroupDescriptionEditorDialog(
+    description: String,
+    isSaving: Boolean,
+    onDescriptionChanged: (String) -> Unit,
+    onSave: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    SparrowAlertDialog(
+        onDismissRequest = { if (!isSaving) onDismiss() },
+        title = stringResource(Res.string.feature_chats_group_description),
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                SparrowInputField(
+                    value = description,
+                    onValueChange = onDescriptionChanged,
+                    label = stringResource(Res.string.feature_chats_group_description),
+                    placeholderText = stringResource(Res.string.feature_chats_group_description_placeholder),
+                    minLines = 3,
+                    maxLines = 6,
+                    isEnabled = !isSaving,
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = KeyboardType.Text,
+                            imeAction = ImeAction.Default
+                        )
+                )
+                Text(
+                    text = "${description.length}/${GroupDescription.MAX_LENGTH}",
+                    modifier = Modifier.fillMaxWidth().padding(top = MaterialTheme.spacing.micro),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.End
+                )
+            }
+        },
+        confirmButton = {
+            SparrowApprovalButton(
+                onClick = onSave,
+                text = stringResource(Res.string.feature_chats_group_description_save),
+                fillMaxWidth = false,
+                enabled = !isSaving
+            )
+        },
+        dismissButton = {
+            SparrowOutlinedButton(
+                onClick = onDismiss,
+                text = stringResource(Res.string.base_cancel),
+                fillMaxWidth = false,
+                enabled = !isSaving
+            )
+        }
+    )
+}
+
+@Composable
 private fun MemberList(
     summary: GroupVerificationSummaryUiState,
     groupAvatarState: GroupAvatarUiState,
+    groupDescriptionState: GroupDescriptionUiState,
     onVerifyMember: (String) -> Unit,
     onAddMembers: () -> Unit,
     onMediaAndFiles: () -> Unit,
@@ -468,6 +610,7 @@ private fun MemberList(
     onLeaveGroup: () -> Unit,
     onEditGroupAvatar: () -> Unit,
     onRemoveGroupAvatar: () -> Unit,
+    onEditGroupDescription: () -> Unit,
     innerPadding: PaddingValues,
     listState: LazyListState
 ) {
@@ -491,6 +634,15 @@ private fun MemberList(
                 onEdit = onEditGroupAvatar,
                 onRemove = onRemoveGroupAvatar
             )
+        }
+
+        if (groupDescriptionState.canEdit || groupDescriptionState.description.isNotBlank()) {
+            item(key = "group-description") {
+                GroupDescriptionSection(
+                    state = groupDescriptionState,
+                    onEdit = onEditGroupDescription
+                )
+            }
         }
 
         if (!summary.isLocalAdmin && admin != null && admin.canVerify) {
@@ -551,6 +703,7 @@ private fun MemberListPreview() {
         MemberList(
             summary = GroupDetailsPreviewData.summary,
             groupAvatarState = GroupAvatarUiState(title = "Sparrow Team", canEdit = true),
+            groupDescriptionState = GroupDescriptionUiState(description = "A private Sparrow group.", canEdit = true),
             onVerifyMember = {},
             onAddMembers = {},
             onMediaAndFiles = {},
@@ -559,6 +712,7 @@ private fun MemberListPreview() {
             onLeaveGroup = {},
             onEditGroupAvatar = {},
             onRemoveGroupAvatar = {},
+            onEditGroupDescription = {},
             innerPadding = PaddingValues(),
             listState = rememberLazyListState()
         )

@@ -3,6 +3,7 @@ package com.cbgm.sparrow.feature.chats.presentation.details.mapper
 import com.cbgm.sparrow.feature.chats.domain.model.group.GroupVerificationMembershipStatus
 import com.cbgm.sparrow.feature.chats.domain.model.group.GroupVerificationPair
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupAvatarUiState
+import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupDescriptionUiState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupLeaveUiState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupMemberManagementUiState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupMemberVerificationState
@@ -156,6 +157,7 @@ internal fun toGroupAvatarUiState(
 internal fun toGroupVerificationUiState(
     summary: GroupVerificationSummaryUiState,
     groupAvatar: GroupAvatarUiState,
+    groupDescription: GroupDescriptionUiState,
     contacts: List<Contact>,
     profilePictures: Map<String, ByteArray?>,
     selectedContactId: String?,
@@ -194,6 +196,7 @@ internal fun toGroupVerificationUiState(
         isVerifying = isVerifying,
         errorMessage = verificationError,
         groupAvatar = groupAvatar,
+        groupDescription = groupDescription,
         memberManagement =
             GroupMemberManagementUiState(
                 availableContactGroups =

@@ -5,6 +5,7 @@ import com.cbgm.sparrow.core.protocol.avatar.GroupAvatarMetadata
 import com.cbgm.sparrow.core.protocol.packet.GroupAvatarUpdatedPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupConversationDeletedPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupCreatedPacket
+import com.cbgm.sparrow.core.protocol.packet.GroupDescriptionUpdatedPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupInvitePacket
 import com.cbgm.sparrow.core.protocol.packet.GroupInviteReceivedPacket
@@ -27,6 +28,18 @@ class GroupProtocolPayloadEncoder {
             encodeString(packet.groupId),
             ByteArrays.encodeInt(packet.epoch),
             encodeGroupAvatar(packet.avatar),
+            ByteArrays.withLengthPrefix(packet.adminSigningPublicKey)
+        )
+
+    fun encodeDescriptionUpdated(packet: GroupDescriptionUpdatedPacket): ByteArray =
+        ByteArrays.concatenate(
+            DESCRIPTION_UPDATED_DOMAIN,
+            ByteArrays.encodeInt(packet.version),
+            encodeString(packet.packetId),
+            encodeString(packet.groupId),
+            ByteArrays.encodeInt(packet.epoch),
+            encodeNullableString(packet.description),
+            ByteArrays.encodeLong(packet.changedAtEpochMilliseconds),
             ByteArrays.withLengthPrefix(packet.adminSigningPublicKey)
         )
 
@@ -318,6 +331,7 @@ class GroupProtocolPayloadEncoder {
 
     private companion object {
         val AVATAR_UPDATED_DOMAIN = "sparrow.group-avatar-updated.v1".encodeToByteArray()
+        val DESCRIPTION_UPDATED_DOMAIN = "sparrow.group-description-updated.v1".encodeToByteArray()
         val MEMBER_ACTIVATED_DOMAIN = "sparrow.group-member-activated.v1".encodeToByteArray()
         val MEMBER_ACTIVATION_ACKNOWLEDGEMENT_DOMAIN =
             "sparrow.group-member-activation-acknowledgement.v1".encodeToByteArray()

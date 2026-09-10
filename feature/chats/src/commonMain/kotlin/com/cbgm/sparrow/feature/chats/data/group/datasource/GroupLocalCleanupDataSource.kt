@@ -12,7 +12,8 @@ internal class GroupLocalCleanupDataSource(
     private val groupInvitationDao: GroupInvitationDao,
     private val groupVerificationDao: GroupVerificationDao,
     private val groupSecurityManager: GroupSecurityManager,
-    private val groupAvatarDataSource: GroupAvatarDataSource
+    private val groupAvatarDataSource: GroupAvatarDataSource,
+    private val groupDescriptionDataSource: GroupDescriptionDataSource
 ) {
     suspend fun endMembership(message: MessageEntity) {
         chatDao.applyLocalGroupRemoval(message)
@@ -38,6 +39,7 @@ internal class GroupLocalCleanupDataSource(
         groupVerificationDao.deleteByGroupId(groupId)
         groupInvitationDao.deleteByGroupId(groupId)
         groupAvatarDataSource.deleteLocal(groupId)
+        groupDescriptionDataSource.deleteLocal(groupId)
     }
 
     suspend fun delete(
@@ -54,5 +56,6 @@ internal class GroupLocalCleanupDataSource(
         groupVerificationDao.deleteByGroupId(groupId)
         groupInvitationDao.deleteByGroupId(groupId)
         groupAvatarDataSource.deleteLocal(groupId)
+        groupDescriptionDataSource.deleteLocal(groupId)
     }
 }
