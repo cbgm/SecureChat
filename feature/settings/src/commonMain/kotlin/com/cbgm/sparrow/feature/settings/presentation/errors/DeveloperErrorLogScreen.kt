@@ -62,12 +62,11 @@ fun DeveloperErrorLogScreen(
         )
     }
 
-    if (uiState.showClearConfirmation) {
-        ClearDeveloperErrorsDialog(
-            onConfirm = { onUiEvent(DeveloperErrorLogUiEvent.ClearErrorsConfirmed) },
-            onDismiss = { onUiEvent(DeveloperErrorLogUiEvent.ClearErrorsDismissed) }
-        )
-    }
+    ClearDeveloperErrorsDialog(
+        isVisible = uiState.showClearConfirmation,
+        onConfirm = { onUiEvent(DeveloperErrorLogUiEvent.ClearErrorsConfirmed) },
+        onDismiss = { onUiEvent(DeveloperErrorLogUiEvent.ClearErrorsDismissed) }
+    )
 }
 
 @Composable

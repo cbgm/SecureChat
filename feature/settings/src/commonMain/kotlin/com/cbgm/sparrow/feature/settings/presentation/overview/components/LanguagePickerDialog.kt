@@ -27,11 +27,13 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun LanguagePickerDialog(
+    isVisible: Boolean,
     currentLanguage: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit,
     onDismiss: () -> Unit
 ) {
     SparrowAlertDialog(
+        isVisible = isVisible,
         title = stringResource(Res.string.base_language),
         text = {
             Column {

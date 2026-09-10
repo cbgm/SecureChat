@@ -47,3 +47,6 @@ data class DirectConversationUiState(
         return result
     }
 }
+
+fun DirectConversationUiState.findMessage(id: String?) =
+    messages.firstOrNull { it.id == id }

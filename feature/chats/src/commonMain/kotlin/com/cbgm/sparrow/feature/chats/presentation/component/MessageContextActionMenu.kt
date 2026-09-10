@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -36,7 +37,9 @@ import com.cbgm.sparrow.resources.feature_chats_copy
 import com.cbgm.sparrow.resources.feature_chats_delete_message
 import com.cbgm.sparrow.resources.feature_chats_edit_message
 import com.cbgm.sparrow.resources.feature_chats_forward
+import com.cbgm.sparrow.resources.feature_chats_pin_message
 import com.cbgm.sparrow.resources.feature_chats_reply
+import com.cbgm.sparrow.resources.feature_chats_unpin_message
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -44,6 +47,9 @@ internal fun MessageContextActionMenu(
     color: Color,
     onReplyClick: () -> Unit,
     onForwardClick: () -> Unit,
+    showPin: Boolean = false,
+    isPinned: Boolean = false,
+    onPinClick: () -> Unit = {},
     onReactionClick: (String) -> Unit,
     showEdit: Boolean,
     onEditClick: () -> Unit,
@@ -95,6 +101,22 @@ internal fun MessageContextActionMenu(
                 onClick = onForwardClick,
                 icon = Icons.AutoMirrored.Filled.Forward
             )
+
+            if (showPin) {
+                HorizontalDivider(thickness = Dimens.Base.dividerThickness)
+
+                MessageActionItem(
+                    text = stringResource(
+                        if (isPinned) {
+                            Res.string.feature_chats_unpin_message
+                        } else {
+                            Res.string.feature_chats_pin_message
+                        }
+                    ),
+                    onClick = onPinClick,
+                    icon = Icons.Default.PushPin
+                )
+            }
 
             if (showEdit) {
                 HorizontalDivider(thickness = Dimens.Base.dividerThickness)

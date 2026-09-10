@@ -1,0 +1,102 @@
+package com.cbgm.sparrow.feature.chats.data.group.pin
+
+import com.cbgm.sparrow.core.protocol.identity.LocalSigningKeyPair
+import com.cbgm.sparrow.core.protocol.identity.LocalSigningKeyPairProvider
+import com.cbgm.sparrow.core.protocol.message.GroupMessageContent
+import com.cbgm.sparrow.core.protocol.message.GroupMessageContentCodec
+import com.cbgm.sparrow.data.database.dao.GroupSecurityDao
+import com.cbgm.sparrow.data.database.entity.GroupPinEntity
+import com.cbgm.sparrow.feature.chats.data.group.datasource.GroupPinDataSource
+import com.cbgm.sparrow.feature.chats.data.group.outgoing.GroupPacketBroadcaster
+import com.cbgm.sparrow.feature.chats.data.group.security.isGroupAdminRole
+
+internal class GroupPinBroadcaster(
+    private val groupSecurityDao: GroupSecurityDao,
+    private val localSigningKeyPairProvider: LocalSigningKeyPairProvider,
+    private val packetProtocol: GroupPinPacketProtocol,
+    private val packetBroadcaster: GroupPacketBroadcaster,
+    private val dataSource: GroupPinDataSource,
+    private val groupMessageContentCodec: GroupMessageContentCodec
+) {
+    suspend fun requireLocalAdmin(groupId: String): Result<Unit> =
+        runCatching { requireAdminContext(groupId) }
+            .map { Unit }
+
+    suspend fun broadcast(groupId: String): Result<Unit> =
+        runCatching {
+            val context = requireAdminContext(groupId)
+            val state = dataSource.get(groupId) ?: return@runCatching
+            val packets =
+                context.recipientContactIds.associateWith {
+                    state.toPacket(context).getOrThrow()
+                }
+            packetBroadcaster.enqueueAll(packets).getOrThrow()
+        }
+
+    suspend fun sendCurrentTo(
+        groupId: String,
+        contactId: String
+    ): Result<Unit> =
+        runCatching {
+            require(contactId.isNotBlank()) { "Contact ID must not be blank" }
+            val state = dataSource.get(groupId) ?: return@runCatching
+            val context = requireAdminContext(groupId)
+            check(contactId in context.recipientContactIds) { "Contact is not an active group member" }
+
+            packetBroadcaster
+                .enqueueAll(
+                    mapOf(
+                        contactId to state.toPacket(context).getOrThrow()
+                    )
+                ).getOrThrow()
+        }
+
+    private suspend fun GroupPinEntity.toPacket(context: AdminContextDto) =
+        toPacket(
+            context = context,
+            messageContent = messageContent?.let(groupMessageContentCodec::decode)
+        )
+
+    private suspend fun GroupPinEntity.toPacket(
+        context: AdminContextDto,
+        messageContent: GroupMessageContent?
+    ) =
+        packetProtocol.create(
+            groupId = groupId,
+            epoch = context.epoch,
+            messageId = messageId,
+            messageSentAtEpochMilliseconds = messageSentAtEpochMilliseconds ?: 0L,
+            messageSenderSigningPublicKey = messageSenderSigningPublicKey?.copyOf() ?: byteArrayOf(),
+            messageContent = messageContent,
+            changedAtEpochMilliseconds = changedAtEpochMilliseconds,
+            adminSigningKeyPair = context.signingKeyPair
+        )
+
+    private suspend fun requireAdminContext(groupId: String): AdminContextDto {
+        val state = groupSecurityDao.findState(groupId) ?: error("Group security state was not found")
+        check(state.localRole.isGroupAdminRole()) { "Only a group admin may change the pinned message" }
+        val signingKeyPair = localSigningKeyPairProvider.getSigningKeyPair().getOrThrow()
+        check(state.localSigningPublicKey.contentEquals(signingKeyPair.publicKey)) {
+            "Local admin signing key does not match the group security state"
+        }
+        val recipients =
+            groupSecurityDao
+                .findMemberKeys(groupId, state.currentEpoch)
+                .asSequence()
+                .filterNot { member -> member.signingPublicKey.contentEquals(signingKeyPair.publicKey) }
+                .map { member -> member.contactId }
+                .filter(String::isNotBlank)
+                .toSet()
+        return AdminContextDto(
+            epoch = state.currentEpoch,
+            signingKeyPair = signingKeyPair,
+            recipientContactIds = recipients
+        )
+    }
+
+    private data class AdminContextDto(
+        val epoch: Int,
+        val signingKeyPair: LocalSigningKeyPair,
+        val recipientContactIds: Set<String>
+    )
+}

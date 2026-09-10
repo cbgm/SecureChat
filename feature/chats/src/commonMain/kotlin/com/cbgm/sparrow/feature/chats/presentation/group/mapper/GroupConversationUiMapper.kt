@@ -7,6 +7,7 @@ import com.cbgm.sparrow.feature.chats.domain.model.group.GroupAdministrationStat
 import com.cbgm.sparrow.feature.chats.domain.model.group.GroupConversation
 import com.cbgm.sparrow.feature.chats.domain.model.group.GroupConversationState
 import com.cbgm.sparrow.feature.chats.domain.model.group.GroupMessage
+import com.cbgm.sparrow.feature.chats.domain.model.group.GroupPin
 import com.cbgm.sparrow.feature.chats.domain.model.group.resolveComposerState
 import com.cbgm.sparrow.feature.chats.domain.model.isEditable
 import com.cbgm.sparrow.feature.chats.presentation.component.mapper.toMessagePartsUi
@@ -27,49 +28,43 @@ import com.cbgm.sparrow.feature.safety.presentation.details.mapper.toMessageSafe
 import kotlin.collections.component1
 import kotlin.collections.component2
 
-@Suppress("UNUSED_PARAMETER")
 internal fun toGroupConversationUiState(
     conversation: GroupConversation?,
-    administration: GroupAdministrationState,
     contacts: List<Contact>,
     profilePictures: Map<String, ByteArray?>,
     avatarBytes: ByteArray?,
-    currentText: String,
-    currentError: String?,
-    observationError: String?,
     isLoading: Boolean,
-    indicatorContactIds: Set<String>,
     safetyAssessments: Map<String, MessageSafetyAssessment>,
     attachmentPayloadBytes: Map<String, ByteArray> = emptyMap(),
     voiceState: VoiceMessageUiState = VoiceMessageUiState(),
-    currentReplyToMessageId: String? = null
-): GroupConversationUiState =
-    toGroupConversationUiState(
-        conversation = conversation,
-        contacts = contacts,
-        profilePictures = profilePictures,
-        avatarBytes = avatarBytes,
-        isLoading = isLoading,
-        safetyAssessments = safetyAssessments,
-        attachmentPayloadBytes = attachmentPayloadBytes,
-        voiceState = voiceState
-    )
-
-internal fun toGroupConversationUiState(
-    conversation: GroupConversation?,
-    contacts: List<Contact>,
-    profilePictures: Map<String, ByteArray?>,
-    avatarBytes: ByteArray?,
-    isLoading: Boolean,
-    safetyAssessments: Map<String, MessageSafetyAssessment>,
-    attachmentPayloadBytes: Map<String, ByteArray> = emptyMap(),
-    voiceState: VoiceMessageUiState = VoiceMessageUiState()
+    administration: GroupAdministrationState = GroupAdministrationState(),
+    pin: GroupPin? = null
 ): GroupConversationUiState {
     val contactsById = contacts.associateBy(Contact::id)
+    val pinnedMessage =
+        pin?.message?.let { message ->
+            val sender = message.senderContactId?.let(contactsById::get)
+            val senderIsInContacts = sender?.deviceContactLinkStatus == DeviceContactLinkStatus.LINKED
+            message.toMessageBubbleUi(
+                senderName = sender.displayNameForChat(senderIsInContacts),
+                senderIsInContacts = senderIsInContacts,
+                senderProfilePictureBytes = message.senderContactId?.let(profilePictures::get),
+                safetyAssessments = safetyAssessments,
+                attachmentPayloadBytes = attachmentPayloadBytes,
+                voiceState = voiceState,
+                reply = message.replyToMessageId.toGroupReplyPreview(
+                    conversation?.messages.orEmpty().associateBy(GroupMessage::id),
+                    contactsById
+                )
+            )
+        }
 
     return GroupConversationUiState(
         title = conversation?.title.orEmpty(),
         avatarBytes = avatarBytes,
+        pinnedMessage = pinnedMessage,
+        pinnedAtEpochMilliseconds = pin?.pinnedAtEpochMilliseconds ?: 0L,
+        isLocalAdmin = administration.isLocalAdmin,
         messages = conversation.toMessageBubbleUi(
             contactsById = contactsById,
             profilePictures = profilePictures,

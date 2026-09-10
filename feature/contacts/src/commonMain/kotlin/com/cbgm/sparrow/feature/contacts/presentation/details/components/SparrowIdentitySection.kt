@@ -97,7 +97,10 @@ internal fun SparrowIdentitySection(
             SparrowApprovalButton(
                 onClick = onVerifyIdentity,
                 content = {
-                    Icon(imageVector = Icons.Default.Security, contentDescription = null)
+                    Icon(
+                        imageVector = Icons.Default.Security,
+                        contentDescription = null
+                    )
                     Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
                     Text(text = stringResource(Res.string.feature_contacts_verify_safety_number))
                 }

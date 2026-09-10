@@ -44,9 +44,6 @@ import com.cbgm.sparrow.feature.chats.presentation.overview.OverviewRoute
 import com.cbgm.sparrow.feature.identity.presentation.setup.IdentityRoute
 import com.cbgm.sparrow.feature.settings.presentation.overview.SettingsRoute
 import com.cbgm.sparrow.navigation.presentation.main.model.MainTab
-import com.cbgm.sparrow.resources.Res
-import com.cbgm.sparrow.resources.feature_contacts_open_invitations
-import com.cbgm.sparrow.resources.feature_search_open
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -153,7 +150,7 @@ private fun MainTopBar(
                     IconButton(onClick = onOpenSearch) {
                         Icon(
                             imageVector = Icons.Default.Search,
-                            contentDescription = stringResource(Res.string.feature_search_open)
+                            contentDescription = null
                         )
                     }
                 }
@@ -172,7 +169,7 @@ private fun MainTopBar(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.MarkEmailUnread,
-                            contentDescription = stringResource(Res.string.feature_contacts_open_invitations)
+                            contentDescription = null
                         )
                     }
                 }

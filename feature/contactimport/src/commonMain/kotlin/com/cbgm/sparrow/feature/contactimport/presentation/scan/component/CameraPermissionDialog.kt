@@ -17,10 +17,12 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun CameraPermissionDialog(
+    isVisible: Boolean,
     onGrantPermission: () -> Unit,
     onBack: () -> Unit
 ) {
     SparrowAlertDialog(
+        isVisible = isVisible,
         onDismissRequest = onBack,
         title = stringResource(Res.string.feature_contactimport_scan_identity),
         text = {
@@ -51,6 +53,7 @@ fun CameraPermissionDialog(
 private fun CameraPermissionDialogPreview() {
     SparrowTheme {
         CameraPermissionDialog(
+            isVisible = true,
             onGrantPermission = {},
             onBack = {}
         )

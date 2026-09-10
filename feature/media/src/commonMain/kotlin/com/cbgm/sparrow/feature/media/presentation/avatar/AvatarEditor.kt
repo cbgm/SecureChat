@@ -83,30 +83,31 @@ fun AvatarEditor(
         return
     }
 
-    if (sourceChooserVisible) {
-        AvatarSourceDialog(
-            strings = strings,
-            onTakePhoto = {
-                sourceChooserVisible = false
-                cameraLauncher.launch()
-            },
-            onChooseFromGallery = {
-                sourceChooserVisible = false
-                galleryLauncher.launch()
-            },
-            onDismiss = onDismiss
-        )
-    }
+    AvatarSourceDialog(
+        isVisible = sourceChooserVisible,
+        strings = strings,
+        onTakePhoto = {
+            sourceChooserVisible = false
+            cameraLauncher.launch()
+        },
+        onChooseFromGallery = {
+            sourceChooserVisible = false
+            galleryLauncher.launch()
+        },
+        onDismiss = onDismiss
+    )
 }
 
 @Composable
 private fun AvatarSourceDialog(
+    isVisible: Boolean,
     strings: AvatarEditorStrings,
     onTakePhoto: () -> Unit,
     onChooseFromGallery: () -> Unit,
     onDismiss: () -> Unit
 ) {
     SparrowAlertDialog(
+        isVisible = isVisible,
         onDismissRequest = onDismiss,
         title = strings.sourceTitle,
         text = {
@@ -137,6 +138,7 @@ private fun AvatarSourceDialog(
 private fun AvatarSourceDialogPreview() {
     SparrowTheme {
         AvatarSourceDialog(
+            isVisible = true,
             strings =
                 AvatarEditorStrings(
                     sourceTitle = "Profile picture",

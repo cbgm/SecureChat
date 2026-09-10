@@ -46,7 +46,8 @@ private fun MessagePart.toMessagePartUi(
                 width = width,
                 height = height,
                 durationMilliseconds = durationMilliseconds,
-                localFilePath = localFilePath
+                localFilePath = localFilePath,
+                bytes = attachmentPayloadBytes[id]
             )
 
         is MessagePart.File ->
@@ -55,7 +56,8 @@ private fun MessagePart.toMessagePartUi(
                 mimeType = mimeType,
                 byteSize = byteSize,
                 fileName = fileName,
-                localFilePath = localFilePath
+                localFilePath = localFilePath,
+                bytes = attachmentPayloadBytes[id]
             )
 
         is MessagePart.Location ->
@@ -97,6 +99,7 @@ fun MessagePartUi.ImageVideo.toMediaItem(): MediaItem =
             },
         mimeType = mimeType,
         localFilePath = localFilePath,
+        bytes = bytes,
         width = width,
         height = height,
         durationMilliseconds = durationMilliseconds
@@ -119,7 +122,8 @@ internal fun MessageBubbleUi.toMessageAttachmentsUi(): List<MessageAttachmentUi>
                     width = part.width,
                     height = part.height,
                     durationMilliseconds = part.durationMilliseconds,
-                    localFilePath = part.localFilePath
+                    localFilePath = part.localFilePath,
+                    bytes = part.bytes
                 )
             )
         }
@@ -131,7 +135,8 @@ internal fun MessageBubbleUi.toMessageAttachmentsUi(): List<MessageAttachmentUi>
                     mimeType = part.mimeType,
                     byteSize = part.byteSize,
                     fileName = part.fileName,
-                    localFilePath = part.localFilePath
+                    localFilePath = part.localFilePath,
+                    bytes = part.bytes
                 )
             )
         }

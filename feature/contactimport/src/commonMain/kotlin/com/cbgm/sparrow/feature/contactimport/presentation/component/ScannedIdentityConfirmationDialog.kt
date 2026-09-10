@@ -29,72 +29,77 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ScannedIdentityConfirmationDialog(
-    preview: ScannedIdentityPreview,
+    isVisible: Boolean,
+    preview: ScannedIdentityPreview?,
     confirmButtonText: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    SparrowAlertDialog(
-        onDismissRequest = {},
-        title = stringResource(Res.string.feature_contactimport_in_person_qr_title),
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
-            ) {
-                Text(
-                    text = preview.displayName ?: stringResource(Res.string.feature_contactimport_unnamed_sparrow_contact),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-
-                preview.phoneNumber?.let { phoneNumber ->
+    preview?.let {
+        SparrowAlertDialog(
+            isVisible = isVisible,
+            onDismissRequest = {},
+            title = stringResource(Res.string.feature_contactimport_in_person_qr_title),
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+                ) {
                     Text(
-                        text = phoneNumber,
+                        text = preview.displayName
+                            ?: stringResource(Res.string.feature_contactimport_unnamed_sparrow_contact),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+
+                    preview.phoneNumber?.let { phoneNumber ->
+                        Text(
+                            text = phoneNumber,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
+
+                    Text(
+                        text = stringResource(Res.string.feature_contactimport_sparrow_identity_found),
                         style = MaterialTheme.typography.bodyMedium
                     )
+
+                    Text(
+                        text = stringResource(Res.string.feature_contactimport_qr_trust_warning),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
+
+                    FingerprintSection(
+                        title = stringResource(Res.string.feature_contactimport_signing_key),
+                        fingerprint = preview.signingKeyFingerprint
+                    )
+
+                    FingerprintSection(
+                        title = stringResource(Res.string.feature_contactimport_encryption_key),
+                        fingerprint = preview.encryptionKeyFingerprint
+                    )
                 }
-
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
-
-                Text(
-                    text = stringResource(Res.string.feature_contactimport_sparrow_identity_found),
-                    style = MaterialTheme.typography.bodyMedium
+            },
+            confirmButton = {
+                SparrowApprovalButton(
+                    fillMaxWidth = false,
+                    onClick = onConfirm,
+                    text = confirmButtonText
                 )
-
-                Text(
-                    text = stringResource(Res.string.feature_contactimport_qr_trust_warning),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
-
-                FingerprintSection(
-                    title = stringResource(Res.string.feature_contactimport_signing_key),
-                    fingerprint = preview.signingKeyFingerprint
-                )
-
-                FingerprintSection(
-                    title = stringResource(Res.string.feature_contactimport_encryption_key),
-                    fingerprint = preview.encryptionKeyFingerprint
+            },
+            dismissButton = {
+                SparrowSecondaryButton(
+                    fillMaxWidth = false,
+                    onClick = onDismiss,
+                    text = stringResource(Res.string.base_cancel)
                 )
             }
-        },
-        confirmButton = {
-            SparrowApprovalButton(
-                fillMaxWidth = false,
-                onClick = onConfirm,
-                text = confirmButtonText
-            )
-        },
-        dismissButton = {
-            SparrowSecondaryButton(
-                fillMaxWidth = false,
-                onClick = onDismiss,
-                text = stringResource(Res.string.base_cancel)
-            )
-        }
-    )
+        )
+    }
 }
 
 @Composable
@@ -122,6 +127,7 @@ private fun FingerprintSection(
 fun ScannedIdentityDialogPreview() {
     SparrowTheme {
         ScannedIdentityConfirmationDialog(
+            isVisible = true,
             preview =
                 ScannedIdentityPreview(
                     displayName = "John Doe",

@@ -174,24 +174,21 @@ fun GroupDetailsScreen(
             )
         }
 
-        if (showDescriptionEditor) {
-            val descriptionState = (uiState as? GroupDetailsUiState.Content)?.groupDescription
-            if (descriptionState?.canEdit == true) {
-                GroupDescriptionEditorDialog(
-                    description = descriptionDraft,
-                    isSaving = descriptionState.isSaving,
-                    onDescriptionChanged = { value ->
-                        if (value.length <= GroupDescription.MAX_LENGTH) {
-                            descriptionDraft = value
-                        }
-                    },
-                    onSave = {
-                        showDescriptionEditor = false
-                        onUiEvent(GroupDetailsUiEvent.SaveGroupDescriptionClicked(descriptionDraft))
-                    },
-                    onDismiss = { showDescriptionEditor = false }
-                )
-            }
+        val descriptionState = (uiState as? GroupDetailsUiState.Content)?.groupDescription
+
+        if (showDescriptionEditor && descriptionState?.canEdit == true) {
+            GroupDescriptionEditorDialog(
+                description = descriptionDraft,
+                isSaving = descriptionState.isSaving,
+                onDescriptionChanged = { value ->
+                    if (value.length <= GroupDescription.MAX_LENGTH) descriptionDraft = value
+                },
+                onSave = {
+                    showDescriptionEditor = false
+                    onUiEvent(GroupDetailsUiEvent.SaveGroupDescriptionClicked(descriptionDraft))
+                },
+                onDismiss = { showDescriptionEditor = false }
+            )
         }
     }
 }
@@ -551,6 +548,7 @@ private fun GroupDescriptionEditorDialog(
     onDismiss: () -> Unit
 ) {
     SparrowAlertDialog(
+        isVisible = true,
         onDismissRequest = { if (!isSaving) onDismiss() },
         title = stringResource(Res.string.feature_chats_group_description),
         text = {
@@ -703,7 +701,10 @@ private fun MemberListPreview() {
         MemberList(
             summary = GroupDetailsPreviewData.summary,
             groupAvatarState = GroupAvatarUiState(title = "Sparrow Team", canEdit = true),
-            groupDescriptionState = GroupDescriptionUiState(description = "A private Sparrow group.", canEdit = true),
+            groupDescriptionState = GroupDescriptionUiState(
+                description = "A private Sparrow group.",
+                canEdit = true
+            ),
             onVerifyMember = {},
             onAddMembers = {},
             onMediaAndFiles = {},
@@ -920,6 +921,7 @@ private fun GroupMemberVerificationUiState.verificationStatusIcon(): ImageVector
 
             GroupMemberVerificationState.UNVERIFIED,
             GroupMemberVerificationState.UNAVAILABLE -> Icons.Default.Warning
+
             GroupMemberVerificationState.INVITATION_PENDING -> Icons.Default.Schedule
             GroupMemberVerificationState.GROUP_ADMIN -> Icons.Default.Group
         }

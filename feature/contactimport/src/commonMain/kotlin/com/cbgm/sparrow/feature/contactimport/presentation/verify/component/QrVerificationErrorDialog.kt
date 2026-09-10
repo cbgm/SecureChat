@@ -16,11 +16,13 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun QrVerificationErrorDialog(
+    isVisible: Boolean,
     message: String,
     onRetry: () -> Unit,
     onCancel: () -> Unit
 ) {
     SparrowAlertDialog(
+        isVisible = isVisible,
         onDismissRequest = {},
         title = stringResource(Res.string.feature_contactimport_qr_verification_failed),
         text = {
@@ -51,6 +53,7 @@ fun QrVerificationErrorDialog(
 private fun QrVerificationErrorDialogPreview() {
     SparrowTheme {
         QrVerificationErrorDialog(
+            isVisible = true,
             message = "The scanned identity does not match this contact.",
             onRetry = {},
             onCancel = {}

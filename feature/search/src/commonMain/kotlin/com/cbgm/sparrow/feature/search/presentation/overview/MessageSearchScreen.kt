@@ -45,7 +45,6 @@ import com.cbgm.sparrow.feature.search.presentation.overview.model.MessageSearch
 import com.cbgm.sparrow.feature.search.presentation.overview.model.MessageSearchUiEvent
 import com.cbgm.sparrow.feature.search.presentation.overview.model.MessageSearchUiState
 import com.cbgm.sparrow.resources.Res
-import com.cbgm.sparrow.resources.base_back
 import com.cbgm.sparrow.resources.base_unknown
 import com.cbgm.sparrow.resources.feature_search_exact_only_hint
 import com.cbgm.sparrow.resources.feature_search_failed
@@ -172,7 +171,7 @@ private fun TopBar(
                 IconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(Res.string.base_back)
+                        contentDescription = null
                     )
                 }
             },

@@ -58,12 +58,15 @@ internal fun MessageContextHost(
     onDismiss: () -> Unit,
     onReplyClick: () -> Unit,
     onForwardClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    showPin: Boolean = false,
+    isPinned: Boolean = false,
+    onPinClick: () -> Unit = {},
     onReactionClick: (String) -> Unit,
     showEdit: Boolean,
     onEditClick: () -> Unit,
     onCopyClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    modifier: Modifier = Modifier,
     preview: @Composable () -> Unit,
     content: @Composable () -> Unit
 ) {
@@ -109,6 +112,12 @@ internal fun MessageContextHost(
                         onDismiss()
                         onForwardClick()
                     },
+                    showPin = showPin,
+                    isPinned = isPinned,
+                    onPinClick = {
+                        onDismiss()
+                        onPinClick()
+                    },
                     onReactionClick = { emoji ->
                         onDismiss()
                         onReactionClick(emoji)
@@ -141,6 +150,9 @@ private fun MessageContextOverlay(
     onDismiss: () -> Unit,
     onReplyClick: () -> Unit,
     onForwardClick: () -> Unit,
+    showPin: Boolean,
+    isPinned: Boolean,
+    onPinClick: () -> Unit,
     onReactionClick: (String) -> Unit,
     showEdit: Boolean,
     onEditClick: () -> Unit,
@@ -177,6 +189,9 @@ private fun MessageContextOverlay(
                     color = menuColor,
                     onReplyClick = onReplyClick,
                     onForwardClick = onForwardClick,
+                    showPin = showPin,
+                    isPinned = isPinned,
+                    onPinClick = onPinClick,
                     onReactionClick = onReactionClick,
                     showEdit = showEdit,
                     onEditClick = onEditClick,

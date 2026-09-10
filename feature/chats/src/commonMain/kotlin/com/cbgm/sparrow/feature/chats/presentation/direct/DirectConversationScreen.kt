@@ -72,6 +72,7 @@ import com.cbgm.sparrow.feature.chats.presentation.direct.component.SecurityBann
 import com.cbgm.sparrow.feature.chats.presentation.direct.component.securityDescription
 import com.cbgm.sparrow.feature.chats.presentation.direct.model.DirectConversationUiEvent
 import com.cbgm.sparrow.feature.chats.presentation.direct.model.DirectConversationUiState
+import com.cbgm.sparrow.feature.chats.presentation.direct.model.findMessage
 import com.cbgm.sparrow.feature.contacts.presentation.overview.ContactAttachmentSelectionRoute
 import com.cbgm.sparrow.feature.safety.presentation.details.model.MessageSafetyWarningUi
 import com.cbgm.sparrow.resources.Res
@@ -152,7 +153,8 @@ fun DirectConversationScreen(
                 }
             },
             onCopyClick = {
-                contextState.message?.textPart?.text?.takeIf(String::isNotBlank)?.let(clipboardWriter::copyText)
+                contextState.message?.textPart?.text?.takeIf(String::isNotBlank)
+                    ?.let(clipboardWriter::copyText)
                 activeContextAnchor?.let { contextAnchor ->
                     feedbackOverlay =
                         FeedbackOverlayData(
@@ -291,19 +293,18 @@ fun DirectConversationScreen(
         }
     }
 
-    if (showIdentitySetupDialog) {
-        IdentitySetupDialog(
-            onShareIdentity = {
-                showIdentitySetupDialog = false
-                onUiEvent(DirectConversationUiEvent.ShareIdentityClicked)
-            },
-            onImportIdentity = {
-                showIdentitySetupDialog = false
-                onUiEvent(DirectConversationUiEvent.ImportIdentityClicked)
-            },
-            onDismiss = { showIdentitySetupDialog = false }
-        )
-    }
+    IdentitySetupDialog(
+        isVisible = showIdentitySetupDialog,
+        onShareIdentity = {
+            showIdentitySetupDialog = false
+            onUiEvent(DirectConversationUiEvent.ShareIdentityClicked)
+        },
+        onImportIdentity = {
+            showIdentitySetupDialog = false
+            onUiEvent(DirectConversationUiEvent.ImportIdentityClicked)
+        },
+        onDismiss = { showIdentitySetupDialog = false }
+    )
 
     SparrowOverlayHost(
         visible = showContactSelection,
@@ -334,9 +335,9 @@ fun DirectConversationScreen(
         )
     }
 
-    val currentViewerMessage =
-        viewerMessageId?.let { messageId -> uiState.messages.firstOrNull { it.id == messageId } }
+    val currentViewerMessage = uiState.findMessage(viewerMessageId)
     val currentViewerAttachmentId = viewerAttachmentId
+
     if (currentViewerMessage != null && currentViewerAttachmentId != null) {
         MessageAttachmentViewer(
             attachments = currentViewerMessage.toMessageAttachmentsUi(),
@@ -490,7 +491,12 @@ private fun Content(
             onContextMessageRequested = onContextMessageRequested,
             onReactionBurstRequested = onReactionBurstRequested,
             onRetryMessage = onRetryMessage,
-            onSafetyWarningClick = { messageId, _, warning -> onSafetyWarningClick(messageId, warning) },
+            onSafetyWarningClick = { messageId, _, warning ->
+                onSafetyWarningClick(
+                    messageId,
+                    warning
+                )
+            },
             onAttachmentVisible = onAttachmentVisible,
             onAttachmentClick = onAttachmentClick,
             onContactClick = onContactClick,

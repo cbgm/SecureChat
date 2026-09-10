@@ -26,7 +26,6 @@ import com.cbgm.sparrow.feature.media.device.rememberMediaExporter
 import com.cbgm.sparrow.feature.media.presentation.component.MediaViewer
 import com.cbgm.sparrow.resources.Res
 import com.cbgm.sparrow.resources.feature_attachments_media
-import com.cbgm.sparrow.resources.feature_attachments_save_to_camera_roll
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -84,7 +83,6 @@ private fun MessageMediaViewer(
 
     val exporter = rememberMediaExporter()
     val mediaLabel = stringResource(Res.string.feature_attachments_media)
-    val saveContentDescription = stringResource(Res.string.feature_attachments_save_to_camera_roll)
 
     var savePending by remember(selectedAttachmentId) { mutableStateOf(false) }
 
@@ -143,7 +141,7 @@ private fun MessageMediaViewer(
                     } else {
                         Icon(
                             imageVector = Icons.Default.SaveAlt,
-                            contentDescription = saveContentDescription
+                            contentDescription = null
                         )
                     }
                 }

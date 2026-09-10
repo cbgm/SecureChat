@@ -50,6 +50,7 @@ import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.spacing
 import com.cbgm.sparrow.feature.attachments.domain.model.SharedContact
 import com.cbgm.sparrow.feature.attachments.presentation.component.MessageAttachmentViewer
+import com.cbgm.sparrow.feature.chats.domain.model.group.ChatMessageType
 import com.cbgm.sparrow.feature.chats.presentation.component.AddSharedContactDialog
 import com.cbgm.sparrow.feature.chats.presentation.component.ChatComposerBar
 import com.cbgm.sparrow.feature.chats.presentation.component.MessageBubble
@@ -66,11 +67,14 @@ import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageCompos
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageContextUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageHistoryUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.rememberDissolvingMessageListState
+import com.cbgm.sparrow.feature.chats.presentation.group.component.GroupPinnedMessageBar
+import com.cbgm.sparrow.feature.chats.presentation.group.component.GroupPinnedMessageContent
 import com.cbgm.sparrow.feature.chats.presentation.group.component.StatusHint
 import com.cbgm.sparrow.feature.chats.presentation.group.component.subtitle
 import com.cbgm.sparrow.feature.chats.presentation.group.model.GroupConversationUiEvent
 import com.cbgm.sparrow.feature.chats.presentation.group.model.GroupConversationUiState
 import com.cbgm.sparrow.feature.chats.presentation.group.model.GroupMembershipUiState
+import com.cbgm.sparrow.feature.chats.presentation.group.model.findMessage
 import com.cbgm.sparrow.feature.contacts.presentation.overview.ContactAttachmentSelectionRoute
 import com.cbgm.sparrow.feature.safety.presentation.details.model.MessageSafetyWarningUi
 import com.cbgm.sparrow.resources.Res
@@ -78,6 +82,15 @@ import com.cbgm.sparrow.resources.common_copied
 import com.cbgm.sparrow.resources.feature_chats_loading_chat
 import com.cbgm.sparrow.resources.feature_chats_no_messages_yet
 import org.jetbrains.compose.resources.stringResource
+
+/**
+ * A message + the attachment within it that is currently open in the full-screen viewer.
+ * Replaces the previous pair of nullable (messageId, attachmentId) states.
+ */
+private data class AttachmentSelection(
+    val message: MessageBubbleUi,
+    val attachmentId: String
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,9 +107,11 @@ fun GroupConversationScreen(
     modifier: Modifier = Modifier,
     targetMessageId: String? = null
 ) {
-    var viewerMessageId by rememberSaveable { mutableStateOf<String?>(null) }
-    var viewerAttachmentId by rememberSaveable { mutableStateOf<String?>(null) }
+    var attachmentSelection by remember {
+        mutableStateOf<AttachmentSelection?>(null)
+    }
     var showContactSelection by rememberSaveable { mutableStateOf(false) }
+    var showPinnedMessage by rememberSaveable { mutableStateOf(false) }
     var pendingSharedContact by remember { mutableStateOf<SharedContact?>(null) }
     var messageContextAnchor by remember { mutableStateOf<MessageContextAnchor?>(null) }
     var reactionBurst by remember { mutableStateOf<MessageReactionBurst?>(null) }
@@ -104,9 +119,11 @@ fun GroupConversationScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(errorMessage) {
-        errorMessage?.let { message ->
-            snackbarHostState.showSnackbar(message)
-        }
+        errorMessage?.let { message -> snackbarHostState.showSnackbar(message) }
+    }
+
+    LaunchedEffect(uiState.pinnedMessage) {
+        if (uiState.pinnedMessage == null) showPinnedMessage = false
     }
 
     val contextMessage = contextState.message
@@ -120,9 +137,7 @@ fun GroupConversationScreen(
         }
 
     val activeContextAnchor =
-        messageContextAnchor?.takeIf { anchor ->
-            anchor.messageId == contextMessage?.id
-        }
+        messageContextAnchor?.takeIf { anchor -> anchor.messageId == contextMessage?.id }
 
     Box(modifier = modifier.fillMaxSize()) {
         MessageContextHost(
@@ -133,40 +148,46 @@ fun GroupConversationScreen(
                 onUiEvent(GroupConversationUiEvent.MessageContextDismissed)
             },
             onReplyClick = {
-                contextMessage?.id?.let { messageId ->
-                    onUiEvent(GroupConversationUiEvent.ReplyToMessage(messageId))
-                }
+                contextMessage?.id?.let { onUiEvent(GroupConversationUiEvent.ReplyToMessage(it)) }
             },
-            onForwardClick = {
-                contextMessage?.id?.let(onForwardMessageRequested)
+            onForwardClick = { contextMessage?.id?.let(onForwardMessageRequested) },
+            showPin =
+                uiState.isLocalAdmin &&
+                    contextMessage?.groupExtension?.type == ChatMessageType.USER,
+            isPinned = contextMessage?.id == uiState.pinnedMessage?.id,
+            onPinClick = {
+                val messageId = contextMessage?.id ?: return@MessageContextHost
+                val event =
+                    if (messageId == uiState.pinnedMessage?.id) {
+                        GroupConversationUiEvent.UnpinMessage
+                    } else {
+                        GroupConversationUiEvent.PinMessage(messageId)
+                    }
+                onUiEvent(event)
             },
             onReactionClick = { emoji ->
-                contextMessage?.id?.let { messageId ->
-                    onUiEvent(GroupConversationUiEvent.MessageReactionSelected(messageId, emoji))
+                contextMessage?.id?.let {
+                    onUiEvent(GroupConversationUiEvent.MessageReactionSelected(it, emoji))
                 }
             },
             showEdit = contextState.canEdit,
             onEditClick = {
-                contextMessage?.id?.let { messageId ->
-                    onUiEvent(GroupConversationUiEvent.EditMessage(messageId))
-                }
+                contextMessage?.id?.let { onUiEvent(GroupConversationUiEvent.EditMessage(it)) }
             },
             onCopyClick = {
                 contextMessage?.textPart?.text?.takeIf(String::isNotBlank)
                     ?.let(clipboardWriter::copyText)
-                activeContextAnchor?.let { contextAnchor ->
+                activeContextAnchor?.let { anchor ->
                     feedbackOverlay =
                         FeedbackOverlayData(
-                            anchor = contextAnchor.overlayAnchor,
+                            anchor = anchor.overlayAnchor,
                             text = copiedText,
                             color = contextMenuColor
                         )
                 }
             },
             onDeleteClick = {
-                contextMessage?.id?.let { messageId ->
-                    onUiEvent(GroupConversationUiEvent.DeleteMessage(messageId))
-                }
+                contextMessage?.id?.let { onUiEvent(GroupConversationUiEvent.DeleteMessage(it)) }
             },
             modifier = Modifier.fillMaxSize(),
             preview = {
@@ -174,9 +195,9 @@ fun GroupConversationScreen(
                     MessageBubble(
                         message = message,
                         onRetryClick = {},
-                        onSafetyDetailsClick = { },
+                        onSafetyDetailsClick = {},
                         onAttachmentVisible = {},
-                        onAttachmentClick = { },
+                        onAttachmentClick = {},
                         onContactClick = {},
                         voiceTranscriptionEnabled = uiState.voiceTranscriptionEnabled,
                         onReplyPreviewClick = {},
@@ -186,24 +207,7 @@ fun GroupConversationScreen(
                         isSearchHighlighted = false,
                         showMetadata = false,
                         contextMenuEnabled = false,
-                        leadingContent =
-                            if (!message.isMine) {
-                                {
-                                    SparrowAvatar(
-                                        name = message.senderName.orEmpty(),
-                                        pictureBytes = message.groupExtension?.senderProfilePictureBytes,
-                                        size = Dimens.GroupConversationScreen.avatarSize
-                                    )
-
-                                    Spacer(
-                                        modifier = Modifier.width(
-                                            MaterialTheme.spacing.groupConversationScreen.senderGap
-                                        )
-                                    )
-                                }
-                            } else {
-                                null
-                            }
+                        leadingContent = senderAvatarOrNull(message)
                     )
                 }
             }
@@ -220,12 +224,23 @@ fun GroupConversationScreen(
                     )
                 },
                 topBar = { containerColor ->
-                    TopBar(
-                        uiState = uiState,
-                        membershipState = membershipState,
-                        containerColor = containerColor,
-                        onUiEvent = onUiEvent
-                    )
+                    Column {
+                        TopBar(
+                            uiState = uiState,
+                            membershipState = membershipState,
+                            containerColor = containerColor,
+                            onUiEvent = onUiEvent
+                        )
+                        uiState.pinnedMessage?.let { pinnedMessage ->
+                            GroupPinnedMessageBar(
+                                message = pinnedMessage,
+                                pinnedAtEpochMilliseconds = uiState.pinnedAtEpochMilliseconds,
+                                canUnpin = uiState.isLocalAdmin,
+                                onClick = { showPinnedMessage = true },
+                                onUnpinClick = { onUiEvent(GroupConversationUiEvent.UnpinMessage) }
+                            )
+                        }
+                    }
                 },
                 bottomBar = { containerColor ->
                     BottomBar(
@@ -245,17 +260,15 @@ fun GroupConversationScreen(
                     selectedContextMessageId = messageContextAnchor?.messageId,
                     historyState = historyState,
                     onLoadOlderMessages = { onUiEvent(GroupConversationUiEvent.LoadOlderMessages) },
-                    onMessageHistoryTargetRequested = { messageId ->
-                        onUiEvent(GroupConversationUiEvent.MessageHistoryTargetRequested(messageId))
+                    onMessageHistoryTargetRequested = {
+                        onUiEvent(GroupConversationUiEvent.MessageHistoryTargetRequested(it))
                     },
                     onContextMessageRequested = { anchor ->
                         messageContextAnchor = anchor
                         onUiEvent(GroupConversationUiEvent.MessageContextRequested(anchor.messageId))
                     },
                     onReactionBurstRequested = { reactionBurst = it },
-                    onRetryMessage = { messageId ->
-                        onUiEvent(GroupConversationUiEvent.RetryMessage(messageId))
-                    },
+                    onRetryMessage = { onUiEvent(GroupConversationUiEvent.RetryMessage(it)) },
                     onSafetyWarningClick = { messageId, contactId, warning ->
                         onUiEvent(
                             GroupConversationUiEvent.SafetyWarningClicked(
@@ -265,24 +278,36 @@ fun GroupConversationScreen(
                             )
                         )
                     },
-                    onAttachmentVisible = { attachmentId ->
-                        onUiEvent(GroupConversationUiEvent.AttachmentVisible(attachmentId))
-                    },
+                    onAttachmentVisible = { onUiEvent(GroupConversationUiEvent.AttachmentVisible(it)) },
                     onAttachmentClick = { messageId, attachmentId ->
-                        viewerMessageId = messageId
-                        viewerAttachmentId = attachmentId
-                        onUiEvent(GroupConversationUiEvent.AttachmentVisible(attachmentId))
+                        uiState.findMessage(messageId)?.let { message ->
+                            attachmentSelection =
+                                AttachmentSelection(
+                                    message = message,
+                                    attachmentId = attachmentId
+                                )
+                        }
+
+                        onUiEvent(
+                            GroupConversationUiEvent.AttachmentVisible(attachmentId)
+                        )
                     },
                     onContactClick = { contact -> pendingSharedContact = contact },
-                    onVoicePlayPauseClick = { attachmentId ->
-                        onUiEvent(GroupConversationUiEvent.VoicePlayPauseClicked(attachmentId))
+                    onVoicePlayPauseClick = {
+                        onUiEvent(
+                            GroupConversationUiEvent.VoicePlayPauseClicked(
+                                it
+                            )
+                        )
                     },
-                    onVoiceTranscribeClick = { attachmentId ->
-                        onUiEvent(GroupConversationUiEvent.VoiceTranscribeClicked(attachmentId))
+                    onVoiceTranscribeClick = {
+                        onUiEvent(
+                            GroupConversationUiEvent.VoiceTranscribeClicked(
+                                it
+                            )
+                        )
                     },
-                    onVoiceSeekStart = { attachmentId ->
-                        onUiEvent(GroupConversationUiEvent.VoiceSeekStarted(attachmentId))
-                    },
+                    onVoiceSeekStart = { onUiEvent(GroupConversationUiEvent.VoiceSeekStarted(it)) },
                     onVoiceSeekEnd = { attachmentId, positionMilliseconds ->
                         onUiEvent(
                             GroupConversationUiEvent.VoiceSeekFinished(
@@ -307,10 +332,7 @@ fun GroupConversationScreen(
 
         reactionBurst?.let { burst ->
             SparrowOverlay(anchor = burst.anchor) {
-                MessageReactionBurstOverlay(
-                    burst = burst,
-                    onDismiss = { reactionBurst = null }
-                )
+                MessageReactionBurstOverlay(burst = burst, onDismiss = { reactionBurst = null })
             }
         }
     }
@@ -333,6 +355,28 @@ fun GroupConversationScreen(
         )
     }
 
+    GroupPinnedMessageOverlay(
+        visible = showPinnedMessage,
+        message = uiState.pinnedMessage,
+        voiceTranscriptionEnabled = uiState.voiceTranscriptionEnabled,
+        onDismissRequest = { showPinnedMessage = false },
+        onAttachmentClick = { _, attachmentId ->
+            uiState.pinnedMessage?.let { message ->
+                attachmentSelection =
+                    AttachmentSelection(
+                        message = message,
+                        attachmentId = attachmentId
+                    )
+            }
+
+            onUiEvent(
+                GroupConversationUiEvent.AttachmentVisible(attachmentId)
+            )
+        },
+        onUiEvent = onUiEvent,
+        onContactClick = { contact -> pendingSharedContact = contact }
+    )
+
     pendingSharedContact?.let { contact ->
         AddSharedContactDialog(
             contact = contact,
@@ -344,24 +388,95 @@ fun GroupConversationScreen(
         )
     }
 
-    val currentViewerMessage =
-        viewerMessageId
-            ?.let { messageId -> uiState.messages.firstOrNull { it.id == messageId } }
-    val currentViewerAttachmentId = viewerAttachmentId
-    if (currentViewerMessage != null && currentViewerAttachmentId != null) {
-        MessageAttachmentViewer(
-            attachments = currentViewerMessage.toMessageAttachmentsUi(),
-            selectedAttachmentId = currentViewerAttachmentId,
-            canSaveToCameraRoll = !currentViewerMessage.isMine,
-            onDismiss = {
-                viewerMessageId = null
-                viewerAttachmentId = null
-            },
-            onEnsureAttachmentLoaded = { attachmentId ->
-                onUiEvent(GroupConversationUiEvent.AttachmentVisible(attachmentId))
-            },
-            onError = { error -> onUiEvent(GroupConversationUiEvent.AttachmentError(error)) }
+    attachmentSelection?.let { selection ->
+        AttachmentViewerOverlay(
+            message = selection.message,
+            attachmentId = selection.attachmentId,
+            onDismiss = { attachmentSelection = null },
+            onUiEvent = onUiEvent
         )
+    }
+}
+
+@Composable
+private fun AttachmentViewerOverlay(
+    message: MessageBubbleUi,
+    attachmentId: String,
+    onDismiss: () -> Unit,
+    onUiEvent: (GroupConversationUiEvent) -> Unit
+) {
+    MessageAttachmentViewer(
+        attachments = message.toMessageAttachmentsUi(),
+        selectedAttachmentId = attachmentId,
+        canSaveToCameraRoll = !message.isMine,
+        onDismiss = onDismiss,
+        onEnsureAttachmentLoaded = { onUiEvent(GroupConversationUiEvent.AttachmentVisible(it)) },
+        onError = { onUiEvent(GroupConversationUiEvent.AttachmentError(it)) }
+    )
+}
+
+/** Avatar + spacer leading content for a non-own message bubble, or null for own messages. */
+@Composable
+private fun senderAvatarOrNull(message: MessageBubbleUi): (@Composable () -> Unit)? {
+    if (message.isMine) return null
+    return {
+        SparrowAvatar(
+            name = message.senderName.orEmpty(),
+            pictureBytes = message.groupExtension?.senderProfilePictureBytes,
+            size = Dimens.GroupConversationScreen.avatarSize
+        )
+        Spacer(modifier = Modifier.width(MaterialTheme.spacing.groupConversationScreen.senderGap))
+    }
+}
+
+@Composable
+private fun GroupPinnedMessageOverlay(
+    visible: Boolean,
+    message: MessageBubbleUi?,
+    voiceTranscriptionEnabled: Boolean,
+    onDismissRequest: () -> Unit,
+    onAttachmentClick: (String, String) -> Unit,
+    onUiEvent: (GroupConversationUiEvent) -> Unit,
+    onContactClick: (SharedContact) -> Unit
+) {
+    SparrowOverlayHost(
+        visible = visible && message != null,
+        onDismissRequest = onDismissRequest,
+        horizontalPadding = MaterialTheme.spacing.zero,
+        topPadding = MaterialTheme.spacing.times(6)
+    ) { dismissOverlay ->
+        message?.let { pinnedMessage ->
+            GroupPinnedMessageContent(
+                message = pinnedMessage,
+                onBack = dismissOverlay,
+                voiceTranscriptionEnabled = voiceTranscriptionEnabled,
+                onAttachmentVisible = {
+                    onUiEvent(GroupConversationUiEvent.AttachmentVisible(it))
+                },
+                onAttachmentClick = { attachmentId ->
+                    onAttachmentClick(pinnedMessage.id, attachmentId)
+                },
+                onContactClick = onContactClick,
+                onVoicePlayPauseClick = {
+                    onUiEvent(GroupConversationUiEvent.VoicePlayPauseClicked(it))
+                },
+                onVoiceTranscribeClick = {
+                    onUiEvent(GroupConversationUiEvent.VoiceTranscribeClicked(it))
+                },
+                onVoiceSeekStart = {
+                    onUiEvent(GroupConversationUiEvent.VoiceSeekStarted(it))
+                },
+                onVoiceSeekEnd = { attachmentId, positionMilliseconds ->
+                    onUiEvent(
+                        GroupConversationUiEvent.VoiceSeekFinished(
+                            attachmentId = attachmentId,
+                            positionMilliseconds = positionMilliseconds
+                        )
+                    )
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
     }
 }
 
@@ -531,10 +646,7 @@ private fun Content(
 }
 
 @Composable
-private fun EmptyContent(
-    title: String,
-    modifier: Modifier = Modifier
-) {
+private fun EmptyContent(title: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.padding(horizontal = MaterialTheme.spacing.large),
         contentAlignment = Alignment.Center

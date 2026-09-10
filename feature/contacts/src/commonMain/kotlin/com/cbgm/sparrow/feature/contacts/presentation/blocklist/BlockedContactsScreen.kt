@@ -44,7 +44,6 @@ import com.cbgm.sparrow.feature.contacts.presentation.blocklist.components.AddBl
 import com.cbgm.sparrow.feature.contacts.presentation.blocklist.model.BlockedContactsUiEvent
 import com.cbgm.sparrow.feature.contacts.presentation.blocklist.model.BlockedContactsUiState
 import com.cbgm.sparrow.resources.Res
-import com.cbgm.sparrow.resources.feature_contacts_add_blocked_contact
 import com.cbgm.sparrow.resources.feature_contacts_blocked_contacts_empty
 import com.cbgm.sparrow.resources.feature_contacts_blocked_contacts_title
 import com.cbgm.sparrow.resources.feature_contacts_unblock_contact
@@ -130,7 +129,13 @@ fun BlockedContactsScreen(
                             contact = contact,
                             profilePictureBytes = uiState.profilePictures[contact.id],
                             enabled = uiState.processingContactId == null,
-                            onUnblock = { onUiEvent(BlockedContactsUiEvent.UnblockContactClicked(contact.id)) }
+                            onUnblock = {
+                                onUiEvent(
+                                    BlockedContactsUiEvent.UnblockContactClicked(
+                                        contact.id
+                                    )
+                                )
+                            }
                         )
 
                         HorizontalDivider(
@@ -155,29 +160,28 @@ fun BlockedContactsScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(Res.string.feature_contacts_add_blocked_contact)
+                    contentDescription = null
                 )
             }
         }
     }
 
-    if (uiState.showAddContacts) {
-        AddBlockedContactDialog(
-            phoneNumber = uiState.phoneNumber,
-            phoneNumberError = uiState.phoneNumberError,
-            contacts = uiState.availableContacts,
-            profilePictures = uiState.profilePictures,
-            enabled = uiState.processingContactId == null,
-            onPhoneNumberChanged = { value ->
-                onUiEvent(BlockedContactsUiEvent.PhoneNumberChanged(value))
-            },
-            onBlockPhoneNumber = { onUiEvent(BlockedContactsUiEvent.BlockPhoneNumberClicked) },
-            onContactSelected = { contact ->
-                onUiEvent(BlockedContactsUiEvent.BlockContactClicked(contact.id))
-            },
-            onDismiss = { onUiEvent(BlockedContactsUiEvent.AddContactsDismissed) }
-        )
-    }
+    AddBlockedContactDialog(
+        isVisible = uiState.showAddContacts,
+        phoneNumber = uiState.phoneNumber,
+        phoneNumberError = uiState.phoneNumberError,
+        contacts = uiState.availableContacts,
+        profilePictures = uiState.profilePictures,
+        enabled = uiState.processingContactId == null,
+        onPhoneNumberChanged = { value ->
+            onUiEvent(BlockedContactsUiEvent.PhoneNumberChanged(value))
+        },
+        onBlockPhoneNumber = { onUiEvent(BlockedContactsUiEvent.BlockPhoneNumberClicked) },
+        onContactSelected = { contact ->
+            onUiEvent(BlockedContactsUiEvent.BlockContactClicked(contact.id))
+        },
+        onDismiss = { onUiEvent(BlockedContactsUiEvent.AddContactsDismissed) }
+    )
 }
 
 @Composable

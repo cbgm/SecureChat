@@ -127,6 +127,11 @@ class MessageAttachmentDataSource(
     suspend fun protocolAttachments(messageId: String): List<ProtocolMessageAttachment> =
         attachmentDao.findByMessageId(messageId).map { entity -> entity.toProtocolMessageAttachment() }
 
+    suspend fun loadDetachedBytes(attachment: ProtocolMessageAttachment): ByteArray =
+        withContext(Dispatchers.IO) {
+            blobTransferDataSource.download(attachment.blob)
+        }
+
     suspend fun cacheIncoming(messageId: String) {
         coroutineScope {
             attachmentDao.findByMessageId(messageId)
