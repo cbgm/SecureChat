@@ -5,11 +5,13 @@ import com.cbgm.sparrow.core.protocol.handler.IncomingPacketContext
 import com.cbgm.sparrow.core.protocol.packet.GroupReadyAcknowledgementPacket
 import com.cbgm.sparrow.core.protocol.packet.SparrowPacket
 import com.cbgm.sparrow.feature.chats.data.group.avatar.GroupAvatarBroadcaster
+import com.cbgm.sparrow.feature.chats.data.group.description.GroupDescriptionBroadcaster
 import com.cbgm.sparrow.feature.chats.data.group.membership.GroupMembershipCoordinator
 
 class GroupReadyAcknowledgementPacketHandler internal constructor(
     private val membershipCoordinator: GroupMembershipCoordinator,
-    private val groupAvatarBroadcaster: GroupAvatarBroadcaster
+    private val groupAvatarBroadcaster: GroupAvatarBroadcaster,
+    private val groupDescriptionBroadcaster: GroupDescriptionBroadcaster
 ) : GroupPacketHandler {
     private val logger = SparrowLog.withTag("GroupReadyAcknowledgementPacketHandler")
 
@@ -32,6 +34,15 @@ class GroupReadyAcknowledgementPacketHandler internal constructor(
                     ).onFailure { error ->
                         logger.warn(error) {
                             "Could not queue current group avatar for ${context.contactId}"
+                        }
+                    }
+                groupDescriptionBroadcaster
+                    .sendCurrentTo(
+                        groupId = context.conversationId,
+                        contactId = context.contactId
+                    ).onFailure { error ->
+                        logger.warn(error) {
+                            "Could not queue current group description for ${context.contactId}"
                         }
                     }
             }

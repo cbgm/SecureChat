@@ -14,6 +14,7 @@ import com.cbgm.sparrow.feature.chats.domain.usecase.group.PromoteGroupMemberUse
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.RemoveGroupAvatarUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.RemoveGroupMemberUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.SetGroupAvatarUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.group.SetGroupDescriptionUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.SynchronizeGroupVerificationUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.TransferGroupAdminAndLeaveUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.VerifyGroupMemberUseCase
@@ -22,6 +23,7 @@ import com.cbgm.sparrow.feature.chats.presentation.details.mapper.toGroupAvatarU
 import com.cbgm.sparrow.feature.chats.presentation.details.mapper.toGroupVerificationUiState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.AddGroupMembersUiEvent
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupAvatarUiState
+import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupDescriptionUiState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupDetailsUiEvent
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupLeavePrompt
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupLeaveUiState
@@ -50,6 +52,7 @@ class GroupVerificationViewModel(
     private val transferGroupAdminAndLeave: TransferGroupAdminAndLeaveUseCase,
     private val setGroupAvatar: SetGroupAvatarUseCase,
     private val removeGroupAvatar: RemoveGroupAvatarUseCase,
+    private val setGroupDescription: SetGroupDescriptionUseCase,
     private val getGroupLeaveRequirement: GetGroupLeaveRequirementUseCase,
     private val leaveGroup: LeaveGroupUseCase
 ) : BaseViewModel() {
@@ -77,13 +80,15 @@ class GroupVerificationViewModel(
         )
     private val leaveState = MutableStateFlow(GroupLeaveUiState())
     private val avatarActionState = MutableStateFlow(GroupAvatarActionState())
+    private val descriptionActionState = MutableStateFlow(GroupDescriptionActionState())
     private val contactsWithProfilePictures = observeContactsWithProfilePictures()
 
     private val groupOverviewFlow =
         combine(
             observeGroupDetailsContext(conversationId),
-            avatarActionState
-        ) { context, avatarAction ->
+            avatarActionState,
+            descriptionActionState
+        ) { context, avatarAction, descriptionAction ->
             val groupState = context.verification
             val administration = context.administration
             val summary =
@@ -110,6 +115,13 @@ class GroupVerificationViewModel(
                         canEdit = summary.isLocalAdmin,
                         isSaving = avatarAction.isSaving,
                         errorMessage = avatarAction.errorMessage
+                    ),
+                description =
+                    GroupDescriptionUiState(
+                        description = context.description.description.orEmpty(),
+                        canEdit = summary.isLocalAdmin,
+                        isSaving = descriptionAction.isSaving,
+                        errorMessage = descriptionAction.errorMessage
                     )
             )
         }
@@ -125,6 +137,7 @@ class GroupVerificationViewModel(
             toGroupVerificationUiState(
                 summary = overview.summary,
                 groupAvatar = overview.avatar,
+                groupDescription = overview.description,
                 contacts = contactsSnapshot.contacts,
                 profilePictures = contactsSnapshot.profilePictures,
                 selectedContactId = verification.selectedContactId,
@@ -175,6 +188,7 @@ class GroupVerificationViewModel(
             GroupDetailsUiEvent.LeaveGroupClicked -> requestLeave()
             is GroupDetailsUiEvent.AvatarSelected -> saveGroupAvatar(event.bytes)
             GroupDetailsUiEvent.RemoveGroupAvatarClicked -> removeCurrentGroupAvatar()
+            is GroupDetailsUiEvent.SaveGroupDescriptionClicked -> saveGroupDescription(event.description)
             GroupDetailsUiEvent.AddMembersClicked -> Unit
             GroupDetailsUiEvent.MediaAndFilesClicked ->
                 navigator.navigateTo(AppRoute.AttachmentManagement(conversationId))
@@ -217,6 +231,22 @@ class GroupVerificationViewModel(
                     avatarActionState.value =
                         GroupAvatarActionState(
                             errorMessage = error.message ?: "Group avatar could not be removed"
+                        )
+                }
+        }
+    }
+
+    private fun saveGroupDescription(description: String) {
+        if (!uiState.value.summary.isLocalAdmin || descriptionActionState.value.isSaving) return
+
+        descriptionActionState.value = GroupDescriptionActionState(isSaving = true)
+        viewModelScope.launch {
+            setGroupDescription(conversationId, description)
+                .onSuccess { descriptionActionState.value = GroupDescriptionActionState() }
+                .onFailure { error ->
+                    descriptionActionState.value =
+                        GroupDescriptionActionState(
+                            errorMessage = error.message ?: "Group description could not be saved"
                         )
                 }
         }
@@ -591,10 +621,16 @@ class GroupVerificationViewModel(
 
     private data class GroupOverviewSnapshot(
         val summary: GroupVerificationSummaryUiState,
-        val avatar: GroupAvatarUiState
+        val avatar: GroupAvatarUiState,
+        val description: GroupDescriptionUiState
     )
 
     private data class GroupAvatarActionState(
+        val isSaving: Boolean = false,
+        val errorMessage: String? = null
+    )
+
+    private data class GroupDescriptionActionState(
         val isSaving: Boolean = false,
         val errorMessage: String? = null
     )

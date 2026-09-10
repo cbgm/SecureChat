@@ -8,6 +8,7 @@ import com.cbgm.sparrow.core.protocol.packet.ContactReadyPacket
 import com.cbgm.sparrow.core.protocol.packet.ContactVerificationReceiptPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupAvatarUpdatedPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupCreatedPacket
+import com.cbgm.sparrow.core.protocol.packet.GroupDescriptionUpdatedPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupInviteDeclinedPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupInvitePacket
 import com.cbgm.sparrow.core.protocol.packet.GroupInviteReceivedPacket
@@ -84,6 +85,7 @@ class OutgoingPacketTransportPolicy {
                     )
 
                 is GroupAvatarUpdatedPacket,
+                is GroupDescriptionUpdatedPacket,
                 is GroupCreatedPacket,
                 is GroupLeaveRequestPacket,
                 is GroupMemberActivatedPacket,

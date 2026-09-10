@@ -4,6 +4,7 @@ import com.cbgm.sparrow.feature.chats.domain.model.group.GroupDetailsContext
 import com.cbgm.sparrow.feature.chats.domain.model.group.GroupVerificationState
 import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupAvatarRepository
 import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupConversationRepository
+import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupDescriptionRepository
 import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupMembershipRepository
 import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupVerificationRepository
 import com.cbgm.sparrow.feature.contacts.domain.repository.ContactRepository
@@ -17,6 +18,7 @@ class ObserveGroupDetailsContextUseCase(
     private val membershipRepository: GroupMembershipRepository,
     private val conversationRepository: GroupConversationRepository,
     private val avatarRepository: GroupAvatarRepository,
+    private val descriptionRepository: GroupDescriptionRepository,
     private val contactRepository: ContactRepository
 ) {
     operator fun invoke(groupId: String): Flow<GroupDetailsContext> {
@@ -46,13 +48,15 @@ class ObserveGroupDetailsContextUseCase(
                 .observe(groupId)
                 .onStart { emit(null) }
                 .catch { emit(null) },
-            avatarRepository.observe(groupId)
-        ) { verification, administration, conversation, avatar ->
+            avatarRepository.observe(groupId),
+            descriptionRepository.observe(groupId)
+        ) { verification, administration, conversation, avatar, description ->
             GroupDetailsContext(
                 verification = verification,
                 administration = administration,
                 conversation = conversation,
-                avatar = avatar
+                avatar = avatar,
+                description = description
             )
         }
     }

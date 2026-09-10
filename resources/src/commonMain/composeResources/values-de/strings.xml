@@ -431,6 +431,12 @@
     <string name="feature_chats_group_status_partial">%1$d bereit · %2$d ausstehend</string>
     <string name="feature_chats_group_details_title">Gruppendetails</string>
     <string name="feature_chats_group_details_description">Hier siehst du alle Mitglieder, angenommene und ausstehende Einladungen sowie den Verifizierungsstand.</string>
+    <string name="feature_chats_group_description">Gruppenbeschreibung</string>
+    <string name="feature_chats_group_description_add">Beschreibung hinzufügen</string>
+    <string name="feature_chats_group_description_edit">Beschreibung bearbeiten</string>
+    <string name="feature_chats_group_description_empty">Noch keine Beschreibung hinzugefügt.</string>
+    <string name="feature_chats_group_description_placeholder">Beschreibe diese Gruppe</string>
+    <string name="feature_chats_group_description_save">Speichern</string>
     <string name="feature_chats_group_details_members">Mitglieder</string>
     <string name="feature_chats_group_details_verified">Verifiziert</string>
     <string name="feature_chats_group_details_accepted">Angenommen</string>
@@ -519,7 +525,6 @@
     <string name="feature_chats_group_member_unavailable">Nicht verfügbar — erneut einladen</string>
 
     <string name="feature_chats_group_avatar">Gruppenbild</string>
-    <string name="feature_chats_group_avatar_description">Dieses Bild wird mit den aktuellen Gruppenmitgliedern geteilt.</string>
     <string name="feature_chats_group_avatar_add">Gruppenbild hinzufügen</string>
     <string name="feature_chats_group_avatar_change">Gruppenbild ändern</string>
     <string name="feature_chats_group_avatar_remove">Gruppenbild entfernen</string>

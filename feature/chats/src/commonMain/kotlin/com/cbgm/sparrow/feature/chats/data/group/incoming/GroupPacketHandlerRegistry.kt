@@ -5,6 +5,7 @@ import com.cbgm.sparrow.feature.chats.data.group.incoming.handler.GroupAvatarUpd
 import com.cbgm.sparrow.feature.chats.data.group.incoming.handler.GroupChatMessagePacketHandler
 import com.cbgm.sparrow.feature.chats.data.group.incoming.handler.GroupConversationDeletedPacketHandler
 import com.cbgm.sparrow.feature.chats.data.group.incoming.handler.GroupCreatedPacketHandler
+import com.cbgm.sparrow.feature.chats.data.group.incoming.handler.GroupDescriptionUpdatedPacketHandler
 import com.cbgm.sparrow.feature.chats.data.group.incoming.handler.GroupInviteDeclinedPacketHandler
 import com.cbgm.sparrow.feature.chats.data.group.incoming.handler.GroupInvitePacketHandler
 import com.cbgm.sparrow.feature.chats.data.group.incoming.handler.GroupInviteReceivedPacketHandler
@@ -25,6 +26,7 @@ class GroupPacketHandlerRegistry internal constructor(
     avatarUpdated: GroupAvatarUpdatedPacketHandler,
     groupCreated: GroupCreatedPacketHandler,
     conversationDeleted: GroupConversationDeletedPacketHandler,
+    descriptionUpdated: GroupDescriptionUpdatedPacketHandler,
     invite: GroupInvitePacketHandler,
     inviteReceived: GroupInviteReceivedPacketHandler,
     joinRequest: GroupJoinRequestPacketHandler,
@@ -46,6 +48,7 @@ class GroupPacketHandlerRegistry internal constructor(
             avatarUpdated,
             groupCreated,
             conversationDeleted,
+            descriptionUpdated,
             invite,
             inviteReceived,
             joinRequest,
