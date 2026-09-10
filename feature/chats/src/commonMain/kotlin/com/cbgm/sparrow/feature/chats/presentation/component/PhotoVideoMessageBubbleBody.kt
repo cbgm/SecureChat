@@ -97,9 +97,9 @@ private fun MessageMediaPreview(
     onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String) -> Unit
 ) {
-    val isLoaded = imageVideoPart.localFilePath != null
+    val isLoaded = imageVideoPart.localFilePath != null || imageVideoPart.bytes != null
 
-    LaunchedEffect(imageVideoPart.id, imageVideoPart.localFilePath) {
+    LaunchedEffect(imageVideoPart.id, imageVideoPart.localFilePath, imageVideoPart.bytes) {
         if (!isLoaded) onAttachmentVisible(imageVideoPart.id)
     }
 

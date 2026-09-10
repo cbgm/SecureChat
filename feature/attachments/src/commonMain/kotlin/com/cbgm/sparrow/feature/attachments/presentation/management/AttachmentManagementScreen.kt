@@ -66,12 +66,10 @@ import com.cbgm.sparrow.resources.Res
 import com.cbgm.sparrow.resources.base_cancel
 import com.cbgm.sparrow.resources.feature_attachments_delete_confirm
 import com.cbgm.sparrow.resources.feature_attachments_delete_description
-import com.cbgm.sparrow.resources.feature_attachments_delete_selected
 import com.cbgm.sparrow.resources.feature_attachments_delete_title
 import com.cbgm.sparrow.resources.feature_attachments_files
 import com.cbgm.sparrow.resources.feature_attachments_media
 import com.cbgm.sparrow.resources.feature_attachments_media_and_files
-import com.cbgm.sparrow.resources.feature_attachments_select
 import com.cbgm.sparrow.resources.feature_attachments_selected_count
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.foundation.lazy.grid.items as gridItems
@@ -133,27 +131,26 @@ fun AttachmentManagementScreen(
         }
     }
 
-    if (uiState.showDeleteConfirmation) {
-        SparrowAlertDialog(
-            onDismissRequest = { onUiEvent(AttachmentManagementUiEvent.DeleteDismissed) },
-            title = stringResource(Res.string.feature_attachments_delete_title),
-            text = { Text(stringResource(Res.string.feature_attachments_delete_description)) },
-            confirmButton = {
-                SparrowApprovalButton(
-                    fillMaxWidth = false,
-                    onClick = { onUiEvent(AttachmentManagementUiEvent.DeleteConfirmed) },
-                    text = stringResource(Res.string.feature_attachments_delete_confirm)
-                )
-            },
-            dismissButton = {
-                SparrowSecondaryButton(
-                    fillMaxWidth = false,
-                    onClick = { onUiEvent(AttachmentManagementUiEvent.DeleteDismissed) },
-                    text = stringResource(Res.string.base_cancel)
-                )
-            }
-        )
-    }
+    SparrowAlertDialog(
+        isVisible = uiState.showDeleteConfirmation,
+        onDismissRequest = { onUiEvent(AttachmentManagementUiEvent.DeleteDismissed) },
+        title = stringResource(Res.string.feature_attachments_delete_title),
+        text = { Text(stringResource(Res.string.feature_attachments_delete_description)) },
+        confirmButton = {
+            SparrowApprovalButton(
+                fillMaxWidth = false,
+                onClick = { onUiEvent(AttachmentManagementUiEvent.DeleteConfirmed) },
+                text = stringResource(Res.string.feature_attachments_delete_confirm)
+            )
+        },
+        dismissButton = {
+            SparrowSecondaryButton(
+                fillMaxWidth = false,
+                onClick = { onUiEvent(AttachmentManagementUiEvent.DeleteDismissed) },
+                text = stringResource(Res.string.base_cancel)
+            )
+        }
+    )
 
     uiState.viewerAttachmentId?.let { selectedId ->
         MessageAttachmentViewer(
@@ -217,7 +214,7 @@ private fun AttachmentManagementTopBar(
                     } else {
                         Icon(
                             imageVector = Icons.Default.DeleteOutline,
-                            contentDescription = stringResource(Res.string.feature_attachments_delete_selected)
+                            contentDescription = null
                         )
                     }
                 }
@@ -228,7 +225,7 @@ private fun AttachmentManagementTopBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Deselect,
-                        contentDescription = stringResource(Res.string.base_cancel)
+                        contentDescription = null
                     )
                 }
             } else {
@@ -238,7 +235,7 @@ private fun AttachmentManagementTopBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.SelectAll,
-                        contentDescription = stringResource(Res.string.feature_attachments_select)
+                        contentDescription = null
                     )
                 }
             }

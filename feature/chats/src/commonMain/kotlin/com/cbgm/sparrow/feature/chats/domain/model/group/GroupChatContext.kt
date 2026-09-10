@@ -8,7 +8,8 @@ data class GroupChatContext(
     val administration: GroupAdministrationState,
     val contacts: List<Contact>,
     val profilePictures: Map<String, ByteArray?>,
-    val avatarBytes: ByteArray?
+    val avatarBytes: ByteArray?,
+    val pin: GroupPin?
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -19,7 +20,8 @@ data class GroupChatContext(
             administration == other.administration &&
             contacts == other.contacts &&
             profilePictures.contentEquals(other.profilePictures) &&
-            avatarBytes.contentEquals(other.avatarBytes)
+            avatarBytes.contentEquals(other.avatarBytes) &&
+            pin == other.pin
     }
 
     override fun hashCode(): Int {
@@ -29,6 +31,7 @@ data class GroupChatContext(
         result = 31 * result + contacts.hashCode()
         result = 31 * result + profilePictures.contentHashCode()
         result = 31 * result + (avatarBytes?.contentHashCode() ?: 0)
+        result = 31 * result + (pin?.hashCode() ?: 0)
         return result
     }
 }

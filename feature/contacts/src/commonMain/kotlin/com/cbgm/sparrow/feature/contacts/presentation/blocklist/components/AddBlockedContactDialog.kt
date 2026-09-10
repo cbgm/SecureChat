@@ -45,6 +45,7 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AddBlockedContactDialog(
+    isVisible: Boolean,
     phoneNumber: String,
     phoneNumberError: String?,
     contacts: List<Contact>,
@@ -56,6 +57,7 @@ fun AddBlockedContactDialog(
     onDismiss: () -> Unit
 ) {
     SparrowAlertDialog(
+        isVisible = isVisible,
         onDismissRequest = onDismiss,
         title = stringResource(Res.string.feature_contacts_add_blocked_contact),
         text = {

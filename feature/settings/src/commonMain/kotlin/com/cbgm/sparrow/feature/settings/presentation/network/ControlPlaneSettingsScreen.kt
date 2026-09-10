@@ -105,21 +105,20 @@ fun ControlPlaneSettingsScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(Res.string.feature_settings_control_plane_add)
+                    contentDescription = null
                 )
             }
         }
     }
 
-    if (uiState.showAddDialog) {
-        AddControlPlaneDialog(
-            value = uiState.newUrl,
-            error = uiState.addError,
-            onValueChanged = { onUiEvent(ControlPlaneSettingsUiEvent.NewUrlChanged(it)) },
-            onConfirm = { onUiEvent(ControlPlaneSettingsUiEvent.AddConfirmed) },
-            onDismiss = { onUiEvent(ControlPlaneSettingsUiEvent.AddDismissed) }
-        )
-    }
+    AddControlPlaneDialog(
+        isVisible = uiState.showAddDialog,
+        value = uiState.newUrl,
+        error = uiState.addError,
+        onValueChanged = { onUiEvent(ControlPlaneSettingsUiEvent.NewUrlChanged(it)) },
+        onConfirm = { onUiEvent(ControlPlaneSettingsUiEvent.AddConfirmed) },
+        onDismiss = { onUiEvent(ControlPlaneSettingsUiEvent.AddDismissed) }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -165,6 +164,7 @@ private fun ControlPlaneTopBar(
 
 @Composable
 private fun AddControlPlaneDialog(
+    isVisible: Boolean,
     value: String,
     error: ControlPlaneSettingsError?,
     onValueChanged: (String) -> Unit,
@@ -172,6 +172,7 @@ private fun AddControlPlaneDialog(
     onDismiss: () -> Unit
 ) {
     SparrowAlertDialog(
+        isVisible = isVisible,
         onDismissRequest = onDismiss,
         title = stringResource(Res.string.feature_settings_control_plane_add),
         text = {

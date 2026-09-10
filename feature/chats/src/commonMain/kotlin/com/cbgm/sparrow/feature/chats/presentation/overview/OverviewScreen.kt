@@ -44,7 +44,6 @@ import com.cbgm.sparrow.feature.chats.presentation.overview.model.OverviewUiEven
 import com.cbgm.sparrow.feature.chats.presentation.overview.model.OverviewUiState
 import com.cbgm.sparrow.resources.Res
 import com.cbgm.sparrow.resources.feature_chats_attachment
-import com.cbgm.sparrow.resources.feature_chats_delete_conversation
 import com.cbgm.sparrow.resources.feature_chats_no_conversations_hint
 import com.cbgm.sparrow.resources.feature_chats_no_conversations_yet
 import com.cbgm.sparrow.resources.feature_chats_no_messages_yet
@@ -116,7 +115,7 @@ private fun Content(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.DeleteOutline,
-                                            contentDescription = stringResource(Res.string.feature_chats_delete_conversation)
+                                            contentDescription = null
                                         )
                                     }
                                 )

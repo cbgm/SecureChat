@@ -16,8 +16,9 @@ import com.cbgm.sparrow.resources.feature_contactimport_verifying_identity_qr
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun QrVerificationProgressDialog() {
+fun QrVerificationProgressDialog(isVisible: Boolean) {
     SparrowAlertDialog(
+        isVisible = isVisible,
         onDismissRequest = {},
         title = stringResource(Res.string.feature_contactimport_verifying_identity_qr),
         text = {
@@ -38,6 +39,6 @@ fun QrVerificationProgressDialog() {
 @Composable
 private fun QrVerificationProgressDialogPreview() {
     SparrowTheme {
-        QrVerificationProgressDialog()
+        QrVerificationProgressDialog(isVisible = true)
     }
 }

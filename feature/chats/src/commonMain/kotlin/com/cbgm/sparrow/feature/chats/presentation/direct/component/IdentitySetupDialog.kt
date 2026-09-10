@@ -24,11 +24,13 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun IdentitySetupDialog(
+    isVisible: Boolean,
     onShareIdentity: () -> Unit,
     onImportIdentity: () -> Unit,
     onDismiss: () -> Unit
 ) {
     SparrowAlertDialog(
+        isVisible = isVisible,
         onDismissRequest = onDismiss,
         title = stringResource(Res.string.feature_chats_manual_identity_setup_title),
         text = {
@@ -63,6 +65,7 @@ internal fun IdentitySetupDialog(
 private fun IdentitySetupDialogPreview() {
     SparrowTheme {
         IdentitySetupDialog(
+            isVisible = true,
             onShareIdentity = {},
             onImportIdentity = {},
             onDismiss = {}

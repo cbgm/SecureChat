@@ -48,7 +48,6 @@ import com.cbgm.sparrow.feature.safety.presentation.details.model.MessageSafetyD
 import com.cbgm.sparrow.feature.safety.presentation.details.model.MessageSafetyWarningLevel
 import com.cbgm.sparrow.feature.safety.presentation.details.model.MessageSafetyWarningReason
 import com.cbgm.sparrow.resources.Res
-import com.cbgm.sparrow.resources.base_back
 import com.cbgm.sparrow.resources.base_cancel
 import com.cbgm.sparrow.resources.feature_safety_block_confirm
 import com.cbgm.sparrow.resources.feature_safety_block_confirm_description
@@ -118,7 +117,7 @@ fun MessageSafetyDetailsScreen(
                     IconButton(onClick = { onUiEvent(MessageSafetyDetailsUiEvent.BackClicked) }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(Res.string.base_back)
+                            contentDescription = null
                         )
                     }
                 },
@@ -205,35 +204,34 @@ fun MessageSafetyDetailsScreen(
         }
     }
 
-    if (showBlockConfirmation) {
-        SparrowAlertDialog(
-            onDismissRequest = { showBlockConfirmation = false },
-            title = stringResource(Res.string.feature_safety_block_confirm),
-            text = {
-                Text(
-                    text = stringResource(Res.string.feature_safety_block_confirm_description),
-                    style = MaterialTheme.typography.bodySmall
-                )
-            },
-            confirmButton = {
-                SparrowDestructiveButton(
-                    onClick = {
-                        showBlockConfirmation = false
-                        onUiEvent(MessageSafetyDetailsUiEvent.BlockUserClicked)
-                    },
-                    text = stringResource(Res.string.feature_safety_block_this_user_button),
-                    fillMaxWidth = false
-                )
-            },
-            dismissButton = {
-                SparrowOutlinedButton(
-                    onClick = { showBlockConfirmation = false },
-                    text = stringResource(Res.string.base_cancel),
-                    fillMaxWidth = false
-                )
-            }
-        )
-    }
+    SparrowAlertDialog(
+        isVisible = showBlockConfirmation,
+        onDismissRequest = { showBlockConfirmation = false },
+        title = stringResource(Res.string.feature_safety_block_confirm),
+        text = {
+            Text(
+                text = stringResource(Res.string.feature_safety_block_confirm_description),
+                style = MaterialTheme.typography.bodySmall
+            )
+        },
+        confirmButton = {
+            SparrowDestructiveButton(
+                onClick = {
+                    showBlockConfirmation = false
+                    onUiEvent(MessageSafetyDetailsUiEvent.BlockUserClicked)
+                },
+                text = stringResource(Res.string.feature_safety_block_this_user_button),
+                fillMaxWidth = false
+            )
+        },
+        dismissButton = {
+            SparrowOutlinedButton(
+                onClick = { showBlockConfirmation = false },
+                text = stringResource(Res.string.base_cancel),
+                fillMaxWidth = false
+            )
+        }
+    )
 }
 
 @Composable

@@ -5,9 +5,11 @@ import com.cbgm.sparrow.feature.chats.domain.model.MessageHistoryCursor
 import com.cbgm.sparrow.feature.chats.domain.model.group.GroupAdministrationState
 import com.cbgm.sparrow.feature.chats.domain.model.group.GroupChatContext
 import com.cbgm.sparrow.feature.chats.domain.model.group.GroupConversation
+import com.cbgm.sparrow.feature.chats.domain.model.group.GroupPin
 import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupAvatarRepository
 import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupConversationRepository
 import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupMembershipRepository
+import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupPinRepository
 import com.cbgm.sparrow.feature.contacts.domain.model.Contact
 import com.cbgm.sparrow.feature.contacts.domain.repository.ContactRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,7 +28,8 @@ class ObserveGroupChatContextUseCase(
     private val membershipRepository: GroupMembershipRepository,
     private val contactRepository: ContactRepository,
     private val remoteProfilePictureProvider: RemoteProfilePictureProvider,
-    private val avatarRepository: GroupAvatarRepository
+    private val avatarRepository: GroupAvatarRepository,
+    private val pinRepository: GroupPinRepository
 ) {
     operator fun invoke(
         groupId: String,
@@ -35,7 +38,7 @@ class ObserveGroupChatContextUseCase(
         val conversationFlow =
             conversationRepository
                 .observe(groupId, oldestCursor)
-                .map<GroupConversation?, ConversationSnapshot> { conversation ->
+                .map { conversation ->
                     ConversationSnapshot(conversation = conversation)
                 }.catch { error ->
                     emit(ConversationSnapshot(conversation = null, error = error))
@@ -46,6 +49,12 @@ class ObserveGroupChatContextUseCase(
                 .observeContacts()
                 .onStart { emit(emptyList()) }
                 .catch { emit(emptyList()) }
+
+        val pinFlow =
+            pinRepository
+                .observe(groupId)
+                .onStart { emit(null) }
+                .catch { emit(null) }
 
         val profilePicturesFlow =
             conversationFlow
@@ -60,22 +69,34 @@ class ObserveGroupChatContextUseCase(
                 }.distinctUntilChanged()
                 .flatMapLatest(::observeProfilePictures)
 
-        return combine(
-            conversationFlow,
-            membershipRepository
-                .observeAdministration(groupId)
-                .onStart { emit(GroupAdministrationState()) },
-            contactsFlow,
-            profilePicturesFlow,
-            avatarRepository.observe(groupId).map { avatar -> avatar.bytes }
-        ) { conversation, administration, contacts, profilePictures, avatarBytes ->
+        val metadataFlow =
+            combine(
+                membershipRepository
+                    .observeAdministration(groupId)
+                    .onStart { emit(GroupAdministrationState()) },
+                contactsFlow,
+                profilePicturesFlow,
+                avatarRepository.observe(groupId).map { avatar -> avatar.bytes },
+                pinFlow
+            ) { administration, contacts, profilePictures, avatarBytes, pin ->
+                GroupChatMetadata(
+                    administration = administration,
+                    contacts = contacts,
+                    profilePictures = profilePictures,
+                    avatarBytes = avatarBytes,
+                    pin = pin
+                )
+            }
+
+        return combine(conversationFlow, metadataFlow) { conversation, metadata ->
             GroupChatContext(
                 conversation = conversation.conversation,
                 conversationError = conversation.error,
-                administration = administration,
-                contacts = contacts,
-                profilePictures = profilePictures,
-                avatarBytes = avatarBytes
+                administration = metadata.administration,
+                contacts = metadata.contacts,
+                profilePictures = metadata.profilePictures,
+                avatarBytes = metadata.avatarBytes,
+                pin = metadata.pin
             )
         }
     }
@@ -93,6 +114,38 @@ class ObserveGroupChatContextUseCase(
                     .onStart { emit(contactId to null) }
             }
         ) { pictures -> pictures.toMap() }
+    }
+
+    private data class GroupChatMetadata(
+        val administration: GroupAdministrationState,
+        val contacts: List<Contact>,
+        val profilePictures: Map<String, ByteArray?>,
+        val avatarBytes: ByteArray?,
+        val pin: GroupPin?
+    ) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as GroupChatMetadata
+
+            if (administration != other.administration) return false
+            if (contacts != other.contacts) return false
+            if (profilePictures != other.profilePictures) return false
+            if (!avatarBytes.contentEquals(other.avatarBytes)) return false
+            if (pin != other.pin) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = administration.hashCode()
+            result = 31 * result + contacts.hashCode()
+            result = 31 * result + profilePictures.hashCode()
+            result = 31 * result + (avatarBytes?.contentHashCode() ?: 0)
+            result = 31 * result + (pin?.hashCode() ?: 0)
+            return result
+        }
     }
 
     private data class ConversationSnapshot(

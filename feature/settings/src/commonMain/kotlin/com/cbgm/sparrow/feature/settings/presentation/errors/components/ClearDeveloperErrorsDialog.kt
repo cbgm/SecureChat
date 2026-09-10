@@ -16,10 +16,12 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun ClearDeveloperErrorsDialog(
+    isVisible: Boolean,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
     SparrowAlertDialog(
+        isVisible = isVisible,
         onDismissRequest = onDismiss,
         confirmButton = {
             SparrowDestructiveButton(
@@ -47,6 +49,7 @@ internal fun ClearDeveloperErrorsDialog(
 private fun ClearDeveloperErrorsDialogPreview() {
     SparrowTheme {
         ClearDeveloperErrorsDialog(
+            isVisible = true,
             onConfirm = {},
             onDismiss = {}
         )

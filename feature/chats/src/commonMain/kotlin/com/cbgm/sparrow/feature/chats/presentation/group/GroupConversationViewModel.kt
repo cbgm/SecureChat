@@ -29,13 +29,16 @@ import com.cbgm.sparrow.feature.chats.domain.usecase.group.AcceptGroupInvitation
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.DeclineGroupInvitationUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.DeleteGroupMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.EditGroupMessageUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.group.LoadGroupPinnedAttachmentUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.MarkGroupConversationReadUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupChatContextUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupMemberIndicatorUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.group.PinGroupMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.RetryGroupMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.SendGroupMessageUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.SetGroupIndicatorUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.ToggleGroupMessageReactionUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.group.UnpinGroupMessageUseCase
 import com.cbgm.sparrow.feature.chats.presentation.component.model.IndicatorUiState
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubbleUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageComposerUiState
@@ -86,12 +89,15 @@ class GroupConversationViewModel(
     private val toggleMessageReaction: ToggleGroupMessageReactionUseCase,
     private val deleteMessageUseCase: DeleteGroupMessageUseCase,
     private val editMessageUseCase: EditGroupMessageUseCase,
+    private val pinMessageUseCase: PinGroupMessageUseCase,
+    private val unpinMessageUseCase: UnpinGroupMessageUseCase,
     private val acceptInvitation: AcceptGroupInvitationUseCase,
     private val declineInvitation: DeclineGroupInvitationUseCase,
     observeMemberIndicator: ObserveGroupMemberIndicatorUseCase,
     setGroupIndicator: SetGroupIndicatorUseCase,
     observeMessageSafetyAssessments: ObserveMessageSafetyAssessmentsUseCase,
     private val loadMessageAttachment: LoadMessageAttachmentUseCase,
+    private val loadGroupPinnedAttachment: LoadGroupPinnedAttachmentUseCase,
     private val addDeviceContact: AddDeviceContactUseCase,
     private val forwardMessageUseCase: ForwardMessageUseCase,
     private val loadOlderMessageHistory: LoadOlderMessagesUseCase,
@@ -202,7 +208,9 @@ class GroupConversationViewModel(
                 isLoading = presentation is GroupContextObservation.Loading,
                 safetyAssessments = safetyAssessments,
                 attachmentPayloadBytes = loadedAttachmentPayloadBytes,
-                voiceState = voiceState
+                voiceState = voiceState,
+                administration = presentation.context?.administration ?: GroupAdministrationState(),
+                pin = presentation.context?.pin
             ).copy(voiceTranscriptionEnabled = transcriptionEnabled)
         }.stateIn(
             scope = viewModelScope,
@@ -363,6 +371,8 @@ class GroupConversationViewModel(
             GroupConversationUiEvent.CancelEdit -> cancelEdit()
             is GroupConversationUiEvent.MessageReactionSelected -> toggleReaction(event.messageId, event.emoji)
             is GroupConversationUiEvent.DeleteMessage -> deleteMessage(event.messageId)
+            is GroupConversationUiEvent.PinMessage -> pinMessage(event.messageId)
+            GroupConversationUiEvent.UnpinMessage -> unpinMessage()
             is GroupConversationUiEvent.ForwardMessage -> forwardMessage(event.messageId, event.target)
             is GroupConversationUiEvent.MediaSelected -> updateMediaSelection(event.media)
             is GroupConversationUiEvent.OpenFilePicker -> navigator.navigateTo(AppRoute.FilePicker(event.sessionId))
@@ -455,6 +465,24 @@ class GroupConversationViewModel(
         }
     }
 
+    private fun pinMessage(messageId: String) {
+        viewModelScope.launch {
+            pinMessageUseCase(groupId, messageId)
+                .onFailure { error ->
+                    setError(error.message ?: "Message could not be pinned")
+                }
+        }
+    }
+
+    private fun unpinMessage() {
+        viewModelScope.launch {
+            unpinMessageUseCase(groupId)
+                .onFailure { error ->
+                    setError(error.message ?: "Pinned message could not be removed")
+                }
+        }
+    }
+
     private fun forwardMessage(
         messageId: String,
         target: ForwardingTarget
@@ -526,10 +554,13 @@ class GroupConversationViewModel(
                 .firstNotNullOfOrNull { message ->
                     message.voicePart?.takeIf { part -> part.id == attachmentId }
                 }
+                ?: conversationState.value.pinnedMessage
+                    ?.voicePart
+                    ?.takeIf { part -> part.id == attachmentId }
                 ?: return
 
         viewModelScope.launch {
-            loadMessageAttachment(attachmentId)
+            loadAttachmentBytes(attachmentId)
                 .onSuccess { bytes ->
                     voiceController.playMessage(
                         attachmentId = attachmentId,
@@ -554,6 +585,9 @@ class GroupConversationViewModel(
                 .firstNotNullOfOrNull { message ->
                     message.voicePart?.takeIf { part -> part.id == attachmentId }
                 }
+                ?: conversationState.value.pinnedMessage
+                    ?.voicePart
+                    ?.takeIf { part -> part.id == attachmentId }
                 ?: return
 
         val targetPosition =
@@ -565,7 +599,7 @@ class GroupConversationViewModel(
         )
 
         viewModelScope.launch {
-            loadMessageAttachment(attachmentId)
+            loadAttachmentBytes(attachmentId)
                 .onSuccess { bytes ->
                     voiceController.finishMessageScrub(
                         attachmentId = attachmentId,
@@ -587,7 +621,7 @@ class GroupConversationViewModel(
 
         viewModelScope.launch {
             try {
-                loadMessageAttachment(attachmentId)
+                loadAttachmentBytes(attachmentId)
                     .onSuccess { bytes ->
                         transcribeVoiceAudio(bytes)
                             .onSuccess { transcription ->
@@ -719,25 +753,71 @@ class GroupConversationViewModel(
     }
 
     private fun loadAttachment(attachmentId: String) {
-        if (attachmentId.isBlank() || attachmentPayloadBytes.value.containsKey(attachmentId)) return
+        if (attachmentId.isBlank()) return
+        val isPinnedAttachment = isPinnedAttachment(attachmentId)
+
+        if (attachmentPayloadBytes.value.containsKey(attachmentId)) return
         if (!loadingAttachmentIds.add(attachmentId)) return
 
         viewModelScope.launch {
-            loadMessageAttachment(attachmentId)
-                .onSuccess { bytes ->
-                    if (requiresAttachmentPayloadInState(attachmentId)) {
-                        attachmentPayloadBytes.value = attachmentPayloadBytes.value + (attachmentId to bytes)
-                    }
+            try {
+                if (isPinnedAttachment) {
+                    loadGroupPinnedAttachment(groupId, attachmentId)
+                        .onSuccess { bytes ->
+                            if (shouldKeepPinnedAttachmentBytes(attachmentId)) {
+                                attachmentPayloadBytes.value =
+                                    attachmentPayloadBytes.value + (attachmentId to bytes)
+                            }
+                        }.onFailure { error ->
+                            logger.warn(error) { "Could not load pinned message attachment $attachmentId" }
+                        }
+                } else {
+                    loadMessageAttachment(attachmentId)
+                        .onSuccess { bytes ->
+                            if (requiresAttachmentPayloadInState(attachmentId)) {
+                                attachmentPayloadBytes.value =
+                                    attachmentPayloadBytes.value + (attachmentId to bytes)
+                            }
+                        }.onFailure { error ->
+                            logger.warn(error) { "Could not load message attachment $attachmentId" }
+                        }
                 }
-                .onFailure { error -> logger.warn(error) { "Could not load message attachment $attachmentId" } }
-            loadingAttachmentIds.remove(attachmentId)
+            } finally {
+                loadingAttachmentIds.remove(attachmentId)
+            }
         }
     }
+
+    private suspend fun loadAttachmentBytes(attachmentId: String): Result<ByteArray> =
+        if (isPinnedAttachment(attachmentId)) {
+            loadGroupPinnedAttachment(groupId, attachmentId)
+        } else {
+            loadMessageAttachment(attachmentId)
+        }
+
+    private fun isPinnedAttachment(attachmentId: String): Boolean =
+        conversationState.value.pinnedMessage?.let { message ->
+            message.imageVideoParts.any { it.id == attachmentId } ||
+                message.fileParts.any { it.id == attachmentId } ||
+                message.locationPart?.id == attachmentId ||
+                message.contactPart?.id == attachmentId ||
+                message.voicePart?.id == attachmentId
+        } == true
+
+    private fun shouldKeepPinnedAttachmentBytes(attachmentId: String): Boolean =
+        conversationState.value.pinnedMessage?.let { message ->
+            message.imageVideoParts.any { it.id == attachmentId } ||
+                message.fileParts.any { it.id == attachmentId } ||
+                message.locationPart?.id == attachmentId ||
+                message.contactPart?.id == attachmentId
+        } == true
 
     private fun requiresAttachmentPayloadInState(attachmentId: String): Boolean =
         conversationState.value.messages.any { message ->
             message.locationPart?.id == attachmentId || message.contactPart?.id == attachmentId
-        }
+        } || conversationState.value.pinnedMessage?.let { message ->
+            message.locationPart?.id == attachmentId || message.contactPart?.id == attachmentId
+        } == true
 
     private fun clearComposer() {
         messageText.value = ""

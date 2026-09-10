@@ -87,7 +87,10 @@ private fun FailedTextContent(
     modifier: Modifier = Modifier
 ) {
     Row(modifier = modifier) {
-        Icon(imageVector = Icons.Default.ErrorOutline, contentDescription = null)
+        Icon(
+            imageVector = Icons.Default.ErrorOutline,
+            contentDescription = null
+        )
         Spacer(modifier = Modifier.width(MaterialTheme.spacing.base))
         Text(
             text = text,

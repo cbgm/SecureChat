@@ -8,6 +8,7 @@ import com.cbgm.sparrow.data.database.dao.ChatDao
 import com.cbgm.sparrow.data.database.dao.ContactDao
 import com.cbgm.sparrow.data.database.dao.ContactRoutingIdDao
 import com.cbgm.sparrow.data.database.dao.GroupInvitationDao
+import com.cbgm.sparrow.data.database.dao.GroupPinDao
 import com.cbgm.sparrow.data.database.dao.GroupSecurityDao
 import com.cbgm.sparrow.data.database.dao.GroupVerificationDao
 import com.cbgm.sparrow.data.database.dao.IdentityInvitationDao
@@ -28,6 +29,7 @@ import com.cbgm.sparrow.data.database.entity.ConversationEntity
 import com.cbgm.sparrow.data.database.entity.ConversationParticipantEntity
 import com.cbgm.sparrow.data.database.entity.GroupInvitationEntity
 import com.cbgm.sparrow.data.database.entity.GroupMemberKeyEntity
+import com.cbgm.sparrow.data.database.entity.GroupPinEntity
 import com.cbgm.sparrow.data.database.entity.GroupSecurityStateEntity
 import com.cbgm.sparrow.data.database.entity.GroupVerificationPairEntity
 import com.cbgm.sparrow.data.database.entity.IdentityInvitationEntity
@@ -53,6 +55,7 @@ import com.cbgm.sparrow.data.database.entity.RemoteMailboxRouteEntity
         GroupSecurityStateEntity::class,
         GroupMemberKeyEntity::class,
         GroupInvitationEntity::class,
+        GroupPinEntity::class,
         GroupVerificationPairEntity::class,
         IdentityInvitationEntity::class,
         MessageEntity::class,
@@ -66,7 +69,7 @@ import com.cbgm.sparrow.data.database.entity.RemoteMailboxRouteEntity
         RemoteMailboxRouteEntity::class,
         LinkPreviewEntity::class
     ],
-    version = 37,
+    version = 38,
     autoMigrations = [
         AutoMigration(from = 26, to = 27),
         AutoMigration(from = 27, to = 28),
@@ -78,7 +81,8 @@ import com.cbgm.sparrow.data.database.entity.RemoteMailboxRouteEntity
         AutoMigration(from = 33, to = 34),
         AutoMigration(from = 34, to = 35),
         AutoMigration(from = 35, to = 36),
-        AutoMigration(from = 36, to = 37)
+        AutoMigration(from = 36, to = 37),
+        AutoMigration(from = 37, to = 38)
     ],
     exportSchema = true
 )
@@ -91,6 +95,8 @@ abstract class SparrowDatabase : RoomDatabase() {
     abstract fun groupSecurityDao(): GroupSecurityDao
 
     abstract fun groupInvitationDao(): GroupInvitationDao
+
+    abstract fun groupPinDao(): GroupPinDao
 
     abstract fun groupVerificationDao(): GroupVerificationDao
 

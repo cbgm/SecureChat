@@ -47,6 +47,10 @@ val androidDatabaseModule =
         }
 
         single {
+            get<SparrowDatabase>().groupPinDao()
+        }
+
+        single {
             get<SparrowDatabase>().identityInvitationDao()
         }
 

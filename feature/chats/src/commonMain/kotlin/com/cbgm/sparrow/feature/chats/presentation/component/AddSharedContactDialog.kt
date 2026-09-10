@@ -30,6 +30,7 @@ internal fun AddSharedContactDialog(
     onDismiss: () -> Unit
 ) {
     SparrowAlertDialog(
+        isVisible = true,
         onDismissRequest = onDismiss,
         title = stringResource(Res.string.feature_contacts_add_contact_title),
         text = {

@@ -223,7 +223,10 @@ fun SettingsScreen(
             SettingsSwitchRow(
                 icon = Icons.Default.Security,
                 title = stringResource(Res.string.feature_settings_message_safety),
-                subtitle = messageSafetySubtitle(uiState.localEmbeddingState, uiState.messageSafetyState),
+                subtitle = messageSafetySubtitle(
+                    uiState.localEmbeddingState,
+                    uiState.messageSafetyState
+                ),
                 checked = uiState.localEmbeddingState.messageSafetyEnabled,
                 onCheckedChange = { enabled ->
                     onUiEvent(SettingsUiEvent.MessageSafetyEnabledChanged(enabled))
@@ -304,15 +307,14 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.size(MaterialTheme.spacing.base))
     }
 
-    if (uiState.showLanguagePicker) {
-        LanguagePickerDialog(
-            currentLanguage = uiState.currentLanguage,
-            onLanguageSelected = { language ->
-                onUiEvent(SettingsUiEvent.LanguageSelected(language))
-            },
-            onDismiss = { onUiEvent(SettingsUiEvent.LanguagePickerDismissed) }
-        )
-    }
+    LanguagePickerDialog(
+        isVisible = uiState.showLanguagePicker,
+        currentLanguage = uiState.currentLanguage,
+        onLanguageSelected = { language ->
+            onUiEvent(SettingsUiEvent.LanguageSelected(language))
+        },
+        onDismiss = { onUiEvent(SettingsUiEvent.LanguagePickerDismissed) }
+    )
 }
 
 @Composable
@@ -320,6 +322,7 @@ private fun semanticSearchSubtitle(state: SemanticSearchState): String =
     when (state) {
         SemanticSearchState.Disabled,
         SemanticSearchState.Preparing -> stringResource(Res.string.feature_settings_semantic_search_subtitle)
+
         is SemanticSearchState.DownloadingModel -> {
             val percent = state.progress?.let { (it * 100).toInt().coerceIn(0, 100) }
             if (percent == null) {
@@ -328,12 +331,14 @@ private fun semanticSearchSubtitle(state: SemanticSearchState): String =
                 stringResource(Res.string.feature_settings_semantic_search_downloading) + " $percent%"
             }
         }
+
         is SemanticSearchState.BuildingIndex ->
             stringResource(
                 Res.string.feature_settings_semantic_search_building,
                 state.processed,
                 state.total
             )
+
         SemanticSearchState.Ready -> stringResource(Res.string.feature_settings_semantic_search_ready)
         is SemanticSearchState.Failed -> stringResource(Res.string.feature_settings_semantic_search_failed)
     }
@@ -350,6 +355,7 @@ private fun messageSafetySubtitle(
     return when (val modelState = localEmbeddingState.modelState) {
         LocalEmbeddingModelState.NotNeeded,
         LocalEmbeddingModelState.Preparing -> stringResource(Res.string.feature_settings_message_safety_subtitle)
+
         is LocalEmbeddingModelState.Downloading -> {
             val percent = modelState.progress?.let { (it * 100).toInt().coerceIn(0, 100) }
             if (percent == null) {
@@ -358,6 +364,7 @@ private fun messageSafetySubtitle(
                 stringResource(Res.string.feature_settings_message_safety_downloading) + " $percent%"
             }
         }
+
         is LocalEmbeddingModelState.Failed -> stringResource(Res.string.feature_settings_message_safety_failed)
         LocalEmbeddingModelState.Ready ->
             when (messageSafetyState) {

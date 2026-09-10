@@ -525,6 +525,7 @@
     <string name="feature_chats_group_member_unavailable">Nicht verfügbar — erneut einladen</string>
 
     <string name="feature_chats_group_avatar">Gruppenbild</string>
+    <string name="feature_chats_group_avatar_description">Dieses Bild wird mit den aktuellen Gruppenmitgliedern geteilt.</string>
     <string name="feature_chats_group_avatar_add">Gruppenbild hinzufügen</string>
     <string name="feature_chats_group_avatar_change">Gruppenbild ändern</string>
     <string name="feature_chats_group_avatar_remove">Gruppenbild entfernen</string>
@@ -616,4 +617,8 @@
     <string name="feature_media_voice_transcribing">Wird transkribiert…</string>
     <string name="feature_settings_voice_transcription">Sprachnachrichten transkribieren</string>
     <string name="feature_settings_voice_transcription_subtitle">Lokale Transkripte für Sprachnachrichten erstellen und anzeigen</string>
+    <string name="feature_chats_pin_message">Nachricht anheften</string>
+    <string name="feature_chats_unpin_message">Anheftung lösen</string>
+    <string name="feature_chats_pinned_message">Angeheftete Nachricht</string>
+    <string name="feature_chats_pinned_at">Angeheftet %1$s</string>
 </resources>

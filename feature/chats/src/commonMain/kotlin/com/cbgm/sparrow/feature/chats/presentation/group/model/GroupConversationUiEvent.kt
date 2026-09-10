@@ -73,6 +73,12 @@ sealed interface GroupConversationUiEvent {
         val messageId: String
     ) : GroupConversationUiEvent
 
+    data class PinMessage(
+        val messageId: String
+    ) : GroupConversationUiEvent
+
+    data object UnpinMessage : GroupConversationUiEvent
+
     data class ForwardMessage(
         val messageId: String,
         val target: ForwardingTarget

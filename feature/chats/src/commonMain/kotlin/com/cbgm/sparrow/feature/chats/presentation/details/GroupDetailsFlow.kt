@@ -183,15 +183,14 @@ fun GroupDetailsFlow(
             }
         }
     }
-    uiState.memberManagement.removalCandidate?.let { member ->
-        RemoveDialog(
-            member = member,
-            isRemoving = uiState.memberManagement.isUpdating,
-            errorMessage = uiState.memberManagement.errorMessage,
-            onApprove = { verificationViewModel.onUiEvent(GroupDetailsUiEvent.MemberRemovalConfirmed) },
-            onDismiss = { verificationViewModel.onUiEvent(GroupDetailsUiEvent.MemberRemovalDismissed) }
-        )
-    }
+
+    RemoveDialog(
+        member = uiState.memberManagement.removalCandidate,
+        isRemoving = uiState.memberManagement.isUpdating,
+        errorMessage = uiState.memberManagement.errorMessage,
+        onApprove = { verificationViewModel.onUiEvent(GroupDetailsUiEvent.MemberRemovalConfirmed) },
+        onDismiss = { verificationViewModel.onUiEvent(GroupDetailsUiEvent.MemberRemovalDismissed) }
+    )
 
     uiState.memberManagement.promotionCandidate?.let { member ->
         PromoteDialog(
@@ -203,34 +202,33 @@ fun GroupDetailsFlow(
         )
     }
 
-    if (uiState.leave.prompt == GroupLeavePrompt.PROMOTE_ADMIN) {
-        val promotableMembers =
-            uiState.summary.members.filter { member ->
-                member.contactId in uiState.summary.promotableContactIds
-            }
-        PromoteBeforeLeaveDialog(
-            members = promotableMembers,
-            isUpdating = uiState.memberManagement.isUpdating,
-            errorMessage = uiState.memberManagement.errorMessage,
-            onSelect = { contactId ->
-                verificationViewModel.onUiEvent(
-                    GroupDetailsUiEvent.PromoteMemberAndLeaveClicked(contactId)
-                )
-            },
-            onDismiss = { verificationViewModel.onUiEvent(GroupDetailsUiEvent.LeaveGroupDismissed) }
-        )
-    }
+    val promotableMembers =
+        uiState.summary.members.filter { member ->
+            member.contactId in uiState.summary.promotableContactIds
+        }
 
-    if (uiState.leave.prompt == GroupLeavePrompt.CONFIRM) {
-        LeaveDialog(
-            isRemoving = uiState.leave.isLeaving,
-            errorMessage = uiState.leave.errorMessage,
-            onApprove = { verificationViewModel.onUiEvent(GroupDetailsUiEvent.LeaveGroupConfirmed) },
-            onDismiss = {
-                verificationViewModel.onUiEvent(GroupDetailsUiEvent.LeaveGroupDismissed)
-            }
-        )
-    }
+    PromoteBeforeLeaveDialog(
+        isVisible = uiState.leave.prompt == GroupLeavePrompt.PROMOTE_ADMIN,
+        members = promotableMembers,
+        isUpdating = uiState.memberManagement.isUpdating,
+        errorMessage = uiState.memberManagement.errorMessage,
+        onSelect = { contactId ->
+            verificationViewModel.onUiEvent(
+                GroupDetailsUiEvent.PromoteMemberAndLeaveClicked(contactId)
+            )
+        },
+        onDismiss = { verificationViewModel.onUiEvent(GroupDetailsUiEvent.LeaveGroupDismissed) }
+    )
+
+    LeaveDialog(
+        isVisible = uiState.leave.prompt == GroupLeavePrompt.CONFIRM,
+        isRemoving = uiState.leave.isLeaving,
+        errorMessage = uiState.leave.errorMessage,
+        onApprove = { verificationViewModel.onUiEvent(GroupDetailsUiEvent.LeaveGroupConfirmed) },
+        onDismiss = {
+            verificationViewModel.onUiEvent(GroupDetailsUiEvent.LeaveGroupDismissed)
+        }
+    )
 }
 
 private fun handleOverviewUiEvent(
@@ -253,12 +251,14 @@ private fun handleOverviewUiEvent(
 
 @Composable
 private fun LeaveDialog(
+    isVisible: Boolean,
     isRemoving: Boolean,
     errorMessage: String?,
     onApprove: () -> Unit,
     onDismiss: () -> Unit
 ) {
     SparrowAlertDialog(
+        isVisible = isVisible,
         onDismissRequest = {},
         title = stringResource(Res.string.feature_chats_group_leave),
         text = {
@@ -313,6 +313,7 @@ private fun LeaveDialog(
 private fun LeaveDialogPreview() {
     SparrowTheme {
         LeaveDialog(
+            isVisible = true,
             isRemoving = true,
             errorMessage = null,
             onApprove = {},
@@ -323,6 +324,7 @@ private fun LeaveDialogPreview() {
 
 @Composable
 private fun PromoteBeforeLeaveDialog(
+    isVisible: Boolean,
     members: List<GroupMemberVerificationUiState>,
     isUpdating: Boolean,
     errorMessage: String?,
@@ -330,6 +332,7 @@ private fun PromoteBeforeLeaveDialog(
     onDismiss: () -> Unit
 ) {
     SparrowAlertDialog(
+        isVisible = isVisible,
         onDismissRequest = {},
         title = stringResource(Res.string.feature_chats_group_promote_before_leave),
         text = {
@@ -374,6 +377,7 @@ private fun PromoteBeforeLeaveDialog(
 private fun PromoteBeforeLeaveDialogPreview() {
     SparrowTheme {
         PromoteBeforeLeaveDialog(
+            isVisible = true,
             members = GroupDetailsPreviewData.summary.members,
             isUpdating = false,
             errorMessage = null,
@@ -392,6 +396,7 @@ private fun PromoteDialog(
     onDismiss: () -> Unit
 ) {
     SparrowAlertDialog(
+        isVisible = true,
         onDismissRequest = {},
         title = stringResource(Res.string.feature_chats_group_promote_admin),
         text = {
@@ -454,64 +459,67 @@ private fun PromoteDialogPreview() {
 
 @Composable
 private fun RemoveDialog(
-    member: GroupMemberVerificationUiState,
+    member: GroupMemberVerificationUiState?,
     isRemoving: Boolean,
     errorMessage: String?,
     onApprove: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    SparrowAlertDialog(
-        onDismissRequest = {},
-        title = stringResource(Res.string.feature_chats_group_remove_member),
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text =
-                        stringResource(
-                            Res.string.feature_chats_group_remove_member_description,
-                            member.displayName
-                        )
-                )
+    member?.let {
+        SparrowAlertDialog(
+            isVisible = true,
+            onDismissRequest = {},
+            title = stringResource(Res.string.feature_chats_group_remove_member),
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text =
+                            stringResource(
+                                Res.string.feature_chats_group_remove_member_description,
+                                member.displayName
+                            )
+                    )
 
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
-            }
-
-            errorMessage?.let { message ->
-                Text(
-                    text = message,
-                    modifier = Modifier.padding(top = MaterialTheme.spacing.medium),
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        },
-        confirmButton = {
-            SparrowApprovalButton(
-                onClick = onApprove,
-                fillMaxWidth = false,
-                content = {
-                    if (isRemoving) {
-                        CircularProgressIndicator(
-                            modifier =
-                                Modifier
-                                    .size(Dimens.GroupDetailsScreen.verificationProgressSize)
-                                    .padding(MaterialTheme.spacing.groupDetailsScreen.dialogProgressPadding),
-                            strokeWidth = Dimens.Base.progressIndicatorStrokeWidth
-                        )
-                    } else {
-                        Text(text = stringResource(Res.string.feature_chats_group_remove_member))
-                    }
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
                 }
-            )
-        },
-        dismissButton = {
-            SparrowOutlinedButton(
-                onClick = onDismiss,
-                text = stringResource(Res.string.base_cancel),
-                fillMaxWidth = false
-            )
-        }
-    )
+
+                errorMessage?.let { message ->
+                    Text(
+                        text = message,
+                        modifier = Modifier.padding(top = MaterialTheme.spacing.medium),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            },
+            confirmButton = {
+                SparrowApprovalButton(
+                    onClick = onApprove,
+                    fillMaxWidth = false,
+                    content = {
+                        if (isRemoving) {
+                            CircularProgressIndicator(
+                                modifier =
+                                    Modifier
+                                        .size(Dimens.GroupDetailsScreen.verificationProgressSize)
+                                        .padding(MaterialTheme.spacing.groupDetailsScreen.dialogProgressPadding),
+                                strokeWidth = Dimens.Base.progressIndicatorStrokeWidth
+                            )
+                        } else {
+                            Text(text = stringResource(Res.string.feature_chats_group_remove_member))
+                        }
+                    }
+                )
+            },
+            dismissButton = {
+                SparrowOutlinedButton(
+                    onClick = onDismiss,
+                    text = stringResource(Res.string.base_cancel),
+                    fillMaxWidth = false
+                )
+            }
+        )
+    }
 }
 
 @Preview

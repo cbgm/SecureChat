@@ -14,7 +14,7 @@ import com.cbgm.sparrow.feature.chats.data.group.membership.GroupMembershipState
 import com.cbgm.sparrow.feature.chats.data.group.protocol.GroupMembershipPacketProtocol
 import com.cbgm.sparrow.feature.chats.data.group.security.GroupSecurityManager
 
-class GroupConversationDeletedPacketHandler(
+class GroupConversationDeletedPacketHandler internal constructor(
     private val chatDao: ChatDao,
     private val contactDao: ContactDao,
     private val groupInvitationDao: GroupInvitationDao,

@@ -60,7 +60,6 @@ import com.cbgm.sparrow.resources.Res
 import com.cbgm.sparrow.resources.base_unknown
 import com.cbgm.sparrow.resources.feature_contacts_accept_invitation
 import com.cbgm.sparrow.resources.feature_contacts_block_invitation
-import com.cbgm.sparrow.resources.feature_contacts_close_invitations
 import com.cbgm.sparrow.resources.feature_contacts_decline_invitation
 import com.cbgm.sparrow.resources.feature_contacts_delete_outgoing_invitation
 import com.cbgm.sparrow.resources.feature_contacts_invitation_status_declined
@@ -99,7 +98,7 @@ fun ContactInvitationsScreen(
                     IconButton(onClick = { onUiEvent(ContactInvitationUiEvent.CloseClicked) }) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = stringResource(Res.string.feature_contacts_close_invitations)
+                            contentDescription = null
                         )
                     }
                 },
