@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -58,15 +59,6 @@ private fun LinkPreviewContent(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.micro)
     ) {
-        Text(
-            text = url,
-            modifier = Modifier.clickable { uriHandler.openUri(url) },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-
         when (uiState) {
             LinkPreviewUiState.Loading ->
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
@@ -77,7 +69,16 @@ private fun LinkPreviewContent(
                     onClick = { uriHandler.openUri(url) }
                 )
 
-            is LinkPreviewUiState.Error -> Unit
+            is LinkPreviewUiState.Error -> {
+                Text(
+                    text = url,
+                    modifier = Modifier.clickable { uriHandler.openUri(url) },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
@@ -91,17 +92,45 @@ private fun LinkPreviewCard(
     val imageBytes = preview.imageBytes ?: return
 
     Surface(
-        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(MaterialTheme.spacing.base),
         tonalElevation = MaterialTheme.spacing.micro
     ) {
-        SparrowImage(
-            model = imageBytes,
-            contentDescription = null,
-            modifier = Modifier.fillMaxWidth().height(PREVIEW_IMAGE_HEIGHT),
-            contentScale = ContentScale.Crop,
-            memoryCacheKey = "link-preview:${preview.url}"
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaterialTheme.spacing.base),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.micro)
+        ) {
+            SparrowImage(
+                model = imageBytes,
+                contentDescription = null,
+                modifier = Modifier.fillMaxWidth().height(PREVIEW_IMAGE_HEIGHT),
+                contentScale = ContentScale.Crop,
+                memoryCacheKey = "link-preview:${preview.url}"
+            )
+
+            preview.title?.takeIf(String::isNotBlank)?.let { title ->
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            preview.description?.takeIf(String::isNotBlank)?.let { description ->
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
     }
 }
 
@@ -120,7 +149,7 @@ private fun LinkPreviewContentPreview() {
                         title = "Example article",
                         description = "A short description of the linked page.",
                         siteName = "Example",
-                        imageBytes = null
+                        imageBytes = byteArrayOf()
                     )
                 )
         )

@@ -6,6 +6,7 @@ import com.cbgm.sparrow.core.result.safeSuspendCall
 import com.cbgm.sparrow.feature.linkpreview.data.datasource.LocalLinkPreviewDataSource
 import com.cbgm.sparrow.feature.linkpreview.data.datasource.RemoteLinkPreviewDataSource
 import com.cbgm.sparrow.feature.linkpreview.data.mapper.toDomain
+import com.cbgm.sparrow.feature.linkpreview.data.model.LinkPreviewUnavailableException
 import com.cbgm.sparrow.feature.linkpreview.domain.model.LinkPreview
 import com.cbgm.sparrow.feature.linkpreview.domain.repository.LinkPreviewRepository
 import kotlinx.coroutines.Dispatchers
@@ -47,8 +48,12 @@ class LinkPreviewRepositoryImpl(
                 ?.toDomain()
                 ?: remoteLinkPreviewDataSource
                     .getPreview(url)
-                    .also { localLinkPreviewDataSource.insertPreview(it) }
-                    .toDomain()
+                    .also { preview ->
+                        localLinkPreviewDataSource.insertPreview(preview)
+                    }
+                    .takeIf { preview -> preview.imageBytes != null }
+                    ?.toDomain()
+                ?: throw LinkPreviewUnavailableException(url)
         }
 }
 
