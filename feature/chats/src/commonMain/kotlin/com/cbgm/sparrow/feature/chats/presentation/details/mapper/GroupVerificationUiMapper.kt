@@ -8,6 +8,7 @@ import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupLeaveUiSta
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupMemberManagementUiState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupMemberVerificationState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupMemberVerificationUiState
+import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupTitleUiState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupVerificationSummaryUiState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupVerificationUiState
 import com.cbgm.sparrow.feature.contacts.domain.model.Contact
@@ -157,6 +158,7 @@ internal fun toGroupAvatarUiState(
 internal fun toGroupVerificationUiState(
     summary: GroupVerificationSummaryUiState,
     groupAvatar: GroupAvatarUiState,
+    groupTitle: GroupTitleUiState,
     groupDescription: GroupDescriptionUiState,
     contacts: List<Contact>,
     profilePictures: Map<String, ByteArray?>,
@@ -196,6 +198,7 @@ internal fun toGroupVerificationUiState(
         isVerifying = isVerifying,
         errorMessage = verificationError,
         groupAvatar = groupAvatar,
+        groupTitle = groupTitle,
         groupDescription = groupDescription,
         memberManagement =
             GroupMemberManagementUiState(

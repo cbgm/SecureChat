@@ -8,10 +8,12 @@ import com.cbgm.sparrow.feature.chats.data.group.avatar.GroupAvatarBroadcaster
 import com.cbgm.sparrow.feature.chats.data.group.description.GroupDescriptionBroadcaster
 import com.cbgm.sparrow.feature.chats.data.group.membership.GroupMembershipCoordinator
 import com.cbgm.sparrow.feature.chats.data.group.pin.GroupPinBroadcaster
+import com.cbgm.sparrow.feature.chats.data.group.title.GroupTitleBroadcaster
 
 class GroupReadyAcknowledgementPacketHandler internal constructor(
     private val membershipCoordinator: GroupMembershipCoordinator,
     private val groupAvatarBroadcaster: GroupAvatarBroadcaster,
+    private val groupTitleBroadcaster: GroupTitleBroadcaster,
     private val groupDescriptionBroadcaster: GroupDescriptionBroadcaster,
     private val groupPinBroadcaster: GroupPinBroadcaster
 ) : GroupPacketHandler {
@@ -36,6 +38,15 @@ class GroupReadyAcknowledgementPacketHandler internal constructor(
                     ).onFailure { error ->
                         logger.warn(error) {
                             "Could not queue current group avatar for ${context.contactId}"
+                        }
+                    }
+                groupTitleBroadcaster
+                    .sendCurrentTo(
+                        groupId = context.conversationId,
+                        contactId = context.contactId
+                    ).onFailure { error ->
+                        logger.warn(error) {
+                            "Could not queue current group title for ${context.contactId}"
                         }
                     }
                 groupDescriptionBroadcaster

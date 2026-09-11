@@ -13,16 +13,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.Warning
@@ -32,6 +38,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -85,8 +93,6 @@ import com.cbgm.sparrow.resources.feature_attachments_media_and_files
 import com.cbgm.sparrow.resources.feature_chats_group_add_members
 import com.cbgm.sparrow.resources.feature_chats_group_admin
 import com.cbgm.sparrow.resources.feature_chats_group_avatar
-import com.cbgm.sparrow.resources.feature_chats_group_avatar_add
-import com.cbgm.sparrow.resources.feature_chats_group_avatar_change
 import com.cbgm.sparrow.resources.feature_chats_group_avatar_choose_gallery
 import com.cbgm.sparrow.resources.feature_chats_group_avatar_crop
 import com.cbgm.sparrow.resources.feature_chats_group_avatar_remove
@@ -125,6 +131,8 @@ fun GroupDetailsScreen(
     modifier: Modifier = Modifier
 ) {
     var showAvatarEditor by remember { mutableStateOf(false) }
+    var isEditingTitle by remember { mutableStateOf(false) }
+    var titleDraft by remember { mutableStateOf("") }
     var showDescriptionEditor by remember { mutableStateOf(false) }
     var descriptionDraft by remember { mutableStateOf("") }
 
@@ -133,8 +141,30 @@ fun GroupDetailsScreen(
             modifier = Modifier.fillMaxSize(),
             containerColor = MaterialTheme.colorScheme.background,
             topBar = { containerColor ->
+                val titleState = (uiState as? GroupDetailsUiState.Content)?.groupTitle
                 TopBar(
                     containerColor = containerColor,
+                    title = titleState?.title
+                        ?: stringResource(Res.string.feature_chats_group_details_title),
+                    canEditTitle = titleState?.canEdit == true,
+                    isSavingTitle = titleState?.isSaving == true,
+                    isEditingTitle = isEditingTitle,
+                    titleDraft = titleDraft,
+                    onTitleDraftChanged = { titleDraft = it },
+                    onEditTitle = {
+                        titleDraft = titleState?.title.orEmpty()
+                        isEditingTitle = true
+                    },
+                    onSaveTitle = {
+                        if (titleDraft.isNotBlank()) {
+                            isEditingTitle = false
+                            onUiEvent(GroupDetailsUiEvent.SaveGroupTitleClicked(titleDraft))
+                        }
+                    },
+                    onCancelTitle = {
+                        isEditingTitle = false
+                        titleDraft = titleState?.title.orEmpty()
+                    },
                     onBack = { onUiEvent(GroupDetailsUiEvent.BackClicked) }
                 )
             }
@@ -145,7 +175,6 @@ fun GroupDetailsScreen(
                 listState = listState,
                 onUiEvent = onUiEvent,
                 onEditGroupAvatar = { showAvatarEditor = true },
-                onRemoveGroupAvatar = { onUiEvent(GroupDetailsUiEvent.RemoveGroupAvatarClicked) },
                 onEditGroupDescription = {
                     val content = uiState as? GroupDetailsUiState.Content
                     if (content?.groupDescription?.canEdit == true) {
@@ -164,11 +193,21 @@ fun GroupDetailsScreen(
                         cropTitle = stringResource(Res.string.feature_chats_group_avatar_crop),
                         takePhoto = stringResource(Res.string.feature_chats_group_avatar_take_photo),
                         chooseFromGallery = stringResource(Res.string.feature_chats_group_avatar_choose_gallery),
+                        remove =
+                            if (((uiState as? GroupDetailsUiState.Content)?.groupAvatar?.avatarBytes) != null) {
+                                stringResource(Res.string.feature_chats_group_avatar_remove)
+                            } else {
+                                null
+                            },
                         cancel = stringResource(Res.string.base_cancel)
                     ),
                 onAvatarSelected = { bytes ->
                     showAvatarEditor = false
                     onUiEvent(GroupDetailsUiEvent.AvatarSelected(bytes))
+                },
+                onRemoveAvatar = {
+                    showAvatarEditor = false
+                    onUiEvent(GroupDetailsUiEvent.RemoveGroupAvatarClicked)
                 },
                 onDismiss = { showAvatarEditor = false }
             )
@@ -197,6 +236,15 @@ fun GroupDetailsScreen(
 @Composable
 private fun TopBar(
     containerColor: Color,
+    title: String,
+    canEditTitle: Boolean,
+    isSavingTitle: Boolean,
+    isEditingTitle: Boolean,
+    titleDraft: String,
+    onTitleDraftChanged: (String) -> Unit,
+    onEditTitle: () -> Unit,
+    onSaveTitle: () -> Unit,
+    onCancelTitle: () -> Unit,
     onBack: () -> Unit
 ) {
     Column {
@@ -206,20 +254,76 @@ private fun TopBar(
                     containerColor = containerColor,
                     scrolledContainerColor = containerColor,
                     titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
                 ),
             title = {
-                Text(
-                    text = stringResource(Res.string.feature_chats_group_details_title),
-                    style = MaterialTheme.typography.titleSmall
-                )
+                if (isEditingTitle) {
+                    BasicTextField(
+                        value = titleDraft,
+                        onValueChange = onTitleDraftChanged,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isSavingTitle,
+                        singleLine = true,
+                        textStyle =
+                            MaterialTheme.typography.titleSmall.copy(
+                                color = MaterialTheme.colorScheme.onBackground,
+                                textAlign = TextAlign.Center
+                            ),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary)
+                    )
+                } else {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             },
             navigationIcon = {
-                IconButton(onClick = onBack) {
+                IconButton(onClick = onBack, enabled = !isSavingTitle) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = null
                     )
+                }
+            },
+            actions = {
+                when {
+                    isEditingTitle -> {
+                        IconButton(
+                            onClick = onSaveTitle,
+                            enabled = !isSavingTitle && titleDraft.isNotBlank()
+                        ) {
+                            if (isSavingTitle) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(Dimens.GroupDetailsScreen.verificationProgressSize),
+                                    strokeWidth = Dimens.Base.progressIndicatorStrokeWidth
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null
+                                )
+                            }
+                        }
+                        IconButton(onClick = onCancelTitle, enabled = !isSavingTitle) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = null
+                            )
+                        }
+                    }
+
+                    canEditTitle -> {
+                        IconButton(onClick = onEditTitle, enabled = !isSavingTitle) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = null
+                            )
+                        }
+                    }
                 }
             }
         )
@@ -233,7 +337,6 @@ private fun Content(
     listState: LazyListState,
     onUiEvent: (GroupDetailsUiEvent) -> Unit,
     onEditGroupAvatar: () -> Unit,
-    onRemoveGroupAvatar: () -> Unit,
     onEditGroupDescription: () -> Unit
 ) {
     when (uiState) {
@@ -262,7 +365,6 @@ private fun Content(
                 },
                 onLeaveGroup = { onUiEvent(GroupDetailsUiEvent.LeaveGroupClicked) },
                 onEditGroupAvatar = onEditGroupAvatar,
-                onRemoveGroupAvatar = onRemoveGroupAvatar,
                 onEditGroupDescription = onEditGroupDescription
             )
 
@@ -416,51 +518,44 @@ private fun SummaryPreview() {
 @Composable
 private fun GroupAvatarSection(
     state: GroupAvatarUiState,
-    onEdit: () -> Unit,
-    onRemove: () -> Unit
+    onEdit: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
-            modifier = Modifier.padding(top = MaterialTheme.spacing.small),
             contentAlignment = Alignment.Center
         ) {
             SparrowAvatar(
                 name = state.title,
                 pictureBytes = state.avatarBytes,
-                size = Dimens.GroupDetailsScreen.avatarSize
+                size = Dimens.GroupDetailsScreen.avatarSize,
+                modifier = Modifier.padding(MaterialTheme.spacing.base)
             )
+
+            if (state.canEdit) {
+                IconButton(
+                    onClick = onEdit,
+                    enabled = !state.isSaving,
+                    shape = CircleShape,
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    ),
+                    modifier = Modifier.align(Alignment.BottomEnd)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PhotoCamera,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
             if (state.isSaving) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(Dimens.GroupDetailsScreen.avatarProgressSize),
                     strokeWidth = Dimens.GroupDetailsScreen.avatarProgressStrokeWidth
-                )
-            }
-        }
-
-        if (state.canEdit) {
-            SparrowSecondaryButton(
-                onClick = onEdit,
-                enabled = !state.isSaving,
-                modifier = Modifier.fillMaxWidth().padding(top = MaterialTheme.spacing.medium),
-                text =
-                    stringResource(
-                        if (state.avatarBytes != null) {
-                            Res.string.feature_chats_group_avatar_change
-                        } else {
-                            Res.string.feature_chats_group_avatar_add
-                        }
-                    )
-            )
-
-            if (state.avatarBytes != null) {
-                SparrowOutlinedButton(
-                    onClick = onRemove,
-                    enabled = !state.isSaving,
-                    modifier = Modifier.fillMaxWidth().padding(top = MaterialTheme.spacing.small),
-                    text = stringResource(Res.string.feature_chats_group_avatar_remove)
                 )
             }
         }
@@ -483,8 +578,7 @@ private fun GroupAvatarSectionPreview() {
     SparrowTheme {
         GroupAvatarSection(
             state = GroupAvatarUiState(title = "Sparrow Team", canEdit = true),
-            onEdit = {},
-            onRemove = {}
+            onEdit = {}
         )
     }
 }
@@ -607,7 +701,6 @@ private fun MemberList(
     onPromoteMember: (String) -> Unit,
     onLeaveGroup: () -> Unit,
     onEditGroupAvatar: () -> Unit,
-    onRemoveGroupAvatar: () -> Unit,
     onEditGroupDescription: () -> Unit,
     innerPadding: PaddingValues,
     listState: LazyListState
@@ -629,8 +722,7 @@ private fun MemberList(
         item(key = "group-avatar") {
             GroupAvatarSection(
                 state = groupAvatarState,
-                onEdit = onEditGroupAvatar,
-                onRemove = onRemoveGroupAvatar
+                onEdit = onEditGroupAvatar
             )
         }
 
@@ -712,7 +804,6 @@ private fun MemberListPreview() {
             onPromoteMember = {},
             onLeaveGroup = {},
             onEditGroupAvatar = {},
-            onRemoveGroupAvatar = {},
             onEditGroupDescription = {},
             innerPadding = PaddingValues(),
             listState = rememberLazyListState()
@@ -1100,6 +1191,15 @@ private fun TopBarPreview() {
     SparrowTheme {
         TopBar(
             containerColor = MaterialTheme.colorScheme.background,
+            title = "Sparrow Team",
+            canEditTitle = true,
+            isSavingTitle = false,
+            isEditingTitle = false,
+            titleDraft = "Sparrow Team",
+            onTitleDraftChanged = {},
+            onEditTitle = {},
+            onSaveTitle = {},
+            onCancelTitle = {},
             onBack = {}
         )
     }

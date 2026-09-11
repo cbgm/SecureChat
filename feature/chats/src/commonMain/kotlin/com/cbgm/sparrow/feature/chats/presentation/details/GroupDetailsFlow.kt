@@ -128,6 +128,7 @@ fun GroupDetailsFlow(
                     uiState = GroupDetailsUiState.Content(
                         summary = uiState.summary,
                         groupAvatar = uiState.groupAvatar,
+                        groupTitle = uiState.groupTitle,
                         groupDescription = uiState.groupDescription
                     ),
                     onUiEvent = { event ->

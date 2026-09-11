@@ -25,6 +25,7 @@ data class AvatarEditorStrings(
     val cropTitle: String,
     val takePhoto: String,
     val chooseFromGallery: String,
+    val remove: String? = null,
     val cancel: String
 )
 
@@ -32,6 +33,7 @@ data class AvatarEditorStrings(
 fun AvatarEditor(
     strings: AvatarEditorStrings,
     onAvatarSelected: (ByteArray) -> Unit,
+    onRemoveAvatar: (() -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     var sourceBytes by remember { mutableStateOf<ByteArray?>(null) }
@@ -94,6 +96,16 @@ fun AvatarEditor(
             sourceChooserVisible = false
             galleryLauncher.launch()
         },
+        onRemove =
+            if (strings.remove != null && onRemoveAvatar != null) {
+                {
+                    sourceChooserVisible = false
+                    onRemoveAvatar()
+                    onDismiss()
+                }
+            } else {
+                null
+            },
         onDismiss = onDismiss
     )
 }
@@ -104,6 +116,7 @@ private fun AvatarSourceDialog(
     strings: AvatarEditorStrings,
     onTakePhoto: () -> Unit,
     onChooseFromGallery: () -> Unit,
+    onRemove: (() -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     SparrowAlertDialog(
@@ -120,6 +133,12 @@ private fun AvatarSourceDialog(
                     text = strings.chooseFromGallery,
                     onClick = onChooseFromGallery
                 )
+                if (strings.remove != null && onRemove != null) {
+                    SparrowDialogListItem(
+                        text = strings.remove,
+                        onClick = onRemove
+                    )
+                }
             }
         },
         confirmButton = {},
@@ -149,6 +168,7 @@ private fun AvatarSourceDialogPreview() {
                 ),
             onTakePhoto = {},
             onChooseFromGallery = {},
+            onRemove = {},
             onDismiss = {}
         )
     }

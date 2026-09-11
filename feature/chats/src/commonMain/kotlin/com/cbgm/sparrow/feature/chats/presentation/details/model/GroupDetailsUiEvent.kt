@@ -64,6 +64,10 @@ sealed interface GroupDetailsUiEvent {
 
     data object RemoveGroupAvatarClicked : GroupDetailsUiEvent
 
+    data class SaveGroupTitleClicked(
+        val title: String
+    ) : GroupDetailsUiEvent
+
     data class SaveGroupDescriptionClicked(
         val description: String
     ) : GroupDetailsUiEvent

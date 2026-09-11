@@ -385,6 +385,18 @@ interface ChatDao {
         timestamp: Long
     )
 
+    @Query(
+        """
+        UPDATE conversations
+        SET title = :title
+        WHERE id = :conversationId
+        """
+    )
+    suspend fun updateConversationTitle(
+        conversationId: String,
+        title: String
+    ): Int
+
     @Transaction
     @Query(
         """
