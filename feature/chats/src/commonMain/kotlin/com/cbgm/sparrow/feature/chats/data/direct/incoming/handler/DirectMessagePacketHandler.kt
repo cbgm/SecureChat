@@ -17,8 +17,11 @@ import com.cbgm.sparrow.data.database.entity.MessageEntity
 import com.cbgm.sparrow.data.database.entity.MessageReactionEntity
 import com.cbgm.sparrow.feature.attachments.data.datasource.MessageAttachmentDataSource
 import com.cbgm.sparrow.feature.attachments.runtime.MessageAttachmentCacheCoordinator
+import com.cbgm.sparrow.feature.autoreply.domain.usecase.ClaimAutoReplyForContactUseCase
+import com.cbgm.sparrow.feature.autoreply.domain.usecase.ReleaseAutoReplyRecipientUseCase
 import com.cbgm.sparrow.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.sparrow.feature.chats.domain.model.MessageDeliveryStatus
+import com.cbgm.sparrow.feature.chats.domain.usecase.direct.SendDirectMessageUseCase
 import com.cbgm.sparrow.feature.linkpreview.domain.usecase.PrefetchLinkPreviewsUseCase
 
 /** Direct-only incoming chat-message handler. */
@@ -30,7 +33,10 @@ class DirectMessagePacketHandler(
     private val remoteProfilePictureMetadataProcessor: RemoteProfilePictureMetadataProcessor,
     private val attachmentTransfer: MessageAttachmentDataSource,
     private val attachmentCacheCoordinator: MessageAttachmentCacheCoordinator,
-    private val prefetchLinkPreviews: PrefetchLinkPreviewsUseCase
+    private val prefetchLinkPreviews: PrefetchLinkPreviewsUseCase,
+    private val claimAutoReplyForContact: ClaimAutoReplyForContactUseCase,
+    private val releaseAutoReplyRecipient: ReleaseAutoReplyRecipientUseCase,
+    private val sendDirectMessage: SendDirectMessageUseCase
 ) {
     private val logger = SparrowLog.withTag("DirectMessagePacketHandler")
 
@@ -64,6 +70,7 @@ class DirectMessagePacketHandler(
             prefetchLinkPreviews(packet.text)
             attachmentTransfer.persistIncoming(packet.messageId, packet.attachments)
             sendDeliveryReceipt(context.contactId, packet.messageId)
+            sendAutoReplyIfNeeded(conversation.id, context.contactId)
             attachmentCacheCoordinator.cache(packet.messageId)
         }
 
@@ -136,8 +143,44 @@ class DirectMessagePacketHandler(
             deliveryStatus = MessageDeliveryStatus.NOT_APPLICABLE.name,
             isMine = false,
             senderContactId = context.contactId,
-            createdAtEpochMilliseconds = sentAtEpochMilliseconds
+            createdAtEpochMilliseconds = context.receivedAtEpochMilliseconds
         )
+
+    private suspend fun sendAutoReplyIfNeeded(
+        conversationId: String,
+        contactId: String
+    ) {
+        val claimedReply =
+            claimAutoReplyForContact(contactId)
+                .getOrElse { error ->
+                    logger.warn(error) { "Could not claim auto reply for contactId=$contactId" }
+                    return
+                } ?: return
+
+        val sendResult =
+            sendDirectMessage(
+                conversationId = conversationId,
+                text = claimedReply.text,
+                attachments = emptyList(),
+                replyToMessageId = null
+            )
+
+        if (sendResult.isSuccess) return
+
+        logger.warn(sendResult.exceptionOrNull()) {
+            "Auto reply could not be sent to contactId=$contactId"
+        }
+
+        val activationSessionId = claimedReply.activationSessionId ?: return
+        releaseAutoReplyRecipient(
+            contactId = contactId,
+            expectedActivationSessionId = activationSessionId
+        ).onFailure { error ->
+            logger.warn(error) {
+                "Could not release failed auto-reply claim for contactId=$contactId"
+            }
+        }
+    }
 
     private suspend fun sendDeliveryReceipt(
         contactId: String,

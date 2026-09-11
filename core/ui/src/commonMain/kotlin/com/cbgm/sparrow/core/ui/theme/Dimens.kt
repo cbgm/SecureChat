@@ -179,6 +179,7 @@ object Dimens {
         val topBarAvatarSize = 36.dp
         val avatarSize = 28.dp
         val noticeIconSize = 15.dp
+        val pinBarWidth = 2.dp
     }
 
     object DirectConversationScreen {

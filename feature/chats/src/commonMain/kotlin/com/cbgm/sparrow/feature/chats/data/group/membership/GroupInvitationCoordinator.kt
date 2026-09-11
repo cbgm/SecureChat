@@ -122,7 +122,7 @@ internal class GroupInvitationCoordinator(
                             }
                         }
 
-                        existing == null || existing.status.isTerminalStatus() -> {
+                        existing == null || existing.status.canBeReplacedForNonMember() -> {
                             groupInvitationDao.deleteByGroupContactAndDirection(
                                 groupId = groupId,
                                 contactId = contact.id,
@@ -385,8 +385,9 @@ internal class GroupInvitationCoordinator(
         )
     }
 
-    private fun String.isTerminalStatus(): Boolean =
-        this == GroupInvitationStatus.DECLINED.name ||
+    private fun String.canBeReplacedForNonMember(): Boolean =
+        this == GroupInvitationStatus.ACTIVE.name ||
+            this == GroupInvitationStatus.DECLINED.name ||
             this == GroupInvitationStatus.REMOVED.name ||
             this == GroupInvitationStatus.EXPIRED.name ||
             this == GroupInvitationStatus.FAILED.name

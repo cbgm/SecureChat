@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.cbgm.sparrow.core.logging.SparrowLog
 import com.cbgm.sparrow.core.ui.navigation.AppRoute
 import com.cbgm.sparrow.core.ui.presentation.BaseViewModel
+import com.cbgm.sparrow.feature.autoreply.domain.usecase.ObserveActiveAutoReplyUseCase
 import com.cbgm.sparrow.feature.chats.domain.model.group.GroupLeaveRequirement
 import com.cbgm.sparrow.feature.chats.domain.usecase.direct.DeleteDirectConversationUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.DeleteGroupConversationUseCase
@@ -15,12 +16,13 @@ import com.cbgm.sparrow.feature.chats.presentation.overview.model.OverviewUiEven
 import com.cbgm.sparrow.feature.chats.presentation.overview.model.OverviewUiState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class OverviewViewModel(
     observeConversationContext: ObserveConversationOverviewContextUseCase,
+    observeActiveAutoReply: ObserveActiveAutoReplyUseCase,
     private val deleteDirectConversation: DeleteDirectConversationUseCase,
     private val deleteGroupConversation: DeleteGroupConversationUseCase,
     private val getGroupLeaveRequirement: GetGroupLeaveRequirementUseCase
@@ -28,20 +30,24 @@ class OverviewViewModel(
     private val logger = SparrowLog.withTag("OverviewViewModel")
 
     val uiState: StateFlow<OverviewUiState> =
-        observeConversationContext()
-            .map { context ->
-                context.conversations.toOverviewUiState(
-                    profilePictures = context.profilePictures,
-                    groupAvatars = context.groupAvatars
-                )
-            }.stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = OverviewUiState.Loading
+        combine(
+            observeConversationContext(),
+            observeActiveAutoReply()
+        ) { context, activeAutoReply ->
+            context.conversations.toOverviewUiState(
+                profilePictures = context.profilePictures,
+                groupAvatars = context.groupAvatars,
+                activeAutoReplyName = activeAutoReply?.name
             )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = OverviewUiState.Loading
+        )
 
     fun onUiEvent(event: OverviewUiEvent) {
         when (event) {
+            OverviewUiEvent.AutoReplyClicked -> navigator.navigateTo(AppRoute.AutoReplySettings)
             is OverviewUiEvent.ChatClicked -> openChat(event.chat)
             is OverviewUiEvent.DeleteConversation -> deleteConversation(event.conversationId)
         }

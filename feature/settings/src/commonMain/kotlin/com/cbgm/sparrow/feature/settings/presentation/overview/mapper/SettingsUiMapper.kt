@@ -10,6 +10,7 @@ import com.cbgm.sparrow.feature.settings.presentation.overview.model.SettingsUiS
 
 internal fun BuildInfo.toSettingsUiState(
     currentLanguage: AppLanguage,
+    activeAutoReplyName: String?,
     identitySetupMode: DirectIdentitySetupMode,
     blockUnknownContactInvites: Boolean,
     blockedContactCount: Int,
@@ -23,6 +24,7 @@ internal fun BuildInfo.toSettingsUiState(
 ): SettingsUiState =
     SettingsUiState(
         currentLanguage = currentLanguage,
+        activeAutoReplyName = activeAutoReplyName,
         directIdentitySetupMode = identitySetupMode,
         blockUnknownContactInvites = blockUnknownContactInvites,
         blockedContactCount = blockedContactCount,

@@ -27,6 +27,10 @@ val androidDatabaseModule =
         }
 
         single {
+            get<SparrowDatabase>().autoReplyDao()
+        }
+
+        single {
             get<SparrowDatabase>().contactDao()
         }
 

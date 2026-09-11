@@ -9,6 +9,7 @@ import com.cbgm.sparrow.feature.settings.domain.model.BuildInfo
 
 data class SettingsUiState(
     val currentLanguage: AppLanguage = AppLanguage.ENGLISH,
+    val activeAutoReplyName: String? = null,
     val directIdentitySetupMode: DirectIdentitySetupMode = DirectIdentitySetupMode.AUTOMATIC_INVITATION,
     val blockUnknownContactInvites: Boolean = false,
     val blockedContactCount: Int = 0,

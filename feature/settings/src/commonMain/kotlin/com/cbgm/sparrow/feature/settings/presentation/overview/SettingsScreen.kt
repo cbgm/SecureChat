@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Cloud
@@ -64,6 +65,8 @@ import com.cbgm.sparrow.resources.base_language
 import com.cbgm.sparrow.resources.base_version
 import com.cbgm.sparrow.resources.feature_attachments_storage
 import com.cbgm.sparrow.resources.feature_attachments_storage_subtitle
+import com.cbgm.sparrow.resources.feature_auto_reply
+import com.cbgm.sparrow.resources.feature_auto_reply_off
 import com.cbgm.sparrow.resources.feature_settings_about
 import com.cbgm.sparrow.resources.feature_settings_automatic_secure_setup
 import com.cbgm.sparrow.resources.feature_settings_automatic_secure_setup_disabled_subtitle
@@ -145,6 +148,15 @@ fun SettingsScreen(
                 title = stringResource(Res.string.feature_settings_profile_picture),
                 subtitle = stringResource(Res.string.feature_settings_profile_subtitle),
                 onClick = { onUiEvent(SettingsUiEvent.ProfileClicked) }
+            )
+
+            SettingsDivider()
+
+            SettingsRow(
+                icon = Icons.AutoMirrored.Filled.Reply,
+                title = stringResource(Res.string.feature_auto_reply),
+                subtitle = uiState.activeAutoReplyName ?: stringResource(Res.string.feature_auto_reply_off),
+                onClick = { onUiEvent(SettingsUiEvent.AutoReplyClicked) }
             )
         }
 

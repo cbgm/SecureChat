@@ -621,4 +621,15 @@
     <string name="feature_chats_unpin_message">Anheftung lösen</string>
     <string name="feature_chats_pinned_message">Angeheftete Nachricht</string>
     <string name="feature_chats_pinned_at">Angeheftet %1$s</string>
+
+    <!-- Auto reply -->
+    <string name="feature_auto_reply">Automatische Antwort</string>
+    <string name="feature_auto_reply_off">Aus</string>
+    <string name="feature_auto_reply_active">Automatische Antwort aktiv · %1$s</string>
+    <string name="feature_auto_reply_add">Automatische Antwort hinzufügen</string>
+    <string name="feature_auto_reply_edit">Automatische Antwort bearbeiten</string>
+    <string name="feature_auto_reply_name">Name</string>
+    <string name="feature_auto_reply_message">Nachricht</string>
+    <string name="feature_auto_reply_save">Speichern</string>
+
 </resources>

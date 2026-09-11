@@ -3,6 +3,7 @@ package com.cbgm.sparrow.navigation.routing.graph
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.cbgm.sparrow.core.ui.navigation.AppRoute
+import com.cbgm.sparrow.feature.autoreply.presentation.AutoReplySettingsRoute
 import com.cbgm.sparrow.feature.settings.presentation.developer.DeveloperMenuRoute
 import com.cbgm.sparrow.feature.settings.presentation.disclaimer.DisclaimerRoute
 import com.cbgm.sparrow.feature.settings.presentation.disclaimer.model.DisclaimerType
@@ -54,6 +55,13 @@ fun NavGraphBuilder.settingsNavGraph() {
         exitTransition = { slideOutToRight() }
     ) {
         ProfileSettingsRoute()
+    }
+
+    composable<AppRoute.AutoReplySettings>(
+        enterTransition = { slideInFromRight() },
+        exitTransition = { slideOutToRight() }
+    ) {
+        AutoReplySettingsRoute()
     }
 
     composable<AppRoute.ControlPlanes>(

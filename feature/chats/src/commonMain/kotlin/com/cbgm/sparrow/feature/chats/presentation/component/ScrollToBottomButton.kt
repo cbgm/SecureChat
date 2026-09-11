@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import com.cbgm.sparrow.core.ui.theme.Alpha
 import kotlinx.coroutines.launch
 
 @Composable
@@ -66,7 +67,7 @@ internal fun ScrollToBottomButton(
                     }
                 }
             },
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = Alpha.FloatingButton.opaque),
             contentColor = MaterialTheme.colorScheme.onSurface
         ) {
             Icon(
