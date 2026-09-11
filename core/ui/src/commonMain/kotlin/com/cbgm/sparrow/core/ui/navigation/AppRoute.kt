@@ -88,6 +88,9 @@ sealed interface AppRoute {
     data object ProfileSettings : AppRoute
 
     @Serializable
+    data object AutoReplySettings : AppRoute
+
+    @Serializable
     data object ControlPlanes : AppRoute
 
     @Serializable

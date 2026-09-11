@@ -1,11 +1,13 @@
 package com.cbgm.sparrow.feature.chats.presentation.overview
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material3.CircularProgressIndicator
@@ -23,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -83,10 +87,23 @@ private fun Content(
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.onBackground)
             }
 
-        OverviewUiState.Empty ->
-            EmptyContent(
-                modifier = modifier.fillMaxSize().padding(innerPadding)
-            )
+        is OverviewUiState.Empty ->
+            Box(modifier = modifier.fillMaxSize().padding(innerPadding)) {
+                EmptyContent(modifier = Modifier.fillMaxSize())
+                uiState.activeAutoReplyName?.let { name ->
+                    ActiveAutoReplyChip(
+                        name = name,
+                        onClick = { onUiEvent(OverviewUiEvent.AutoReplyClicked) },
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(
+                                    horizontal = MaterialTheme.spacing.screenPadding,
+                                    vertical = MaterialTheme.spacing.base
+                                )
+                    )
+                }
+            }
 
         is OverviewUiState.Content ->
             Box(modifier = modifier.fillMaxSize()) {
@@ -95,6 +112,26 @@ private fun Content(
                     contentPadding = innerPadding,
                     state = listState
                 ) {
+                    uiState.activeAutoReplyName?.let { name ->
+                        item(key = "active-auto-reply") {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(
+                                            horizontal = MaterialTheme.spacing.screenPadding,
+                                            vertical = MaterialTheme.spacing.base
+                                        ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                ActiveAutoReplyChip(
+                                    name = name,
+                                    onClick = { onUiEvent(OverviewUiEvent.AutoReplyClicked) }
+                                )
+                            }
+                        }
+                    }
+
                     items(
                         items = uiState.conversations,
                         key = { conversation -> conversation.conversationId }
@@ -150,6 +187,50 @@ private fun Content(
             }
 
         is OverviewUiState.Error -> Unit
+    }
+}
+
+@Composable
+private fun ActiveAutoReplyChip(
+    name: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.primary,
+        border =
+            BorderStroke(
+                width = Dimens.Button.borderWidth,
+                color = MaterialTheme.colorScheme.primary
+            )
+    ) {
+        Row(
+            modifier =
+                Modifier.padding(
+                    horizontal = MaterialTheme.spacing.actionItem.horizontalPadding,
+                    vertical = MaterialTheme.spacing.base
+                ),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Reply,
+                contentDescription = null,
+                modifier = Modifier.size(Dimens.SearchField.searchIconSize)
+            )
+
+            Text(
+                text = name,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
 
@@ -322,7 +403,8 @@ private fun OverviewScreenPreview() {
                                 timestamp = "Yesterday",
                                 conversationId = "6"
                             )
-                        )
+                        ),
+                    activeAutoReplyName = "Vacation"
                 ),
             onUiEvent = {},
             listState = LazyListState(),

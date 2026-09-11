@@ -4,6 +4,7 @@ import androidx.room.AutoMigration
 import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import com.cbgm.sparrow.data.database.dao.AutoReplyDao
 import com.cbgm.sparrow.data.database.dao.ChatDao
 import com.cbgm.sparrow.data.database.dao.ContactDao
 import com.cbgm.sparrow.data.database.dao.ContactRoutingIdDao
@@ -21,6 +22,8 @@ import com.cbgm.sparrow.data.database.dao.MessageRecipientStateDao
 import com.cbgm.sparrow.data.database.dao.MessageSafetyDao
 import com.cbgm.sparrow.data.database.dao.MessageSearchDao
 import com.cbgm.sparrow.data.database.dao.ProtocolOutboxDao
+import com.cbgm.sparrow.data.database.entity.AutoReplyEntity
+import com.cbgm.sparrow.data.database.entity.AutoReplyRecipientEntity
 import com.cbgm.sparrow.data.database.entity.ContactEntity
 import com.cbgm.sparrow.data.database.entity.ContactPhoneNumberEntity
 import com.cbgm.sparrow.data.database.entity.ContactPublicIdentityEntity
@@ -46,6 +49,8 @@ import com.cbgm.sparrow.data.database.entity.RemoteMailboxRouteEntity
 
 @Database(
     entities = [
+        AutoReplyEntity::class,
+        AutoReplyRecipientEntity::class,
         ContactEntity::class,
         ContactPhoneNumberEntity::class,
         ContactPublicIdentityEntity::class,
@@ -69,7 +74,7 @@ import com.cbgm.sparrow.data.database.entity.RemoteMailboxRouteEntity
         RemoteMailboxRouteEntity::class,
         LinkPreviewEntity::class
     ],
-    version = 38,
+    version = 39,
     autoMigrations = [
         AutoMigration(from = 26, to = 27),
         AutoMigration(from = 27, to = 28),
@@ -82,12 +87,15 @@ import com.cbgm.sparrow.data.database.entity.RemoteMailboxRouteEntity
         AutoMigration(from = 34, to = 35),
         AutoMigration(from = 35, to = 36),
         AutoMigration(from = 36, to = 37),
-        AutoMigration(from = 37, to = 38)
+        AutoMigration(from = 37, to = 38),
+        AutoMigration(from = 38, to = 39)
     ],
     exportSchema = true
 )
 @ConstructedBy(SparrowDatabaseConstructor::class)
 abstract class SparrowDatabase : RoomDatabase() {
+    abstract fun autoReplyDao(): AutoReplyDao
+
     abstract fun contactDao(): ContactDao
 
     abstract fun chatDao(): ChatDao

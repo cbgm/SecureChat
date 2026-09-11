@@ -19,6 +19,7 @@ kotlin {
             implementation(projects.core.protocol)
             implementation(projects.core.ui)
             implementation(projects.data.database)
+            implementation(projects.feature.autoreply)
             implementation(projects.feature.contactimport)
             implementation(projects.feature.contacts)
             implementation(projects.feature.attachments)

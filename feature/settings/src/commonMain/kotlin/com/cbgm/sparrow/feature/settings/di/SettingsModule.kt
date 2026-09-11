@@ -167,7 +167,8 @@ val settingsModule =
                 setSemanticSearchEnabled = get(),
                 setLocalEmbeddingFeatureEnabled = get(),
                 observeVoiceTranscriptionEnabled = get(),
-                setVoiceTranscriptionEnabled = get()
+                setVoiceTranscriptionEnabled = get(),
+                observeActiveAutoReply = get()
             )
         }
 

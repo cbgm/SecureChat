@@ -7,6 +7,7 @@ import com.cbgm.sparrow.core.security.DirectIdentitySetupMode
 import com.cbgm.sparrow.core.ui.locale.AppLanguage
 import com.cbgm.sparrow.core.ui.navigation.AppRoute
 import com.cbgm.sparrow.core.ui.presentation.BaseViewModel
+import com.cbgm.sparrow.feature.autoreply.domain.usecase.ObserveActiveAutoReplyUseCase
 import com.cbgm.sparrow.feature.media.domain.usecase.ObserveVoiceTranscriptionEnabledUseCase
 import com.cbgm.sparrow.feature.media.domain.usecase.SetVoiceTranscriptionEnabledUseCase
 import com.cbgm.sparrow.feature.search.domain.usecase.SetSemanticSearchEnabledUseCase
@@ -44,8 +45,9 @@ class SettingsViewModel(
     private val setBlockUnknownContactInvites: SetBlockUnknownContactInvitesUseCase,
     private val setSemanticSearchEnabled: SetSemanticSearchEnabledUseCase,
     private val setLocalEmbeddingFeatureEnabled: SetLocalEmbeddingFeatureEnabledUseCase,
-    private val observeVoiceTranscriptionEnabled: ObserveVoiceTranscriptionEnabledUseCase,
-    private val setVoiceTranscriptionEnabled: SetVoiceTranscriptionEnabledUseCase
+    observeVoiceTranscriptionEnabled: ObserveVoiceTranscriptionEnabledUseCase,
+    private val setVoiceTranscriptionEnabled: SetVoiceTranscriptionEnabledUseCase,
+    observeActiveAutoReply: ObserveActiveAutoReplyUseCase
 ) : BaseViewModel() {
     private val buildInfo = getBuildInfoUseCase()
     private val localState = MutableStateFlow(SettingsLocalState())
@@ -54,10 +56,12 @@ class SettingsViewModel(
         combine(
             observeSettingsDomainContext(),
             localState,
-            observeVoiceTranscriptionEnabled()
-        ) { domain, local, voiceTranscriptionEnabled ->
+            observeVoiceTranscriptionEnabled(),
+            observeActiveAutoReply()
+        ) { domain, local, voiceTranscriptionEnabled, activeAutoReply ->
             buildInfo.toSettingsUiState(
                 currentLanguage = local.currentLanguage,
+                activeAutoReplyName = activeAutoReply?.name,
                 identitySetupMode = domain.identitySetupMode,
                 blockUnknownContactInvites = domain.blockUnknownContactInvites,
                 blockedContactCount = domain.blockedContactCount,
@@ -100,6 +104,7 @@ class SettingsViewModel(
             SettingsUiEvent.DeveloperMenuClicked -> navigator.navigateTo(AppRoute.DeveloperMenu)
             SettingsUiEvent.BlockedContactsClicked -> navigator.navigateTo(AppRoute.BlockedContacts)
             SettingsUiEvent.ProfileClicked -> navigator.navigateTo(AppRoute.ProfileSettings)
+            SettingsUiEvent.AutoReplyClicked -> navigator.navigateTo(AppRoute.AutoReplySettings)
             SettingsUiEvent.ControlPlanesClicked -> navigator.navigateTo(AppRoute.ControlPlanes)
             SettingsUiEvent.AttachmentStorageClicked -> navigator.navigateTo(AppRoute.AttachmentStorage)
             SettingsUiEvent.VersionRowTapped -> handleVersionTap()

@@ -427,6 +427,7 @@ private fun org.koin.core.module.Module.registerViewModels() {
     viewModel {
         OverviewViewModel(
             observeConversationContext = get(),
+            observeActiveAutoReply = get(),
             deleteDirectConversation = get(),
             deleteGroupConversation = get(),
             getGroupLeaveRequirement = get()

@@ -44,6 +44,8 @@ sealed interface SettingsUiEvent {
 
     data object ProfileClicked : SettingsUiEvent
 
+    data object AutoReplyClicked : SettingsUiEvent
+
     data object ControlPlanesClicked : SettingsUiEvent
 
     data object AttachmentStorageClicked : SettingsUiEvent

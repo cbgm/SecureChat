@@ -8,10 +8,11 @@ import com.cbgm.sparrow.feature.chats.presentation.overview.model.OverviewUiStat
 
 internal fun List<ConversationOverview>.toOverviewUiState(
     profilePictures: Map<String, ByteArray?>,
-    groupAvatars: Map<String, ByteArray?>
+    groupAvatars: Map<String, ByteArray?>,
+    activeAutoReplyName: String?
 ): OverviewUiState =
     if (isEmpty()) {
-        OverviewUiState.Empty
+        OverviewUiState.Empty(activeAutoReplyName = activeAutoReplyName)
     } else {
         OverviewUiState.Content(
             conversations =
@@ -23,7 +24,8 @@ internal fun List<ConversationOverview>.toOverviewUiState(
                                 ConversationOverviewType.GROUP -> groupAvatars[conversation.id]
                             }
                     )
-                }
+                },
+            activeAutoReplyName = activeAutoReplyName
         )
     }
 
