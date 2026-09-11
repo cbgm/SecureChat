@@ -1,5 +1,6 @@
 package com.cbgm.sparrow.feature.chats.presentation.details
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -341,12 +342,12 @@ private fun Content(
 ) {
     when (uiState) {
         GroupDetailsUiState.Loading ->
-            LoadingContent(
+            Loading(
                 modifier = Modifier.fillMaxSize().padding(innerPadding)
             )
 
         is GroupDetailsUiState.Content ->
-            MemberList(
+            Content(
                 summary = uiState.summary,
                 groupAvatarState = uiState.groupAvatar,
                 groupDescriptionState = uiState.groupDescription,
@@ -369,7 +370,7 @@ private fun Content(
             )
 
         is GroupDetailsUiState.Error ->
-            ErrorContent(
+            Error(
                 message = uiState.message,
                 modifier =
                     Modifier
@@ -418,7 +419,7 @@ private fun MetricPreview() {
 }
 
 @Composable
-private fun ErrorContent(
+private fun Error(
     message: String,
     modifier: Modifier = Modifier
 ) {
@@ -436,9 +437,9 @@ private fun ErrorContent(
 
 @Preview
 @Composable
-private fun ErrorContentPreview() {
+private fun ErrorPreview() {
     SparrowTheme {
-        ErrorContent(
+        Error(
             message = "Group details could not be loaded",
             modifier = Modifier.padding(MaterialTheme.spacing.medium)
         )
@@ -446,7 +447,7 @@ private fun ErrorContentPreview() {
 }
 
 @Composable
-private fun LoadingContent(modifier: Modifier = Modifier) {
+private fun Loading(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
@@ -457,9 +458,9 @@ private fun LoadingContent(modifier: Modifier = Modifier) {
 
 @Preview
 @Composable
-private fun LoadingContentPreview() {
+private fun LoadingPreview() {
     SparrowTheme {
-        LoadingContent(modifier = Modifier.size(Dimens.GroupDetailsScreen.loadingSize))
+        Loading(modifier = Modifier.size(Dimens.GroupDetailsScreen.loadingSize))
     }
 }
 
@@ -690,7 +691,7 @@ private fun GroupDescriptionEditorDialog(
 }
 
 @Composable
-private fun MemberList(
+private fun Content(
     summary: GroupVerificationSummaryUiState,
     groupAvatarState: GroupAvatarUiState,
     groupDescriptionState: GroupDescriptionUiState,
@@ -788,9 +789,9 @@ private fun MemberList(
 
 @Preview
 @Composable
-private fun MemberListPreview() {
+private fun ContentPreview() {
     SparrowTheme {
-        MemberList(
+        Content(
             summary = GroupDetailsPreviewData.summary,
             groupAvatarState = GroupAvatarUiState(title = "Sparrow Team", canEdit = true),
             groupDescriptionState = GroupDescriptionUiState(
@@ -1209,9 +1210,11 @@ private fun TopBarPreview() {
 @Composable
 private fun GroupDetailsScreenPreview() {
     SparrowTheme {
-        GroupDetailsScreen(
-            uiState = GroupDetailsUiState.Content(GroupDetailsPreviewData.summary),
-            onUiEvent = {}
-        )
+        Box(Modifier.background(MaterialTheme.colorScheme.background)) {
+            GroupDetailsScreen(
+                uiState = GroupDetailsUiState.Content(GroupDetailsPreviewData.summary),
+                onUiEvent = {}
+            )
+        }
     }
 }
