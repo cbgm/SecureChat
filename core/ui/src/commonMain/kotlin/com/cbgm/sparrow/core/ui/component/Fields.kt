@@ -135,7 +135,7 @@ fun SparrowInputField(
     keyboardOptions: KeyboardOptions? = null
 ) {
     val defaultKeyboardOptions = KeyboardOptions(
-        keyboardType = KeyboardType.Phone,
+        keyboardType = KeyboardType.Text,
         imeAction = ImeAction.Done
     )
 

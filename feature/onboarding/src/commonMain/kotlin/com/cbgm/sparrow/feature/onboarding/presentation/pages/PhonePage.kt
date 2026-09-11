@@ -103,7 +103,8 @@ fun PhonePage(
                             )
                         },
                     isError = identityState.phoneNumberError != null,
-                    isSingleLine = true
+                    isSingleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
                 Spacer(Modifier.height(MaterialTheme.spacing.small))
                 SparrowInputField(
@@ -113,8 +114,7 @@ fun PhonePage(
                     label = stringResource(Res.string.feature_onboarding_your_name),
                     placeholderText = stringResource(Res.string.feature_onboarding_your_name),
                     errorText = stringResource(Res.string.feature_onboarding_input_your_name),
-                    isSingleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                    isSingleLine = true
                 )
                 Spacer(Modifier.height(MaterialTheme.spacing.base))
                 if (canRetryAutomatic) {
