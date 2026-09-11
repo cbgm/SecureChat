@@ -13,6 +13,7 @@ internal class GroupLocalCleanupDataSource(
     private val groupVerificationDao: GroupVerificationDao,
     private val groupSecurityManager: GroupSecurityManager,
     private val groupAvatarDataSource: GroupAvatarDataSource,
+    private val groupTitleDataSource: GroupTitleDataSource,
     private val groupDescriptionDataSource: GroupDescriptionDataSource,
     private val groupPinDataSource: GroupPinDataSource
 ) {
@@ -40,6 +41,7 @@ internal class GroupLocalCleanupDataSource(
         groupVerificationDao.deleteByGroupId(groupId)
         groupInvitationDao.deleteByGroupId(groupId)
         groupAvatarDataSource.deleteLocal(groupId)
+        groupTitleDataSource.deleteLocal(groupId)
         groupDescriptionDataSource.deleteLocal(groupId)
         groupPinDataSource.delete(groupId)
     }
@@ -58,6 +60,7 @@ internal class GroupLocalCleanupDataSource(
         groupVerificationDao.deleteByGroupId(groupId)
         groupInvitationDao.deleteByGroupId(groupId)
         groupAvatarDataSource.deleteLocal(groupId)
+        groupTitleDataSource.deleteLocal(groupId)
         groupDescriptionDataSource.deleteLocal(groupId)
         groupPinDataSource.delete(groupId)
     }

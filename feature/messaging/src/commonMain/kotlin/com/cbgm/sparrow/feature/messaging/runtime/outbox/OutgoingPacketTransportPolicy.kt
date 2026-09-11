@@ -17,6 +17,7 @@ import com.cbgm.sparrow.core.protocol.packet.GroupLeaveRequestPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupMemberActivatedPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupMemberActivationAcknowledgementPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupPinUpdatedPacket
+import com.cbgm.sparrow.core.protocol.packet.GroupTitleUpdatedPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupVerificationReceiptPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupVerificationSnapshotPacket
 import com.cbgm.sparrow.core.protocol.packet.GroupVerificationSnapshotRequestPacket
@@ -87,6 +88,7 @@ class OutgoingPacketTransportPolicy {
 
                 is GroupAvatarUpdatedPacket,
                 is GroupDescriptionUpdatedPacket,
+                is GroupTitleUpdatedPacket,
                 is GroupPinUpdatedPacket,
                 is GroupCreatedPacket,
                 is GroupLeaveRequestPacket,

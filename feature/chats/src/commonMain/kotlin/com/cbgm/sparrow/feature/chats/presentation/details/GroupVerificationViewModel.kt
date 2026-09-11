@@ -15,6 +15,7 @@ import com.cbgm.sparrow.feature.chats.domain.usecase.group.RemoveGroupAvatarUseC
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.RemoveGroupMemberUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.SetGroupAvatarUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.SetGroupDescriptionUseCase
+import com.cbgm.sparrow.feature.chats.domain.usecase.group.SetGroupTitleUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.SynchronizeGroupVerificationUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.TransferGroupAdminAndLeaveUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.VerifyGroupMemberUseCase
@@ -27,6 +28,7 @@ import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupDescriptio
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupDetailsUiEvent
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupLeavePrompt
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupLeaveUiState
+import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupTitleUiState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupVerificationSummaryUiState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupVerificationUiState
 import com.cbgm.sparrow.feature.contacts.domain.usecase.GetContactSafetyNumberUseCase
@@ -52,6 +54,7 @@ class GroupVerificationViewModel(
     private val transferGroupAdminAndLeave: TransferGroupAdminAndLeaveUseCase,
     private val setGroupAvatar: SetGroupAvatarUseCase,
     private val removeGroupAvatar: RemoveGroupAvatarUseCase,
+    private val setGroupTitle: SetGroupTitleUseCase,
     private val setGroupDescription: SetGroupDescriptionUseCase,
     private val getGroupLeaveRequirement: GetGroupLeaveRequirementUseCase,
     private val leaveGroup: LeaveGroupUseCase
@@ -80,6 +83,7 @@ class GroupVerificationViewModel(
         )
     private val leaveState = MutableStateFlow(GroupLeaveUiState())
     private val avatarActionState = MutableStateFlow(GroupAvatarActionState())
+    private val titleActionState = MutableStateFlow(GroupTitleActionState())
     private val descriptionActionState = MutableStateFlow(GroupDescriptionActionState())
     private val contactsWithProfilePictures = observeContactsWithProfilePictures()
 
@@ -87,8 +91,9 @@ class GroupVerificationViewModel(
         combine(
             observeGroupDetailsContext(conversationId),
             avatarActionState,
+            titleActionState,
             descriptionActionState
-        ) { context, avatarAction, descriptionAction ->
+        ) { context, avatarAction, titleAction, descriptionAction ->
             val groupState = context.verification
             val administration = context.administration
             val summary =
@@ -116,6 +121,13 @@ class GroupVerificationViewModel(
                         isSaving = avatarAction.isSaving,
                         errorMessage = avatarAction.errorMessage
                     ),
+                title =
+                    GroupTitleUiState(
+                        title = context.conversation?.title.orEmpty(),
+                        canEdit = summary.isLocalAdmin,
+                        isSaving = titleAction.isSaving,
+                        errorMessage = titleAction.errorMessage
+                    ),
                 description =
                     GroupDescriptionUiState(
                         description = context.description.description.orEmpty(),
@@ -137,6 +149,7 @@ class GroupVerificationViewModel(
             toGroupVerificationUiState(
                 summary = overview.summary,
                 groupAvatar = overview.avatar,
+                groupTitle = overview.title,
                 groupDescription = overview.description,
                 contacts = contactsSnapshot.contacts,
                 profilePictures = contactsSnapshot.profilePictures,
@@ -188,6 +201,7 @@ class GroupVerificationViewModel(
             GroupDetailsUiEvent.LeaveGroupClicked -> requestLeave()
             is GroupDetailsUiEvent.AvatarSelected -> saveGroupAvatar(event.bytes)
             GroupDetailsUiEvent.RemoveGroupAvatarClicked -> removeCurrentGroupAvatar()
+            is GroupDetailsUiEvent.SaveGroupTitleClicked -> saveGroupTitle(event.title)
             is GroupDetailsUiEvent.SaveGroupDescriptionClicked -> saveGroupDescription(event.description)
             GroupDetailsUiEvent.AddMembersClicked -> Unit
             GroupDetailsUiEvent.MediaAndFilesClicked ->
@@ -231,6 +245,25 @@ class GroupVerificationViewModel(
                     avatarActionState.value =
                         GroupAvatarActionState(
                             errorMessage = error.message ?: "Group avatar could not be removed"
+                        )
+                }
+        }
+    }
+
+    private fun saveGroupTitle(title: String) {
+        if (!uiState.value.summary.isLocalAdmin || titleActionState.value.isSaving) return
+
+        val normalizedTitle = title.trim()
+        if (normalizedTitle.isBlank()) return
+
+        titleActionState.value = GroupTitleActionState(isSaving = true)
+        viewModelScope.launch {
+            setGroupTitle(conversationId, normalizedTitle)
+                .onSuccess { titleActionState.value = GroupTitleActionState() }
+                .onFailure { error ->
+                    titleActionState.value =
+                        GroupTitleActionState(
+                            errorMessage = error.message ?: "Group name could not be saved"
                         )
                 }
         }
@@ -622,10 +655,16 @@ class GroupVerificationViewModel(
     private data class GroupOverviewSnapshot(
         val summary: GroupVerificationSummaryUiState,
         val avatar: GroupAvatarUiState,
+        val title: GroupTitleUiState,
         val description: GroupDescriptionUiState
     )
 
     private data class GroupAvatarActionState(
+        val isSaving: Boolean = false,
+        val errorMessage: String? = null
+    )
+
+    private data class GroupTitleActionState(
         val isSaving: Boolean = false,
         val errorMessage: String? = null
     )
