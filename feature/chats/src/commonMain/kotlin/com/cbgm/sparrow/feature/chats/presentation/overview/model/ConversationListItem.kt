@@ -1,5 +1,8 @@
 package com.cbgm.sparrow.feature.chats.presentation.overview.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class ConversationListItem(
     val conversationId: String,
     val contactId: String,

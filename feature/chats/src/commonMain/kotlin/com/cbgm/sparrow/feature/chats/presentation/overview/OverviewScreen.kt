@@ -26,9 +26,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -61,13 +65,34 @@ fun OverviewScreen(
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier
 ) {
-    Content(
-        uiState = uiState,
-        onUiEvent = onUiEvent,
-        listState = listState,
-        innerPadding = innerPadding,
-        modifier = modifier
-    )
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.error) {
+        uiState.error
+            .takeUnless { error -> error.isNullOrBlank() }
+            ?.let { message ->
+                snackbarHostState.showSnackbar(message)
+                onUiEvent(OverviewUiEvent.ErrorDismissed)
+            }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Content(
+            uiState = uiState,
+            onUiEvent = onUiEvent,
+            listState = listState,
+            innerPadding = innerPadding,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = innerPadding.calculateBottomPadding())
+        )
+    }
 }
 
 @Composable
@@ -78,8 +103,8 @@ private fun Content(
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier
 ) {
-    when (uiState) {
-        OverviewUiState.Loading ->
+    when {
+        uiState.isLoading ->
             Box(
                 modifier = modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center
@@ -87,7 +112,7 @@ private fun Content(
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.onBackground)
             }
 
-        is OverviewUiState.Empty ->
+        uiState.conversations.isEmpty() ->
             Box(modifier = modifier.fillMaxSize().padding(innerPadding)) {
                 EmptyContent(modifier = Modifier.fillMaxSize())
                 uiState.activeAutoReplyName?.let { name ->
@@ -105,7 +130,7 @@ private fun Content(
                 }
             }
 
-        is OverviewUiState.Content ->
+        else ->
             Box(modifier = modifier.fillMaxSize()) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -134,36 +159,13 @@ private fun Content(
 
                     items(
                         items = uiState.conversations,
-                        key = { conversation -> conversation.conversationId }
+                        key = { conversation -> conversation.conversationId },
+                        contentType = { "conversation" }
                     ) { conversation ->
-                        SparrowSwipeRevealItem(
-                            actions =
-                                listOf(
-                                    SwipeRevealAction(
-                                        backgroundColor = MaterialTheme.colorScheme.error,
-                                        contentColor = MaterialTheme.colorScheme.onError,
-                                        onClick = {
-                                            onUiEvent(
-                                                OverviewUiEvent.DeleteConversation(
-                                                    conversation.conversationId
-                                                )
-                                            )
-                                        }
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.DeleteOutline,
-                                            contentDescription = null
-                                        )
-                                    }
-                                )
-                        ) {
-                            ConversationItem(
-                                conversation = conversation,
-                                onClick = {
-                                    onUiEvent(OverviewUiEvent.ChatClicked(conversation))
-                                }
-                            )
-                        }
+                        ConversationOverviewItem(
+                            conversation = conversation,
+                            onUiEvent = onUiEvent
+                        )
 
                         HorizontalDivider(
                             modifier = Modifier
@@ -185,8 +187,50 @@ private fun Content(
                         )
                 )
             }
+    }
+}
 
-        is OverviewUiState.Error -> Unit
+@Composable
+private fun ConversationOverviewItem(
+    conversation: ConversationListItem,
+    onUiEvent: (OverviewUiEvent) -> Unit
+) {
+    val deleteBackgroundColor = MaterialTheme.colorScheme.error
+    val deleteContentColor = MaterialTheme.colorScheme.onError
+    val actions =
+        remember(
+            conversation.conversationId,
+            deleteBackgroundColor,
+            deleteContentColor,
+            onUiEvent
+        ) {
+            listOf(
+                SwipeRevealAction(
+                    backgroundColor = deleteBackgroundColor,
+                    contentColor = deleteContentColor,
+                    onClick = {
+                        onUiEvent(
+                            OverviewUiEvent.DeleteConversation(conversation.conversationId)
+                        )
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteOutline,
+                        contentDescription = null
+                    )
+                }
+            )
+        }
+    val onClick =
+        remember(conversation, onUiEvent) {
+            { onUiEvent(OverviewUiEvent.ChatClicked(conversation)) }
+        }
+
+    SparrowSwipeRevealItem(actions = actions) {
+        ConversationItem(
+            conversation = conversation,
+            onClick = onClick
+        )
     }
 }
 
@@ -385,7 +429,7 @@ private fun OverviewScreenPreview() {
     SparrowTheme {
         OverviewScreen(
             uiState =
-                OverviewUiState.Content(
+                OverviewUiState(
                     conversations =
                         listOf(
                             ConversationListItem(

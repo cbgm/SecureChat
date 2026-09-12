@@ -1,18 +1,11 @@
 package com.cbgm.sparrow.feature.chats.presentation.overview.model
 
-sealed interface OverviewUiState {
-    data object Loading : OverviewUiState
+import androidx.compose.runtime.Immutable
 
-    data class Empty(
-        val activeAutoReplyName: String? = null
-    ) : OverviewUiState
-
-    data class Content(
-        val conversations: List<ConversationListItem>,
-        val activeAutoReplyName: String? = null
-    ) : OverviewUiState
-
-    data class Error(
-        val message: String
-    ) : OverviewUiState
-}
+@Immutable
+data class OverviewUiState(
+    val conversations: List<ConversationListItem> = emptyList(),
+    val activeAutoReplyName: String? = null,
+    val isLoading: Boolean = false,
+    val error: String? = ""
+)

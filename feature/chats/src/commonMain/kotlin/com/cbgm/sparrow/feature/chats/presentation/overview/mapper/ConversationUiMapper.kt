@@ -4,28 +4,18 @@ import com.cbgm.sparrow.core.time.formatMessageTimestamp
 import com.cbgm.sparrow.feature.chats.domain.model.overview.ConversationOverview
 import com.cbgm.sparrow.feature.chats.domain.model.overview.ConversationOverviewType
 import com.cbgm.sparrow.feature.chats.presentation.overview.model.ConversationListItem
-import com.cbgm.sparrow.feature.chats.presentation.overview.model.OverviewUiState
 
-internal fun List<ConversationOverview>.toOverviewUiState(
+internal fun List<ConversationOverview>.toConversationListItems(
     profilePictures: Map<String, ByteArray?>,
-    groupAvatars: Map<String, ByteArray?>,
-    activeAutoReplyName: String?
-): OverviewUiState =
-    if (isEmpty()) {
-        OverviewUiState.Empty(activeAutoReplyName = activeAutoReplyName)
-    } else {
-        OverviewUiState.Content(
-            conversations =
-                map { conversation ->
-                    conversation.toConversationListItem(
-                        avatarBytes =
-                            when (conversation.type) {
-                                ConversationOverviewType.DIRECT -> profilePictures[conversation.contactId]
-                                ConversationOverviewType.GROUP -> groupAvatars[conversation.id]
-                            }
-                    )
-                },
-            activeAutoReplyName = activeAutoReplyName
+    groupAvatars: Map<String, ByteArray?>
+): List<ConversationListItem> =
+    map { conversation ->
+        conversation.toConversationListItem(
+            avatarBytes =
+                when (conversation.type) {
+                    ConversationOverviewType.DIRECT -> profilePictures[conversation.contactId]
+                    ConversationOverviewType.GROUP -> groupAvatars[conversation.id]
+                }
         )
     }
 
