@@ -177,7 +177,6 @@ fun DirectConversationScreen(
                         message = message,
                         onRetryClick = {},
                         onSafetyDetailsClick = {},
-                        onAttachmentVisible = {},
                         onAttachmentClick = {},
                         onContactClick = {},
                         voiceTranscriptionEnabled = uiState.voiceTranscriptionEnabled,
@@ -244,13 +243,9 @@ fun DirectConversationScreen(
                             )
                         )
                     },
-                    onAttachmentVisible = { attachmentId ->
-                        onUiEvent(DirectConversationUiEvent.AttachmentVisible(attachmentId))
-                    },
                     onAttachmentClick = { messageId, attachmentId ->
                         viewerMessageId = messageId
                         viewerAttachmentId = attachmentId
-                        onUiEvent(DirectConversationUiEvent.AttachmentVisible(attachmentId))
                     },
                     onContactClick = { contact -> pendingSharedContact = contact },
                     onVoicePlayPauseClick = { attachmentId ->
@@ -347,9 +342,6 @@ fun DirectConversationScreen(
             onDismiss = {
                 viewerMessageId = null
                 viewerAttachmentId = null
-            },
-            onEnsureAttachmentLoaded = { attachmentId ->
-                onUiEvent(DirectConversationUiEvent.AttachmentVisible(attachmentId))
             },
             onError = { error -> onUiEvent(DirectConversationUiEvent.AttachmentError(error)) }
         )
@@ -459,7 +451,6 @@ private fun Content(
     onReactionBurstRequested: (MessageReactionBurst) -> Unit,
     onRetryMessage: (String) -> Unit,
     onSafetyWarningClick: (String, MessageSafetyWarningUi) -> Unit,
-    onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String, String) -> Unit,
     onContactClick: (SharedContact) -> Unit,
     onVoicePlayPauseClick: (String) -> Unit,
@@ -498,7 +489,6 @@ private fun Content(
                     warning
                 )
             },
-            onAttachmentVisible = onAttachmentVisible,
             onAttachmentClick = onAttachmentClick,
             onContactClick = onContactClick,
             onVoicePlayPauseClick = onVoicePlayPauseClick,

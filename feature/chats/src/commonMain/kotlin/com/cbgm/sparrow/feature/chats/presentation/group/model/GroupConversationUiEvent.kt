@@ -110,10 +110,6 @@ sealed interface GroupConversationUiEvent {
         val contact: SharedContact
     ) : GroupConversationUiEvent
 
-    data class AttachmentVisible(
-        val attachmentId: String
-    ) : GroupConversationUiEvent
-
     data class AttachmentError(
         val message: String
     ) : GroupConversationUiEvent

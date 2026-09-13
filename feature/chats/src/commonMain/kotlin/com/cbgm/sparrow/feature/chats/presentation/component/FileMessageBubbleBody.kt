@@ -28,6 +28,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
+import com.cbgm.sparrow.feature.attachments.domain.model.AttachmentContent
+import com.cbgm.sparrow.feature.attachments.presentation.component.rememberAttachmentUiState
+import com.cbgm.sparrow.feature.attachments.presentation.model.AttachmentUiState
+import com.cbgm.sparrow.feature.chats.presentation.component.mapper.toAttachmentTarget
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessagePartUi
 import com.cbgm.sparrow.feature.media.device.FileOpener
 import com.cbgm.sparrow.feature.media.device.rememberFileOpener
@@ -35,129 +39,101 @@ import com.cbgm.sparrow.feature.media.util.toReadableByteSize
 
 @Composable
 internal fun FileMessageBubbleBody(
-    fileParts: List<MessagePartUi.File>,
-    onAttachmentVisible: (String) -> Unit
+    fileParts: List<MessagePartUi.File>
 ) {
     val opener = rememberFileOpener()
     var openingFileId by remember { mutableStateOf<String?>(null) }
 
-    val openingFile =
-        fileParts.firstOrNull { it.id == openingFileId }
-
-    OpenFileEffect(
-        file = openingFile,
-        opener = opener,
-        onOpened = { openingFileId = null }
-    )
-
-    Content(
-        fileParts = fileParts,
-        openingFileId = openingFileId,
-        onFileClick = { file ->
-            openingFileId = file.id
-
-            if (file.localFilePath == null && file.bytes == null) {
-                onAttachmentVisible(file.id)
-            }
-        }
-    )
-}
-
-@Composable
-private fun Content(
-    fileParts: List<MessagePartUi.File>,
-    openingFileId: String?,
-    onFileClick: (MessagePartUi.File) -> Unit
-) {
     Column(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
     ) {
         fileParts.forEach { attachment ->
-            val isOpening = openingFileId == attachment.id
-
-            Surface(
-                modifier = Modifier.clickable(enabled = !isOpening) {
-                    onFileClick(attachment)
-                },
-                shape = MaterialTheme.shapes.extraSmall,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh
-            ) {
-                Row(
-                    modifier = Modifier.padding(MaterialTheme.spacing.micro),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (isOpening) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(
-                                Dimens.MessageAttachment.filePreviewIconSize
-                            ),
-                            strokeWidth = Dimens.Base.progressIndicatorStrokeWidth
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
-                            contentDescription = null,
-                            modifier = Modifier.size(
-                                Dimens.MessageAttachment.filePreviewIconSize
-                            )
-                        )
-                    }
-
-                    Spacer(
-                        modifier = Modifier.width(MaterialTheme.spacing.base)
-                    )
-
-                    Column {
-                        Text(
-                            text = attachment.fileName,
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        Text(
-                            text = attachment.byteSize.toReadableByteSize(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
+            MessageFileItem(
+                attachment = attachment,
+                opener = opener,
+                isOpening = openingFileId == attachment.id,
+                onClick = { openingFileId = attachment.id },
+                onOpened = { openingFileId = null }
+            )
         }
     }
 }
 
 @Composable
-private fun OpenFileEffect(
-    file: MessagePartUi.File?,
+private fun MessageFileItem(
+    attachment: MessagePartUi.File,
     opener: FileOpener,
+    isOpening: Boolean,
+    onClick: () -> Unit,
     onOpened: () -> Unit
 ) {
-    LaunchedEffect(
-        file?.localFilePath,
-        file?.bytes
-    ) {
-        val attachment = file ?: return@LaunchedEffect
+    val attachmentState =
+        rememberAttachmentUiState(
+            target = attachment.toAttachmentTarget(),
+            load = isOpening
+        )
+    val localFilePath =
+        (attachmentState as? AttachmentUiState.Ready)
+            ?.content
+            ?.let { content -> content as? AttachmentContent.LocalFile }
+            ?.localFilePath
 
-        when {
-            attachment.localFilePath != null ->
-                opener.open(
-                    localFilePath = attachment.localFilePath,
-                    fileName = attachment.fileName,
-                    mimeType = attachment.mimeType
-                )
+    LaunchedEffect(isOpening, localFilePath) {
+        if (!isOpening || localFilePath == null) return@LaunchedEffect
 
-            attachment.bytes != null ->
-                opener.open(
-                    bytes = attachment.bytes,
-                    fileName = attachment.fileName,
-                    mimeType = attachment.mimeType
-                )
-
-            else -> return@LaunchedEffect
-        }
-
+        opener.open(
+            localFilePath = localFilePath,
+            fileName = attachment.fileName,
+            mimeType = attachment.mimeType
+        )
         onOpened()
+    }
+
+    LaunchedEffect(isOpening, attachmentState) {
+        if (isOpening && attachmentState is AttachmentUiState.Error) {
+            onOpened()
+        }
+    }
+
+    Surface(
+        modifier = Modifier.clickable(enabled = !isOpening) { onClick() },
+        shape = MaterialTheme.shapes.extraSmall,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh
+    ) {
+        Row(
+            modifier = Modifier.padding(MaterialTheme.spacing.micro),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (isOpening) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(Dimens.MessageAttachment.filePreviewIconSize),
+                    strokeWidth = Dimens.Base.progressIndicatorStrokeWidth
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
+                    contentDescription = null,
+                    modifier = Modifier.size(Dimens.MessageAttachment.filePreviewIconSize)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(MaterialTheme.spacing.base))
+
+            Column {
+                Text(
+                    text = attachment.fileName,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Text(
+                    text = attachment.byteSize.toReadableByteSize(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 
@@ -172,18 +148,15 @@ private fun FileMessageBubbleBodyPreview() {
                         id = "preview-file",
                         mimeType = "application/pdf",
                         byteSize = 1_048_576,
-                        fileName = "document.pdf",
-                        localFilePath = ""
+                        fileName = "document.pdf"
                     ),
                     MessagePartUi.File(
                         id = "preview-file-2",
                         mimeType = "text/plain",
                         byteSize = 42_000,
-                        fileName = "notes.txt",
-                        localFilePath = ""
+                        fileName = "notes.txt"
                     )
-                ),
-            onAttachmentVisible = {}
+                )
         )
     }
 }

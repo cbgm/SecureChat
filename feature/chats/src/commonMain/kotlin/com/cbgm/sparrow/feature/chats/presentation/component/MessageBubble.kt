@@ -84,7 +84,6 @@ internal fun MessageBubble(
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier,
     onSafetyDetailsClick: (MessageSafetyWarningUi) -> Unit = {},
-    onAttachmentVisible: (String) -> Unit = {},
     onAttachmentClick: (String) -> Unit = {},
     onContactClick: (SharedContact) -> Unit = {},
     onVoicePlayPauseClick: (String) -> Unit = {},
@@ -121,7 +120,6 @@ internal fun MessageBubble(
             message = message,
             onRetryClick = onRetryClick,
             onSafetyDetailsClick = onSafetyDetailsClick,
-            onAttachmentVisible = onAttachmentVisible,
             onAttachmentClick = onAttachmentClick,
             onContactClick = onContactClick,
             onVoicePlayPauseClick = onVoicePlayPauseClick,
@@ -156,7 +154,6 @@ private fun MessageBubbleContent(
     message: MessageBubbleUi,
     onRetryClick: () -> Unit,
     onSafetyDetailsClick: (MessageSafetyWarningUi) -> Unit,
-    onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String) -> Unit,
     onContactClick: (SharedContact) -> Unit,
     onVoicePlayPauseClick: (String) -> Unit,
@@ -197,7 +194,6 @@ private fun MessageBubbleContent(
                     state = bubbleState,
                     isSearchHighlighted = isSearchHighlighted,
                     safetyWarning = safetyWarning,
-                    onAttachmentVisible = onAttachmentVisible,
                     onAttachmentClick = onAttachmentClick,
                     onContactClick = onContactClick,
                     onVoicePlayPauseClick = onVoicePlayPauseClick,
@@ -287,7 +283,6 @@ private fun BubbleBody(
     state: BubbleState,
     isSearchHighlighted: Boolean = false,
     safetyWarning: MessageSafetyWarningUi? = null,
-    onAttachmentVisible: (String) -> Unit = {},
     onAttachmentClick: (String) -> Unit = {},
     onContactClick: (SharedContact) -> Unit = {},
     onVoicePlayPauseClick: (String) -> Unit = {},
@@ -354,7 +349,6 @@ private fun BubbleBody(
             ) {
                 ContactMessageBubbleBody(
                     contactPart = contactPart,
-                    onAttachmentVisible = onAttachmentVisible,
                     onContactClick = onContactClick
                 )
             }
@@ -372,7 +366,6 @@ private fun BubbleBody(
             ) {
                 LocationMessageBubbleBody(
                     locationPart = locationPart,
-                    onAttachmentVisible = onAttachmentVisible,
                     onAttachmentClick = onAttachmentClick
                 )
             }
@@ -389,7 +382,6 @@ private fun BubbleBody(
             ) {
                 PhotoVideoMessageBubbleBody(
                     imageVideoParts = message.imageVideoParts,
-                    onAttachmentVisible = onAttachmentVisible,
                     onAttachmentClick = onAttachmentClick
                 )
             }
@@ -405,8 +397,7 @@ private fun BubbleBody(
                 onLongPress = onLongPress
             ) {
                 FileMessageBubbleBody(
-                    fileParts = message.fileParts,
-                    onAttachmentVisible = onAttachmentVisible
+                    fileParts = message.fileParts
                 )
             }
         }
@@ -869,8 +860,7 @@ private fun MessageBubbleWithAttachmentsPreview() {
                             id = "preview-file",
                             mimeType = "application/pdf",
                             byteSize = 0,
-                            fileName = "test.pdf",
-                            localFilePath = ""
+                            fileName = "test.pdf"
                         )
                     ),
                     imageVideoParts = listOf(
@@ -894,7 +884,6 @@ private fun MessageBubbleWithAttachmentsPreview() {
                     )
                 ),
             onRetryClick = {},
-            onAttachmentVisible = {},
             onAttachmentClick = {}
         )
     }

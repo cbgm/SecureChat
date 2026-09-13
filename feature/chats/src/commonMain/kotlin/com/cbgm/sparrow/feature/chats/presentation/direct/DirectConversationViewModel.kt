@@ -104,11 +104,9 @@ class DirectConversationViewModel(
     private val editingMessageId = savedStateHandle.getMutableStateFlow(EDITING_MESSAGE_ID_KEY, "")
     private val mutableErrorMessage = MutableStateFlow<String?>(null)
     private val selectedMedia = MutableStateFlow<List<MediaSelection>>(emptyList())
-    private val attachmentPayloadBytes = MutableStateFlow<Map<String, ByteArray>>(emptyMap())
     private val isSending = MutableStateFlow(false)
     private val contextMessageId = MutableStateFlow<String?>(null)
     private val locationShareState = MutableStateFlow(LocationShareState.IDLE)
-    private val loadingAttachmentIds = mutableSetOf<String>()
     private val historyCursor = MutableStateFlow<MessageHistoryCursor?>(null)
     private val observedHistoryCursor = MutableStateFlow<MessageHistoryCursor?>(null)
     private val isLoadingOlderMessages = MutableStateFlow(false)
@@ -172,11 +170,10 @@ class DirectConversationViewModel(
     val conversationState: StateFlow<DirectConversationUiState> =
         combine(
             conversationContext,
-            attachmentPayloadBytes,
             observeMessageSafetyAssessments(),
             voiceController.messageState,
             voiceTranscriptionEnabled
-        ) { context, loadedAttachmentPayloadBytes, safetyAssessments, voiceState, transcriptionEnabled ->
+        ) { context, safetyAssessments, voiceState, transcriptionEnabled ->
             toDirectConversationUiState(
                 contactId = contactId,
                 fallbackContactName = fallbackContactName,
@@ -185,7 +182,6 @@ class DirectConversationViewModel(
                 handshake = context.handshake,
                 setupMode = context.setupMode,
                 safetyAssessments = safetyAssessments,
-                attachmentPayloadBytes = loadedAttachmentPayloadBytes,
                 voiceState = voiceState
             )
                 .copy(voiceTranscriptionEnabled = transcriptionEnabled)
@@ -343,7 +339,6 @@ class DirectConversationViewModel(
             }
             is DirectConversationUiEvent.ShareContact -> sendAttachmentOnly(event.contact.toOutgoingMessageAttachment())
             is DirectConversationUiEvent.AddSharedContact -> addSharedContact(event.contact)
-            is DirectConversationUiEvent.AttachmentVisible -> loadAttachment(event.attachmentId)
             is DirectConversationUiEvent.AttachmentError -> setError(event.message)
             DirectConversationUiEvent.HeaderClicked -> openContactDetails()
             is DirectConversationUiEvent.RetryMessage -> retryFailedMessage(event.messageId)
@@ -688,27 +683,6 @@ class DirectConversationViewModel(
             setError(error.message ?: "Selected attachments could not be attached")
         }
     }
-
-    private fun loadAttachment(attachmentId: String) {
-        if (attachmentId.isBlank() || attachmentPayloadBytes.value.containsKey(attachmentId)) return
-        if (!loadingAttachmentIds.add(attachmentId)) return
-
-        viewModelScope.launch {
-            loadMessageAttachment(attachmentId)
-                .onSuccess { bytes ->
-                    if (requiresAttachmentPayloadInState(attachmentId)) {
-                        attachmentPayloadBytes.value = attachmentPayloadBytes.value + (attachmentId to bytes)
-                    }
-                }
-                .onFailure { error -> logger.warn(error) { "Could not load message attachment $attachmentId" } }
-            loadingAttachmentIds.remove(attachmentId)
-        }
-    }
-
-    private fun requiresAttachmentPayloadInState(attachmentId: String): Boolean =
-        conversationState.value.messages.any { message ->
-            message.locationPart?.id == attachmentId || message.contactPart?.id == attachmentId
-        }
 
     private fun clearComposer() {
         messageText.value = ""

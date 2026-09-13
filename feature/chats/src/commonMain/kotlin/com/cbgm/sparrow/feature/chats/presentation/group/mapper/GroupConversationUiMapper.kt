@@ -1,5 +1,6 @@
 package com.cbgm.sparrow.feature.chats.presentation.group.mapper
 
+import com.cbgm.sparrow.feature.attachments.domain.model.AttachmentSource
 import com.cbgm.sparrow.feature.chats.domain.model.MessageContentStatus
 import com.cbgm.sparrow.feature.chats.domain.model.MessagePart
 import com.cbgm.sparrow.feature.chats.domain.model.group.ChatMessageType
@@ -34,7 +35,6 @@ internal fun toGroupConversationUiState(
     contacts: List<Contact>,
     isLoading: Boolean,
     safetyAssessments: Map<String, MessageSafetyAssessment>,
-    attachmentPayloadBytes: Map<String, ByteArray> = emptyMap(),
     voiceState: VoiceMessageUiState = VoiceMessageUiState(),
     administration: GroupAdministrationState = GroupAdministrationState(),
     pin: GroupPin? = null
@@ -48,7 +48,7 @@ internal fun toGroupConversationUiState(
                 senderName = sender.displayNameForChat(senderIsInContacts),
                 senderIsInContacts = senderIsInContacts,
                 safetyAssessments = safetyAssessments,
-                attachmentPayloadBytes = attachmentPayloadBytes,
+                attachmentSource = AttachmentSource.GroupPin(groupId),
                 voiceState = voiceState,
                 reply = message.replyToMessageId.toGroupReplyPreview(
                     conversation?.messages.orEmpty().associateBy(GroupMessage::id),
@@ -66,7 +66,6 @@ internal fun toGroupConversationUiState(
         messages = conversation.toMessageBubbleUi(
             contactsById = contactsById,
             safetyAssessments = safetyAssessments,
-            attachmentPayloadBytes = attachmentPayloadBytes,
             voiceState = voiceState
         ),
         isLoading = isLoading,
@@ -95,13 +94,13 @@ internal fun GroupMessage.toMessageBubbleUi(
     senderName: String?,
     senderIsInContacts: Boolean,
     safetyAssessments: Map<String, MessageSafetyAssessment>,
-    attachmentPayloadBytes: Map<String, ByteArray> = emptyMap(),
+    attachmentSource: AttachmentSource = AttachmentSource.Message,
     voiceState: VoiceMessageUiState = VoiceMessageUiState(),
     reply: MessageReplyUi? = null
 ): MessageBubbleUi {
     val partsUi =
         parts.toMessagePartsUi(
-            attachmentPayloadBytes = attachmentPayloadBytes,
+            attachmentSource = attachmentSource,
             voiceState = voiceState
         )
 
@@ -180,7 +179,6 @@ internal fun Set<String>.toIndicatorDisplayName(contacts: List<Contact>): String
 private fun GroupConversation?.toMessageBubbleUi(
     contactsById: Map<String, Contact>,
     safetyAssessments: Map<String, MessageSafetyAssessment>,
-    attachmentPayloadBytes: Map<String, ByteArray>,
     voiceState: VoiceMessageUiState
 ): List<MessageBubbleUi> {
     val messages = this?.messages.orEmpty()
@@ -197,7 +195,6 @@ private fun GroupConversation?.toMessageBubbleUi(
                     senderName = sender.displayNameForChat(senderIsInContacts),
                     senderIsInContacts = senderIsInContacts,
                     safetyAssessments = safetyAssessments,
-                    attachmentPayloadBytes = attachmentPayloadBytes,
                     voiceState = voiceState,
                     reply = message.replyToMessageId.toGroupReplyPreview(messagesById, contactsById)
                 )

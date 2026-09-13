@@ -1,9 +1,11 @@
 package com.cbgm.sparrow.feature.chats.di
 
+import com.cbgm.sparrow.core.protocol.attachment.GroupPinnedAttachmentProvider
 import com.cbgm.sparrow.core.protocol.avatar.GroupAvatarProvider
 import com.cbgm.sparrow.core.protocol.handler.IncomingMessageHandler
 import com.cbgm.sparrow.core.protocol.outbox.OutboxDeliveryStateListener
 import com.cbgm.sparrow.feature.chats.adapter.ChatsGroupAvatarProvider
+import com.cbgm.sparrow.feature.chats.adapter.ChatsGroupPinnedAttachmentProvider
 import com.cbgm.sparrow.feature.chats.data.datasource.UnreadableTransportMessageDataSource
 import com.cbgm.sparrow.feature.chats.data.direct.datasource.DirectConversationDataSource
 import com.cbgm.sparrow.feature.chats.data.direct.delivery.DirectMessageDeliveryCoordinator
@@ -199,6 +201,7 @@ import org.koin.dsl.module
 val chatsModule =
     module {
         single<GroupAvatarProvider> { ChatsGroupAvatarProvider(repository = get()) }
+        single<GroupPinnedAttachmentProvider> { ChatsGroupPinnedAttachmentProvider(repository = get()) }
 
         registerDirectData()
         registerGroupData()

@@ -38,7 +38,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -54,11 +53,14 @@ import com.cbgm.sparrow.core.ui.theme.Alpha
 import com.cbgm.sparrow.core.ui.theme.FunctionalColors
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
+import com.cbgm.sparrow.feature.attachments.domain.model.AttachmentContent
 import com.cbgm.sparrow.feature.attachments.presentation.component.MessageAttachmentViewer
+import com.cbgm.sparrow.feature.attachments.presentation.component.rememberAttachmentUiState
 import com.cbgm.sparrow.feature.attachments.presentation.management.model.AttachmentManagementTab
 import com.cbgm.sparrow.feature.attachments.presentation.management.model.AttachmentManagementUiEvent
 import com.cbgm.sparrow.feature.attachments.presentation.management.model.AttachmentManagementUiState
 import com.cbgm.sparrow.feature.attachments.presentation.mapper.toMediaItem
+import com.cbgm.sparrow.feature.attachments.presentation.model.AttachmentUiState
 import com.cbgm.sparrow.feature.attachments.presentation.model.MessageAttachmentUi
 import com.cbgm.sparrow.feature.media.presentation.component.MediaThumbnail
 import com.cbgm.sparrow.feature.media.util.toReadableByteSize
@@ -115,7 +117,6 @@ fun AttachmentManagementScreen(
                         selectedIds = uiState.selectedIds,
                         isSelectionMode = uiState.isSelectionMode,
                         bottomPadding = innerPadding.calculateBottomPadding(),
-                        onVisible = { onUiEvent(AttachmentManagementUiEvent.AttachmentVisible(it)) },
                         onClick = { onUiEvent(AttachmentManagementUiEvent.AttachmentClicked(it)) }
                     )
 
@@ -158,7 +159,6 @@ fun AttachmentManagementScreen(
             selectedAttachmentId = selectedId,
             canSaveToCameraRoll = false,
             onDismiss = { onUiEvent(AttachmentManagementUiEvent.ViewerDismissed) },
-            onEnsureAttachmentLoaded = { onUiEvent(AttachmentManagementUiEvent.AttachmentVisible(it)) },
             onError = { onUiEvent(AttachmentManagementUiEvent.ViewerError(it)) }
         )
     }
@@ -300,7 +300,6 @@ private fun MediaGrid(
     selectedIds: Set<String>,
     isSelectionMode: Boolean,
     bottomPadding: Dp,
-    onVisible: (String) -> Unit,
     onClick: (String) -> Unit
 ) {
     LazyVerticalGrid(
@@ -321,7 +320,6 @@ private fun MediaGrid(
             GridItem(
                 onClick = { onClick(attachment.id) },
                 attachment = attachment,
-                onVisible = onVisible,
                 isSelected = isSelectionMode && attachment.id in selectedIds
             )
         }
@@ -332,12 +330,14 @@ private fun MediaGrid(
 private fun GridItem(
     onClick: () -> Unit,
     isSelected: Boolean,
-    attachment: MessageAttachmentUi.ImageVideoAttachmentUi,
-    onVisible: (String) -> Unit
+    attachment: MessageAttachmentUi.ImageVideoAttachmentUi
 ) {
-    LaunchedEffect(attachment.id, attachment.bytes) {
-        if (attachment.bytes == null) onVisible(attachment.id)
-    }
+    val attachmentState = rememberAttachmentUiState(attachment.target)
+    val localFilePath =
+        (attachmentState as? AttachmentUiState.Ready)
+            ?.content
+            ?.let { content -> content as? AttachmentContent.LocalFile }
+            ?.localFilePath
 
     Surface(
         modifier =
@@ -347,14 +347,26 @@ private fun GridItem(
         shape = MaterialTheme.shapes.extraSmall
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            MediaThumbnail(
-                media = attachment.toMediaItem(),
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f),
-                contentScale = ContentScale.Crop
-            )
+            if (localFilePath != null) {
+                MediaThumbnail(
+                    media = attachment.toMediaItem(localFilePath),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
 
             if (attachment.type == MessageAttachmentType.VIDEO) {
                 Icon(

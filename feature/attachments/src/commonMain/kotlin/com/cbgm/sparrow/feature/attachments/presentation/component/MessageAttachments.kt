@@ -38,8 +38,9 @@ import com.cbgm.sparrow.core.ui.theme.FunctionalColors
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.attachmentColors
 import com.cbgm.sparrow.core.ui.theme.spacing
-import com.cbgm.sparrow.feature.attachments.domain.model.CurrentLocation
+import com.cbgm.sparrow.feature.attachments.domain.model.AttachmentContent
 import com.cbgm.sparrow.feature.attachments.presentation.mapper.toMediaItem
+import com.cbgm.sparrow.feature.attachments.presentation.model.AttachmentUiState
 import com.cbgm.sparrow.feature.attachments.presentation.model.MessageAttachmentUi
 import com.cbgm.sparrow.feature.media.device.rememberFileOpener
 import com.cbgm.sparrow.feature.media.presentation.component.MediaThumbnail
@@ -49,7 +50,6 @@ import kotlin.math.roundToLong
 @Composable
 fun MessageAttachments(
     attachments: List<MessageAttachmentUi>,
-    onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onOpenError: (String) -> Unit = {}
@@ -66,7 +66,6 @@ fun MessageAttachments(
     if (previewAttachments.isNotEmpty()) {
         MessageAttachmentGrid(
             attachments = previewAttachments,
-            onAttachmentVisible = onAttachmentVisible,
             onAttachmentClick = onAttachmentClick,
             modifier = modifier
         )
@@ -75,7 +74,6 @@ fun MessageAttachments(
     if (fileItems.isNotEmpty()) {
         MessageFileList(
             attachments = fileItems,
-            onAttachmentVisible = onAttachmentVisible,
             onOpenError = onOpenError,
             modifier = modifier
         )
@@ -85,7 +83,6 @@ fun MessageAttachments(
 @Composable
 private fun MessageAttachmentGrid(
     attachments: List<MessageAttachmentUi>,
-    onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -100,7 +97,6 @@ private fun MessageAttachmentGrid(
             visibleAttachments.take(ATTACHMENTS_PER_ROW).forEach { attachment ->
                 MessageAttachmentPreview(
                     attachment = attachment,
-                    onAttachmentVisible = onAttachmentVisible,
                     onAttachmentClick = onAttachmentClick
                 )
             }
@@ -111,7 +107,6 @@ private fun MessageAttachmentGrid(
                 visibleAttachments.drop(ATTACHMENTS_PER_ROW).forEach { attachment ->
                     MessageAttachmentPreview(
                         attachment = attachment,
-                        onAttachmentVisible = onAttachmentVisible,
                         onAttachmentClick = onAttachmentClick
                     )
                 }
@@ -130,14 +125,12 @@ private fun MessageAttachmentGrid(
 @Composable
 private fun MessageAttachmentPreview(
     attachment: MessageAttachmentUi,
-    onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String) -> Unit
 ) {
     when (attachment) {
         is MessageAttachmentUi.ImageVideoAttachmentUi ->
             MessageVisualAttachment(
                 attachment = attachment,
-                onAttachmentVisible = onAttachmentVisible,
                 onAttachmentClick = onAttachmentClick
             )
 
@@ -157,11 +150,18 @@ private fun MessageLocationAttachment(
     attachment: MessageAttachmentUi.LocationAttachmentUi,
     onAttachmentClick: (String) -> Unit
 ) {
+    val state = rememberAttachmentUiState(attachment.target)
+    val location =
+        (state as? AttachmentUiState.Ready)
+            ?.content
+            ?.let { content -> content as? AttachmentContent.Location }
+            ?.location
+
     Surface(
         modifier =
             Modifier
                 .size(Dimens.MessageAttachment.previewSize)
-                .clickable { onAttachmentClick(attachment.id) },
+                .clickable(enabled = location != null) { onAttachmentClick(attachment.id) },
         shape = MaterialTheme.shapes.extraSmall,
         color = FunctionalColors.MediaBackground
     ) {
@@ -169,21 +169,28 @@ private fun MessageLocationAttachment(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Column(
-                modifier = Modifier.padding(MaterialTheme.spacing.micro),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.micro)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.MyLocation,
-                    contentDescription = null,
-                    tint = MaterialTheme.attachmentColors.location
+            if (location == null) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(Dimens.MessageAttachment.loadingIndicatorSize),
+                    strokeWidth = Dimens.Base.progressIndicatorStrokeWidth
                 )
-                Text(
-                    text = "${attachment.location.latitude.toCoordinateText()}\n${attachment.location.longitude.toCoordinateText()}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
+            } else {
+                Column(
+                    modifier = Modifier.padding(MaterialTheme.spacing.micro),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.micro)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MyLocation,
+                        contentDescription = null,
+                        tint = MaterialTheme.attachmentColors.location
+                    )
+                    Text(
+                        text = "${location.latitude.toCoordinateText()}\n${location.longitude.toCoordinateText()}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
             }
         }
     }
@@ -192,14 +199,14 @@ private fun MessageLocationAttachment(
 @Composable
 private fun MessageVisualAttachment(
     attachment: MessageAttachmentUi.ImageVideoAttachmentUi,
-    onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String) -> Unit
 ) {
-    val isLoaded = attachment.localFilePath != null || attachment.bytes != null
-
-    LaunchedEffect(attachment.id, attachment.localFilePath, attachment.bytes) {
-        if (!isLoaded) onAttachmentVisible(attachment.id)
-    }
+    val state = rememberAttachmentUiState(attachment.target)
+    val localFilePath =
+        (state as? AttachmentUiState.Ready)
+            ?.content
+            ?.let { content -> content as? AttachmentContent.LocalFile }
+            ?.localFilePath
 
     Surface(
         modifier =
@@ -210,13 +217,15 @@ private fun MessageVisualAttachment(
         color = FunctionalColors.MediaBackground
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            MediaThumbnail(
-                media = attachment.toMediaItem(),
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            if (localFilePath != null) {
+                MediaThumbnail(
+                    media = attachment.toMediaItem(localFilePath),
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
 
-            if (!isLoaded) {
+            if (state is AttachmentUiState.Idle || state is AttachmentUiState.Loading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -246,27 +255,11 @@ private fun MessageVisualAttachment(
 @Composable
 private fun MessageFileList(
     attachments: List<MessageAttachmentUi.FileAttachmentUi>,
-    onAttachmentVisible: (String) -> Unit,
     onOpenError: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val opener = rememberFileOpener()
     var pendingFileId by remember { mutableStateOf<String?>(null) }
-    val pendingFile = pendingFileId?.let { id -> attachments.firstOrNull { it.id == id } }
-
-    LaunchedEffect(pendingFileId, pendingFile?.localFilePath) {
-        val file = pendingFile ?: return@LaunchedEffect
-        val localFilePath = file.localFilePath ?: return@LaunchedEffect
-
-        opener.open(
-            localFilePath = localFilePath,
-            fileName = file.fileName,
-            mimeType = file.mimeType
-        ).onFailure { error ->
-            onOpenError(error.message ?: "File could not be opened")
-        }
-        pendingFileId = null
-    }
 
     Column(
         modifier = modifier,
@@ -274,16 +267,37 @@ private fun MessageFileList(
     ) {
         attachments.forEach { attachment ->
             val isOpening = pendingFileId == attachment.id
+            val state = rememberAttachmentUiState(attachment.target, load = isOpening)
+            val localFilePath =
+                (state as? AttachmentUiState.Ready)
+                    ?.content
+                    ?.let { content -> content as? AttachmentContent.LocalFile }
+                    ?.localFilePath
+
+            LaunchedEffect(isOpening, localFilePath) {
+                if (!isOpening || localFilePath == null) return@LaunchedEffect
+
+                opener.open(
+                    localFilePath = localFilePath,
+                    fileName = attachment.fileName,
+                    mimeType = attachment.mimeType
+                ).onFailure { error ->
+                    onOpenError(error.message ?: "File could not be opened")
+                }
+                pendingFileId = null
+            }
+
+            LaunchedEffect(isOpening, state) {
+                if (isOpening && state is AttachmentUiState.Error) {
+                    pendingFileId = null
+                }
+            }
+
             Surface(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .clickable(enabled = !isOpening) {
-                            pendingFileId = attachment.id
-                            if (attachment.localFilePath == null) {
-                                onAttachmentVisible(attachment.id)
-                            }
-                        },
+                        .clickable(enabled = !isOpening) { pendingFileId = attachment.id },
                 shape = MaterialTheme.shapes.medium,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh
             ) {
@@ -350,6 +364,9 @@ private fun MoreAttachment(
     }
 }
 
+private fun Double.toCoordinateText(): String =
+    ((this * COORDINATE_PRECISION_FACTOR).roundToLong() / COORDINATE_PRECISION_FACTOR).toString()
+
 @Preview
 @Composable
 private fun MessageAttachmentsPreview() {
@@ -362,27 +379,13 @@ private fun MessageAttachmentsPreview() {
                         type = MessageAttachmentType.IMAGE,
                         mimeType = "image/jpeg",
                         byteSize = 0
-                    ),
-                    MessageAttachmentUi.ImageVideoAttachmentUi(
-                        id = "preview-video",
-                        type = MessageAttachmentType.VIDEO,
-                        mimeType = "video/mp4",
-                        byteSize = 0
-                    ),
-                    MessageAttachmentUi.LocationAttachmentUi(
-                        id = "preview-location",
-                        location = CurrentLocation(latitude = 50.2586, longitude = 10.9644)
                     )
                 ),
-            onAttachmentVisible = {},
             onAttachmentClick = {}
         )
     }
 }
 
-private fun Double.toCoordinateText(): String =
-    ((this * LOCATION_COORDINATE_SCALE).roundToLong().toDouble() / LOCATION_COORDINATE_SCALE).toString()
-
-private const val LOCATION_COORDINATE_SCALE = 100_000.0
 private const val MAX_PREVIEW_ATTACHMENTS = 3
 private const val ATTACHMENTS_PER_ROW = 2
+private const val COORDINATE_PRECISION_FACTOR = 100_000.0

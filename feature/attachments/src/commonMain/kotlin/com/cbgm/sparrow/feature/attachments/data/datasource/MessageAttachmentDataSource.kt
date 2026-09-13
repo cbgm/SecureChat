@@ -153,6 +153,14 @@ class MessageAttachmentDataSource(
         }
     }
 
+    suspend fun resolveLocalFilePath(attachmentId: String): String? =
+        withContext(Dispatchers.IO) {
+            attachmentDao
+                .findById(attachmentId)
+                ?.localFileName
+                ?.let(fileDataSource::resolveCacheFilePath)
+        }
+
     suspend fun loadBytes(attachmentId: String): ByteArray =
         withContext(Dispatchers.IO) {
             val entity = attachmentDao.findById(attachmentId) ?: error("Message attachment was not found")

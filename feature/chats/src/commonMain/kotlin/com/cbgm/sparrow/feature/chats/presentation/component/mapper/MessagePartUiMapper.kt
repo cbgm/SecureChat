@@ -1,28 +1,28 @@
 package com.cbgm.sparrow.feature.chats.presentation.component.mapper
 
 import com.cbgm.sparrow.core.protocol.attachment.MessageAttachmentType
+import com.cbgm.sparrow.feature.attachments.domain.model.AttachmentSource
 import com.cbgm.sparrow.feature.attachments.presentation.model.MessageAttachmentUi
-import com.cbgm.sparrow.feature.attachments.util.ContactAttachmentPayload
-import com.cbgm.sparrow.feature.attachments.util.LocationAttachmentPayload
 import com.cbgm.sparrow.feature.chats.domain.model.ImageVideoType
 import com.cbgm.sparrow.feature.chats.domain.model.MessagePart
 import com.cbgm.sparrow.feature.chats.presentation.component.model.ImageVideoTypeUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageBubbleUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessagePartUi
-import com.cbgm.sparrow.feature.media.presentation.model.MediaItem
-import com.cbgm.sparrow.feature.media.presentation.model.MediaType
 import com.cbgm.sparrow.feature.media.presentation.voice.model.VoiceMessageUiState
 
 internal fun List<MessagePart>.toMessagePartsUi(
-    attachmentPayloadBytes: Map<String, ByteArray>,
+    attachmentSource: AttachmentSource = AttachmentSource.Message,
     voiceState: VoiceMessageUiState = VoiceMessageUiState()
 ): List<MessagePartUi> =
     map { part ->
-        part.toMessagePartUi(attachmentPayloadBytes, voiceState)
+        part.toMessagePartUi(
+            attachmentSource = attachmentSource,
+            voiceState = voiceState
+        )
     }
 
 private fun MessagePart.toMessagePartUi(
-    attachmentPayloadBytes: Map<String, ByteArray>,
+    attachmentSource: AttachmentSource,
     voiceState: VoiceMessageUiState
 ): MessagePartUi =
     when (this) {
@@ -46,8 +46,7 @@ private fun MessagePart.toMessagePartUi(
                 width = width,
                 height = height,
                 durationMilliseconds = durationMilliseconds,
-                localFilePath = localFilePath,
-                bytes = attachmentPayloadBytes[id]
+                attachmentSource = attachmentSource
             )
 
         is MessagePart.File ->
@@ -56,21 +55,21 @@ private fun MessagePart.toMessagePartUi(
                 mimeType = mimeType,
                 byteSize = byteSize,
                 fileName = fileName,
-                localFilePath = localFilePath,
-                bytes = attachmentPayloadBytes[id]
+                attachmentSource = attachmentSource
             )
 
         is MessagePart.Location ->
             MessagePartUi.Location(
                 id = id,
-                location = attachmentPayloadBytes[id]?.let(LocationAttachmentPayload::decode)
+                attachmentSource = attachmentSource
             )
 
         is MessagePart.Contact ->
             MessagePartUi.Contact(
                 id = id,
-                contact = attachmentPayloadBytes[id]?.let(ContactAttachmentPayload::decode)
+                attachmentSource = attachmentSource
             )
+
         is MessagePart.Voice -> {
             val playbackState = voiceState.playback
             val isActive = playbackState.attachmentId == id
@@ -89,22 +88,6 @@ private fun MessagePart.toMessagePartUi(
         }
     }
 
-fun MessagePartUi.ImageVideo.toMediaItem(): MediaItem =
-    MediaItem(
-        id = id,
-        type =
-            when (type) {
-                ImageVideoTypeUi.IMAGE -> MediaType.IMAGE
-                ImageVideoTypeUi.VIDEO -> MediaType.VIDEO
-            },
-        mimeType = mimeType,
-        localFilePath = localFilePath,
-        bytes = bytes,
-        width = width,
-        height = height,
-        durationMilliseconds = durationMilliseconds
-    )
-
 internal fun MessageBubbleUi.toMessageAttachmentsUi(): List<MessageAttachmentUi> =
     buildList {
         imageVideoParts.forEach { part ->
@@ -122,8 +105,7 @@ internal fun MessageBubbleUi.toMessageAttachmentsUi(): List<MessageAttachmentUi>
                     width = part.width,
                     height = part.height,
                     durationMilliseconds = part.durationMilliseconds,
-                    localFilePath = part.localFilePath,
-                    bytes = part.bytes
+                    source = part.attachmentSource
                 )
             )
         }
@@ -135,26 +117,25 @@ internal fun MessageBubbleUi.toMessageAttachmentsUi(): List<MessageAttachmentUi>
                     mimeType = part.mimeType,
                     byteSize = part.byteSize,
                     fileName = part.fileName,
-                    localFilePath = part.localFilePath,
-                    bytes = part.bytes
+                    source = part.attachmentSource
                 )
             )
         }
 
-        locationPart?.location?.let { location ->
+        locationPart?.let { part ->
             add(
                 MessageAttachmentUi.LocationAttachmentUi(
-                    id = locationPart.id,
-                    location = location
+                    id = part.id,
+                    source = part.attachmentSource
                 )
             )
         }
 
-        contactPart?.contact?.let { contact ->
+        contactPart?.let { part ->
             add(
                 MessageAttachmentUi.ContactAttachmentUi(
-                    id = contactPart.id,
-                    contact = contact
+                    id = part.id,
+                    source = part.attachmentSource
                 )
             )
         }

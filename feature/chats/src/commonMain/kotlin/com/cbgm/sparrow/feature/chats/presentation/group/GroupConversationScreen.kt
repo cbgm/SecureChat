@@ -197,7 +197,6 @@ fun GroupConversationScreen(
                         message = message,
                         onRetryClick = {},
                         onSafetyDetailsClick = {},
-                        onAttachmentVisible = {},
                         onAttachmentClick = {},
                         onContactClick = {},
                         voiceTranscriptionEnabled = uiState.voiceTranscriptionEnabled,
@@ -279,7 +278,6 @@ fun GroupConversationScreen(
                             )
                         )
                     },
-                    onAttachmentVisible = { onUiEvent(GroupConversationUiEvent.AttachmentVisible(it)) },
                     onAttachmentClick = { messageId, attachmentId ->
                         uiState.findMessage(messageId)?.let { message ->
                             attachmentSelection =
@@ -288,10 +286,6 @@ fun GroupConversationScreen(
                                     attachmentId = attachmentId
                                 )
                         }
-
-                        onUiEvent(
-                            GroupConversationUiEvent.AttachmentVisible(attachmentId)
-                        )
                     },
                     onContactClick = { contact -> pendingSharedContact = contact },
                     onVoicePlayPauseClick = {
@@ -369,10 +363,6 @@ fun GroupConversationScreen(
                         attachmentId = attachmentId
                     )
             }
-
-            onUiEvent(
-                GroupConversationUiEvent.AttachmentVisible(attachmentId)
-            )
         },
         onUiEvent = onUiEvent,
         onContactClick = { contact -> pendingSharedContact = contact }
@@ -411,7 +401,6 @@ private fun AttachmentViewerOverlay(
         selectedAttachmentId = attachmentId,
         canSaveToCameraRoll = !message.isMine,
         onDismiss = onDismiss,
-        onEnsureAttachmentLoaded = { onUiEvent(GroupConversationUiEvent.AttachmentVisible(it)) },
         onError = { onUiEvent(GroupConversationUiEvent.AttachmentError(it)) }
     )
 }
@@ -453,9 +442,6 @@ private fun GroupPinnedMessageOverlay(
                 message = pinnedMessage,
                 onBack = dismissOverlay,
                 voiceTranscriptionEnabled = voiceTranscriptionEnabled,
-                onAttachmentVisible = {
-                    onUiEvent(GroupConversationUiEvent.AttachmentVisible(it))
-                },
                 onAttachmentClick = { attachmentId ->
                     onAttachmentClick(pinnedMessage.id, attachmentId)
                 },
@@ -593,7 +579,6 @@ private fun Content(
     onReactionBurstRequested: (MessageReactionBurst) -> Unit,
     onRetryMessage: (String) -> Unit,
     onSafetyWarningClick: (String, String?, MessageSafetyWarningUi) -> Unit,
-    onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String, String) -> Unit,
     onContactClick: (SharedContact) -> Unit,
     onVoicePlayPauseClick: (String) -> Unit,
@@ -626,7 +611,6 @@ private fun Content(
             onReactionBurstRequested = onReactionBurstRequested,
             onRetryMessage = onRetryMessage,
             onSafetyWarningClick = onSafetyWarningClick,
-            onAttachmentVisible = onAttachmentVisible,
             onAttachmentClick = onAttachmentClick,
             onContactClick = onContactClick,
             onVoicePlayPauseClick = onVoicePlayPauseClick,

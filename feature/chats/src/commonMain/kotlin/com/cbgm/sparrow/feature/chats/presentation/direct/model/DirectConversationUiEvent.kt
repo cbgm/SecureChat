@@ -104,10 +104,6 @@ sealed interface DirectConversationUiEvent {
         val contact: SharedContact
     ) : DirectConversationUiEvent
 
-    data class AttachmentVisible(
-        val attachmentId: String
-    ) : DirectConversationUiEvent
-
     data class AttachmentError(
         val message: String
     ) : DirectConversationUiEvent

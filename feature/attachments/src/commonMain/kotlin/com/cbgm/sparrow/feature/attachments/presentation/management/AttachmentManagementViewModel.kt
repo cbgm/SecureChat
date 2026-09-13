@@ -6,7 +6,6 @@ import com.cbgm.sparrow.core.ui.navigation.AppRoute
 import com.cbgm.sparrow.core.ui.navigation.requireRouteArgument
 import com.cbgm.sparrow.core.ui.presentation.BaseViewModel
 import com.cbgm.sparrow.feature.attachments.domain.usecase.DeleteLocalAttachmentsUseCase
-import com.cbgm.sparrow.feature.attachments.domain.usecase.LoadMessageAttachmentUseCase
 import com.cbgm.sparrow.feature.attachments.domain.usecase.ObserveLocalAttachmentsUseCase
 import com.cbgm.sparrow.feature.attachments.presentation.management.model.AttachmentManagementTab
 import com.cbgm.sparrow.feature.attachments.presentation.management.model.AttachmentManagementUiEvent
@@ -23,7 +22,6 @@ import kotlinx.coroutines.launch
 class AttachmentManagementViewModel(
     savedStateHandle: SavedStateHandle,
     observeLocalAttachments: ObserveLocalAttachmentsUseCase,
-    private val loadMessageAttachment: LoadMessageAttachmentUseCase,
     private val deleteLocalAttachments: DeleteLocalAttachmentsUseCase
 ) : BaseViewModel() {
     private val conversationId =
@@ -40,7 +38,7 @@ class AttachmentManagementViewModel(
             val viewerAttachmentId = local.viewerAttachmentId?.takeIf(attachmentIds::contains)
 
             AttachmentManagementUiState(
-                attachments = attachments.toMessageAttachmentsUi(local.loadedBytes),
+                attachments = attachments.toMessageAttachmentsUi(),
                 selectedTab = local.selectedTab,
                 isSelectionMode = local.isSelectionMode,
                 selectedIds = selectedIds,
@@ -74,7 +72,6 @@ class AttachmentManagementViewModel(
 
             AttachmentManagementUiEvent.SelectionCleared -> clearSelection()
             is AttachmentManagementUiEvent.AttachmentClicked -> handleAttachmentClick(event.attachmentId)
-            is AttachmentManagementUiEvent.AttachmentVisible -> ensureLoaded(event.attachmentId)
             AttachmentManagementUiEvent.DeleteSelectedClicked ->
                 localState.update { state ->
                     state.copy(showDeleteConfirmation = state.selectedIds.isNotEmpty())
@@ -107,7 +104,6 @@ class AttachmentManagementViewModel(
         }
 
         localState.update { state -> state.copy(viewerAttachmentId = attachmentId) }
-        ensureLoaded(attachmentId)
     }
 
     private fun toggleSelection(attachmentId: String) {
@@ -125,19 +121,6 @@ class AttachmentManagementViewModel(
                 selectedIds = emptySet(),
                 showDeleteConfirmation = false
             )
-        }
-    }
-
-    private fun ensureLoaded(attachmentId: String) {
-        if (localState.value.loadedBytes.containsKey(attachmentId)) return
-
-        viewModelScope.launch {
-            loadMessageAttachment(attachmentId)
-                .onSuccess { bytes ->
-                    localState.update { state ->
-                        state.copy(loadedBytes = state.loadedBytes + (attachmentId to bytes))
-                    }
-                }
         }
     }
 
@@ -160,8 +143,7 @@ class AttachmentManagementViewModel(
                         state.copy(
                             isSelectionMode = false,
                             selectedIds = emptySet(),
-                            isDeleting = false,
-                            loadedBytes = state.loadedBytes - selected
+                            isDeleting = false
                         )
                     }
                 }.onFailure { error ->
@@ -177,7 +159,6 @@ class AttachmentManagementViewModel(
 }
 
 private data class AttachmentManagementLocalState(
-    val loadedBytes: Map<String, ByteArray> = emptyMap(),
     val selectedTab: AttachmentManagementTab = AttachmentManagementTab.MEDIA,
     val isSelectionMode: Boolean = false,
     val selectedIds: Set<String> = emptySet(),

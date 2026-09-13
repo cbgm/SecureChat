@@ -118,11 +118,9 @@ class GroupConversationViewModel(
     private val editingMessageId = savedStateHandle.getMutableStateFlow(EDITING_MESSAGE_ID_KEY, "")
     private val mutableErrorMessage = MutableStateFlow<String?>(null)
     private val selectedMedia = MutableStateFlow<List<MediaSelection>>(emptyList())
-    private val attachmentPayloadBytes = MutableStateFlow<Map<String, ByteArray>>(emptyMap())
     private val isSending = MutableStateFlow(false)
     private val contextMessageId = MutableStateFlow<String?>(null)
     private val locationShareState = MutableStateFlow(LocationShareState.IDLE)
-    private val loadingAttachmentIds = mutableSetOf<String>()
     private val historyCursor = MutableStateFlow<MessageHistoryCursor?>(null)
     private val observedHistoryCursor = MutableStateFlow<MessageHistoryCursor?>(null)
     private val isLoadingOlderMessages = MutableStateFlow(false)
@@ -195,18 +193,16 @@ class GroupConversationViewModel(
     val conversationState: StateFlow<GroupConversationUiState> =
         combine(
             presentationContext,
-            attachmentPayloadBytes,
             observeMessageSafetyAssessments(),
             voiceController.messageState,
             voiceTranscriptionEnabled
-        ) { presentation, loadedAttachmentPayloadBytes, safetyAssessments, voiceState, transcriptionEnabled ->
+        ) { presentation, safetyAssessments, voiceState, transcriptionEnabled ->
             toGroupConversationUiState(
                 groupId = groupId,
                 conversation = presentation.context?.conversation,
                 contacts = presentation.context?.contacts.orEmpty(),
                 isLoading = presentation is GroupContextObservation.Loading,
                 safetyAssessments = safetyAssessments,
-                attachmentPayloadBytes = loadedAttachmentPayloadBytes,
                 voiceState = voiceState,
                 administration = presentation.context?.administration ?: GroupAdministrationState(),
                 pin = presentation.context?.pin
@@ -387,7 +383,6 @@ class GroupConversationViewModel(
                     fallbackError = "Contact could not be sent"
                 )
             is GroupConversationUiEvent.AddSharedContact -> addSharedContact(event.contact)
-            is GroupConversationUiEvent.AttachmentVisible -> loadAttachment(event.attachmentId)
             is GroupConversationUiEvent.AttachmentError -> setError(event.message)
             GroupConversationUiEvent.HeaderClicked -> navigator.navigateTo(AppRoute.GroupDetails(groupId))
             is GroupConversationUiEvent.RetryMessage -> retryFailedMessage(event.messageId)
@@ -751,42 +746,6 @@ class GroupConversationViewModel(
         }
     }
 
-    private fun loadAttachment(attachmentId: String) {
-        if (attachmentId.isBlank()) return
-        val isPinnedAttachment = isPinnedAttachment(attachmentId)
-
-        if (attachmentPayloadBytes.value.containsKey(attachmentId)) return
-        if (!loadingAttachmentIds.add(attachmentId)) return
-
-        viewModelScope.launch {
-            try {
-                if (isPinnedAttachment) {
-                    loadGroupPinnedAttachment(groupId, attachmentId)
-                        .onSuccess { bytes ->
-                            if (shouldKeepPinnedAttachmentBytes(attachmentId)) {
-                                attachmentPayloadBytes.value =
-                                    attachmentPayloadBytes.value + (attachmentId to bytes)
-                            }
-                        }.onFailure { error ->
-                            logger.warn(error) { "Could not load pinned message attachment $attachmentId" }
-                        }
-                } else {
-                    loadMessageAttachment(attachmentId)
-                        .onSuccess { bytes ->
-                            if (requiresAttachmentPayloadInState(attachmentId)) {
-                                attachmentPayloadBytes.value =
-                                    attachmentPayloadBytes.value + (attachmentId to bytes)
-                            }
-                        }.onFailure { error ->
-                            logger.warn(error) { "Could not load message attachment $attachmentId" }
-                        }
-                }
-            } finally {
-                loadingAttachmentIds.remove(attachmentId)
-            }
-        }
-    }
-
     private suspend fun loadAttachmentBytes(attachmentId: String): Result<ByteArray> =
         if (isPinnedAttachment(attachmentId)) {
             loadGroupPinnedAttachment(groupId, attachmentId)
@@ -801,21 +760,6 @@ class GroupConversationViewModel(
                 message.locationPart?.id == attachmentId ||
                 message.contactPart?.id == attachmentId ||
                 message.voicePart?.id == attachmentId
-        } == true
-
-    private fun shouldKeepPinnedAttachmentBytes(attachmentId: String): Boolean =
-        conversationState.value.pinnedMessage?.let { message ->
-            message.imageVideoParts.any { it.id == attachmentId } ||
-                message.fileParts.any { it.id == attachmentId } ||
-                message.locationPart?.id == attachmentId ||
-                message.contactPart?.id == attachmentId
-        } == true
-
-    private fun requiresAttachmentPayloadInState(attachmentId: String): Boolean =
-        conversationState.value.messages.any { message ->
-            message.locationPart?.id == attachmentId || message.contactPart?.id == attachmentId
-        } || conversationState.value.pinnedMessage?.let { message ->
-            message.locationPart?.id == attachmentId || message.contactPart?.id == attachmentId
         } == true
 
     private fun clearComposer() {

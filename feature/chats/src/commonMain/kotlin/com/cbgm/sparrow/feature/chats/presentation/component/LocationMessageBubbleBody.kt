@@ -15,14 +15,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,7 +33,11 @@ import com.cbgm.sparrow.core.ui.theme.Alpha
 import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
+import com.cbgm.sparrow.feature.attachments.domain.model.AttachmentContent
 import com.cbgm.sparrow.feature.attachments.domain.model.CurrentLocation
+import com.cbgm.sparrow.feature.attachments.presentation.component.rememberAttachmentUiState
+import com.cbgm.sparrow.feature.attachments.presentation.model.AttachmentUiState
+import com.cbgm.sparrow.feature.chats.presentation.component.mapper.toAttachmentTarget
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessagePartUi
 import com.cbgm.sparrow.resources.Res
 import com.cbgm.sparrow.resources.fake_location_map
@@ -45,23 +48,18 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 internal fun LocationMessageBubbleBody(
     locationPart: MessagePartUi.Location,
-    onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String) -> Unit
 ) {
-    LaunchedEffect(
-        locationPart.id,
-        locationPart.location
-    ) {
-        if (locationPart.location == null) {
-            onAttachmentVisible(locationPart.id)
-        }
-    }
+    val attachmentState = rememberAttachmentUiState(locationPart.toAttachmentTarget())
+    val location =
+        (attachmentState as? AttachmentUiState.Ready)
+            ?.content
+            ?.let { content -> content as? AttachmentContent.Location }
+            ?.location
 
     Content(
-        location = locationPart.location,
-        onClick = {
-            onAttachmentClick(locationPart.id)
-        }
+        location = location,
+        onClick = { onAttachmentClick(locationPart.id) }
     )
 }
 
@@ -143,7 +141,7 @@ private fun LocationContent(
             }
 
             Icon(
-                imageVector = Icons.Default.OpenInNew,
+                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary
             )
@@ -199,16 +197,7 @@ private fun CurrentLocation.coordinateText(): String =
 private fun LocationMessageBubbleBodyPreview() {
     SparrowTheme {
         LocationMessageBubbleBody(
-            locationPart =
-                MessagePartUi.Location(
-                    id = "location-preview",
-                    location =
-                        CurrentLocation(
-                            latitude = 50.2586,
-                            longitude = 10.9644
-                        )
-                ),
-            onAttachmentVisible = {},
+            locationPart = MessagePartUi.Location(id = "location-preview"),
             onAttachmentClick = {}
         )
     }

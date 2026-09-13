@@ -23,7 +23,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,7 +35,11 @@ import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.attachmentColors
 import com.cbgm.sparrow.core.ui.theme.spacing
+import com.cbgm.sparrow.feature.attachments.domain.model.AttachmentContent
 import com.cbgm.sparrow.feature.attachments.domain.model.SharedContact
+import com.cbgm.sparrow.feature.attachments.presentation.component.rememberAttachmentUiState
+import com.cbgm.sparrow.feature.attachments.presentation.model.AttachmentUiState
+import com.cbgm.sparrow.feature.chats.presentation.component.mapper.toAttachmentTarget
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessagePartUi
 import com.cbgm.sparrow.resources.Res
 import com.cbgm.sparrow.resources.fake_contact_card
@@ -45,16 +48,14 @@ import org.jetbrains.compose.resources.painterResource
 @Composable
 internal fun ContactMessageBubbleBody(
     contactPart: MessagePartUi.Contact,
-    onAttachmentVisible: (String) -> Unit,
     onContactClick: (SharedContact) -> Unit
 ) {
-    val contact = contactPart.contact
-
-    LaunchedEffect(contactPart.id, contact) {
-        if (contact == null) {
-            onAttachmentVisible(contactPart.id)
-        }
-    }
+    val attachmentState = rememberAttachmentUiState(contactPart.toAttachmentTarget())
+    val contact =
+        (attachmentState as? AttachmentUiState.Ready)
+            ?.content
+            ?.let { content -> content as? AttachmentContent.Contact }
+            ?.contact
 
     Content(
         contact = contact,
@@ -214,16 +215,7 @@ private fun SharedContact.initial(): String =
 private fun ContactMessageBubbleBodyPreview() {
     SparrowTheme {
         ContactMessageBubbleBody(
-            contactPart =
-                MessagePartUi.Contact(
-                    id = "preview-contact",
-                    contact =
-                        SharedContact(
-                            displayName = "Anna Keller",
-                            phoneNumber = "+49 151 12345678"
-                        )
-                ),
-            onAttachmentVisible = {},
+            contactPart = MessagePartUi.Contact(id = "preview-contact"),
             onContactClick = {}
         )
     }

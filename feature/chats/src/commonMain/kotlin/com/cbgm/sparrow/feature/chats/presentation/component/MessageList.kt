@@ -48,7 +48,6 @@ internal fun MessageList(
     onReactionBurstRequested: (MessageReactionBurst) -> Unit,
     onRetryMessage: (String) -> Unit,
     onSafetyWarningClick: (String, String?, MessageSafetyWarningUi) -> Unit,
-    onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String, String) -> Unit,
     onContactClick: (SharedContact) -> Unit,
     onVoicePlayPauseClick: (String) -> Unit,
@@ -127,7 +126,6 @@ internal fun MessageList(
                                     warning
                                 )
                             },
-                            onAttachmentVisible = onAttachmentVisible,
                             onAttachmentClick = { attachmentId ->
                                 onAttachmentClick(
                                     message.id,
@@ -334,7 +332,6 @@ private fun MessageListPreview() {
             onReactionBurstRequested = {},
             onRetryMessage = {},
             onSafetyWarningClick = { _, _, _ -> },
-            onAttachmentVisible = {},
             onAttachmentClick = { _, _ -> },
             onContactClick = {},
             onVoicePlayPauseClick = {},

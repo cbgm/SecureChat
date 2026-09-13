@@ -16,7 +16,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -26,20 +25,23 @@ import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.FunctionalColors
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
-import com.cbgm.sparrow.feature.chats.presentation.component.mapper.toMediaItem
+import com.cbgm.sparrow.feature.attachments.domain.model.AttachmentContent
+import com.cbgm.sparrow.feature.attachments.presentation.component.rememberAttachmentUiState
+import com.cbgm.sparrow.feature.attachments.presentation.model.AttachmentUiState
+import com.cbgm.sparrow.feature.chats.presentation.component.mapper.toAttachmentTarget
 import com.cbgm.sparrow.feature.chats.presentation.component.model.ImageVideoTypeUi
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessagePartUi
 import com.cbgm.sparrow.feature.media.presentation.component.MediaThumbnail
+import com.cbgm.sparrow.feature.media.presentation.model.MediaItem
+import com.cbgm.sparrow.feature.media.presentation.model.MediaType
 
 @Composable
 internal fun PhotoVideoMessageBubbleBody(
     imageVideoParts: List<MessagePartUi.ImageVideo>,
-    onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String) -> Unit
 ) {
     Content(
         imageVideoParts = imageVideoParts,
-        onAttachmentVisible = onAttachmentVisible,
         onAttachmentClick = onAttachmentClick
     )
 }
@@ -47,7 +49,6 @@ internal fun PhotoVideoMessageBubbleBody(
 @Composable
 private fun Content(
     imageVideoParts: List<MessagePartUi.ImageVideo>,
-    onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String) -> Unit
 ) {
     val visiblePhotoVideoParts = imageVideoParts.take(MAX_PREVIEW_ATTACHMENTS)
@@ -62,7 +63,6 @@ private fun Content(
             visiblePhotoVideoParts.take(ATTACHMENTS_PER_ROW).forEach { visiblePart ->
                 MessageMediaPreview(
                     imageVideoPart = visiblePart,
-                    onAttachmentVisible = onAttachmentVisible,
                     onAttachmentClick = onAttachmentClick
                 )
             }
@@ -75,7 +75,6 @@ private fun Content(
                 visiblePhotoVideoParts.drop(ATTACHMENTS_PER_ROW).forEach { photoVideoPart ->
                     MessageMediaPreview(
                         imageVideoPart = photoVideoPart,
-                        onAttachmentVisible = onAttachmentVisible,
                         onAttachmentClick = onAttachmentClick
                     )
                 }
@@ -94,14 +93,14 @@ private fun Content(
 @Composable
 private fun MessageMediaPreview(
     imageVideoPart: MessagePartUi.ImageVideo,
-    onAttachmentVisible: (String) -> Unit,
     onAttachmentClick: (String) -> Unit
 ) {
-    val isLoaded = imageVideoPart.localFilePath != null || imageVideoPart.bytes != null
-
-    LaunchedEffect(imageVideoPart.id, imageVideoPart.localFilePath, imageVideoPart.bytes) {
-        if (!isLoaded) onAttachmentVisible(imageVideoPart.id)
-    }
+    val attachmentState = rememberAttachmentUiState(imageVideoPart.toAttachmentTarget())
+    val localFilePath =
+        (attachmentState as? AttachmentUiState.Ready)
+            ?.content
+            ?.let { content -> content as? AttachmentContent.LocalFile }
+            ?.localFilePath
 
     Surface(
         modifier =
@@ -112,13 +111,15 @@ private fun MessageMediaPreview(
         color = FunctionalColors.MediaBackground
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            MediaThumbnail(
-                media = imageVideoPart.toMediaItem(),
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            if (localFilePath != null) {
+                MediaThumbnail(
+                    media = imageVideoPart.toMediaItem(localFilePath),
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
 
-            if (!isLoaded) {
+            if (attachmentState is AttachmentUiState.Idle || attachmentState is AttachmentUiState.Loading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -144,6 +145,21 @@ private fun MessageMediaPreview(
         }
     }
 }
+
+private fun MessagePartUi.ImageVideo.toMediaItem(localFilePath: String): MediaItem =
+    MediaItem(
+        id = id,
+        type =
+            when (type) {
+                ImageVideoTypeUi.IMAGE -> MediaType.IMAGE
+                ImageVideoTypeUi.VIDEO -> MediaType.VIDEO
+            },
+        mimeType = mimeType,
+        localFilePath = localFilePath,
+        width = width,
+        height = height,
+        durationMilliseconds = durationMilliseconds
+    )
 
 @Composable
 private fun MoreAttachment(
@@ -204,7 +220,6 @@ private fun MediaMessageBubbleBodyPreview() {
                         byteSize = 0
                     )
                 ),
-            onAttachmentVisible = {},
             onAttachmentClick = {}
         )
     }

@@ -131,7 +131,6 @@ internal fun GroupPinnedMessageContent(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     voiceTranscriptionEnabled: Boolean = false,
-    onAttachmentVisible: (String) -> Unit = {},
     onAttachmentClick: (String) -> Unit = {},
     onContactClick: (SharedContact) -> Unit = {},
     onVoicePlayPauseClick: (String) -> Unit = {},
@@ -192,7 +191,6 @@ internal fun GroupPinnedMessageContent(
             message.contactPart?.let { contactPart ->
                 ContactMessageBubbleBody(
                     contactPart = contactPart,
-                    onAttachmentVisible = onAttachmentVisible,
                     onContactClick = onContactClick
                 )
             }
@@ -200,7 +198,6 @@ internal fun GroupPinnedMessageContent(
             message.locationPart?.let { locationPart ->
                 LocationMessageBubbleBody(
                     locationPart = locationPart,
-                    onAttachmentVisible = onAttachmentVisible,
                     onAttachmentClick = onAttachmentClick
                 )
             }
@@ -208,15 +205,13 @@ internal fun GroupPinnedMessageContent(
             if (message.imageVideoParts.isNotEmpty()) {
                 PhotoVideoMessageBubbleBody(
                     imageVideoParts = message.imageVideoParts,
-                    onAttachmentVisible = onAttachmentVisible,
                     onAttachmentClick = onAttachmentClick
                 )
             }
 
             if (message.fileParts.isNotEmpty()) {
                 FileMessageBubbleBody(
-                    fileParts = message.fileParts,
-                    onAttachmentVisible = onAttachmentVisible
+                    fileParts = message.fileParts
                 )
             }
 
