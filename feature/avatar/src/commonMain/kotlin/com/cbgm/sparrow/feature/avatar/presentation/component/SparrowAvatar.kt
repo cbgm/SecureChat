@@ -87,6 +87,7 @@ private fun Content(
 private val AvatarTarget.viewModelKey: String
     get() =
         when (this) {
+            AvatarTarget.LocalUser -> "avatar:local-user"
             is AvatarTarget.User -> "avatar:user:$id"
             is AvatarTarget.Group -> "avatar:group:$id"
         }

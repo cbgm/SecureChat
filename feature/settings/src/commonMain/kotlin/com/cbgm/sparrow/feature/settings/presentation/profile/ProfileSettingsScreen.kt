@@ -39,10 +39,10 @@ import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.circle
 import com.cbgm.sparrow.core.ui.theme.spacing
-import com.cbgm.sparrow.feature.identity.domain.model.LocalProfilePicture
-import com.cbgm.sparrow.feature.media.presentation.avatar.AvatarEditor
-import com.cbgm.sparrow.feature.media.presentation.avatar.AvatarEditorStrings
-import com.cbgm.sparrow.feature.media.presentation.avatar.ProfilePictureImage
+import com.cbgm.sparrow.feature.avatar.domain.model.AvatarTarget
+import com.cbgm.sparrow.feature.avatar.presentation.component.SparrowAvatar
+import com.cbgm.sparrow.feature.avatar.presentation.editor.AvatarEditor
+import com.cbgm.sparrow.feature.avatar.presentation.editor.AvatarEditorStrings
 import com.cbgm.sparrow.feature.settings.presentation.profile.model.ProfileSettingsUiEvent
 import com.cbgm.sparrow.feature.settings.presentation.profile.model.ProfileSettingsUiState
 import com.cbgm.sparrow.resources.Res
@@ -93,9 +93,9 @@ fun ProfileSettingsScreen(
                         chooseFromGallery = stringResource(Res.string.feature_settings_profile_picture_choose_gallery),
                         cancel = stringResource(Res.string.base_cancel)
                     ),
-                onAvatarSelected = { bytes ->
+                onAvatarSelected = { result ->
                     showAvatarEditor = false
-                    onUiEvent(ProfileSettingsUiEvent.PictureSelected(bytes))
+                    onUiEvent(ProfileSettingsUiEvent.PictureSelected(result))
                 },
                 onDismiss = { showAvatarEditor = false }
             )
@@ -148,7 +148,7 @@ private fun Content(
         Spacer(modifier = Modifier.size(MaterialTheme.spacing.large))
 
         ProfilePicture(
-            picture = uiState.profilePicture,
+            hasPicture = uiState.hasProfilePicture,
             isSaving = uiState.isSaving
         )
 
@@ -168,7 +168,7 @@ private fun Content(
             enabled = !uiState.isSaving,
             modifier = Modifier.fillMaxWidth(),
             text = stringResource(
-                if (uiState.profilePicture.hasPicture) {
+                if (uiState.hasProfilePicture) {
                     Res.string.feature_settings_profile_picture_change
                 } else {
                     Res.string.feature_settings_profile_picture_add
@@ -176,7 +176,7 @@ private fun Content(
             )
         )
 
-        if (uiState.profilePicture.hasPicture) {
+        if (uiState.hasProfilePicture) {
             Spacer(modifier = Modifier.size(MaterialTheme.spacing.small))
 
             SparrowOutlinedButton(
@@ -200,7 +200,7 @@ private fun Content(
 
 @Composable
 private fun ProfilePicture(
-    picture: LocalProfilePicture,
+    hasPicture: Boolean,
     isSaving: Boolean
 ) {
     Box(
@@ -210,11 +210,11 @@ private fun ProfilePicture(
             .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         contentAlignment = Alignment.Center
     ) {
-        val bytes = picture.bytes
-        if (bytes != null) {
-            ProfilePictureImage(
-                bytes = bytes,
-                contentDescription = null,
+        if (hasPicture) {
+            SparrowAvatar(
+                name = "",
+                target = AvatarTarget.LocalUser,
+                size = Dimens.ProfileSettingsScreen.avatarEditorSize,
                 modifier = Modifier.fillMaxSize()
             )
         } else {
@@ -245,7 +245,7 @@ fun ProfileSettingsScreenPreview() {
     SparrowTheme {
         ProfileSettingsScreen(
             uiState = ProfileSettingsUiState(
-                profilePicture = LocalProfilePicture(),
+                hasProfilePicture = false,
                 isSaving = true,
                 errorMessage = "fsfdsf"
             ),

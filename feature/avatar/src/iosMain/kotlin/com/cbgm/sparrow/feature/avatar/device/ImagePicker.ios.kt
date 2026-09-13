@@ -1,4 +1,4 @@
-package com.cbgm.sparrow.feature.media.device
+package com.cbgm.sparrow.feature.avatar.device
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember

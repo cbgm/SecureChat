@@ -7,11 +7,13 @@ import com.cbgm.sparrow.core.protocol.identity.LocalSigningPublicKeyProvider
 import com.cbgm.sparrow.core.protocol.phone.LocalPhoneNumberProvider
 import com.cbgm.sparrow.core.protocol.phone.PhoneNumberNormalizer
 import com.cbgm.sparrow.core.protocol.profile.LocalProfilePictureMetadataProvider
+import com.cbgm.sparrow.core.protocol.profile.LocalProfilePictureProvider
 import com.cbgm.sparrow.core.protocol.profile.RemoteProfilePictureMetadataProcessor
 import com.cbgm.sparrow.core.protocol.profile.RemoteProfilePictureProvider
 import com.cbgm.sparrow.feature.identity.adapter.IdentityLocalEncryptionKeyPairProvider
 import com.cbgm.sparrow.feature.identity.adapter.IdentityLocalPhoneNumberProvider
 import com.cbgm.sparrow.feature.identity.adapter.IdentityLocalProfilePictureMetadataProvider
+import com.cbgm.sparrow.feature.identity.adapter.IdentityLocalProfilePictureProvider
 import com.cbgm.sparrow.feature.identity.adapter.IdentityLocalPublicIdentityProvider
 import com.cbgm.sparrow.feature.identity.adapter.IdentityLocalSigningKeyPairProvider
 import com.cbgm.sparrow.feature.identity.adapter.IdentityLocalSigningPublicKeyProvider
@@ -133,6 +135,10 @@ val identityModule =
 
         single<LocalProfilePictureMetadataProvider> {
             IdentityLocalProfilePictureMetadataProvider(repository = get())
+        }
+
+        single<LocalProfilePictureProvider> {
+            IdentityLocalProfilePictureProvider(repository = get())
         }
 
         single<RemoteProfilePictureMetadataProcessor> {

@@ -77,6 +77,8 @@ import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
 import com.cbgm.sparrow.feature.avatar.domain.model.AvatarTarget
 import com.cbgm.sparrow.feature.avatar.presentation.component.SparrowAvatar
+import com.cbgm.sparrow.feature.avatar.presentation.editor.AvatarEditor
+import com.cbgm.sparrow.feature.avatar.presentation.editor.AvatarEditorStrings
 import com.cbgm.sparrow.feature.chats.domain.model.group.GroupDescription
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupAvatarUiState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupDescriptionUiState
@@ -85,8 +87,6 @@ import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupDetailsUiS
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupMemberVerificationState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupMemberVerificationUiState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupVerificationSummaryUiState
-import com.cbgm.sparrow.feature.media.presentation.avatar.AvatarEditor
-import com.cbgm.sparrow.feature.media.presentation.avatar.AvatarEditorStrings
 import com.cbgm.sparrow.resources.Res
 import com.cbgm.sparrow.resources.base_cancel
 import com.cbgm.sparrow.resources.base_verify
@@ -203,9 +203,9 @@ fun GroupDetailsScreen(
                             },
                         cancel = stringResource(Res.string.base_cancel)
                     ),
-                onAvatarSelected = { bytes ->
+                onAvatarSelected = { result ->
                     showAvatarEditor = false
-                    onUiEvent(GroupDetailsUiEvent.AvatarSelected(bytes))
+                    onUiEvent(GroupDetailsUiEvent.AvatarSelected(result))
                 },
                 onRemoveAvatar = {
                     showAvatarEditor = false

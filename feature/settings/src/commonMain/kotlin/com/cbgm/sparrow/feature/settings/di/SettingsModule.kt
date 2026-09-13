@@ -175,6 +175,7 @@ val settingsModule =
         viewModel {
             ProfileSettingsViewModel(
                 observeLocalProfilePicture = get(),
+                consumeAvatarEditResult = get(),
                 setLocalProfilePicture = get(),
                 removeLocalProfilePicture = get()
             )

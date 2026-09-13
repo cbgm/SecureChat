@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.cbgm.sparrow.core.ui.navigation.AppRoute
 import com.cbgm.sparrow.core.ui.navigation.requireRouteArgument
 import com.cbgm.sparrow.core.ui.presentation.BaseViewModel
+import com.cbgm.sparrow.feature.avatar.domain.model.AvatarEditResult
+import com.cbgm.sparrow.feature.avatar.domain.usecase.ConsumeAvatarEditResultUseCase
 import com.cbgm.sparrow.feature.chats.domain.model.group.GroupLeaveRequirement
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.AddGroupMembersUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.GetGroupLeaveRequirementUseCase
@@ -52,6 +54,7 @@ class GroupVerificationViewModel(
     private val removeGroupMember: RemoveGroupMemberUseCase,
     private val promoteGroupMember: PromoteGroupMemberUseCase,
     private val transferGroupAdminAndLeave: TransferGroupAdminAndLeaveUseCase,
+    private val consumeAvatarEditResult: ConsumeAvatarEditResultUseCase,
     private val setGroupAvatar: SetGroupAvatarUseCase,
     private val removeGroupAvatar: RemoveGroupAvatarUseCase,
     private val setGroupTitle: SetGroupTitleUseCase,
@@ -199,7 +202,7 @@ class GroupVerificationViewModel(
             GroupDetailsUiEvent.LeaveGroupConfirmed -> leaveGroup()
             GroupDetailsUiEvent.LeaveGroupDismissed -> dismissLeavePrompt()
             GroupDetailsUiEvent.LeaveGroupClicked -> requestLeave()
-            is GroupDetailsUiEvent.AvatarSelected -> saveGroupAvatar(event.bytes)
+            is GroupDetailsUiEvent.AvatarSelected -> saveGroupAvatar(event.result)
             GroupDetailsUiEvent.RemoveGroupAvatarClicked -> removeCurrentGroupAvatar()
             is GroupDetailsUiEvent.SaveGroupTitleClicked -> saveGroupTitle(event.title)
             is GroupDetailsUiEvent.SaveGroupDescriptionClicked -> saveGroupDescription(event.description)
@@ -218,14 +221,18 @@ class GroupVerificationViewModel(
         }
     }
 
-    private fun saveGroupAvatar(bytes: ByteArray) {
-        if (avatarActionState.value.isSaving || bytes.isEmpty()) return
+    private fun saveGroupAvatar(result: AvatarEditResult) {
+        if (avatarActionState.value.isSaving) return
 
         avatarActionState.value = GroupAvatarActionState(isSaving = true)
         viewModelScope.launch {
-            setGroupAvatar(conversationId, bytes)
-                .onSuccess { avatarActionState.value = GroupAvatarActionState() }
-                .onFailure { error ->
+            consumeAvatarEditResult(result)
+                .fold(
+                    onSuccess = { bytes -> setGroupAvatar(conversationId, bytes) },
+                    onFailure = { error -> Result.failure(error) }
+                ).onSuccess {
+                    avatarActionState.value = GroupAvatarActionState()
+                }.onFailure { error ->
                     avatarActionState.value =
                         GroupAvatarActionState(
                             errorMessage = error.message ?: "Group avatar could not be saved"

@@ -1,8 +1,8 @@
-package com.cbgm.sparrow.feature.media.presentation.avatar.crop
+package com.cbgm.sparrow.feature.avatar.presentation.editor.crop
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import com.cbgm.sparrow.feature.media.domain.model.ProfilePictureCropRegion
+import com.cbgm.sparrow.feature.avatar.domain.model.ProfilePictureCropRegion
 import kotlin.math.max
 import kotlin.math.min
 

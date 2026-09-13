@@ -1,4 +1,4 @@
-package com.cbgm.sparrow.feature.media.presentation.avatar.crop
+package com.cbgm.sparrow.feature.avatar.presentation.editor.crop
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.cbgm.sparrow.core.ui.theme.FunctionalColors
-import com.cbgm.sparrow.feature.media.domain.model.ProfilePictureCropRegion
+import com.cbgm.sparrow.feature.avatar.domain.model.ProfilePictureCropRegion
 import kotlin.math.roundToInt
 
 @Composable

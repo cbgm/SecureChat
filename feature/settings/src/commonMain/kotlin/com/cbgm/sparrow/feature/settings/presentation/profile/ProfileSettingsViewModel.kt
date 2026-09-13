@@ -2,6 +2,8 @@ package com.cbgm.sparrow.feature.settings.presentation.profile
 
 import androidx.lifecycle.viewModelScope
 import com.cbgm.sparrow.core.ui.presentation.BaseViewModel
+import com.cbgm.sparrow.feature.avatar.domain.model.AvatarEditResult
+import com.cbgm.sparrow.feature.avatar.domain.usecase.ConsumeAvatarEditResultUseCase
 import com.cbgm.sparrow.feature.identity.domain.usecase.ObserveLocalProfilePictureUseCase
 import com.cbgm.sparrow.feature.identity.domain.usecase.RemoveLocalProfilePictureUseCase
 import com.cbgm.sparrow.feature.identity.domain.usecase.SetLocalProfilePictureUseCase
@@ -17,6 +19,7 @@ import kotlinx.coroutines.launch
 
 class ProfileSettingsViewModel(
     observeLocalProfilePicture: ObserveLocalProfilePictureUseCase,
+    private val consumeAvatarEditResult: ConsumeAvatarEditResultUseCase,
     private val setLocalProfilePicture: SetLocalProfilePictureUseCase,
     private val removeLocalProfilePicture: RemoveLocalProfilePictureUseCase
 ) : BaseViewModel() {
@@ -40,18 +43,21 @@ class ProfileSettingsViewModel(
     fun onUiEvent(event: ProfileSettingsUiEvent) {
         when (event) {
             ProfileSettingsUiEvent.BackClicked -> navigator.popBackStack()
-            is ProfileSettingsUiEvent.PictureSelected -> savePicture(event.bytes)
+            is ProfileSettingsUiEvent.PictureSelected -> savePicture(event.result)
             ProfileSettingsUiEvent.RemovePictureClicked -> removePicture()
         }
     }
 
-    private fun savePicture(bytes: ByteArray) {
+    private fun savePicture(result: AvatarEditResult) {
         if (actionState.value.isSaving) return
 
         viewModelScope.launch {
             actionState.value = ProfilePictureActionState(isSaving = true)
-            setLocalProfilePicture(bytes)
-                .onSuccess {
+            consumeAvatarEditResult(result)
+                .fold(
+                    onSuccess = { bytes -> setLocalProfilePicture(bytes) },
+                    onFailure = { error -> Result.failure(error) }
+                ).onSuccess {
                     actionState.value = ProfilePictureActionState()
                 }.onFailure { error ->
                     actionState.value =

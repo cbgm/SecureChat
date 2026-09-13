@@ -78,6 +78,7 @@ internal class AvatarRepositoryImpl(
 
     private fun AvatarTarget.description(): String =
         when (this) {
+            AvatarTarget.LocalUser -> "local user"
             is AvatarTarget.User -> "user '$id'"
             is AvatarTarget.Group -> "group '$id'"
         }

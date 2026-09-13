@@ -8,7 +8,7 @@ internal fun LocalProfilePicture.toProfileSettingsUiState(
     errorMessage: String?
 ): ProfileSettingsUiState =
     ProfileSettingsUiState(
-        profilePicture = this,
+        hasProfilePicture = hasPicture,
         isSaving = isSaving,
         errorMessage = errorMessage
     )

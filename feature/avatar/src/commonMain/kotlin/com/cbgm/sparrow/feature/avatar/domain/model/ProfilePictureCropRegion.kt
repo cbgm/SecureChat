@@ -1,4 +1,4 @@
-package com.cbgm.sparrow.feature.media.domain.model
+package com.cbgm.sparrow.feature.avatar.domain.model
 
 import kotlin.math.min
 import kotlin.math.roundToInt

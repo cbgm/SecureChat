@@ -1,6 +1,6 @@
-package com.cbgm.sparrow.feature.media.device
+package com.cbgm.sparrow.feature.avatar.device
 
-import com.cbgm.sparrow.feature.media.domain.model.ProfilePictureCropRegion
+import com.cbgm.sparrow.feature.avatar.domain.model.ProfilePictureCropRegion
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.CoreGraphics.CGRectMake
 import platform.CoreGraphics.CGSizeMake
@@ -15,8 +15,7 @@ import kotlin.math.min
 internal actual fun cropAndEncodeProfilePicture(
     sourceBytes: ByteArray,
     cropRegion: ProfilePictureCropRegion
-): ByteArray? =
-    runCatching {
+): ByteArray {
         val image =
             requireNotNull(UIImage(data = sourceBytes.toNSData())) {
                 "Profile picture could not be decoded"
@@ -72,7 +71,7 @@ internal actual fun cropAndEncodeProfilePicture(
         ) {
             "Profile picture could not be encoded"
         }.toByteArray()
-    }.getOrNull()
+}
 
 private const val PROFILE_PICTURE_SIZE = 512.0
 private const val PROFILE_PICTURE_JPEG_QUALITY = 0.88

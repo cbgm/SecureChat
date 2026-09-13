@@ -1,11 +1,10 @@
-package com.cbgm.sparrow.feature.media.device
+package com.cbgm.sparrow.feature.avatar.device
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
 import java.io.ByteArrayOutputStream
-import java.io.File
 import java.nio.ByteBuffer
 import kotlin.math.ceil
 
@@ -17,17 +16,6 @@ internal fun decodeProfilePictureBitmap(
     runCatching {
         decodeProfilePictureBitmap(
             source = ImageDecoder.createSource(context.contentResolver, uri),
-            maxDimension = maxDimension
-        )
-    }.getOrNull()
-
-internal fun decodeProfilePictureBitmap(
-    file: File,
-    maxDimension: Int = DEFAULT_MAX_DECODE_DIMENSION
-): Bitmap? =
-    runCatching {
-        decodeProfilePictureBitmap(
-            source = ImageDecoder.createSource(file),
             maxDimension = maxDimension
         )
     }.getOrNull()

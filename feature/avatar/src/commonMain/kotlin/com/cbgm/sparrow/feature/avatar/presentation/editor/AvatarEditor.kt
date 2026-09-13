@@ -1,24 +1,28 @@
-package com.cbgm.sparrow.feature.media.presentation.avatar
+package com.cbgm.sparrow.feature.avatar.presentation.editor
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cbgm.sparrow.core.ui.component.SparrowAlertDialog
 import com.cbgm.sparrow.core.ui.component.SparrowDialogListItem
 import com.cbgm.sparrow.core.ui.component.SparrowOutlinedButton
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
-import com.cbgm.sparrow.feature.media.device.cropAndEncodeProfilePicture
+import com.cbgm.sparrow.feature.avatar.device.rememberImagePickerLauncher
+import com.cbgm.sparrow.feature.avatar.domain.model.AvatarEditResult
 import com.cbgm.sparrow.feature.media.device.rememberCameraCaptureLauncher
-import com.cbgm.sparrow.feature.media.device.rememberImagePickerLauncher
 import com.cbgm.sparrow.feature.media.domain.model.CameraCaptureConfig
 import com.cbgm.sparrow.feature.media.domain.model.CameraCaptureType
 import com.cbgm.sparrow.feature.media.domain.model.CameraLens
+import org.koin.compose.viewmodel.koinViewModel
 
 data class AvatarEditorStrings(
     val sourceTitle: String,
@@ -32,18 +36,24 @@ data class AvatarEditorStrings(
 @Composable
 fun AvatarEditor(
     strings: AvatarEditorStrings,
-    onAvatarSelected: (ByteArray) -> Unit,
+    onAvatarSelected: (AvatarEditResult) -> Unit,
     onRemoveAvatar: (() -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
-    var sourceBytes by remember { mutableStateOf<ByteArray?>(null) }
+    val viewModel = koinViewModel<AvatarEditorViewModel>()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var sourceChooserVisible by remember { mutableStateOf(true) }
 
-    val onSourceSelected: (ByteArray) -> Unit = { bytes ->
-        if (bytes.isNotEmpty()) {
-            sourceChooserVisible = false
-            sourceBytes = bytes
-        } else {
+    val currentOnAvatarSelected by rememberUpdatedState(onAvatarSelected)
+
+    LaunchedEffect(viewModel) {
+        viewModel.result.collect { result ->
+            currentOnAvatarSelected(result)
+        }
+    }
+
+    LaunchedEffect(uiState.error) {
+        if (uiState.error != null) {
             sourceChooserVisible = true
         }
     }
@@ -56,37 +66,39 @@ fun AvatarEditor(
                     initialLens = CameraLens.FRONT,
                     initialType = CameraCaptureType.PHOTO
                 ),
-            onCaptured = { captured -> onSourceSelected(captured.bytes) },
+            onCaptured = { captured ->
+                sourceChooserVisible = false
+                viewModel.onSourceSelected(captured.bytes)
+            },
             onDismissed = { sourceChooserVisible = true },
             onError = { sourceChooserVisible = true }
         )
     val galleryLauncher =
         rememberImagePickerLauncher(
-            onImageSelected = onSourceSelected,
+            onImageSelected = { source ->
+                sourceChooserVisible = false
+                viewModel.onSourceSelected(source)
+            },
             onDismissed = { sourceChooserVisible = true },
             onError = { sourceChooserVisible = true }
         )
 
-    sourceBytes?.let { bytes ->
+    uiState.image?.let { image ->
         ProfilePictureCropScreen(
-            sourceBytes = bytes,
+            image = image,
             title = strings.cropTitle,
-            onConfirm = { cropRegion ->
-                cropAndEncodeProfilePicture(
-                    sourceBytes = bytes,
-                    cropRegion = cropRegion
-                )?.let { cropped ->
-                    sourceBytes = null
-                    onAvatarSelected(cropped)
-                }
-            },
-            onDismiss = onDismiss
+            isCropping = uiState.isCropping,
+            onConfirm = viewModel::onCropConfirmed,
+            onDismiss = {
+                viewModel.clear()
+                onDismiss()
+            }
         )
         return
     }
 
     AvatarSourceDialog(
-        isVisible = sourceChooserVisible,
+        isVisible = sourceChooserVisible && !uiState.isPreparing,
         strings = strings,
         onTakePhoto = {
             sourceChooserVisible = false
@@ -99,6 +111,7 @@ fun AvatarEditor(
         onRemove =
             if (strings.remove != null && onRemoveAvatar != null) {
                 {
+                    viewModel.clear()
                     sourceChooserVisible = false
                     onRemoveAvatar()
                     onDismiss()
@@ -106,7 +119,10 @@ fun AvatarEditor(
             } else {
                 null
             },
-        onDismiss = onDismiss
+        onDismiss = {
+            viewModel.clear()
+            onDismiss()
+        }
     )
 }
 
@@ -125,19 +141,10 @@ private fun AvatarSourceDialog(
         title = strings.sourceTitle,
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                SparrowDialogListItem(
-                    text = strings.takePhoto,
-                    onClick = onTakePhoto
-                )
-                SparrowDialogListItem(
-                    text = strings.chooseFromGallery,
-                    onClick = onChooseFromGallery
-                )
+                SparrowDialogListItem(text = strings.takePhoto, onClick = onTakePhoto)
+                SparrowDialogListItem(text = strings.chooseFromGallery, onClick = onChooseFromGallery)
                 if (strings.remove != null && onRemove != null) {
-                    SparrowDialogListItem(
-                        text = strings.remove,
-                        onClick = onRemove
-                    )
+                    SparrowDialogListItem(text = strings.remove, onClick = onRemove)
                 }
             }
         },

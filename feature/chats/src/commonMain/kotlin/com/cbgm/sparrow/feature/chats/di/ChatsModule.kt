@@ -508,6 +508,7 @@ private fun org.koin.core.module.Module.registerViewModels() {
             removeGroupMember = get(),
             promoteGroupMember = get(),
             transferGroupAdminAndLeave = get(),
+            consumeAvatarEditResult = get(),
             setGroupAvatar = get(),
             removeGroupAvatar = get(),
             setGroupTitle = get(),

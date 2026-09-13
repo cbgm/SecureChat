@@ -1,4 +1,4 @@
-package com.cbgm.sparrow.feature.media.presentation.avatar
+package com.cbgm.sparrow.feature.avatar.presentation.editor
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -16,7 +16,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,39 +29,14 @@ import com.cbgm.sparrow.core.ui.component.SparrowStaticScaffold
 import com.cbgm.sparrow.core.ui.theme.FunctionalColors
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
-import com.cbgm.sparrow.feature.media.domain.model.ProfilePictureCropRegion
-import com.cbgm.sparrow.feature.media.presentation.avatar.crop.ProfilePictureCropCanvas
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.jetbrains.compose.resources.decodeToImageBitmap
+import com.cbgm.sparrow.feature.avatar.domain.model.ProfilePictureCropRegion
+import com.cbgm.sparrow.feature.avatar.presentation.editor.crop.ProfilePictureCropCanvas
 
 @Composable
 internal fun ProfilePictureCropScreen(
-    sourceBytes: ByteArray,
+    image: ImageBitmap,
     title: String,
-    onConfirm: (ProfilePictureCropRegion) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val image by
-        produceState<ImageBitmap?>(initialValue = null, sourceBytes) {
-            value =
-                withContext(Dispatchers.Default) {
-                    runCatching { sourceBytes.decodeToImageBitmap() }.getOrNull()
-                }
-        }
-
-    ProfilePictureCropContent(
-        image = image,
-        title = title,
-        onConfirm = onConfirm,
-        onDismiss = onDismiss
-    )
-}
-
-@Composable
-private fun ProfilePictureCropContent(
-    image: ImageBitmap?,
-    title: String,
+    isCropping: Boolean,
     onConfirm: (ProfilePictureCropRegion) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -98,24 +72,22 @@ private fun ProfilePictureCropContent(
         }
     ) {
         Box(modifier = Modifier.background(FunctionalColors.MediaBackground)) {
-            image?.let {
-                ProfilePictureCropCanvas(
-                    image = it,
-                    onCropRegionChanged = { region -> cropRegion = region },
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(
-                                start = PROFILE_PICTURE_CROP_HORIZONTAL_PADDING,
-                                end = PROFILE_PICTURE_CROP_HORIZONTAL_PADDING,
-                                top = PROFILE_PICTURE_CROP_TOP_PADDING,
-                                bottom = PROFILE_PICTURE_CROP_BOTTOM_PADDING
-                            )
-                )
-            }
+            ProfilePictureCropCanvas(
+                image = image,
+                onCropRegionChanged = { region -> cropRegion = region },
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(
+                            start = PROFILE_PICTURE_CROP_HORIZONTAL_PADDING,
+                            end = PROFILE_PICTURE_CROP_HORIZONTAL_PADDING,
+                            top = PROFILE_PICTURE_CROP_TOP_PADDING,
+                            bottom = PROFILE_PICTURE_CROP_BOTTOM_PADDING
+                        )
+            )
 
             SparrowRoundApprovalButton(
-                enabled = cropRegion != null,
+                enabled = cropRegion != null && !isCropping,
                 onClick = { cropRegion?.let(onConfirm) },
                 imageVector = Icons.Filled.Check,
                 modifier =
@@ -131,9 +103,10 @@ private fun ProfilePictureCropContent(
 @Composable
 private fun ProfilePictureCropScreenPreview() {
     SparrowTheme {
-        ProfilePictureCropContent(
+        ProfilePictureCropScreen(
             image = ImageBitmap(512, 512),
             title = "Crop picture",
+            isCropping = false,
             onConfirm = {},
             onDismiss = {}
         )
