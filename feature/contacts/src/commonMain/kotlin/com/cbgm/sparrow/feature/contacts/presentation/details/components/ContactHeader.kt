@@ -21,12 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import com.cbgm.sparrow.core.ui.component.SparrowAvatar
 import com.cbgm.sparrow.core.ui.theme.Alpha
 import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.circle
 import com.cbgm.sparrow.core.ui.theme.spacing
+import com.cbgm.sparrow.feature.avatar.domain.model.AvatarTarget
+import com.cbgm.sparrow.feature.avatar.presentation.component.SparrowAvatar
 import com.cbgm.sparrow.feature.contacts.domain.model.Contact
 import com.cbgm.sparrow.feature.contacts.domain.model.ContactVerificationStatus
 import com.cbgm.sparrow.feature.contacts.domain.model.KeyExchangeStatus
@@ -40,10 +41,7 @@ import com.cbgm.sparrow.resources.feature_contacts_verified_sparrow_contact
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-internal fun ContactHeader(
-    contact: Contact,
-    profilePictureBytes: ByteArray? = null
-) {
+internal fun ContactHeader(contact: Contact) {
     val identity = contact.sparrowIdentity
     val verifiedByMe = identity?.verificationStatus == ContactVerificationStatus.VERIFIED
     val verifiedByContact =
@@ -57,7 +55,7 @@ internal fun ContactHeader(
         Box(contentAlignment = Alignment.BottomEnd) {
             SparrowAvatar(
                 name = contact.displayName.orEmpty(),
-                pictureBytes = profilePictureBytes,
+                target = AvatarTarget.User(contact.id),
                 size = Dimens.ContactDetailsScreen.avatarSize
             )
 

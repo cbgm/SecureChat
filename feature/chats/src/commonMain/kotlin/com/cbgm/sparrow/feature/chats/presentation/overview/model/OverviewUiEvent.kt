@@ -3,8 +3,6 @@ package com.cbgm.sparrow.feature.chats.presentation.overview.model
 sealed interface OverviewUiEvent {
     data object AutoReplyClicked : OverviewUiEvent
 
-    data object ErrorDismissed : OverviewUiEvent
-
     data class ChatClicked(
         val chat: ConversationListItem
     ) : OverviewUiEvent
@@ -12,4 +10,6 @@ sealed interface OverviewUiEvent {
     data class DeleteConversation(
         val conversationId: String
     ) : OverviewUiEvent
+
+    data object ErrorDismissed : OverviewUiEvent
 }

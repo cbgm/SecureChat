@@ -67,7 +67,6 @@ class ContactInvitationViewModel(
                 selectedTab = tab,
                 incomingInvitations = context.incoming,
                 outgoingInvitations = context.outgoing,
-                profilePictures = context.profilePictures,
                 processingInvitationId = processingId
             )
         }.stateIn(

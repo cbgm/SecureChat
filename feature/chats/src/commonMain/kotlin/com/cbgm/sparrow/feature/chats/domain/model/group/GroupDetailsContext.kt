@@ -4,6 +4,6 @@ data class GroupDetailsContext(
     val verification: GroupVerificationState,
     val administration: GroupAdministrationState,
     val conversation: GroupConversation?,
-    val avatar: GroupAvatar,
+    val avatarMetadata: GroupAvatarMetadata,
     val description: GroupDescription
 )

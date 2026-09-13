@@ -65,7 +65,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import com.cbgm.sparrow.core.ui.component.SparrowAlertDialog
 import com.cbgm.sparrow.core.ui.component.SparrowApprovalButton
-import com.cbgm.sparrow.core.ui.component.SparrowAvatar
 import com.cbgm.sparrow.core.ui.component.SparrowCardNoAnimation
 import com.cbgm.sparrow.core.ui.component.SparrowInputField
 import com.cbgm.sparrow.core.ui.component.SparrowLazyScaffold
@@ -76,6 +75,8 @@ import com.cbgm.sparrow.core.ui.theme.Alpha
 import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
+import com.cbgm.sparrow.feature.avatar.domain.model.AvatarTarget
+import com.cbgm.sparrow.feature.avatar.presentation.component.SparrowAvatar
 import com.cbgm.sparrow.feature.chats.domain.model.group.GroupDescription
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupAvatarUiState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupDescriptionUiState
@@ -195,7 +196,7 @@ fun GroupDetailsScreen(
                         takePhoto = stringResource(Res.string.feature_chats_group_avatar_take_photo),
                         chooseFromGallery = stringResource(Res.string.feature_chats_group_avatar_choose_gallery),
                         remove =
-                            if (((uiState as? GroupDetailsUiState.Content)?.groupAvatar?.avatarBytes) != null) {
+                            if ((uiState as? GroupDetailsUiState.Content)?.groupAvatar?.hasAvatar == true) {
                                 stringResource(Res.string.feature_chats_group_avatar_remove)
                             } else {
                                 null
@@ -530,7 +531,9 @@ private fun GroupAvatarSection(
         ) {
             SparrowAvatar(
                 name = state.title,
-                pictureBytes = state.avatarBytes,
+                target = state.groupId
+                    .takeIf(String::isNotBlank)
+                    ?.let { AvatarTarget.Group(it) },
                 size = Dimens.GroupDetailsScreen.avatarSize,
                 modifier = Modifier.padding(MaterialTheme.spacing.base)
             )

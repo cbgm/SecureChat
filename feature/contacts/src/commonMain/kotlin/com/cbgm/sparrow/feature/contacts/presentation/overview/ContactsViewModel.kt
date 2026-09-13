@@ -4,7 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.cbgm.sparrow.core.ui.presentation.BaseViewModel
 import com.cbgm.sparrow.feature.contacts.domain.usecase.ImportDeviceContactsUseCase
-import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveContactsWithProfilePicturesUseCase
+import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveContactsUseCase
 import com.cbgm.sparrow.feature.contacts.presentation.overview.mapper.toContactsUiState
 import com.cbgm.sparrow.feature.contacts.presentation.overview.model.ContactsEffect
 import com.cbgm.sparrow.feature.contacts.presentation.overview.model.ContactsUiEvent
@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 
 class ContactsViewModel(
     savedStateHandle: SavedStateHandle,
-    observeContactsWithProfilePictures: ObserveContactsWithProfilePicturesUseCase,
+    observeContacts: ObserveContactsUseCase,
     private val importDeviceContacts: ImportDeviceContactsUseCase
 ) : BaseViewModel() {
     private val searchQuery = savedStateHandle.getMutableStateFlow(SEARCH_QUERY_KEY, "")
@@ -30,10 +30,10 @@ class ContactsViewModel(
 
     val uiState: StateFlow<ContactsUiState> =
         combine(
-            observeContactsWithProfilePictures(),
+            observeContacts(),
             searchQuery
-        ) { snapshot, query ->
-            snapshot.contacts.toContactsUiState(query, snapshot.profilePictures)
+        ) { contacts, query ->
+            contacts.toContactsUiState(query)
         }.catch { error ->
             emit(ContactsUiState.Error(error.message ?: "Failed to load contacts", searchQuery.value))
         }.stateIn(

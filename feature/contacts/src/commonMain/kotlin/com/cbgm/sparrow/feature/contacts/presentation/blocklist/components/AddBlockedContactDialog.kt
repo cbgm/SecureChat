@@ -24,11 +24,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import com.cbgm.sparrow.core.ui.component.SparrowAlertDialog
 import com.cbgm.sparrow.core.ui.component.SparrowApprovalButton
-import com.cbgm.sparrow.core.ui.component.SparrowAvatar
 import com.cbgm.sparrow.core.ui.component.SparrowInputField
 import com.cbgm.sparrow.core.ui.component.SparrowOutlinedButton
 import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.spacing
+import com.cbgm.sparrow.feature.avatar.domain.model.AvatarTarget
+import com.cbgm.sparrow.feature.avatar.presentation.component.SparrowAvatar
 import com.cbgm.sparrow.feature.contacts.domain.model.Contact
 import com.cbgm.sparrow.resources.Res
 import com.cbgm.sparrow.resources.base_close
@@ -49,7 +50,6 @@ fun AddBlockedContactDialog(
     phoneNumber: String,
     phoneNumberError: String?,
     contacts: List<Contact>,
-    profilePictures: Map<String, ByteArray?>,
     enabled: Boolean,
     onPhoneNumberChanged: (String) -> Unit,
     onBlockPhoneNumber: () -> Unit,
@@ -130,7 +130,7 @@ fun AddBlockedContactDialog(
                                     name =
                                         contact.displayName
                                             ?: contact.preferredPhoneNumber?.value ?: "?",
-                                    pictureBytes = profilePictures[contact.id]
+                                    target = AvatarTarget.User(contact.id)
                                 )
                                 Spacer(modifier = Modifier.size(MaterialTheme.spacing.small))
                                 Column(modifier = Modifier.weight(1f)) {

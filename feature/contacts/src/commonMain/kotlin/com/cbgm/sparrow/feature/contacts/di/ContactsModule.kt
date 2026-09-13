@@ -49,11 +49,8 @@ import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveContactBlocklistU
 import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveContactDetailsContextUseCase
 import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveContactInvitationsContextUseCase
 import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveContactInvitationsUseCase
-import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveContactProfilePictureUseCase
-import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveContactProfilePicturesUseCase
 import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveContactUseCase
 import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveContactsUseCase
-import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveContactsWithProfilePicturesUseCase
 import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveIdentityHandshakeStateUseCase
 import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveIdentitySetupModeUseCase
 import com.cbgm.sparrow.feature.contacts.domain.usecase.ObservePendingContactInvitationCountUseCase
@@ -331,23 +328,18 @@ val contactsModule =
         factory { ObservePendingContactInvitationCountUseCase(observePendingContactInvitations = get()) }
         factory { ObserveIdentityHandshakeStateUseCase(identityInvitationRepository = get()) }
         factory { ObserveIdentitySetupModeUseCase(repository = get()) }
-        factory { ObserveContactProfilePictureUseCase(provider = get()) }
-        factory { ObserveContactProfilePicturesUseCase(provider = get()) }
         factory {
             ObserveContactDetailsContextUseCase(
                 observeContact = get(),
-                observeProfilePicture = get(),
                 getContactSafetyNumber = get()
             )
         }
         factory {
             ObserveBlockedContactsContextUseCase(
-                observeContactBlocklist = get(),
-                observeProfilePictures = get()
+                observeContactBlocklist = get()
             )
         }
-        factory { ObserveContactsWithProfilePicturesUseCase(observeContacts = get(), observeProfilePictures = get()) }
-        factory { ObserveContactInvitationsContextUseCase(observeContactInvitations = get(), observeProfilePictures = get()) }
+        factory { ObserveContactInvitationsContextUseCase(observeContactInvitations = get()) }
         factory {
             EnsureIdentityExchangeStartedUseCase(
                 modeRepository = get(),
@@ -381,7 +373,7 @@ val contactsModule =
         viewModel {
             ContactsViewModel(
                 savedStateHandle = get(),
-                observeContactsWithProfilePictures = get(),
+                observeContacts = get(),
                 importDeviceContacts = get()
             )
         }

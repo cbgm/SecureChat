@@ -1,7 +1,9 @@
 package com.cbgm.sparrow.feature.chats.di
 
+import com.cbgm.sparrow.core.protocol.avatar.GroupAvatarProvider
 import com.cbgm.sparrow.core.protocol.handler.IncomingMessageHandler
 import com.cbgm.sparrow.core.protocol.outbox.OutboxDeliveryStateListener
+import com.cbgm.sparrow.feature.chats.adapter.ChatsGroupAvatarProvider
 import com.cbgm.sparrow.feature.chats.data.datasource.UnreadableTransportMessageDataSource
 import com.cbgm.sparrow.feature.chats.data.direct.datasource.DirectConversationDataSource
 import com.cbgm.sparrow.feature.chats.data.direct.delivery.DirectMessageDeliveryCoordinator
@@ -154,8 +156,6 @@ import com.cbgm.sparrow.feature.chats.domain.usecase.group.LeaveGroupUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.LoadGroupPinnedAttachmentUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.MarkGroupConversationReadUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupAdministrationUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupAvatarUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupAvatarsUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupChatContextUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupConversationUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.ObserveGroupDetailsContextUseCase
@@ -181,7 +181,6 @@ import com.cbgm.sparrow.feature.chats.domain.usecase.group.incoming.MarkGroupCon
 import com.cbgm.sparrow.feature.chats.domain.usecase.group.incoming.StageIncomingGroupOwnerIdentityUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.overview.ObserveConversationOverviewContextUseCase
 import com.cbgm.sparrow.feature.chats.domain.usecase.overview.ObserveConversationOverviewsUseCase
-import com.cbgm.sparrow.feature.chats.domain.usecase.profile.ObserveRemoteProfilePicturesUseCase
 import com.cbgm.sparrow.feature.chats.presentation.ContactsFlowViewModel
 import com.cbgm.sparrow.feature.chats.presentation.create.CreateGroupViewModel
 import com.cbgm.sparrow.feature.chats.presentation.details.GroupVerificationViewModel
@@ -199,6 +198,8 @@ import org.koin.dsl.module
 
 val chatsModule =
     module {
+        single<GroupAvatarProvider> { ChatsGroupAvatarProvider(repository = get()) }
+
         registerDirectData()
         registerGroupData()
         registerIncomingRouting()
@@ -406,8 +407,6 @@ private fun org.koin.core.module.Module.registerUseCases() {
     singleOf(::GetGroupLeaveRequirementUseCase)
     singleOf(::LeaveGroupUseCase)
     singleOf(::ObserveGroupAdministrationUseCase)
-    singleOf(::ObserveGroupAvatarUseCase)
-    singleOf(::ObserveGroupAvatarsUseCase)
     singleOf(::SetGroupAvatarUseCase)
     singleOf(::RemoveGroupAvatarUseCase)
     singleOf(::SetGroupTitleUseCase)
@@ -426,7 +425,6 @@ private fun org.koin.core.module.Module.registerUseCases() {
 
     singleOf(::ObserveConversationOverviewsUseCase)
     singleOf(::ObserveConversationOverviewContextUseCase)
-    singleOf(::ObserveRemoteProfilePicturesUseCase)
 }
 
 private fun org.koin.core.module.Module.registerViewModels() {
@@ -452,7 +450,7 @@ private fun org.koin.core.module.Module.registerViewModels() {
     viewModel {
         CreateGroupViewModel(
             savedStateHandle = get(),
-            observeContactsWithProfilePictures = get(),
+            observeContacts = get(),
             createGroupConversation = get()
         )
     }
@@ -460,7 +458,7 @@ private fun org.koin.core.module.Module.registerViewModels() {
     viewModel {
         ForwardingSelectionViewModel(
             observeConversationContext = get(),
-            observeContactsWithProfilePictures = get()
+            observeContacts = get()
         )
     }
 
@@ -502,7 +500,7 @@ private fun org.koin.core.module.Module.registerViewModels() {
             synchronizeGroupVerification = get(),
             verifyGroupMember = get(),
             getContactSafetyNumber = get<GetContactSafetyNumberUseCase>(),
-            observeContactsWithProfilePictures = get(),
+            observeContacts = get(),
             addGroupMembers = get(),
             removeGroupMember = get(),
             promoteGroupMember = get(),

@@ -48,14 +48,14 @@ class ObserveGroupDetailsContextUseCase(
                 .observe(groupId)
                 .onStart { emit(null) }
                 .catch { emit(null) },
-            avatarRepository.observe(groupId),
+            avatarRepository.observeMetadata(groupId),
             descriptionRepository.observe(groupId)
-        ) { verification, administration, conversation, avatar, description ->
+        ) { verification, administration, conversation, avatarMetadata, description ->
             GroupDetailsContext(
                 verification = verification,
                 administration = administration,
                 conversation = conversation,
-                avatar = avatar,
+                avatarMetadata = avatarMetadata,
                 description = description
             )
         }

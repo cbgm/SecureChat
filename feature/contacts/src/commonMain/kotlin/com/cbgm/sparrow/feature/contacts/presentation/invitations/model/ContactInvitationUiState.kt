@@ -14,8 +14,7 @@ data class ContactInvitationUiState(
     val selectedTab: ContactInvitationTab = ContactInvitationTab.INCOMING,
     val incomingInvitations: List<ContactInvitation> = emptyList(),
     val outgoingInvitations: List<ContactInvitation> = emptyList(),
-    val processingInvitationId: String? = null,
-    val profilePictures: Map<String, ByteArray?> = emptyMap()
+    val processingInvitationId: String? = null
 ) {
     val hasUnreadIncomingUpdates: Boolean
         get() = incomingInvitations.any(ContactInvitation::hasUnreadUpdate)

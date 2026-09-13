@@ -201,10 +201,9 @@ class GroupConversationViewModel(
             voiceTranscriptionEnabled
         ) { presentation, loadedAttachmentPayloadBytes, safetyAssessments, voiceState, transcriptionEnabled ->
             toGroupConversationUiState(
+                groupId = groupId,
                 conversation = presentation.context?.conversation,
                 contacts = presentation.context?.contacts.orEmpty(),
-                profilePictures = presentation.context?.profilePictures.orEmpty(),
-                avatarBytes = presentation.context?.avatarBytes,
                 isLoading = presentation is GroupContextObservation.Loading,
                 safetyAssessments = safetyAssessments,
                 attachmentPayloadBytes = loadedAttachmentPayloadBytes,

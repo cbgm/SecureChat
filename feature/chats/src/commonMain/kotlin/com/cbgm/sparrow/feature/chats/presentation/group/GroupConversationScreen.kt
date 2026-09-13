@@ -40,7 +40,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.cbgm.sparrow.core.ui.component.FeedbackOverlay
 import com.cbgm.sparrow.core.ui.component.FeedbackOverlayData
 import com.cbgm.sparrow.core.ui.component.PatternBackground
-import com.cbgm.sparrow.core.ui.component.SparrowAvatar
 import com.cbgm.sparrow.core.ui.component.SparrowLazyScaffold
 import com.cbgm.sparrow.core.ui.component.SparrowOverlay
 import com.cbgm.sparrow.core.ui.component.SparrowOverlayHost
@@ -50,6 +49,8 @@ import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.spacing
 import com.cbgm.sparrow.feature.attachments.domain.model.SharedContact
 import com.cbgm.sparrow.feature.attachments.presentation.component.MessageAttachmentViewer
+import com.cbgm.sparrow.feature.avatar.domain.model.AvatarTarget
+import com.cbgm.sparrow.feature.avatar.presentation.component.SparrowAvatar
 import com.cbgm.sparrow.feature.chats.domain.model.group.ChatMessageType
 import com.cbgm.sparrow.feature.chats.presentation.component.AddSharedContactDialog
 import com.cbgm.sparrow.feature.chats.presentation.component.ChatComposerBar
@@ -422,7 +423,9 @@ private fun senderAvatarOrNull(message: MessageBubbleUi): (@Composable () -> Uni
     return {
         SparrowAvatar(
             name = message.senderName.orEmpty(),
-            pictureBytes = message.groupExtension?.senderProfilePictureBytes,
+            target = message.groupExtension?.senderContactId
+                ?.takeIf(String::isNotBlank)
+                ?.let { AvatarTarget.User(it) },
             size = Dimens.GroupConversationScreen.avatarSize
         )
         Spacer(modifier = Modifier.width(MaterialTheme.spacing.groupConversationScreen.senderGap))
@@ -504,7 +507,9 @@ private fun TopBar(
                 ) {
                     SparrowAvatar(
                         name = uiState.title,
-                        pictureBytes = uiState.avatarBytes,
+                        target = uiState.groupId
+                            .takeIf(String::isNotBlank)
+                            ?.let { AvatarTarget.Group(it) },
                         size = Dimens.GroupConversationScreen.topBarAvatarSize
                     )
                     Spacer(modifier = Modifier.width(MaterialTheme.spacing.small))
@@ -636,7 +641,9 @@ private fun Content(
             itemLeadingContent = { message ->
                 SparrowAvatar(
                     name = message.senderName.orEmpty(),
-                    pictureBytes = message.groupExtension?.senderProfilePictureBytes,
+                    target = message.groupExtension?.senderContactId
+                        ?.takeIf(String::isNotBlank)
+                        ?.let { AvatarTarget.User(it) },
                     size = Dimens.GroupConversationScreen.avatarSize,
                     modifier = Modifier.padding(end = MaterialTheme.spacing.groupConversationScreen.senderGap)
                 )

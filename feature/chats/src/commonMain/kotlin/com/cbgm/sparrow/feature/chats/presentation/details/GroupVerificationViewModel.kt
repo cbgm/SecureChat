@@ -32,7 +32,7 @@ import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupTitleUiSta
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupVerificationSummaryUiState
 import com.cbgm.sparrow.feature.chats.presentation.details.model.GroupVerificationUiState
 import com.cbgm.sparrow.feature.contacts.domain.usecase.GetContactSafetyNumberUseCase
-import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveContactsWithProfilePicturesUseCase
+import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveContactsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -47,7 +47,7 @@ class GroupVerificationViewModel(
     private val synchronizeGroupVerification: SynchronizeGroupVerificationUseCase,
     private val verifyGroupMember: VerifyGroupMemberUseCase,
     private val getContactSafetyNumber: GetContactSafetyNumberUseCase,
-    observeContactsWithProfilePictures: ObserveContactsWithProfilePicturesUseCase,
+    observeContacts: ObserveContactsUseCase,
     private val addGroupMembers: AddGroupMembersUseCase,
     private val removeGroupMember: RemoveGroupMemberUseCase,
     private val promoteGroupMember: PromoteGroupMemberUseCase,
@@ -85,7 +85,7 @@ class GroupVerificationViewModel(
     private val avatarActionState = MutableStateFlow(GroupAvatarActionState())
     private val titleActionState = MutableStateFlow(GroupTitleActionState())
     private val descriptionActionState = MutableStateFlow(GroupDescriptionActionState())
-    private val contactsWithProfilePictures = observeContactsWithProfilePictures()
+    private val contacts = observeContacts()
 
     private val groupOverviewFlow =
         combine(
@@ -115,8 +115,9 @@ class GroupVerificationViewModel(
                 summary = summary,
                 avatar =
                     toGroupAvatarUiState(
+                        groupId = conversationId,
                         title = context.conversation?.title.orEmpty(),
-                        avatarBytes = context.avatar.bytes,
+                        hasAvatar = context.avatarMetadata.hasAvatar,
                         canEdit = summary.isLocalAdmin,
                         isSaving = avatarAction.isSaving,
                         errorMessage = avatarAction.errorMessage
@@ -142,17 +143,16 @@ class GroupVerificationViewModel(
         combine(
             groupOverviewFlow,
             verificationState,
-            contactsWithProfilePictures,
+            contacts,
             memberManagementState,
             leaveState
-        ) { overview, verification, contactsSnapshot, memberManagement, leave ->
+        ) { overview, verification, contacts, memberManagement, leave ->
             toGroupVerificationUiState(
                 summary = overview.summary,
                 groupAvatar = overview.avatar,
                 groupTitle = overview.title,
                 groupDescription = overview.description,
-                contacts = contactsSnapshot.contacts,
-                profilePictures = contactsSnapshot.profilePictures,
+                contacts = contacts,
                 selectedContactId = verification.selectedContactId,
                 safetyNumber = verification.safetyNumber,
                 isLoadingSafetyNumber = verification.isLoadingSafetyNumber,

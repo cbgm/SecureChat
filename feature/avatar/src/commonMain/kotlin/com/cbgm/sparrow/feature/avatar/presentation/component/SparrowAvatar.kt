@@ -1,5 +1,6 @@
-package com.cbgm.sparrow.core.ui.component
+package com.cbgm.sparrow.feature.avatar.presentation.component
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -7,24 +8,55 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.circle
+import com.cbgm.sparrow.feature.avatar.domain.model.AvatarTarget
+import com.cbgm.sparrow.feature.avatar.presentation.AvatarViewModel
+import com.cbgm.sparrow.feature.avatar.presentation.model.AvatarUiState
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun SparrowAvatar(
     name: String,
+    target: AvatarTarget?,
     modifier: Modifier = Modifier,
-    pictureBytes: ByteArray? = null,
+    size: Dp = Dimens.Avatar.defaultSize
+) {
+    val uiState =
+        if (target == null) {
+            AvatarUiState.Empty
+        } else {
+            val viewModel =
+                koinViewModel<AvatarViewModel>(key = target.viewModelKey) {
+                    parametersOf(target)
+                }
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
+            state
+        }
+
+    Content(
+        name = name,
+        uiState = uiState,
+        modifier = modifier,
+        size = size
+    )
+}
+
+@Composable
+private fun Content(
+    name: String,
+    uiState: AvatarUiState,
+    modifier: Modifier = Modifier,
     size: Dp = Dimens.Avatar.defaultSize
 ) {
     Surface(
@@ -40,25 +72,24 @@ fun SparrowAvatar(
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
 
-            if (pictureBytes != null && pictureBytes.isNotEmpty()) {
-                val memoryCacheKey =
-                    remember(pictureBytes) {
-                        "avatar:${size.value}:${pictureBytes.size}:${pictureBytes.contentHashCode()}"
-                    }
-
-                SparrowImage(
-                    model = pictureBytes,
+            if (uiState is AvatarUiState.Ready) {
+                Image(
+                    bitmap = uiState.image,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                    error = remember { ColorPainter(Color.Transparent) },
-                    memoryCacheKey = memoryCacheKey,
-                    showLoadingBackground = false
+                    modifier = Modifier.fillMaxSize()
                 )
             }
         }
     }
 }
+
+private val AvatarTarget.viewModelKey: String
+    get() =
+        when (this) {
+            is AvatarTarget.User -> "avatar:user:$id"
+            is AvatarTarget.Group -> "avatar:group:$id"
+        }
 
 private fun String.toInitials(): String =
     trim()
@@ -73,6 +104,6 @@ private fun String.toInitials(): String =
 @Composable
 private fun SparrowAvatarPreview() {
     SparrowTheme {
-        SparrowAvatar(name = "Alex Example")
+        SparrowAvatar(name = "Alex Example", target = null)
     }
 }

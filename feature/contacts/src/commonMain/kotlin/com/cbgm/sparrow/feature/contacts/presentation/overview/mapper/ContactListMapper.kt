@@ -47,23 +47,18 @@ fun List<Contact>.groupContactsByInitial(): List<ContactGroupEntity> =
         )
     }
 
-internal fun List<Contact>.toContactsUiState(
-    query: String,
-    profilePictures: Map<String, ByteArray?>
-): ContactsUiState {
+internal fun List<Contact>.toContactsUiState(query: String): ContactsUiState {
     val filteredContacts = filterContacts(query)
     return when {
         isEmpty() -> ContactsUiState.Empty(searchQuery = query)
         filteredContacts.isEmpty() ->
             ContactsUiState.Content(
                 groups = emptyList(),
-                profilePictures = profilePictures,
                 searchQuery = query
             )
         else ->
             ContactsUiState.Content(
                 groups = filteredContacts.groupContactsByInitial(),
-                profilePictures = profilePictures,
                 searchQuery = query
             )
     }

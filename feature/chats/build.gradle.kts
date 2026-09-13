@@ -18,6 +18,7 @@ kotlin {
             implementation(projects.core.crypto)
             implementation(projects.core.protocol)
             implementation(projects.core.ui)
+            implementation(projects.feature.avatar)
             implementation(projects.data.database)
             implementation(projects.feature.autoreply)
             implementation(projects.feature.contactimport)

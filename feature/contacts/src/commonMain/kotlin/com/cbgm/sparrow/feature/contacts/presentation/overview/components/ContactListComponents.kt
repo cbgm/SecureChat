@@ -32,12 +32,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.cbgm.sparrow.core.ui.component.SparrowApprovalButton
-import com.cbgm.sparrow.core.ui.component.SparrowAvatar
 import com.cbgm.sparrow.core.ui.component.SparrowStatusBadge
 import com.cbgm.sparrow.core.ui.theme.Alpha
 import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.circle
 import com.cbgm.sparrow.core.ui.theme.spacing
+import com.cbgm.sparrow.feature.avatar.domain.model.AvatarTarget
+import com.cbgm.sparrow.feature.avatar.presentation.component.SparrowAvatar
 import com.cbgm.sparrow.feature.contacts.domain.model.Contact
 import com.cbgm.sparrow.feature.contacts.domain.model.DeviceContactLinkStatus
 import com.cbgm.sparrow.feature.contacts.presentation.overview.model.ContactGroupEntity
@@ -54,7 +55,6 @@ import org.jetbrains.compose.resources.stringResource
 
 fun LazyListScope.contactGroups(
     groups: List<ContactGroupEntity>,
-    profilePictures: Map<String, ByteArray?>,
     onContactClick: (Contact) -> Unit,
     trailingContent: @Composable (Contact) -> Unit
 ) {
@@ -64,7 +64,6 @@ fun LazyListScope.contactGroups(
     ) { group ->
         ContactGroup(
             group = group,
-            profilePictures = profilePictures,
             onContactClick = onContactClick,
             trailingContent = trailingContent
         )
@@ -224,7 +223,6 @@ fun ContactsErrorContent(
 @Composable
 private fun ContactGroup(
     group: ContactGroupEntity,
-    profilePictures: Map<String, ByteArray?>,
     onContactClick: (Contact) -> Unit,
     trailingContent: @Composable (Contact) -> Unit
 ) {
@@ -252,7 +250,6 @@ private fun ContactGroup(
                 group.contacts.forEach { contact ->
                     ContactListItem(
                         contact = contact,
-                        profilePictureBytes = profilePictures[contact.id],
                         onClick = {
                             onContactClick(contact)
                         },
@@ -269,7 +266,6 @@ private fun ContactGroup(
 @Composable
 private fun ContactListItem(
     contact: Contact,
-    profilePictureBytes: ByteArray?,
     onClick: () -> Unit,
     trailingContent: @Composable () -> Unit
 ) {
@@ -284,7 +280,7 @@ private fun ContactListItem(
             leadingContent = {
                 SparrowAvatar(
                     name = contact.displayName ?: "?",
-                    pictureBytes = profilePictureBytes
+                    target = AvatarTarget.User(contact.id)
                 )
             },
             headlineContent = {

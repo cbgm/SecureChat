@@ -46,7 +46,6 @@ class BlockedContactsViewModel(
             actionState
         ) { context, form, action ->
             context.blocklist.toBlockedContactsUiState(
-                profilePictures = context.profilePictures,
                 showAddContacts = form.showAddContacts,
                 phoneNumber = form.phoneNumber,
                 phoneNumberError = action.phoneNumberError,

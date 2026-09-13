@@ -9,7 +9,6 @@ sealed interface ContactDetailsUiState {
     data class Content(
         val contact: Contact,
         val safetyNumber: SafetyNumber?,
-        val profilePictureBytes: ByteArray? = null,
         val isSavingVerification: Boolean = false,
         val verificationError: String? = null
     ) : ContactDetailsUiState {

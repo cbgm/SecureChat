@@ -1,32 +1,33 @@
 package com.cbgm.sparrow.feature.chats.presentation.overview.mapper
 
 import com.cbgm.sparrow.core.time.formatMessageTimestamp
+import com.cbgm.sparrow.feature.avatar.domain.model.AvatarTarget
 import com.cbgm.sparrow.feature.chats.domain.model.overview.ConversationOverview
 import com.cbgm.sparrow.feature.chats.domain.model.overview.ConversationOverviewType
 import com.cbgm.sparrow.feature.chats.presentation.overview.model.ConversationListItem
+import com.cbgm.sparrow.feature.chats.presentation.overview.model.OverviewUiState
 
-internal fun List<ConversationOverview>.toConversationListItems(
-    profilePictures: Map<String, ByteArray?>,
-    groupAvatars: Map<String, ByteArray?>
-): List<ConversationListItem> =
-    map { conversation ->
-        conversation.toConversationListItem(
-            avatarBytes =
-                when (conversation.type) {
-                    ConversationOverviewType.DIRECT -> profilePictures[conversation.contactId]
-                    ConversationOverviewType.GROUP -> groupAvatars[conversation.id]
-                }
-        )
-    }
+internal fun List<ConversationOverview>.toOverviewUiState(
+    activeAutoReplyName: String?,
+    error: String? = null
+): OverviewUiState =
+    OverviewUiState(
+        conversations = map(ConversationOverview::toConversationListItem),
+        activeAutoReplyName = activeAutoReplyName,
+        isLoading = false,
+        error = error
+    )
 
-internal fun ConversationOverview.toConversationListItem(
-    avatarBytes: ByteArray? = null
-): ConversationListItem =
+internal fun ConversationOverview.toConversationListItem(): ConversationListItem =
     ConversationListItem(
         conversationId = id,
         contactId = contactId,
         contactName = displayName,
-        avatarBytes = avatarBytes,
+        avatarTarget =
+            when (type) {
+                ConversationOverviewType.DIRECT -> AvatarTarget.User(contactId)
+                ConversationOverviewType.GROUP -> AvatarTarget.Group(id)
+            },
         lastMessage = lastMessageText.orEmpty(),
         hasMessages = lastMessageTimestamp != null,
         timestamp = lastMessageTimestamp?.let(::formatMessageTimestamp).orEmpty(),

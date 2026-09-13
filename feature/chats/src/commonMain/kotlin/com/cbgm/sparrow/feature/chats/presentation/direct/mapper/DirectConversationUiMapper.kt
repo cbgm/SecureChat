@@ -181,6 +181,3 @@ internal fun toDirectConversationUiState(
         composerState = composerState
     )
 }
-
-internal fun DirectConversationUiState.withProfilePicture(profilePictureBytes: ByteArray?): DirectConversationUiState =
-    copy(profilePictureBytes = profilePictureBytes)

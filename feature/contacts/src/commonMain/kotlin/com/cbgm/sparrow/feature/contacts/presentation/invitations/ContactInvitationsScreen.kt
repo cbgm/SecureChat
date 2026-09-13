@@ -42,7 +42,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import com.cbgm.sparrow.core.ui.component.SparrowAvatar
 import com.cbgm.sparrow.core.ui.component.SparrowLazyScaffold
 import com.cbgm.sparrow.core.ui.component.SparrowSwipeRevealItem
 import com.cbgm.sparrow.core.ui.component.SwipeRevealAction
@@ -50,6 +49,8 @@ import com.cbgm.sparrow.core.ui.theme.Alpha
 import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
+import com.cbgm.sparrow.feature.avatar.domain.model.AvatarTarget
+import com.cbgm.sparrow.feature.avatar.presentation.component.SparrowAvatar
 import com.cbgm.sparrow.feature.contacts.domain.model.ContactInvitation
 import com.cbgm.sparrow.feature.contacts.domain.model.ContactInvitationStatus
 import com.cbgm.sparrow.feature.contacts.domain.model.IdentityInvitationDirection
@@ -152,7 +153,6 @@ fun ContactInvitationsScreen(
                         InvitationItem(
                             invitation = invitation,
                             isProcessing = uiState.processingInvitationId == invitation.invitationId,
-                            profilePictureBytes = uiState.profilePictures[invitation.contactId],
                             actionsEnabled = uiState.processingInvitationId == null,
                             onUiEvent = onUiEvent
                         )
@@ -227,7 +227,6 @@ private fun InvitationTab(
 private fun InvitationItem(
     invitation: ContactInvitation,
     isProcessing: Boolean,
-    profilePictureBytes: ByteArray?,
     actionsEnabled: Boolean,
     onUiEvent: (ContactInvitationUiEvent) -> Unit
 ) {
@@ -236,7 +235,6 @@ private fun InvitationItem(
             IncomingInvitationItem(
                 invitation = invitation,
                 isProcessing = isProcessing,
-                profilePictureBytes = profilePictureBytes,
                 actionsEnabled = actionsEnabled,
                 onUiEvent = onUiEvent
             )
@@ -245,7 +243,6 @@ private fun InvitationItem(
             OutgoingInvitationItem(
                 invitation = invitation,
                 isProcessing = isProcessing,
-                profilePictureBytes = profilePictureBytes,
                 actionsEnabled = actionsEnabled,
                 onUiEvent = onUiEvent
             )
@@ -256,7 +253,6 @@ private fun InvitationItem(
 private fun IncomingInvitationItem(
     invitation: ContactInvitation,
     isProcessing: Boolean,
-    profilePictureBytes: ByteArray?,
     actionsEnabled: Boolean,
     onUiEvent: (ContactInvitationUiEvent) -> Unit
 ) {
@@ -304,8 +300,7 @@ private fun IncomingInvitationItem(
     ) {
         InvitationRow(
             invitation = invitation,
-            isProcessing = isProcessing,
-            profilePictureBytes = profilePictureBytes
+            isProcessing = isProcessing
         )
         InvitationDivider()
     }
@@ -315,7 +310,6 @@ private fun IncomingInvitationItem(
 private fun OutgoingInvitationItem(
     invitation: ContactInvitation,
     isProcessing: Boolean,
-    profilePictureBytes: ByteArray?,
     actionsEnabled: Boolean,
     onUiEvent: (ContactInvitationUiEvent) -> Unit
 ) {
@@ -344,16 +338,14 @@ private fun OutgoingInvitationItem(
         ) {
             InvitationRow(
                 invitation = invitation,
-                isProcessing = isProcessing,
-                profilePictureBytes = profilePictureBytes
+                isProcessing = isProcessing
             )
             InvitationDivider()
         }
     } else {
         InvitationRow(
             invitation = invitation,
-            isProcessing = isProcessing,
-            profilePictureBytes = profilePictureBytes
+            isProcessing = isProcessing
         )
         InvitationDivider()
     }
@@ -405,7 +397,6 @@ private fun EmptyInvitations(
 private fun InvitationRow(
     invitation: ContactInvitation,
     isProcessing: Boolean,
-    profilePictureBytes: ByteArray?,
     modifier: Modifier = Modifier
 ) {
     val displayName =
@@ -416,7 +407,10 @@ private fun InvitationRow(
     ListItem(
         modifier = modifier.fillMaxWidth(),
         leadingContent = {
-            SparrowAvatar(name = displayName, pictureBytes = profilePictureBytes)
+            SparrowAvatar(
+                name = displayName,
+                target = AvatarTarget.User(invitation.contactId)
+            )
         },
         headlineContent = {
             Text(

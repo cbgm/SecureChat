@@ -73,8 +73,7 @@ class ContactDetailsViewModel(
             observeContactDetailsContext(contactId)
                 .map { context ->
                     context.contact?.toContactDetailsUiState(
-                        safetyNumber = context.safetyNumber,
-                        profilePictureBytes = context.profilePictureBytes
+                        safetyNumber = context.safetyNumber
                     ) ?: ContactDetailsUiState.NotFound
                 }.onStart {
                     emit(ContactDetailsUiState.Loading)

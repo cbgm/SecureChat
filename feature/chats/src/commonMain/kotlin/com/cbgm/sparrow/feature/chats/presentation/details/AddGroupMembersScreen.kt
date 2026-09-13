@@ -48,8 +48,7 @@ private fun Content(
     ContactsScreen(
         uiState =
             ContactsUiState.Content(
-                groups = uiState.availableContactGroups,
-                profilePictures = uiState.profilePictures
+                groups = uiState.availableContactGroups
             ),
         mode =
             ContactsScreenMode.MemberSelection(

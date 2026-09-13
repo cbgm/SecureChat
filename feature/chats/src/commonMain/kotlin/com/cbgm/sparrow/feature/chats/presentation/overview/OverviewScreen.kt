@@ -26,19 +26,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import com.cbgm.sparrow.core.ui.component.SparrowAvatar
 import com.cbgm.sparrow.core.ui.component.SparrowSwipeRevealItem
 import com.cbgm.sparrow.core.ui.component.SwipeRevealAction
 import com.cbgm.sparrow.core.ui.theme.Alpha
@@ -46,6 +41,8 @@ import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.circle
 import com.cbgm.sparrow.core.ui.theme.spacing
+import com.cbgm.sparrow.feature.avatar.domain.model.AvatarTarget
+import com.cbgm.sparrow.feature.avatar.presentation.component.SparrowAvatar
 import com.cbgm.sparrow.feature.chats.presentation.component.ScrollToBottomButton
 import com.cbgm.sparrow.feature.chats.presentation.overview.model.ConversationListItem
 import com.cbgm.sparrow.feature.chats.presentation.overview.model.OverviewUiEvent
@@ -65,34 +62,13 @@ fun OverviewScreen(
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier
 ) {
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    LaunchedEffect(uiState.error) {
-        uiState.error
-            .takeUnless { error -> error.isNullOrBlank() }
-            ?.let { message ->
-                snackbarHostState.showSnackbar(message)
-                onUiEvent(OverviewUiEvent.ErrorDismissed)
-            }
-    }
-
-    Box(modifier = modifier.fillMaxSize()) {
-        Content(
-            uiState = uiState,
-            onUiEvent = onUiEvent,
-            listState = listState,
-            innerPadding = innerPadding,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier =
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = innerPadding.calculateBottomPadding())
-        )
-    }
+    Content(
+        uiState = uiState,
+        onUiEvent = onUiEvent,
+        listState = listState,
+        innerPadding = innerPadding,
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -159,13 +135,36 @@ private fun Content(
 
                     items(
                         items = uiState.conversations,
-                        key = { conversation -> conversation.conversationId },
-                        contentType = { "conversation" }
+                        key = { conversation -> conversation.conversationId }
                     ) { conversation ->
-                        ConversationOverviewItem(
-                            conversation = conversation,
-                            onUiEvent = onUiEvent
-                        )
+                        SparrowSwipeRevealItem(
+                            actions =
+                                listOf(
+                                    SwipeRevealAction(
+                                        backgroundColor = MaterialTheme.colorScheme.error,
+                                        contentColor = MaterialTheme.colorScheme.onError,
+                                        onClick = {
+                                            onUiEvent(
+                                                OverviewUiEvent.DeleteConversation(
+                                                    conversation.conversationId
+                                                )
+                                            )
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.DeleteOutline,
+                                            contentDescription = null
+                                        )
+                                    }
+                                )
+                        ) {
+                            ConversationItem(
+                                conversation = conversation,
+                                onClick = {
+                                    onUiEvent(OverviewUiEvent.ChatClicked(conversation))
+                                }
+                            )
+                        }
 
                         HorizontalDivider(
                             modifier = Modifier
@@ -187,50 +186,6 @@ private fun Content(
                         )
                 )
             }
-    }
-}
-
-@Composable
-private fun ConversationOverviewItem(
-    conversation: ConversationListItem,
-    onUiEvent: (OverviewUiEvent) -> Unit
-) {
-    val deleteBackgroundColor = MaterialTheme.colorScheme.error
-    val deleteContentColor = MaterialTheme.colorScheme.onError
-    val actions =
-        remember(
-            conversation.conversationId,
-            deleteBackgroundColor,
-            deleteContentColor,
-            onUiEvent
-        ) {
-            listOf(
-                SwipeRevealAction(
-                    backgroundColor = deleteBackgroundColor,
-                    contentColor = deleteContentColor,
-                    onClick = {
-                        onUiEvent(
-                            OverviewUiEvent.DeleteConversation(conversation.conversationId)
-                        )
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DeleteOutline,
-                        contentDescription = null
-                    )
-                }
-            )
-        }
-    val onClick =
-        remember(conversation, onUiEvent) {
-            { onUiEvent(OverviewUiEvent.ChatClicked(conversation)) }
-        }
-
-    SparrowSwipeRevealItem(actions = actions) {
-        ConversationItem(
-            conversation = conversation,
-            onClick = onClick
-        )
     }
 }
 
@@ -295,7 +250,7 @@ private fun ConversationItem(
             leadingContent = {
                 SparrowAvatar(
                     name = conversation.contactName,
-                    pictureBytes = conversation.avatarBytes
+                    target = conversation.avatarTarget
                 )
             },
             headlineContent = {
@@ -435,6 +390,7 @@ private fun OverviewScreenPreview() {
                             ConversationListItem(
                                 contactId = "1",
                                 contactName = "Alice",
+                                avatarTarget = AvatarTarget.User("1"),
                                 lastMessage = "Hello!",
                                 timestamp = "10:00 AM",
                                 unreadCount = 3,
@@ -443,6 +399,7 @@ private fun OverviewScreenPreview() {
                             ConversationListItem(
                                 contactId = "2",
                                 contactName = "Bob",
+                                avatarTarget = AvatarTarget.User("2"),
                                 lastMessage = "Sounds good, see you then.",
                                 timestamp = "Yesterday",
                                 conversationId = "6"

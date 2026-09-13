@@ -29,10 +29,9 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 
 internal fun toGroupConversationUiState(
+    groupId: String,
     conversation: GroupConversation?,
     contacts: List<Contact>,
-    profilePictures: Map<String, ByteArray?>,
-    avatarBytes: ByteArray?,
     isLoading: Boolean,
     safetyAssessments: Map<String, MessageSafetyAssessment>,
     attachmentPayloadBytes: Map<String, ByteArray> = emptyMap(),
@@ -48,7 +47,6 @@ internal fun toGroupConversationUiState(
             message.toMessageBubbleUi(
                 senderName = sender.displayNameForChat(senderIsInContacts),
                 senderIsInContacts = senderIsInContacts,
-                senderProfilePictureBytes = message.senderContactId?.let(profilePictures::get),
                 safetyAssessments = safetyAssessments,
                 attachmentPayloadBytes = attachmentPayloadBytes,
                 voiceState = voiceState,
@@ -60,14 +58,13 @@ internal fun toGroupConversationUiState(
         }
 
     return GroupConversationUiState(
+        groupId = groupId,
         title = conversation?.title.orEmpty(),
-        avatarBytes = avatarBytes,
         pinnedMessage = pinnedMessage,
         pinnedAtEpochMilliseconds = pin?.pinnedAtEpochMilliseconds ?: 0L,
         isLocalAdmin = administration.isLocalAdmin,
         messages = conversation.toMessageBubbleUi(
             contactsById = contactsById,
-            profilePictures = profilePictures,
             safetyAssessments = safetyAssessments,
             attachmentPayloadBytes = attachmentPayloadBytes,
             voiceState = voiceState
@@ -97,7 +94,6 @@ internal fun toGroupMembershipUiState(
 internal fun GroupMessage.toMessageBubbleUi(
     senderName: String?,
     senderIsInContacts: Boolean,
-    senderProfilePictureBytes: ByteArray?,
     safetyAssessments: Map<String, MessageSafetyAssessment>,
     attachmentPayloadBytes: Map<String, ByteArray> = emptyMap(),
     voiceState: VoiceMessageUiState = VoiceMessageUiState(),
@@ -150,8 +146,7 @@ internal fun GroupMessage.toMessageBubbleUi(
         textPart = partsUi.filterIsInstance<MessagePartUi.Text>().firstOrNull(),
         groupExtension = GroupMessageUi(
             type = type,
-            senderContactId = senderContactId,
-            senderProfilePictureBytes = senderProfilePictureBytes
+            senderContactId = senderContactId
         )
     )
 }
@@ -184,7 +179,6 @@ internal fun Set<String>.toIndicatorDisplayName(contacts: List<Contact>): String
 
 private fun GroupConversation?.toMessageBubbleUi(
     contactsById: Map<String, Contact>,
-    profilePictures: Map<String, ByteArray?>,
     safetyAssessments: Map<String, MessageSafetyAssessment>,
     attachmentPayloadBytes: Map<String, ByteArray>,
     voiceState: VoiceMessageUiState
@@ -202,7 +196,6 @@ private fun GroupConversation?.toMessageBubbleUi(
                 message.toMessageBubbleUi(
                     senderName = sender.displayNameForChat(senderIsInContacts),
                     senderIsInContacts = senderIsInContacts,
-                    senderProfilePictureBytes = senderContactId?.let(profilePictures::get),
                     safetyAssessments = safetyAssessments,
                     attachmentPayloadBytes = attachmentPayloadBytes,
                     voiceState = voiceState,

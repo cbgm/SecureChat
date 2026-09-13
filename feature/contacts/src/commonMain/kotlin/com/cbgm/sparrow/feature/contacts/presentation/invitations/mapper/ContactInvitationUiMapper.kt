@@ -8,13 +8,11 @@ internal fun toContactInvitationUiState(
     selectedTab: ContactInvitationTab,
     incomingInvitations: List<ContactInvitation>,
     outgoingInvitations: List<ContactInvitation>,
-    profilePictures: Map<String, ByteArray?>,
     processingInvitationId: String?
 ): ContactInvitationUiState =
     ContactInvitationUiState(
         selectedTab = selectedTab,
         incomingInvitations = incomingInvitations,
         outgoingInvitations = outgoingInvitations,
-        processingInvitationId = processingInvitationId,
-        profilePictures = profilePictures
+        processingInvitationId = processingInvitationId
     )

@@ -40,7 +40,6 @@ internal fun ContactDetailsContent(
     contact: Contact,
     safetyNumber: SafetyNumber?,
     modifier: Modifier = Modifier,
-    profilePictureBytes: ByteArray? = null,
     onShareContact: () -> Unit,
     onVerifyIdentity: () -> Unit,
     onMediaAndFiles: () -> Unit,
@@ -59,7 +58,7 @@ internal fun ContactDetailsContent(
                 ),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
     ) {
-        ContactHeader(contact = contact, profilePictureBytes = profilePictureBytes)
+        ContactHeader(contact = contact)
 
         SparrowApprovalButton(
             onClick = onShareContact,

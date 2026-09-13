@@ -4,6 +4,7 @@ import com.cbgm.sparrow.core.time.SystemClock
 import com.cbgm.sparrow.feature.chats.data.group.avatar.GroupAvatarBroadcaster
 import com.cbgm.sparrow.feature.chats.data.group.datasource.GroupAvatarDataSource
 import com.cbgm.sparrow.feature.chats.domain.model.group.GroupAvatar
+import com.cbgm.sparrow.feature.chats.domain.model.group.GroupAvatarMetadata
 import com.cbgm.sparrow.feature.chats.domain.repository.group.GroupAvatarRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
@@ -16,6 +17,8 @@ internal class GroupAvatarRepositoryImpl(
     private val updateMutex = Mutex()
 
     override fun observe(groupId: String): Flow<GroupAvatar> = dataSource.observe(groupId)
+
+    override fun observeMetadata(groupId: String): Flow<GroupAvatarMetadata> = dataSource.observeMetadata(groupId)
 
     override suspend fun set(
         groupId: String,

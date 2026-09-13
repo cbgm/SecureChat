@@ -32,12 +32,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import com.cbgm.sparrow.core.ui.component.SparrowAvatar
 import com.cbgm.sparrow.core.ui.component.SparrowLazyScaffold
 import com.cbgm.sparrow.core.ui.theme.Alpha
 import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.SparrowTheme
 import com.cbgm.sparrow.core.ui.theme.spacing
+import com.cbgm.sparrow.feature.avatar.domain.model.AvatarTarget
+import com.cbgm.sparrow.feature.avatar.presentation.component.SparrowAvatar
 import com.cbgm.sparrow.feature.contacts.domain.model.Contact
 import com.cbgm.sparrow.feature.contacts.domain.model.DeviceContactLinkStatus
 import com.cbgm.sparrow.feature.contacts.presentation.blocklist.components.AddBlockedContactDialog
@@ -127,7 +128,6 @@ fun BlockedContactsScreen(
                     ) { contact ->
                         BlockedContactRow(
                             contact = contact,
-                            profilePictureBytes = uiState.profilePictures[contact.id],
                             enabled = uiState.processingContactId == null,
                             onUnblock = {
                                 onUiEvent(
@@ -171,7 +171,6 @@ fun BlockedContactsScreen(
         phoneNumber = uiState.phoneNumber,
         phoneNumberError = uiState.phoneNumberError,
         contacts = uiState.availableContacts,
-        profilePictures = uiState.profilePictures,
         enabled = uiState.processingContactId == null,
         onPhoneNumberChanged = { value ->
             onUiEvent(BlockedContactsUiEvent.PhoneNumberChanged(value))
@@ -187,7 +186,6 @@ fun BlockedContactsScreen(
 @Composable
 private fun BlockedContactRow(
     contact: Contact,
-    profilePictureBytes: ByteArray?,
     enabled: Boolean,
     onUnblock: () -> Unit
 ) {
@@ -196,7 +194,7 @@ private fun BlockedContactRow(
             leadingContent = {
                 SparrowAvatar(
                     name = contact.displayName ?: contact.preferredPhoneNumber?.value ?: "?",
-                    pictureBytes = profilePictureBytes
+                    target = AvatarTarget.User(contact.id)
                 )
             },
             headlineContent = {

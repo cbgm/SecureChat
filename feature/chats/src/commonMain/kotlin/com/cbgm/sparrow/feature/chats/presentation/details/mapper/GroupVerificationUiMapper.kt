@@ -141,15 +141,17 @@ private fun GroupVerificationPair.toGroupMemberVerificationState(): GroupMemberV
     }
 
 internal fun toGroupAvatarUiState(
+    groupId: String,
     title: String,
-    avatarBytes: ByteArray?,
+    hasAvatar: Boolean,
     canEdit: Boolean,
     isSaving: Boolean,
     errorMessage: String?
 ): GroupAvatarUiState =
     GroupAvatarUiState(
+        groupId = groupId,
         title = title,
-        avatarBytes = avatarBytes,
+        hasAvatar = hasAvatar,
         canEdit = canEdit,
         isSaving = isSaving,
         errorMessage = errorMessage
@@ -161,7 +163,6 @@ internal fun toGroupVerificationUiState(
     groupTitle: GroupTitleUiState,
     groupDescription: GroupDescriptionUiState,
     contacts: List<Contact>,
-    profilePictures: Map<String, ByteArray?>,
     selectedContactId: String?,
     safetyNumber: String,
     isLoadingSafetyNumber: Boolean,
@@ -206,7 +207,6 @@ internal fun toGroupVerificationUiState(
                     availableContacts
                         .filterContacts(searchQuery)
                         .groupContactsByInitial(),
-                profilePictures = profilePictures,
                 selectedContactIds =
                     selectedContactIds.filterTo(mutableSetOf()) { contactId ->
                         availableContacts.any { contact -> contact.id == contactId }

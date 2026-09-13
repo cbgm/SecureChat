@@ -6,7 +6,6 @@ import com.cbgm.sparrow.feature.contacts.presentation.overview.mapper.filterCont
 import com.cbgm.sparrow.feature.contacts.presentation.overview.mapper.groupContactsByInitial
 
 internal fun List<Contact>.toCreateGroupConversationUiState(
-    profilePictures: Map<String, ByteArray?>,
     title: String,
     searchQuery: String,
     selectedContactIds: Set<String>,
@@ -18,7 +17,6 @@ internal fun List<Contact>.toCreateGroupConversationUiState(
         title = title,
         searchQuery = searchQuery,
         contactGroups = filterContacts(searchQuery).groupContactsByInitial(),
-        profilePictures = profilePictures,
         selectedContactIds = selectedContactIds.intersect(availableContactIds),
         isCreating = isCreating,
         errorMessage = errorMessage

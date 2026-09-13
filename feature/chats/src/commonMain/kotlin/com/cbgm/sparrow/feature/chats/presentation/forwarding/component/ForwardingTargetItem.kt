@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import com.cbgm.sparrow.core.ui.component.SparrowAvatar
+import com.cbgm.sparrow.feature.avatar.presentation.component.SparrowAvatar
 import com.cbgm.sparrow.feature.chats.presentation.forwarding.model.ForwardingTargetUi
 
 @Composable
@@ -27,7 +27,7 @@ internal fun ForwardingTargetItem(
         leadingContent = {
             SparrowAvatar(
                 name = target.displayName,
-                pictureBytes = target.avatarBytes
+                target = target.avatarTarget
             )
         },
         headlineContent = {

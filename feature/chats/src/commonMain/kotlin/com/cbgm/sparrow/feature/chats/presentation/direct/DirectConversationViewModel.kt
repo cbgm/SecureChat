@@ -39,7 +39,6 @@ import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageContex
 import com.cbgm.sparrow.feature.chats.presentation.component.model.MessageHistoryUiState
 import com.cbgm.sparrow.feature.chats.presentation.direct.mapper.toDirectConversationUiState
 import com.cbgm.sparrow.feature.chats.presentation.direct.mapper.toDirectReplyPreview
-import com.cbgm.sparrow.feature.chats.presentation.direct.mapper.withProfilePicture
 import com.cbgm.sparrow.feature.chats.presentation.direct.model.DirectConversationUiEvent
 import com.cbgm.sparrow.feature.chats.presentation.direct.model.DirectConversationUiState
 import com.cbgm.sparrow.feature.contacts.domain.model.device.AddDeviceContactResult
@@ -188,7 +187,7 @@ class DirectConversationViewModel(
                 safetyAssessments = safetyAssessments,
                 attachmentPayloadBytes = loadedAttachmentPayloadBytes,
                 voiceState = voiceState
-            ).withProfilePicture(context.profilePictureBytes)
+            )
                 .copy(voiceTranscriptionEnabled = transcriptionEnabled)
         }.stateIn(
             scope = viewModelScope,

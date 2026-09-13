@@ -40,7 +40,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.cbgm.sparrow.core.ui.component.FeedbackOverlay
 import com.cbgm.sparrow.core.ui.component.FeedbackOverlayData
 import com.cbgm.sparrow.core.ui.component.PatternBackground
-import com.cbgm.sparrow.core.ui.component.SparrowAvatar
 import com.cbgm.sparrow.core.ui.component.SparrowLazyScaffold
 import com.cbgm.sparrow.core.ui.component.SparrowOverlay
 import com.cbgm.sparrow.core.ui.component.SparrowOverlayHost
@@ -50,6 +49,8 @@ import com.cbgm.sparrow.core.ui.theme.Dimens
 import com.cbgm.sparrow.core.ui.theme.spacing
 import com.cbgm.sparrow.feature.attachments.domain.model.SharedContact
 import com.cbgm.sparrow.feature.attachments.presentation.component.MessageAttachmentViewer
+import com.cbgm.sparrow.feature.avatar.domain.model.AvatarTarget
+import com.cbgm.sparrow.feature.avatar.presentation.component.SparrowAvatar
 import com.cbgm.sparrow.feature.chats.domain.model.direct.ContactSecurityState
 import com.cbgm.sparrow.feature.chats.presentation.component.AddSharedContactDialog
 import com.cbgm.sparrow.feature.chats.presentation.component.ChatComposerBar
@@ -379,7 +380,7 @@ private fun TopBar(
                 ) {
                     SparrowAvatar(
                         name = uiState.contactName,
-                        pictureBytes = uiState.profilePictureBytes,
+                        target = uiState.contactId.takeIf(String::isNotBlank)?.let { AvatarTarget.User(it) },
                         size = Dimens.DirectConversationScreen.topBarAvatarSize
                     )
                     Spacer(modifier = Modifier.width(MaterialTheme.spacing.small))

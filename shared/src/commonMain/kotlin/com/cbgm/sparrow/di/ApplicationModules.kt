@@ -6,6 +6,7 @@ import com.cbgm.sparrow.core.protocol.di.protocolModule
 import com.cbgm.sparrow.core.ui.di.coreUiModule
 import com.cbgm.sparrow.feature.attachments.di.attachmentsModule
 import com.cbgm.sparrow.feature.autoreply.di.autoReplyModule
+import com.cbgm.sparrow.feature.avatar.di.avatarModule
 import com.cbgm.sparrow.feature.chats.di.chatsModule
 import com.cbgm.sparrow.feature.contactimport.di.contactImportModule
 import com.cbgm.sparrow.feature.contacts.di.contactsModule
@@ -35,6 +36,7 @@ internal val commonApplicationModules: List<Module> =
         safetyModule,
         attachmentsModule,
         autoReplyModule,
+        avatarModule,
         mediaModule,
         chatsModule,
         transportModule,

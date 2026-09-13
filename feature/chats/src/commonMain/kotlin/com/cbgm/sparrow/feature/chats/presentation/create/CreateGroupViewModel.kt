@@ -8,8 +8,8 @@ import com.cbgm.sparrow.feature.chats.presentation.create.mapper.toCreateGroupCo
 import com.cbgm.sparrow.feature.chats.presentation.create.model.CreateGroupConversationUiState
 import com.cbgm.sparrow.feature.chats.presentation.create.model.CreateGroupEffect
 import com.cbgm.sparrow.feature.chats.presentation.create.model.CreateGroupUiEvent
-import com.cbgm.sparrow.feature.contacts.domain.model.ContactsWithProfilePictures
-import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveContactsWithProfilePicturesUseCase
+import com.cbgm.sparrow.feature.contacts.domain.model.Contact
+import com.cbgm.sparrow.feature.contacts.domain.usecase.ObserveContactsUseCase
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 
 class CreateGroupViewModel(
     savedStateHandle: SavedStateHandle,
-    private val observeContactsWithProfilePictures: ObserveContactsWithProfilePicturesUseCase,
+    private val observeContacts: ObserveContactsUseCase,
     private val createGroupConversation: CreateGroupConversationUseCase
 ) : BaseViewModel() {
     private val title = savedStateHandle.getMutableStateFlow(TITLE_KEY, "")
@@ -47,8 +47,7 @@ class CreateGroupViewModel(
             formState,
             actionState
         ) { snapshot, form, action ->
-            snapshot.contacts.contacts.toCreateGroupConversationUiState(
-                profilePictures = snapshot.contacts.profilePictures,
+            snapshot.contacts.toCreateGroupConversationUiState(
                 title = form.title,
                 searchQuery = form.searchQuery,
                 selectedContactIds = form.selectedContactIds,
@@ -75,12 +74,12 @@ class CreateGroupViewModel(
     }
 
     private fun contactsPresentationFlow() =
-        observeContactsWithProfilePictures()
+        observeContacts()
             .map { contacts -> ContactsPresentation(contacts = contacts) }
             .catch { error ->
                 emit(
                     ContactsPresentation(
-                        contacts = ContactsWithProfilePictures(emptyList(), emptyMap()),
+                        contacts = emptyList(),
                         errorMessage = error.message ?: "Contacts could not be loaded"
                     )
                 )
@@ -143,7 +142,7 @@ class CreateGroupViewModel(
     }
 
     private data class ContactsPresentation(
-        val contacts: ContactsWithProfilePictures,
+        val contacts: List<Contact>,
         val errorMessage: String? = null
     )
 
